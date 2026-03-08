@@ -10,12 +10,18 @@
 
 # Test binary, built with `go test -c`
 *.test
+cmd/**/debug
+hack/**/debug
 
 # Code coverage profiles and other test artifacts
 *.out
 coverage.*
 *.coverprofile
 profile.cov
+*.iml
+.coverage
+*.out
+test/*.cov
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
@@ -28,5 +34,16 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
+
+
+
+.DS_Store
+vendor/
+dist/
+site/
+/go-diagrams/
+*__pycache__
+*.pytest_cache/
+docs/APIs.html
