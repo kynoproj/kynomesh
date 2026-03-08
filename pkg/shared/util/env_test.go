@@ -32,6 +32,8 @@ func TestLookupEnvIntOr(t *testing.T) {
 	assert.Equal(t, LookupEnvIntOr("fake_int_env", 4), 4)
 	os.Setenv("fake_int_env", "5")
 	assert.Equal(t, LookupEnvIntOr("fake_int_env", 4), 5)
+	os.Setenv("fake_int_env", "not-a-number")
+	assert.Panics(t, func() { LookupEnvIntOr("fake_int_env", 4) })
 }
 
 func TestLookupEnvBoolOr(t *testing.T) {

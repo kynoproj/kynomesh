@@ -17,6 +17,8 @@ limitations under the License.
 package util
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -146,12 +148,18 @@ func Test_GetConfigMapVolumePath(t *testing.T) {
 	p, e := GetConfigMapVolumePath(testConfigMapSelector)
 	assert.Nil(t, e)
 	assert.Equal(t, "/var/kyno/config/test-cm/test-key", p)
+
+	_, e = GetConfigMapVolumePath(nil)
+	assert.Error(t, e)
 }
 
 func Test_GetSecretVolumePath(t *testing.T) {
 	p, e := GetSecretVolumePath(testSecretKeySelector)
 	assert.Nil(t, e)
 	assert.Equal(t, "/var/kyno/secrets/test-secret/test-key", p)
+
+	_, e = GetSecretVolumePath(nil)
+	assert.Error(t, e)
 }
 
 type MockFileReader struct {
@@ -166,6 +174,48 @@ func (m *MockFileReader) getConfigMapFromVolume(selector *corev1.ConfigMapKeySel
 func (m *MockFileReader) getSecretFromVolume(selector *corev1.SecretKeySelector) (string, error) {
 	args := m.Called(selector)
 	return args.String(0), args.Error(1)
+}
+
+func TestGetSecretFromVolume_Success(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "secrets", "my-secret")
+	os.MkdirAll(dir, 0o755)
+	os.WriteFile(filepath.Join(dir, "my-key"), []byte("secret-value\n"), 0o644)
+
+	// Temporarily symlink to the expected mount path
+	mountDir := "/var/kyno/secrets/my-secret"
+	os.MkdirAll(filepath.Dir(mountDir), 0o755)
+	// Skip if we can't write to /var (e.g. non-root)
+	if err := os.Symlink(dir, mountDir); err != nil {
+		t.Skip("cannot create symlink under /var/kyno, skipping")
+	}
+	defer os.RemoveAll("/var/kyno")
+
+	val, err := GetSecretFromVolume(&corev1.SecretKeySelector{
+		LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
+		Key:                  "my-key",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "secret-value", val)
+}
+
+func TestGetConfigMapFromVolume_Success(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "config", "my-cm")
+	os.MkdirAll(dir, 0o755)
+	os.WriteFile(filepath.Join(dir, "my-key"), []byte("cm-value\n"), 0o644)
+
+	mountDir := "/var/kyno/config/my-cm"
+	os.MkdirAll(filepath.Dir(mountDir), 0o755)
+	if err := os.Symlink(dir, mountDir); err != nil {
+		t.Skip("cannot create symlink under /var/kyno, skipping")
+	}
+	defer os.RemoveAll("/var/kyno")
+
+	val, err := GetConfigMapFromVolume(&corev1.ConfigMapKeySelector{
+		LocalObjectReference: corev1.LocalObjectReference{Name: "my-cm"},
+		Key:                  "my-key",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "cm-value", val)
 }
 
 func TestGetConfigMapFromVolume_FileNotFound(t *testing.T) {
