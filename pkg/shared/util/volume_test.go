@@ -22,30 +22,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 )
-
-type mockedVolumes struct {
-	volumeSecrets map[struct {
-		objectName string
-		key        string
-	}]string
-}
-
-func (m mockedVolumes) getSecretFromVolume(selector *corev1.SecretKeySelector) (string, error) {
-	return m.volumeSecrets[struct {
-		objectName string
-		key        string
-	}{
-		objectName: selector.LocalObjectReference.Name,
-		key:        selector.Key,
-	}], nil
-}
-
-func (m mockedVolumes) getConfigMapFromVolume(selector *corev1.ConfigMapKeySelector) (string, error) {
-	return "", nil
-}
 
 var (
 	testSecretKeySelector = &corev1.SecretKeySelector{
@@ -65,15 +44,15 @@ var (
 
 func Test_generateSecretVolumeSpecs(t *testing.T) {
 	v, vm := generateSecretVolumeSpecs(testSecretKeySelector)
-	assert.NotNil(t, v.VolumeSource.Secret)
-	assert.Equal(t, "test-secret", v.VolumeSource.Secret.SecretName)
+	assert.NotNil(t, v.Secret)
+	assert.Equal(t, "test-secret", v.Secret.SecretName)
 	assert.Equal(t, v.Name, vm.Name)
 }
 
 func Test_generateConfigMapVolumeSpecs(t *testing.T) {
 	v, vm := generateConfigMapVolumeSpecs(testConfigMapSelector)
-	assert.NotNil(t, v.VolumeSource.ConfigMap)
-	assert.Equal(t, "test-cm", v.VolumeSource.ConfigMap.Name)
+	assert.NotNil(t, v.ConfigMap)
+	assert.Equal(t, "test-cm", v.ConfigMap.Name)
 	assert.Equal(t, v.Name, vm.Name)
 }
 
@@ -162,33 +141,19 @@ func Test_GetSecretVolumePath(t *testing.T) {
 	assert.Error(t, e)
 }
 
-type MockFileReader struct {
-	mock.Mock
-}
-
-func (m *MockFileReader) getConfigMapFromVolume(selector *corev1.ConfigMapKeySelector) (string, error) {
-	args := m.Called(selector)
-	return args.String(0), args.Error(1)
-}
-
-func (m *MockFileReader) getSecretFromVolume(selector *corev1.SecretKeySelector) (string, error) {
-	args := m.Called(selector)
-	return args.String(0), args.Error(1)
-}
-
 func TestGetSecretFromVolume_Success(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "secrets", "my-secret")
-	os.MkdirAll(dir, 0o755)
-	os.WriteFile(filepath.Join(dir, "my-key"), []byte("secret-value\n"), 0o644)
-
-	// Temporarily symlink to the expected mount path
-	mountDir := "/var/kyno/secrets/my-secret"
-	os.MkdirAll(filepath.Dir(mountDir), 0o755)
 	// Skip if we can't write to /var (e.g. non-root)
-	if err := os.Symlink(dir, mountDir); err != nil {
-		t.Skip("cannot create symlink under /var/kyno, skipping")
+	if err := os.MkdirAll("/var/kyno/secrets", 0o755); err != nil {
+		t.Skip("cannot write to /var/kyno, skipping")
 	}
-	defer os.RemoveAll("/var/kyno")
+	t.Cleanup(func() { _ = os.RemoveAll("/var/kyno") })
+
+	dir := filepath.Join(t.TempDir(), "secrets", "my-secret")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "my-key"), []byte("secret-value\n"), 0o644))
+
+	mountDir := "/var/kyno/secrets/my-secret"
+	require.NoError(t, os.Symlink(dir, mountDir))
 
 	val, err := GetSecretFromVolume(&corev1.SecretKeySelector{
 		LocalObjectReference: corev1.LocalObjectReference{Name: "my-secret"},
@@ -199,16 +164,18 @@ func TestGetSecretFromVolume_Success(t *testing.T) {
 }
 
 func TestGetConfigMapFromVolume_Success(t *testing.T) {
+	// Skip if we can't write to /var (e.g. non-root)
+	if err := os.MkdirAll("/var/kyno/config", 0o755); err != nil {
+		t.Skip("cannot write to /var/kyno, skipping")
+	}
+	t.Cleanup(func() { _ = os.RemoveAll("/var/kyno") })
+
 	dir := filepath.Join(t.TempDir(), "config", "my-cm")
-	os.MkdirAll(dir, 0o755)
-	os.WriteFile(filepath.Join(dir, "my-key"), []byte("cm-value\n"), 0o644)
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "my-key"), []byte("cm-value\n"), 0o644))
 
 	mountDir := "/var/kyno/config/my-cm"
-	os.MkdirAll(filepath.Dir(mountDir), 0o755)
-	if err := os.Symlink(dir, mountDir); err != nil {
-		t.Skip("cannot create symlink under /var/kyno, skipping")
-	}
-	defer os.RemoveAll("/var/kyno")
+	require.NoError(t, os.Symlink(dir, mountDir))
 
 	val, err := GetConfigMapFromVolume(&corev1.ConfigMapKeySelector{
 		LocalObjectReference: corev1.LocalObjectReference{Name: "my-cm"},

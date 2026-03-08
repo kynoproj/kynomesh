@@ -17,11 +17,7 @@ limitations under the License.
 package util
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
-
-	"k8s.io/client-go/util/homedir"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -29,9 +25,7 @@ import (
 func TestK8sRestConfig(t *testing.T) {
 	t.Run("K8sRestConfig returns error when KUBECONFIG is invalid", func(t *testing.T) {
 		// Setup the environment to simulate an invalid KUBECONFIG
-		kubeconfig := "fake-kubeconfig"
-		os.Setenv("KUBECONFIG", kubeconfig)
-		defer os.Unsetenv("KUBECONFIG")
+		t.Setenv("KUBECONFIG", "fake-kubeconfig")
 
 		config, err := K8sRestConfig()
 		assert.NotNil(t, err)
@@ -41,12 +35,8 @@ func TestK8sRestConfig(t *testing.T) {
 }
 
 func TestK8sRestConfig_blank(t *testing.T) {
-	os.Unsetenv("KUBECONFIG")
-
-	// Ensure the default kubeconfig does not exist
-	homeDir := homedir.HomeDir()
-	defaultKubeconfigPath := filepath.Join(homeDir, ".kube", "config")
-	os.Remove(defaultKubeconfigPath)
+	t.Setenv("KUBECONFIG", "")
+	t.Setenv("HOME", t.TempDir())
 
 	restConfig, err := K8sRestConfig()
 	assert.Error(t, err)

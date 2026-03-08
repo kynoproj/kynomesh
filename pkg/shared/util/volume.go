@@ -30,12 +30,6 @@ var (
 	configMapKeySelectorType = reflect.TypeOf(&corev1.ConfigMapKeySelector{})
 )
 
-// Introduced for mocking in tests
-type volumeReader interface {
-	getSecretFromVolume(selector *corev1.SecretKeySelector) (string, error)
-	getConfigMapFromVolume(selector *corev1.ConfigMapKeySelector) (string, error)
-}
-
 type osFile struct{}
 
 // GetSecretFromVolume retrieves the value of mounted secret volume
