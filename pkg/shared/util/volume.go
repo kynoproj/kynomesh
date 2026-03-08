@@ -38,12 +38,12 @@ type volumeReader interface {
 
 type osFile struct{}
 
+// GetSecretFromVolume retrieves the value of mounted secret volume
+// "/var/kyno/secrets/${secretRef.name}/${secretRef.key}" is expected to be the file path
 func GetSecretFromVolume(selector *corev1.SecretKeySelector) (string, error) {
 	return osFile{}.getSecretFromVolume(selector)
 }
 
-// GetSecretFromVolume retrieves the value of mounted secret volume
-// "/var/kyno/secrets/${secretRef.name}/${secretRef.key}" is expected to be the file path
 func (osFile) getSecretFromVolume(selector *corev1.SecretKeySelector) (string, error) {
 	filePath, err := GetSecretVolumePath(selector)
 	if err != nil {
@@ -66,12 +66,12 @@ func GetSecretVolumePath(selector *corev1.SecretKeySelector) (string, error) {
 	return fmt.Sprintf("/var/kyno/secrets/%s/%s", selector.Name, selector.Key), nil
 }
 
+// GetConfigMapFromVolume retrieves the value of mounted config map volume
+// "/var/kyno/config/${configMapRef.name}/${configMapRef.key}" is expected to be the file path
 func GetConfigMapFromVolume(selector *corev1.ConfigMapKeySelector) (string, error) {
 	return osFile{}.getConfigMapFromVolume(selector)
 }
 
-// GetConfigMapFromVolume retrieves the value of mounted config map volume
-// "/var/kyno/config/${configMapRef.name}/${configMapRef.key}" is expected to be the file path
 func (osFile) getConfigMapFromVolume(selector *corev1.ConfigMapKeySelector) (string, error) {
 	filePath, err := GetConfigMapVolumePath(selector)
 	if err != nil {
@@ -81,8 +81,8 @@ func (osFile) getConfigMapFromVolume(selector *corev1.ConfigMapKeySelector) (str
 	if err != nil {
 		return "", fmt.Errorf("failed to get configMap value of name: %s, key: %s, %w", selector.Name, selector.Key, err)
 	}
-	// Contents edied by tools like "vim" always have an extra invisible "\n" in the end,
-	// and it's often negleted, but it makes differences for some of the applications.
+	// Contents edited by tools like "vim" always have an extra invisible "\n" in the end,
+	// and it's often neglected, but it makes differences for some of the applications.
 	return strings.TrimSuffix(string(data), "\n"), nil
 }
 
@@ -94,17 +94,17 @@ func GetConfigMapVolumePath(selector *corev1.ConfigMapKeySelector) (string, erro
 	return fmt.Sprintf("/var/kyno/config/%s/%s", selector.Name, selector.Key), nil
 }
 
-// VolumesFromSecretsOrConfigMaps builds volumes and volumeMounts spec based on
-// the obj and its children's secretKeyselector and configMapKeySelector
+// VolumesFromSecretsAndConfigMaps builds volumes and volumeMounts spec based on
+// the obj and its children's secretKeySelector and configMapKeySelector
 func VolumesFromSecretsAndConfigMaps(obj interface{}) ([]corev1.Volume, []corev1.VolumeMount) {
 	v := []corev1.Volume{}
 	vm := []corev1.VolumeMount{}
 	volSecrets, volSecretMounts := volumesFromSecretsOrConfigMaps(obj, secretKeySelectorType)
 	v = append(v, volSecrets...)
 	vm = append(vm, volSecretMounts...)
-	volConfigMaps, volCofigMapMounts := volumesFromSecretsOrConfigMaps(obj, configMapKeySelectorType)
+	volConfigMaps, volConfigMapMounts := volumesFromSecretsOrConfigMaps(obj, configMapKeySelectorType)
 	v = append(v, volConfigMaps...)
-	vm = append(vm, volCofigMapMounts...)
+	vm = append(vm, volConfigMapMounts...)
 	return v, vm
 }
 

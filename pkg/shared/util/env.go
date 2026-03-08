@@ -25,9 +25,8 @@ import (
 func LookupEnvStringOr(key, defaultValue string) string {
 	if v, existing := os.LookupEnv(key); existing && v != "" {
 		return v
-	} else {
-		return defaultValue
 	}
+	return defaultValue
 }
 
 func LookupEnvIntOr(key string, defaultValue int) int {
