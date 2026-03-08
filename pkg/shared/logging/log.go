@@ -20,7 +20,7 @@ import (
 	"context"
 	"os"
 
-	zap "go.uber.org/zap"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -33,10 +33,8 @@ const (
 
 // NewLogger returns a new zap.SugaredLogger
 func NewLogger() *zap.SugaredLogger {
-	var config zap.Config
 	logLevel, _ := os.LookupEnv("LOG_LEVEL")
-	config = configureLogLevelLogger(logLevel)
-	// Config customization goes here if any
+	config := configureLogLevelLogger(logLevel)
 	config.EncoderConfig.EncodeTime = zapcore.RFC3339NanoTimeEncoder
 	config.OutputPaths = []string{"stdout"}
 	logger, err := config.Build()
@@ -45,6 +43,8 @@ func NewLogger() *zap.SugaredLogger {
 	}
 	return logger.Named("kyno-mesh").Sugar()
 }
+
+var defaultLogger = NewLogger()
 
 type loggerKey struct{}
 
@@ -59,10 +59,10 @@ func FromContext(ctx context.Context) *zap.SugaredLogger {
 	if logger, ok := ctx.Value(loggerKey{}).(*zap.SugaredLogger); ok {
 		return logger
 	}
-	return NewLogger()
+	return defaultLogger
 }
 
-// Returns logger conifg depending on the log level
+// Returns logger config depending on the log level
 func configureLogLevelLogger(logLevel string) zap.Config {
 	logConfig := zap.NewProductionConfig()
 	switch logLevel {

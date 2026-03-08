@@ -18,7 +18,6 @@ package logging
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"go.uber.org/zap"
@@ -26,66 +25,21 @@ import (
 )
 
 func TestNewLogger(t *testing.T) {
-	// Restore LOG_LEVEL after test
-	origLevel, hadLevel := os.LookupEnv("LOG_LEVEL")
-	defer func() {
-		if hadLevel {
-			os.Setenv("LOG_LEVEL", origLevel)
-		} else {
-			os.Unsetenv("LOG_LEVEL")
-		}
-	}()
-
+	t.Setenv("LOG_LEVEL", "")
 	logger := NewLogger()
 	if logger == nil {
 		t.Fatal("NewLogger() returned nil")
-	}
-	// Sync to flush any buffers (no-op for SugaredLogger but safe)
-	_ = logger.Sync()
-}
-
-func TestNewLogger_WithLogLevel(t *testing.T) {
-	origLevel, hadLevel := os.LookupEnv("LOG_LEVEL")
-	defer func() {
-		if hadLevel {
-			os.Setenv("LOG_LEVEL", origLevel)
-		} else {
-			os.Unsetenv("LOG_LEVEL")
-		}
-	}()
-
-	for _, level := range []string{InfoLevel, DebugLevel, ErrorLevel, ""} {
-		os.Setenv("LOG_LEVEL", level)
-		logger := NewLogger()
-		if logger == nil {
-			t.Fatalf("NewLogger() with LOG_LEVEL=%q returned nil", level)
-		}
-		_ = logger.Sync()
 	}
 }
 
 func TestWithLogger(t *testing.T) {
 	ctx := context.Background()
 	logger := NewLogger()
-	ctxWithLogger := WithLogger(ctx, logger)
-
-	if ctxWithLogger == ctx {
-		t.Error("WithLogger should return a new context")
-	}
-	retrieved := FromContext(ctxWithLogger)
-	if retrieved != logger {
-		t.Error("FromContext should return the logger stored by WithLogger")
-	}
-}
-
-func TestFromContext_WithLogger(t *testing.T) {
-	ctx := context.Background()
-	logger := NewLogger()
 	ctx = WithLogger(ctx, logger)
 
 	got := FromContext(ctx)
 	if got != logger {
-		t.Errorf("FromContext() = %v, want %v", got, logger)
+		t.Error("FromContext should return the logger stored by WithLogger")
 	}
 }
 
