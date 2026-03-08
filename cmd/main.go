@@ -14,21 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
+	"github.com/kynoproj/kyno-mesh/cmd/commands"
 )
 
-func MustHash(v any) string {
-	switch data := v.(type) {
-	case []byte:
-		hash := sha256.Sum256(data)
-		return hex.EncodeToString(hash[:])
-	case string:
-		return MustHash([]byte(data))
-	default:
-		return MustHash([]byte(MustJSON(v)))
-	}
+func main() {
+	commands.Execute()
 }

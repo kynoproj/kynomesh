@@ -18,18 +18,18 @@ package util
 
 import "encoding/json"
 
-func MustJSON(in interface{}) string {
-	if data, err := json.Marshal(in); err != nil {
+func MustJSON(in any) string {
+	data, err := json.Marshal(in)
+	if err != nil {
 		panic(err)
-	} else {
-		return string(data)
 	}
+	return string(data)
 }
 
 // MustUnJSON unmarshalls JSON or panics.
 // v - must be []byte or string
 // in - must be a pointer.
-func MustUnJSON(v interface{}, in interface{}) {
+func MustUnJSON(v any, in any) {
 	switch data := v.(type) {
 	case []byte:
 		if err := json.Unmarshal(data, in); err != nil {

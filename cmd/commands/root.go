@@ -14,21 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package commands
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
+	"github.com/spf13/cobra"
 )
 
-func MustHash(v any) string {
-	switch data := v.(type) {
-	case []byte:
-		hash := sha256.Sum256(data)
-		return hex.EncodeToString(hash[:])
-	case string:
-		return MustHash([]byte(data))
-	default:
-		return MustHash([]byte(MustJSON(v)))
+var rootCmd = &cobra.Command{
+	Use:   "kyno-mesh",
+	Short: "Kyno-mesh CLI",
+	Run: func(cmd *cobra.Command, args []string) {
+		cmd.HelpFunc()(cmd, args)
+	},
+}
+
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		panic(err)
 	}
+}
+
+func init() {
+	rootCmd.AddCommand(NewControllerCommand())
 }
