@@ -176,8 +176,8 @@ codegen:
 	./hack/update-codegen.sh
 	./hack/openapi-gen.sh
 	$(MAKE) swagger
-	./hack/update-api-docs.sh
-	$(MAKE) manifests
+	#./hack/update-api-docs.sh
+	#$(MAKE) manifests
 	rm -rf ./vendor
 	go mod tidy
 
