@@ -1,4 +1,4 @@
-module github.com/kynoproj/kyno-mesh
+module github.com/kynoproj/kynomesh
 
 go 1.26.0
 

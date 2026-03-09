@@ -37,7 +37,8 @@ go.work.sum
 .idea/
 .vscode/
 
-
+# AI
+**/CLAUDE.md
 
 .DS_Store
 vendor/

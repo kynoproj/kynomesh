@@ -1,1 +1,1 @@
-# kyno-mesh
+# kynomesh

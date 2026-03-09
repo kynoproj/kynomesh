@@ -41,7 +41,7 @@ func NewLogger() *zap.SugaredLogger {
 	if err != nil {
 		panic(err)
 	}
-	return logger.Named("kyno-mesh").Sugar()
+	return logger.Named("kynomesh").Sugar()
 }
 
 var defaultLogger = NewLogger()

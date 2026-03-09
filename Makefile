@@ -1,6 +1,6 @@
 SHELL:=/bin/bash
 
-PACKAGE=github.com/kynoproj/kyno-mesh
+PACKAGE=github.com/kynoproj/kynomesh
 CURRENT_DIR=$(shell pwd)
 
 HOST_ARCH=$(shell uname -m)
@@ -13,9 +13,9 @@ ifeq ($(HOST_ARCH),aarch64)
 endif
 
 DIST_DIR=${CURRENT_DIR}/dist
-BINARY_NAME:=kyno-mesh
+BINARY_NAME:=kynomesh
 DOCKERFILE:=Dockerfile
-DEV_BASE_IMAGE:=debian:bookworm
+DEV_BASE_IMAGE:=alpine:3.23
 RELEASE_BASE_IMAGE:=scratch
 
 BUILD_DATE=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
@@ -101,26 +101,14 @@ dist/$(BINARY_NAME)-%:
 
 .PHONY: test
 test:
-	go test $(shell go list ./... | grep -v /vendor/ | grep -v /kyno-mesh/test/) -race -short -v -timeout 60s
+	go test $(shell go list ./... | grep -v /vendor/ | grep -v /kynomesh/test/) -race -short -v -timeout 60s
 
 .PHONY: test-coverage
 test-coverage:
-	go test -v -timeout 7m -covermode=atomic -coverprofile=test/profile.cov $(shell go list ./... | grep -v /vendor/ | grep -v /kyno-mesh/test/ | grep -v /pkg/client/ | grep -v /pkg/proto/ | grep -v /hack/)
+	go test -v -timeout 7m -covermode=atomic -coverprofile=test/profile.cov $(shell go list ./... | grep -v /vendor/ | grep -v /kynomesh/test/ | grep -v /pkg/client/ | grep -v /pkg/proto/ | grep -v /hack/)
 	go tool cover -func=test/profile.cov
 
 test-e2e:
-test-kafka-e2e:
-test-map-e2e:
-test-reduce-one-e2e:
-test-reduce-two-e2e:
-test-api-e2e:
-test-udsource-e2e:
-test-transformer-e2e:
-test-diamond-e2e:
-test-sideinputs-e2e:
-test-monovertex-e2e:
-test-idle-source-e2e:
-test-builtin-source-e2e:
 test-%:
 	$(MAKE) cleanup-e2e
 ifndef SKIP_IMAGE_BUILD
@@ -129,36 +117,32 @@ ifndef SKIP_IMAGE_BUILD
 endif
 	$(MAKE) e2eapi-image
 	$(MAKE) restart-control-plane-components
-	cat test/manifests/e2e-api-pod.yaml | sed 's@quay.io/kynoproj/@$(IMAGE_NAMESPACE)/@' | sed 's/:latest/:$(VERSION)/' | kubectl -n kyno-mesh apply -f -
+	cat test/manifests/e2e-api-pod.yaml | sed 's@quay.io/kynoproj/@$(IMAGE_NAMESPACE)/@' | sed 's/:latest/:$(VERSION)/' | kubectl -n kynomesh-system apply -f -
 	go generate $(shell find ./test/$* -name '*.go')
 	go test -v -timeout 20m -count 1 --tags test -p 1 ./test/$*
 	$(MAKE) cleanup-e2e
 
-image-restart:
-	$(MAKE) image
-	$(MAKE) restart-control-plane-components
-
 restart-control-plane-components:
-	kubectl -n kyno-mesh delete po -lapp.kubernetes.io/component=controller-manager,app.kubernetes.io/part-of=kyno-mesh --ignore-not-found=true
-	kubectl -n kyno-mesh delete po -lapp.kubernetes.io/component=kyno-mesh-webhook,app.kubernetes.io/part-of=kyno-mesh --ignore-not-found=true
+	kubectl -n kynomesh-system delete po -lapp.kubernetes.io/component=controller-manager,app.kubernetes.io/part-of=kynomesh --ignore-not-found=true
+	kubectl -n kynomesh-system delete po -lapp.kubernetes.io/component=kynomesh-webhook,app.kubernetes.io/part-of=kynomesh --ignore-not-found=true
 
 .PHONY: cleanup-e2e
 cleanup-e2e:
-	kubectl -n kyno-mesh delete svc -lkyno-mesh-e2e=true --ignore-not-found=true
-	kubectl -n kyno-mesh delete sts -lkyno-mesh-e2e=true --ignore-not-found=true
-	kubectl -n kyno-mesh delete deploy -lkyno-mesh-e2e=true --ignore-not-found=true
-	kubectl -n kyno-mesh delete cm -lkyno-mesh-e2e=true --ignore-not-found=true
-	kubectl -n kyno-mesh delete secret -lkyno-mesh-e2e=true --ignore-not-found=true
-	kubectl -n kyno-mesh delete po -lkyno-mesh-e2e=true --ignore-not-found=true
+	kubectl -n kynomesh-system delete svc -lkynomesh-e2e=true --ignore-not-found=true
+	kubectl -n kynomesh-system delete sts -lkynomesh-e2e=true --ignore-not-found=true
+	kubectl -n kynomesh-system delete deploy -lkynomesh-e2e=true --ignore-not-found=true
+	kubectl -n kynomesh-system delete cm -lkynomesh-e2e=true --ignore-not-found=true
+	kubectl -n kynomesh-system delete secret -lkynomesh-e2e=true --ignore-not-found=true
+	kubectl -n kynomesh-system delete po -lkynomesh-e2e=true --ignore-not-found=true
 
 # To run just one of the e2e tests by name (i.e. 'make TestCreateSimplePipeline'):
 Test%:
 	$(MAKE) cleanup-e2e
 	$(MAKE) image e2eapi-image
-	kubectl -n kyno-mesh delete po -lapp.kubernetes.io/component=controller-manager,app.kubernetes.io/part-of=kyno-mesh
-	kubectl -n kyno-mesh delete po e2e-api-pod  --ignore-not-found=true
+	kubectl -n kynomesh-system delete po -lapp.kubernetes.io/component=controller-manager,app.kubernetes.io/part-of=kynomesh
+	kubectl -n kynomesh-system delete po e2e-api-pod  --ignore-not-found=true
 	go generate $(shell find $(shell grep -rl $(*) ./test/*-e2e/*.go))
-	cat test/manifests/e2e-api-pod.yaml |  sed 's@quay.io/kynoproj/@$(IMAGE_NAMESPACE)/@' | sed 's/:latest/:$(VERSION)/' | kubectl -n kyno-mesh apply -f -
+	cat test/manifests/e2e-api-pod.yaml |  sed 's@quay.io/kynoproj/@$(IMAGE_NAMESPACE)/@' | sed 's/:latest/:$(VERSION)/' | kubectl -n kynomesh-system apply -f -
 	-go test -v -timeout 20m -count 1 --tags test -p 1 ./test/$(shell grep $(*) -R ./test | head -1 | awk -F\/ '{print $$3}' ) -run='.*/$*'
 	$(MAKE) cleanup-e2e
 
@@ -222,10 +206,10 @@ lint: $(GOPATH)/bin/golangci-lint
 
 .PHONY: start
 start: image
-	kubectl apply -f test/manifests/kyno-mesh-ns.yaml
-	kubectl -n kyno-mesh delete cm kyno-mesh-cmd-params-config --ignore-not-found=true
-	kubectl kustomize test/manifests | sed 's@quay.io/kynoproj/@$(IMAGE_NAMESPACE)/@' | sed 's/:$(BASE_VERSION)/:$(VERSION)/' | kubectl -n kyno-mesh apply -l app.kubernetes.io/part-of=kyno-mesh --prune=false --force -f -
-	kubectl -n kyno-mesh wait -lapp.kubernetes.io/part-of=kyno-mesh --for=condition=Ready --timeout 60s pod --all
+	kubectl apply -f test/manifests/kynomesh-ns.yaml
+	kubectl -n kynomesh-system delete cm kynomesh-cmd-params-config --ignore-not-found=true
+	kubectl kustomize test/manifests | sed 's@quay.io/kynoproj/@$(IMAGE_NAMESPACE)/@' | sed 's/:$(BASE_VERSION)/:$(VERSION)/' | kubectl -n kynomesh-system apply -l app.kubernetes.io/part-of=kynomesh --prune=false --force -f -
+	kubectl -n kynomesh-system wait -lapp.kubernetes.io/part-of=kynomesh --for=condition=Ready --timeout 60s pod --all
 
 .PHONY: e2eapi-image
 e2eapi-image: clean dist/e2eapi
@@ -309,11 +293,11 @@ check-version-warning:
 
 .PHONY: update-manifests-version
 update-manifests-version:
-	cat config/base/kustomization.yaml | sed 's/newTag: .*/newTag: $(VERSION)/' | sed 's@value: quay.io/kynoproj/kyno-mesh:.*@value: quay.io/kynoproj/kyno-mesh:$(VERSION)@' > /tmp/tmp_kustomization.yaml
+	cat config/base/kustomization.yaml | sed 's/newTag: .*/newTag: $(VERSION)/' | sed 's@value: quay.io/kynoproj/kynomesh:.*@value: quay.io/kynoproj/kynomesh:$(VERSION)@' > /tmp/tmp_kustomization.yaml
 	mv /tmp/tmp_kustomization.yaml config/base/kustomization.yaml
-	cat config/advanced-install/namespaced-controller/kustomization.yaml | sed 's/newTag: .*/newTag: $(VERSION)/' | sed 's@value: quay.io/kynoproj/kyno-mesh:.*@value: quay.io/kynoproj/kyno-mesh:$(VERSION)@' > /tmp/tmp_kustomization.yaml
+	cat config/advanced-install/namespaced-controller/kustomization.yaml | sed 's/newTag: .*/newTag: $(VERSION)/' | sed 's@value: quay.io/kynoproj/kynomesh:.*@value: quay.io/kynoproj/kynomesh:$(VERSION)@' > /tmp/tmp_kustomization.yaml
 	mv /tmp/tmp_kustomization.yaml config/advanced-install/namespaced-controller/kustomization.yaml
-	cat config/extensions/webhook/kustomization.yaml | sed 's/newTag: .*/newTag: $(VERSION)/' | sed 's@value: quay.io/kynoproj/kyno-mesh:.*@value: quay.io/kynoproj/kyno-mesh:$(VERSION)@' > /tmp/tmp_kustomization.yaml
+	cat config/extensions/webhook/kustomization.yaml | sed 's/newTag: .*/newTag: $(VERSION)/' | sed 's@value: quay.io/kynoproj/kynomesh:.*@value: quay.io/kynoproj/kynomesh:$(VERSION)@' > /tmp/tmp_kustomization.yaml
 	mv /tmp/tmp_kustomization.yaml config/extensions/webhook/kustomization.yaml
 	cat Makefile | sed 's/^VERSION?=.*/VERSION?=$(VERSION)/' | sed 's/^BASE_VERSION:=.*/BASE_VERSION:=$(VERSION)/' > /tmp/km_makefile
 	mv /tmp/km_makefile Makefile

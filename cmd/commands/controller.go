@@ -17,7 +17,7 @@ limitations under the License.
 package commands
 
 import (
-	sharedutil "github.com/kynoproj/kyno-mesh/pkg/shared/util"
+	sharedutil "github.com/kynoproj/kynomesh/pkg/shared/util"
 
 	"github.com/spf13/cobra"
 )
@@ -31,12 +31,12 @@ func NewControllerCommand() *cobra.Command {
 
 	command := &cobra.Command{
 		Use:   "controller",
-		Short: "Start a kyno-mesh controller",
+		Short: "Start a kynomesh controller",
 		Run: func(cmd *cobra.Command, args []string) {
 			// ctrlcmd.Start(namespaced, managedNamespace)
 		},
 	}
-	command.Flags().BoolVar(&namespaced, "namespaced", sharedutil.LookupEnvBoolOr("KYNO_MESH_CONTROLLER_NAMESPACED", false), "Whether to run in namespaced scope, defaults to false.")
-	command.Flags().StringVar(&managedNamespace, "managed-namespace", sharedutil.LookupEnvStringOr("KYNO_MESH_CONTROLLER_MANAGED_NAMESPACE", sharedutil.LookupEnvStringOr("NAMESPACE", "kyno-mesh")), "The namespace that the controller watches when \"--namespaced\" is \"true\".")
+	command.Flags().BoolVar(&namespaced, "namespaced", sharedutil.LookupEnvBoolOr("KYNOMESH_CONTROLLER_NAMESPACED", false), "Whether to run in namespaced scope, defaults to false.")
+	command.Flags().StringVar(&managedNamespace, "managed-namespace", sharedutil.LookupEnvStringOr("KYNOMESH_CONTROLLER_MANAGED_NAMESPACE", sharedutil.LookupEnvStringOr("NAMESPACE", "kynomesh-system")), "The namespace that the controller watches when \"--namespaced\" is \"true\".")
 	return command
 }

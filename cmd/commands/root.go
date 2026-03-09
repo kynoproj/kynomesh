@@ -21,8 +21,8 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "kyno-mesh",
-	Short: "Kyno-mesh CLI",
+	Use:   "kynomesh",
+	Short: "Kynomesh CLI",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.HelpFunc()(cmd, args)
 	},

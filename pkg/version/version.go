@@ -60,7 +60,7 @@ func GetVersion() Version {
 		// information we have available.
 		versionStr = version
 		if len(gitCommit) >= 7 {
-			versionStr += "+" + gitCommit[0:7]
+			versionStr += "+" + gitCommit[:7]
 			if gitTreeState != "clean" {
 				versionStr += ".dirty"
 			}
