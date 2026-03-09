@@ -105,7 +105,8 @@ test:
 
 .PHONY: test-coverage
 test-coverage:
-	go test -v -timeout 7m -covermode=atomic -coverprofile=test/profile.cov $(shell go list ./... | grep -v /vendor/ | grep -v /kynomesh/test/ | grep -v /pkg/client/ | grep -v /pkg/proto/ | grep -v /hack/)
+	go test -v -timeout 7m -covermode=atomic -coverprofile=test/profile.cov $(shell go list ./... | grep -v /vendor/ | grep -v /kynomesh/test/ | grep -v /pkg/client/ | grep -v /pkg/proto/ |  grep -v /hack/)
+	cat test/profile.cov | grep -v /v1alpha1/generated | grep -v /v1alpha1/zz_generated > test/tmp_profile.cov && mv test/tmp_profile.cov test/profile.cov
 	go tool cover -func=test/profile.cov
 
 test-e2e:
