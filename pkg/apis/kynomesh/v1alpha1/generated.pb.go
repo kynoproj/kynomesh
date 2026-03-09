@@ -185,7 +185,7 @@ func (m *AgentSetStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = l
 	i = encodeVarintGenerated(dAtA, i, uint64(m.ObservedGeneration))
 	i--
-	dAtA[i] = 0x58
+	dAtA[i] = 0x30
 	if m.AgentCount != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.AgentCount))
 		i--
@@ -925,7 +925,7 @@ func (m *AgentSetStatus) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.AgentCount = &v
-		case 11:
+		case 6:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ObservedGeneration", wireType)
 			}

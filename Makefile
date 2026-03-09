@@ -135,7 +135,7 @@ cleanup-e2e:
 	kubectl -n kynomesh-system delete secret -lkynomesh-e2e=true --ignore-not-found=true
 	kubectl -n kynomesh-system delete po -lkynomesh-e2e=true --ignore-not-found=true
 
-# To run just one of the e2e tests by name (i.e. 'make TestCreateSimplePipeline'):
+# To run just one of the e2e tests by name (i.e. 'make TestCreateSimpleAgentSet'):
 Test%:
 	$(MAKE) cleanup-e2e
 	$(MAKE) image e2eapi-image
@@ -176,7 +176,7 @@ codegen:
 	./hack/update-codegen.sh
 	./hack/openapi-gen.sh
 	$(MAKE) swagger
-	#./hack/update-api-docs.sh
+	./hack/update-api-docs.sh
 	#$(MAKE) manifests
 	rm -rf ./vendor
 	go mod tidy

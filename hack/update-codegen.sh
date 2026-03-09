@@ -28,7 +28,7 @@ kube::codegen::gen_client \
     --output-dir "${REPO_ROOT}/pkg/client" \
     --output-pkg "${THIS_PKG}/pkg/client" \
     --boilerplate "${REPO_ROOT}/hack/boilerplate/boilerplate.go.txt" \
-    --plural-exceptions "Vertex:Vertices,MonoVertex:MonoVertices" \
+    --plural-exceptions "" \
     --one-input-api "kynomesh/v1alpha1" \
     "${REPO_ROOT}/pkg/apis"
 

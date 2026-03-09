@@ -45,12 +45,7 @@ const (
 // +kubebuilder:resource:shortName=as
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`
-// +kubebuilder:printcolumn:name="Vertices",type=integer,JSONPath=`.status.vertexCount`
-// +kubebuilder:printcolumn:name="Sources",type=integer,JSONPath=`.status.sourceCount`,priority=10
-// +kubebuilder:printcolumn:name="Sinks",type=integer,JSONPath=`.status.sinkCount`,priority=10
-// +kubebuilder:printcolumn:name="UDFs",type=integer,JSONPath=`.status.udfCount`,priority=10
-// +kubebuilder:printcolumn:name="Map UDFs",type=integer,JSONPath=`.status.mapUDFCount`,priority=10
-// +kubebuilder:printcolumn:name="Reduce UDFs",type=integer,JSONPath=`.status.reduceUDFCount`,priority=10
+// +kubebuilder:printcolumn:name="Agents",type=integer,JSONPath=`.status.AgentCount`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +kubebuilder:printcolumn:name="Message",type=string,JSONPath=`.status.message`
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -79,7 +74,7 @@ type AgentSetStatus struct {
 	AgentCount *uint32 `json:"agentCount,omitempty" protobuf:"varint,5,opt,name=agentCount"`
 	// The generation observed by the controller.
 	// +optional
-	ObservedGeneration int64 `json:"observedGeneration,omitempty" protobuf:"varint,11,opt,name=observedGeneration"`
+	ObservedGeneration int64 `json:"observedGeneration,omitempty" protobuf:"varint,6,opt,name=observedGeneration"`
 }
 
 // +kubebuilder:object:root=true

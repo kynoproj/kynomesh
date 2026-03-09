@@ -5,7 +5,7 @@
 package tools
 
 import (
-	// _ "github.com/ahmetb/gen-crd-api-reference-docs"
+	_ "github.com/ahmetb/gen-crd-api-reference-docs"
 	_ "github.com/go-swagger/go-swagger/cmd/swagger"
 	_ "github.com/gogo/protobuf/gogoproto"
 	_ "github.com/gogo/protobuf/protoc-gen-gogo"

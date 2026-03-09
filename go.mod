@@ -3,6 +3,7 @@ module github.com/kynoproj/kynomesh
 go 1.26.0
 
 require (
+	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/go-swagger/go-swagger v0.33.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0
@@ -68,8 +69,10 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
+	github.com/pkg/errors v0.8.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
+	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sagikazarmark/locafero v0.10.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
@@ -102,7 +105,9 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.35.0 // indirect
+	k8s.io/gengo v0.0.0-20201203183100-97869a43a9d9 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250922181213-ec3ebc5fd46b // indirect
+	k8s.io/klog v0.2.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/utils v0.0.0-20251002143259-bc988d571ff4 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
