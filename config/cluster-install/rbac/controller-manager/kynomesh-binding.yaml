@@ -1,0 +1,16 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kynomesh-binding
+  labels:
+    app.kubernetes.io/name: kynomesh-controller-manager
+    app.kubernetes.io/part-of: kynomesh
+    app.kubernetes.io/component: controller-manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kynomesh-role
+subjects:
+  - kind: ServiceAccount
+    name: kynomesh-sa
+    namespace: kynomesh-system

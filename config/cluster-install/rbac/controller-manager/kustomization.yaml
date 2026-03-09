@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - kynomesh-aggregate-to-admin.yaml
+  - kynomesh-aggregate-to-edit.yaml
+  - kynomesh-aggregate-to-view.yaml
+  - kynomesh-cluster-role.yaml
+  - kynomesh-binding.yaml

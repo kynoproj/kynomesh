@@ -177,7 +177,7 @@ codegen:
 	./hack/openapi-gen.sh
 	$(MAKE) swagger
 	./hack/update-api-docs.sh
-	#$(MAKE) manifests
+	$(MAKE) manifests
 	rm -rf ./vendor
 	go mod tidy
 
@@ -194,7 +194,6 @@ manifests: crds
 	kubectl kustomize config/namespace-install > config/namespace-install.yaml
 	kubectl kustomize config/advanced-install/namespaced-controller > config/advanced-install/namespaced-controller-wo-crds.yaml
 	kubectl kustomize config/advanced-install/minimal-crds > config/advanced-install/minimal-crds.yaml
-	#kubectl kustomize config/extensions/webhook > config/validating-webhook-install.yaml
 
 $(GOPATH)/bin/golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOPATH)/bin v1.64.8

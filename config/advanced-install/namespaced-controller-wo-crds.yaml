@@ -1,0 +1,238 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kynomesh-sa
+---
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/component: controller-manager
+    app.kubernetes.io/name: kynomesh-controller-manager
+    app.kubernetes.io/part-of: kynomesh
+  name: kynomesh-role
+piVersion: rbac.authorization.k8s.io/v1
+rules:
+- apiGroups:
+  - kynomesh.kyno.sh
+  resources:
+  - agentsets
+  - agentsets/finalizers
+  - agentsets/status
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - pods/exec
+  - configmaps
+  - services
+  - persistentvolumeclaims
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - statefulsets
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - create
+  - get
+  - list
+  - watch
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: controller-manager
+    app.kubernetes.io/name: kynomesh-controller-manager
+    app.kubernetes.io/part-of: kynomesh
+  name: kynomesh-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kynomesh-role
+subjects:
+- kind: ServiceAccount
+  name: kynomesh-sa
+---
+apiVersion: v1
+data:
+  namespaced: "true"
+kind: ConfigMap
+metadata:
+  name: kynomesh-cmd-params-config
+---
+apiVersion: v1
+data:
+  controller-config.yaml: |
+    # "instance" configuration can be used to run multiple controllers
+    instance: ""
+    defaults:
+      containerResources: |
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
+kind: ConfigMap
+metadata:
+  name: kynomesh-controller-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kynomesh-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: controller-manager
+      app.kubernetes.io/name: controller-manager
+      app.kubernetes.io/part-of: kynomesh
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: controller-manager
+        app.kubernetes.io/name: controller-manager
+        app.kubernetes.io/part-of: kynomesh
+    spec:
+      containers:
+      - args:
+        - controller
+        env:
+        - name: KYNOMESH_IMAGE
+          value: quay.io/kynoproj/kynomesh:latest
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: KYNOMESH_CONTROLLER_NAMESPACED
+          valueFrom:
+            configMapKeyRef:
+              key: namespaced
+              name: kynomesh-cmd-params-config
+              optional: true
+        - name: KYNOMESH_CONTROLLER_MANAGED_NAMESPACE
+          valueFrom:
+            configMapKeyRef:
+              key: managed.namespace
+              name: kynomesh-cmd-params-config
+              optional: true
+        - name: KYNOMESH_LEADER_ELECTION_DISABLED
+          valueFrom:
+            configMapKeyRef:
+              key: controller.leader.election.disabled
+              name: kynomesh-cmd-params-config
+              optional: true
+        - name: KYNOMESH_LEADER_ELECTION_LEASE_DURATION
+          valueFrom:
+            configMapKeyRef:
+              key: controller.leader.election.lease.duration
+              name: kynomesh-cmd-params-config
+              optional: true
+        - name: KYNOMESH_LEADER_ELECTION_LEASE_RENEW_DEADLINE
+          valueFrom:
+            configMapKeyRef:
+              key: controller.leader.election.lease.renew.deadline
+              name: kynomesh-cmd-params-config
+              optional: true
+        - name: KYNOMESH_LEADER_ELECTION_LEASE_RENEW_PERIOD
+          valueFrom:
+            configMapKeyRef:
+              key: controller.leader.election.lease.renew.period
+              name: kynomesh-cmd-params-config
+              optional: true
+        image: quay.io/kynoproj/kynomesh:latest
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        name: controller-manager
+        ports:
+        - containerPort: 9090
+          name: metrics
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1024Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        volumeMounts:
+        - mountPath: /etc/kynomesh
+          name: controller-config-volume
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 9731
+      serviceAccountName: kynomesh-sa
+      volumes:
+      - configMap:
+          name: kynomesh-controller-config
+        name: controller-config-volume

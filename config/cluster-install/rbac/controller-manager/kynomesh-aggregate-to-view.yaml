@@ -1,0 +1,17 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+  name: kynomesh-aggregate-to-view
+rules:
+  - apiGroups:
+      - kynomesh.kyno.sh
+    resources:
+      - agentsets
+      - agentsets/finalizers
+      - agentsets/status
+    verbs:
+      - get
+      - list
+      - watch

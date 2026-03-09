@@ -1,0 +1,22 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+  name: kynomesh-aggregate-to-admin
+rules:
+  - apiGroups:
+      - kynomesh.kyno.sh
+    resources:
+      - agentsets
+      - agentsets/finalizers
+      - agentsets/status
+    verbs:
+      - create
+      - delete
+      - deletecollection
+      - get
+      - list
+      - patch
+      - update
+      - watch
