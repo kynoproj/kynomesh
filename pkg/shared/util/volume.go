@@ -142,7 +142,7 @@ func findTypesRecursive(result *[]interface{}, obj reflect.Value, t reflect.Type
 		*result = append(*result, obj.Interface())
 	}
 	switch obj.Kind() {
-	case reflect.Ptr:
+	case reflect.Pointer:
 		objValue := obj.Elem()
 		// Check if it is nil
 		if !objValue.IsValid() {
