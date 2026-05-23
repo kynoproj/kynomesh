@@ -22,6 +22,10 @@ rules:
       - agentsets
       - agentsets/finalizers
       - agentsets/status
+      - agentdeploys
+      - agentdeploys/finalizers
+      - agentdeploys/status
+      - agentdeploys/scale
   - apiGroups:
       - coordination.k8s.io
     resources:

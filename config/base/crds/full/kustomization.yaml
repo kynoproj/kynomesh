@@ -3,3 +3,4 @@ kind: Kustomization
 
 resources:
   - kynomesh.kyno.sh_agentsets.yaml
+  - kynomesh.kyno.sh_agentdeploys.yaml
