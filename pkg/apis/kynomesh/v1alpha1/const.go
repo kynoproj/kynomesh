@@ -15,3 +15,17 @@ limitations under the License.
 */
 
 package v1alpha1
+
+const (
+	Project = "kynomesh"
+
+	// label/annotation keys.
+	KeyHash             = "kynomesh.kyno.sh/hash" // hash of the object
+	KeyComponent        = "app.kubernetes.io/component"
+	KeyPartOf           = "app.kubernetes.io/part-of"
+	KeyManagedBy        = "app.kubernetes.io/managed-by"
+	KeyAppName          = "app.kubernetes.io/name"
+	KeyAgentSetName     = "kynomesh.kyno.sh/agentset-name"
+	KeyReplica          = "kynomesh.kyno.sh/replica"
+	KeyDefaultContainer = "kubectl.kubernetes.io/default-container"
+)

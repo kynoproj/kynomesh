@@ -145,3 +145,30 @@ func Test_IsReady(t *testing.T) {
 	s.MarkFalse("type2", "reason", "msg")
 	assert.False(t, s.IsReady())
 }
+
+func Test_IsReady_EmptyConditions(t *testing.T) {
+	s := &Status{}
+	assert.False(t, s.IsReady())
+}
+
+func Test_setCondition_NoChange(t *testing.T) {
+	s := &Status{}
+	s.setCondition(metav1.Condition{
+		Type:    "test-type",
+		Status:  "status",
+		Reason:  "reason",
+		Message: "message",
+	})
+	assert.Equal(t, 1, len(s.Conditions))
+	originalTime := s.Conditions[0].LastTransitionTime
+
+	// Set the same condition again - should be a no-op (early return)
+	s.setCondition(metav1.Condition{
+		Type:    "test-type",
+		Status:  "status",
+		Reason:  "reason",
+		Message: "message",
+	})
+	assert.Equal(t, 1, len(s.Conditions))
+	assert.Equal(t, originalTime, s.Conditions[0].LastTransitionTime)
+}
