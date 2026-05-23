@@ -156,6 +156,20 @@ message AbstractPodTemplate {
   repeated .k8s.io.api.core.v1.PodResourceClaim resourceClaims = 14;
 }
 
+// +genclient
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:shortName=ad
+// +kubebuilder:subresource:status
+// +kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.replicas,selectorpath=.status.selector
+// +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`
+// +kubebuilder:printcolumn:name="Desired",type=string,JSONPath=`.status.desiredReplicas`
+// +kubebuilder:printcolumn:name="Current",type=string,JSONPath=`.status.replicas`
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.readyReplicas`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+// +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.reason`
+// +kubebuilder:printcolumn:name="Message",type=string,JSONPath=`.status.message`
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:openapi-gen=true
 message AgentDeploy {
   optional .k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
@@ -163,6 +177,14 @@ message AgentDeploy {
 
   // +optional
   optional AgentDeployStatus status = 3;
+}
+
+// +kubebuilder:object:root=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+message AgentDeployList {
+  optional .k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
+
+  repeated AgentDeploy items = 2;
 }
 
 message AgentDeploySpec {

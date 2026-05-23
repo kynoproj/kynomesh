@@ -27,6 +27,10 @@ type FakeKynomeshV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeKynomeshV1alpha1) AgentDeploys(namespace string) v1alpha1.AgentDeployInterface {
+	return newFakeAgentDeploys(c, namespace)
+}
+
 func (c *FakeKynomeshV1alpha1) AgentSets(namespace string) v1alpha1.AgentSetInterface {
 	return newFakeAgentSets(c, namespace)
 }

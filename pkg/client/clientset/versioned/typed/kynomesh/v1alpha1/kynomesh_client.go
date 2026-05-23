@@ -27,12 +27,17 @@ import (
 
 type KynomeshV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	AgentDeploysGetter
 	AgentSetsGetter
 }
 
 // KynomeshV1alpha1Client is used to interact with features provided by the kynomesh.kyno.sh group.
 type KynomeshV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *KynomeshV1alpha1Client) AgentDeploys(namespace string) AgentDeployInterface {
+	return newAgentDeploys(c, namespace)
 }
 
 func (c *KynomeshV1alpha1Client) AgentSets(namespace string) AgentSetInterface {

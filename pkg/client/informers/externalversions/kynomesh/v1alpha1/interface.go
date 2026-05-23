@@ -23,6 +23,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// AgentDeploys returns a AgentDeployInformer.
+	AgentDeploys() AgentDeployInformer
 	// AgentSets returns a AgentSetInformer.
 	AgentSets() AgentSetInformer
 }
@@ -36,6 +38,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// AgentDeploys returns a AgentDeployInformer.
+func (v *version) AgentDeploys() AgentDeployInformer {
+	return &agentDeployInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // AgentSets returns a AgentSetInformer.

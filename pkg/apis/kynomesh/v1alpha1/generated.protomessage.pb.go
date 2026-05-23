@@ -27,6 +27,8 @@ func (*AbstractPodTemplate) ProtoMessage() {}
 
 func (*AgentDeploy) ProtoMessage() {}
 
+func (*AgentDeployList) ProtoMessage() {}
+
 func (*AgentDeploySpec) ProtoMessage() {}
 
 func (*AgentDeployStatus) ProtoMessage() {}

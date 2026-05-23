@@ -52,6 +52,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=kynomesh.kyno.sh, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("agentdeploys"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Kynomesh().V1alpha1().AgentDeploys().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("agentsets"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Kynomesh().V1alpha1().AgentSets().Informer()}, nil
 

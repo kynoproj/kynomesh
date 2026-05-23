@@ -30,6 +30,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AbstractAgentDeploy":   schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AbstractPodTemplate":   schema_pkg_apis_kynomesh_v1alpha1_AbstractPodTemplate(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentDeploy":           schema_pkg_apis_kynomesh_v1alpha1_AgentDeploy(ref),
+		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentDeployList":       schema_pkg_apis_kynomesh_v1alpha1_AgentDeployList(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentDeploySpec":       schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentDeployStatus":     schema_pkg_apis_kynomesh_v1alpha1_AgentDeployStatus(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentDeployTemplate":   schema_pkg_apis_kynomesh_v1alpha1_AgentDeployTemplate(ref),
@@ -467,6 +468,54 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploy(ref common.ReferenceCallback)
 		},
 		Dependencies: []string{
 			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentDeploySpec", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentDeployStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_kynomesh_v1alpha1_AgentDeployList(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"),
+						},
+					},
+					"items": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentDeploy"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"items"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentDeploy", "k8s.io/apimachinery/pkg/apis/meta/v1.ListMeta"},
 	}
 }
 

@@ -1,0 +1,136 @@
+name: test
+on:
+  push:
+    branches:
+      - "main"
+      - "release-*"
+  pull_request:
+    branches: [main]
+jobs:
+  codegen:
+    name: Codegen
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Restore go build cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-v1-${{ hashFiles('**/go.mod') }}
+      - name: Setup Golang
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - name: Add bins to PATH
+        run: |
+          echo /home/runner/go/bin >> $GITHUB_PATH
+          echo /usr/local/bin >> $GITHUB_PATH
+      - name: Get dependencies
+        run: go mod download
+      - name: Make codegen
+        run: |
+          echo 'GOPATH=/home/runner/go' >> $GITHUB_ENV
+          make -B codegen
+      - name: Ensure nothing changed
+        run: git diff --exit-code
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+        id: go
+
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Restore Go build cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-v1-${{ github.run_id }}
+
+      - name: Get dependencies
+        run: go mod download -x
+
+      - name: Test Go
+        run: make test-coverage
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./test/profile.cov,./rust/target/debug/coverage/lcov.info
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GOPATH: /home/runner/go
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Golang
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - name: Restore Go build cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-v1-${{ github.run_id }}
+      - run: make lint
+      - run: git diff --exit-code
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 13
+      matrix:
+        case: [e2e]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Restore go build cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-v2-${{ hashFiles('**/go.mod') }}
+      - name: Setup Golang
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - name: Add bins to PATH
+        run: |
+          echo /home/runner/go/bin >> $GITHUB_PATH
+          echo /usr/local/bin >> $GITHUB_PATH
+      - name: Install k3d
+        run:
+          curl -sfL
+          https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash &
+      - name: Create a cluster
+        run: |
+          k3d cluster create e2e
+          k3d kubeconfig get e2e > ~/.kube/kynomesh-e2e-config
+      - name: Install Kynomesh
+        env:
+          GOPATH: /home/runner/go
+        run: |
+          KUBECONFIG=~/.kube/kynomesh-e2e-config VERSION=${{ github.sha }} make start
+      - name: Run tests
+        env:
+          GOPATH: /home/runner/go
+        run:
+          KUBECONFIG=~/.kube/kynomesh-e2e-config VERSION=${{ github.sha }} make
+          test-${{matrix.case}}

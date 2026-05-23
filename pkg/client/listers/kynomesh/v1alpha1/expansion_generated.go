@@ -17,6 +17,14 @@ limitations under the License.
 
 package v1alpha1
 
+// AgentDeployListerExpansion allows custom methods to be added to
+// AgentDeployLister.
+type AgentDeployListerExpansion interface{}
+
+// AgentDeployNamespaceListerExpansion allows custom methods to be added to
+// AgentDeployNamespaceLister.
+type AgentDeployNamespaceListerExpansion interface{}
+
 // AgentSetListerExpansion allows custom methods to be added to
 // AgentSetLister.
 type AgentSetListerExpansion interface{}

@@ -11,10 +11,34 @@ spec:
     kind: AgentDeploy
     listKind: AgentDeployList
     plural: agentdeploys
+    shortNames:
+    - ad
     singular: agentdeploy
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .status.desiredReplicas
+      name: Desired
+      type: string
+    - jsonPath: .status.replicas
+      name: Current
+      type: string
+    - jsonPath: .status.readyReplicas
+      name: Ready
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    - jsonPath: .status.reason
+      name: Reason
+      type: string
+    - jsonPath: .status.message
+      name: Message
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -3239,3 +3263,9 @@ spec:
         type: object
     served: true
     storage: true
+    subresources:
+      scale:
+        labelSelectorPath: .status.selector
+        specReplicasPath: .spec.replicas
+        statusReplicasPath: .status.replicas
+      status: {}
