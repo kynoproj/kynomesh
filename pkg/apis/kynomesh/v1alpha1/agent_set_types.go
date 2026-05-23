@@ -60,6 +60,16 @@ type AgentSet struct {
 }
 
 type AgentSetSpec struct {
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	Agents []AbstractAgentDeploy `json:"agents,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,rep,name=agents"`
+	// Templates are used to customize additional kubernetes resources required for the Pipeline
+	// +optional
+	Templates *Templates `json:"templates,omitempty" protobuf:"bytes,2,opt,name=templates"`
+}
+
+type Templates struct {
+	AgentDeployTemplate *AgentDeployTemplate `json:"agent,omitempty" protobuf:"bytes,1,opt,name=agent"`
 }
 
 type AgentSetStatus struct {

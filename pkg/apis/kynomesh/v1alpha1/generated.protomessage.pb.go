@@ -21,6 +21,18 @@ limitations under the License.
 
 package v1alpha1
 
+func (*AbstractAgentDeploy) ProtoMessage() {}
+
+func (*AbstractPodTemplate) ProtoMessage() {}
+
+func (*AgentDeploy) ProtoMessage() {}
+
+func (*AgentDeploySpec) ProtoMessage() {}
+
+func (*AgentDeployStatus) ProtoMessage() {}
+
+func (*AgentDeployTemplate) ProtoMessage() {}
+
 func (*AgentSet) ProtoMessage() {}
 
 func (*AgentSetList) ProtoMessage() {}
@@ -29,4 +41,16 @@ func (*AgentSetSpec) ProtoMessage() {}
 
 func (*AgentSetStatus) ProtoMessage() {}
 
+func (*ContainerTemplate) ProtoMessage() {}
+
+func (*Metadata) ProtoMessage() {}
+
+func (*RollingUpdateStrategy) ProtoMessage() {}
+
+func (*Scale) ProtoMessage() {}
+
 func (*Status) ProtoMessage() {}
+
+func (*Templates) ProtoMessage() {}
+
+func (*UpdateStrategy) ProtoMessage() {}
