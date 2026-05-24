@@ -43,7 +43,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -79,11 +79,11 @@ type Reconciler struct {
 	client.Client
 	scheme   *runtime.Scheme
 	logger   *zap.SugaredLogger
-	recorder record.EventRecorder
+	recorder events.EventRecorder
 }
 
 // NewReconciler returns a Reconciler bound to the supplied client and scheme.
-func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredLogger, recorder record.EventRecorder) *Reconciler {
+func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredLogger, recorder events.EventRecorder) *Reconciler {
 	if logger == nil {
 		logger = logging.NewLogger().Named(ControllerName)
 	}
@@ -233,7 +233,7 @@ func (r *Reconciler) createPodForReplica(ctx context.Context, ad *kmv1.AgentDepl
 	if err := r.Create(ctx, pod); err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to create pod for replica %d: %w", replica, err)
 	}
-	r.recorder.Eventf(ad, corev1.EventTypeNormal, "CreatedPod", "Created pod %s (replica %d)", pod.Name, replica)
+	r.recorder.Eventf(ad, nil, corev1.EventTypeNormal, "CreatedPod", "CreatePod", "Created pod %s (replica %d)", pod.Name, replica)
 	return nil
 }
 
@@ -244,7 +244,7 @@ func (r *Reconciler) deletePod(ctx context.Context, ad *kmv1.AgentDeploy, p *cor
 	if err := r.Delete(ctx, p); err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete pod %s: %w", p.Name, err)
 	}
-	r.recorder.Eventf(ad, corev1.EventTypeNormal, "DeletedPod", "Deleted pod %s (%s)", p.Name, reason)
+	r.recorder.Eventf(ad, nil, corev1.EventTypeNormal, "DeletedPod", "DeletePod", "Deleted pod %s (%s)", p.Name, reason)
 	return nil
 }
 
@@ -262,7 +262,7 @@ func (r *Reconciler) reconcileService(ctx context.Context, ad *kmv1.AgentDeploy)
 		if createErr := r.Create(ctx, desired); createErr != nil && !apierrors.IsAlreadyExists(createErr) {
 			return fmt.Errorf("failed to create headless service: %w", createErr)
 		}
-		r.recorder.Eventf(ad, corev1.EventTypeNormal, "CreatedService", "Created headless service %s", desired.Name)
+		r.recorder.Eventf(ad, nil, corev1.EventTypeNormal, "CreatedService", "CreateService", "Created headless service %s", desired.Name)
 		return nil
 	}
 	if err != nil {
@@ -277,7 +277,7 @@ func (r *Reconciler) reconcileService(ctx context.Context, ad *kmv1.AgentDeploy)
 	if err := r.Create(ctx, desired); err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to recreate headless service: %w", err)
 	}
-	r.recorder.Eventf(ad, corev1.EventTypeNormal, "UpdatedService", "Recreated headless service %s on spec drift", desired.Name)
+	r.recorder.Eventf(ad, nil, corev1.EventTypeNormal, "UpdatedService", "UpdateService", "Recreated headless service %s on spec drift", desired.Name)
 	return nil
 }
 
@@ -537,9 +537,7 @@ func removeFinalizer(ad *kmv1.AgentDeploy) {
 
 type noopRecorder struct{}
 
-func (noopRecorder) Event(runtime.Object, string, string, string)          {}
-func (noopRecorder) Eventf(runtime.Object, string, string, string, ...any) {}
-func (noopRecorder) AnnotatedEventf(runtime.Object, map[string]string, string, string, string, ...any) {
+func (noopRecorder) Eventf(runtime.Object, runtime.Object, string, string, string, string, ...any) {
 }
 
 var _ reconcile.Reconciler = (*Reconciler)(nil)

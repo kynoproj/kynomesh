@@ -137,8 +137,7 @@ func registerAgentSetController(mgr manager.Manager, logger *zap.SugaredLogger) 
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		logger.Named(agentset.ControllerName),
-		//nolint:staticcheck // SA1019: GetEventRecorderFor is the stable API; GetEventRecorder uses a different type.
-		mgr.GetEventRecorderFor(agentset.ControllerName),
+		mgr.GetEventRecorder(agentset.ControllerName),
 	)
 
 	c, err := controller.New(agentset.ControllerName, mgr, controller.Options{
@@ -197,8 +196,7 @@ func registerAgentDeployController(mgr manager.Manager, logger *zap.SugaredLogge
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		logger.Named(agentdeploy.ControllerName),
-		//nolint:staticcheck // SA1019: GetEventRecorderFor is the stable API; GetEventRecorder uses a different type.
-		mgr.GetEventRecorderFor(agentdeploy.ControllerName),
+		mgr.GetEventRecorder(agentdeploy.ControllerName),
 	)
 
 	c, err := controller.New(agentdeploy.ControllerName, mgr, controller.Options{

@@ -34,7 +34,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -61,12 +61,12 @@ type Reconciler struct {
 	client.Client
 	scheme   *runtime.Scheme
 	logger   *zap.SugaredLogger
-	recorder record.EventRecorder
+	recorder events.EventRecorder
 }
 
 // NewReconciler returns a Reconciler bound to the supplied controller-runtime
 // client and scheme.
-func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredLogger, recorder record.EventRecorder) *Reconciler {
+func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredLogger, recorder events.EventRecorder) *Reconciler {
 	if logger == nil {
 		logger = logging.NewLogger().Named(ControllerName)
 	}
@@ -181,7 +181,7 @@ func (r *Reconciler) applyDesiredState(
 			if err := r.Create(ctx, want); err != nil && !apierrors.IsAlreadyExists(err) {
 				return fmt.Errorf("failed to create AgentDeploy %s: %w", name, err)
 			}
-			r.recorder.Eventf(as, corev1.EventTypeNormal, "CreatedAgentDeploy", "Created AgentDeploy %s", name)
+			r.recorder.Eventf(as, nil, corev1.EventTypeNormal, "CreatedAgentDeploy", "CreateAgentDeploy", "Created AgentDeploy %s", name)
 			continue
 		}
 		if !needsUpdate(got, want) {
@@ -195,7 +195,7 @@ func (r *Reconciler) applyDesiredState(
 		if err := r.Update(ctx, updated); err != nil {
 			return fmt.Errorf("failed to update AgentDeploy %s: %w", name, err)
 		}
-		r.recorder.Eventf(as, corev1.EventTypeNormal, "UpdatedAgentDeploy", "Updated AgentDeploy %s", name)
+		r.recorder.Eventf(as, nil, corev1.EventTypeNormal, "UpdatedAgentDeploy", "UpdateAgentDeploy", "Updated AgentDeploy %s", name)
 	}
 
 	for name, got := range existing {
@@ -205,7 +205,7 @@ func (r *Reconciler) applyDesiredState(
 		if err := r.Delete(ctx, got); err != nil && !apierrors.IsNotFound(err) {
 			return fmt.Errorf("failed to delete orphan AgentDeploy %s: %w", name, err)
 		}
-		r.recorder.Eventf(as, corev1.EventTypeNormal, "DeletedAgentDeploy", "Deleted orphan AgentDeploy %s", name)
+		r.recorder.Eventf(as, nil, corev1.EventTypeNormal, "DeletedAgentDeploy", "DeleteAgentDeploy", "Deleted orphan AgentDeploy %s", name)
 	}
 	return nil
 }
