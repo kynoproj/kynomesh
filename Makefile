@@ -116,9 +116,7 @@ ifndef SKIP_IMAGE_BUILD
 	# Skip building image in CI since the image would have been built during "make start"
 	$(MAKE) image
 endif
-	$(MAKE) e2eapi-image
 	$(MAKE) restart-control-plane-components
-	cat test/manifests/e2e-api-pod.yaml | sed 's@quay.io/kynoproj/@$(IMAGE_NAMESPACE)/@' | sed 's/:latest/:$(VERSION)/' | kubectl -n kynomesh-system apply -f -
 	go generate $(shell find ./test/$* -name '*.go')
 	go test -v -timeout 20m -count 1 --tags test -p 1 ./test/$*
 	$(MAKE) cleanup-e2e
