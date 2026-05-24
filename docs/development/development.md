@@ -1,6 +1,6 @@
 # Development
 
-This doc explains how to set up a development environment for Numaflow.
+This doc explains how to set up a development environment for Kynomesh.
 
 ### Install required tools
 
@@ -40,8 +40,8 @@ kubectl patch -n kube-system deployment metrics-server --type=json -p '[{"op":"a
 
 ### Useful Commands
 
-- `make start` Build the source code, image, and install the Numaflow controller
-  in the `numaflow-system` namespace.
+- `make start` Build the source code, image, and install the Kynomesh controller
+  in the `kynomesh-system` namespace.
 
 - `make build` Binaries are placed in `./dist`.
 
