@@ -23,6 +23,7 @@ package cmd
 import (
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -37,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy"
 	"github.com/kynoproj/kynomesh/pkg/reconciler/agentset"
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 	sharedutil "github.com/kynoproj/kynomesh/pkg/shared/util"
@@ -99,6 +101,9 @@ func Start(namespaced bool, managedNamespace string) {
 
 	if err := registerAgentSetController(mgr, logger); err != nil {
 		logger.Fatalw("failed to register AgentSet controller", "err", err)
+	}
+	if err := registerAgentDeployController(mgr, logger); err != nil {
+		logger.Fatalw("failed to register AgentDeploy controller", "err", err)
 	}
 
 	logger.Infow("starting controller-manager",
@@ -166,6 +171,80 @@ func registerAgentSetController(mgr manager.Manager, logger *zap.SugaredLogger) 
 			handler.OnlyControllerOwner(),
 		),
 		predicate.TypedResourceVersionChangedPredicate[*kmv1.AgentDeploy]{},
+	)); err != nil {
+		return err
+	}
+	return nil
+}
+
+// registerAgentDeployController wires the AgentDeploy reconciler into the
+// manager. Same pattern as registerAgentSetController — controller.New
+// plus explicit Watch calls — so the per-source handler / predicate choice
+// is visible at the call site.
+//
+// Watches:
+//
+//   - AgentDeploy (primary): enqueue self on spec or label changes.
+//
+//   - Pod (owned): enqueue the controlling AgentDeploy on any meaningful
+//     change. We care about phase / Ready condition flips, not just spec,
+//     so ResourceVersionChangedPredicate is the right filter.
+//
+//   - Service (owned): enqueue the controlling AgentDeploy if the headless
+//     service is mutated or deleted out from under us.
+func registerAgentDeployController(mgr manager.Manager, logger *zap.SugaredLogger) error {
+	r := agentdeploy.NewReconciler(
+		mgr.GetClient(),
+		mgr.GetScheme(),
+		logger.Named(agentdeploy.ControllerName),
+		//nolint:staticcheck // SA1019: GetEventRecorderFor is the stable API; GetEventRecorder uses a different type.
+		mgr.GetEventRecorderFor(agentdeploy.ControllerName),
+	)
+
+	c, err := controller.New(agentdeploy.ControllerName, mgr, controller.Options{
+		Reconciler:              r,
+		MaxConcurrentReconciles: 1,
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := c.Watch(source.Kind(
+		mgr.GetCache(),
+		&kmv1.AgentDeploy{},
+		&handler.TypedEnqueueRequestForObject[*kmv1.AgentDeploy]{},
+		predicate.Or(
+			predicate.TypedGenerationChangedPredicate[*kmv1.AgentDeploy]{},
+			predicate.TypedLabelChangedPredicate[*kmv1.AgentDeploy]{},
+		),
+	)); err != nil {
+		return err
+	}
+
+	if err := c.Watch(source.Kind(
+		mgr.GetCache(),
+		&corev1.Pod{},
+		handler.TypedEnqueueRequestForOwner[*corev1.Pod](
+			mgr.GetScheme(),
+			mgr.GetRESTMapper(),
+			&kmv1.AgentDeploy{},
+			handler.OnlyControllerOwner(),
+		),
+		predicate.TypedResourceVersionChangedPredicate[*corev1.Pod]{},
+	)); err != nil {
+		return err
+	}
+
+	if err := c.Watch(source.Kind(
+		mgr.GetCache(),
+		&corev1.Service{},
+		handler.TypedEnqueueRequestForOwner[*corev1.Service](
+			mgr.GetScheme(),
+			mgr.GetRESTMapper(),
+			&kmv1.AgentDeploy{},
+			handler.OnlyControllerOwner(),
+		),
+		predicate.TypedResourceVersionChangedPredicate[*corev1.Service]{},
 	)); err != nil {
 		return err
 	}

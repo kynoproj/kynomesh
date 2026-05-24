@@ -1,0 +1,362 @@
+/*
+Copyright 2026 The Kynoproj Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package agentdeploy
+
+import (
+	"context"
+	"strconv"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
+)
+
+const testNamespace = "test-ns"
+
+func mustScheme(t *testing.T) *runtime.Scheme {
+	t.Helper()
+	scheme := runtime.NewScheme()
+	require.NoError(t, clientgoscheme.AddToScheme(scheme))
+	require.NoError(t, kmv1.AddToScheme(scheme))
+	return scheme
+}
+
+func newAgentDeploy(name string, replicas int32) *kmv1.AgentDeploy {
+	return &kmv1.AgentDeploy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       name,
+			Namespace:  testNamespace,
+			UID:        types.UID("uid-" + name),
+			Generation: 1,
+		},
+		Spec: kmv1.AgentDeploySpec{
+			AbstractAgentDeploy: kmv1.AbstractAgentDeploy{Name: name},
+			Replicas:            &replicas,
+		},
+	}
+}
+
+func newTestReconciler(t *testing.T, objs ...client.Object) (*Reconciler, client.Client) {
+	t.Helper()
+	scheme := mustScheme(t)
+	c := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(objs...).
+		WithStatusSubresource(&kmv1.AgentDeploy{}).
+		Build()
+	r := NewReconciler(c, scheme, nil, &record.FakeRecorder{})
+	return r, c
+}
+
+func reconcileRequest(name string) ctrl.Request {
+	return ctrl.Request{NamespacedName: types.NamespacedName{Namespace: testNamespace, Name: name}}
+}
+
+func listPods(t *testing.T, c client.Client) []corev1.Pod {
+	t.Helper()
+	var list corev1.PodList
+	require.NoError(t, c.List(context.Background(), &list, client.InNamespace(testNamespace)))
+	return list.Items
+}
+
+func TestNewPod_NamingAndDNSWiring(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	hash := "abc123"
+	pod := newPod(ad, 2, corev1.PodSpec{Containers: []corev1.Container{{Name: agentContainerName}}}, hash)
+
+	// Pod name: <deploy>-<replica>-<rand5>
+	assert.Regexp(t, `^greeter-2-[a-z0-9]{5}$`, pod.Name)
+	// Stable DNS hostname: <deploy>-<replica>
+	assert.Equal(t, "greeter-2", pod.Spec.Hostname)
+	assert.Equal(t, "greeter-headless", pod.Spec.Subdomain)
+	// Replica index carried in both label and annotation.
+	assert.Equal(t, "2", pod.Labels[kmv1.KeyReplica])
+	assert.Equal(t, "2", pod.Annotations[kmv1.KeyReplica])
+	assert.Equal(t, hash, pod.Annotations[kmv1.KeyHash])
+	assert.Equal(t, "greeter", pod.Labels[kmv1.KeyAppName])
+	assert.Equal(t, ControllerName, pod.Labels[kmv1.KeyManagedBy])
+	require.Len(t, pod.OwnerReferences, 1)
+	assert.True(t, *pod.OwnerReferences[0].Controller)
+}
+
+func TestNewPod_InheritsAgentSetLabel(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ad.Labels = map[string]string{kmv1.KeyAgentSetName: "greeter-set"}
+	pod := newPod(ad, 0, corev1.PodSpec{}, "h")
+	assert.Equal(t, "greeter-set", pod.Labels[kmv1.KeyAgentSetName])
+}
+
+func TestNewHeadlessService(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	svc := newHeadlessService(ad)
+	assert.Equal(t, "greeter-headless", svc.Name)
+	assert.Equal(t, corev1.ClusterIPNone, svc.Spec.ClusterIP)
+	assert.True(t, svc.Spec.PublishNotReadyAddresses)
+	assert.Equal(t, "greeter", svc.Spec.Selector[kmv1.KeyAppName])
+	require.Len(t, svc.OwnerReferences, 1)
+}
+
+func TestDesiredReplicas(t *testing.T) {
+	zero, neg := int32(0), int32(-3)
+	cases := []struct {
+		name string
+		in   *int32
+		want int
+	}{
+		{"nil defaults to 1", nil, 1},
+		{"zero", &zero, 0},
+		{"negative clamps to 0", &neg, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ad := &kmv1.AgentDeploy{Spec: kmv1.AgentDeploySpec{Replicas: tc.in}}
+			assert.Equal(t, tc.want, desiredReplicas(ad))
+		})
+	}
+}
+
+func TestGroupPodsByReplica(t *testing.T) {
+	pods := []*corev1.Pod{
+		{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{kmv1.KeyReplica: "0"}}},
+		{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{kmv1.KeyReplica: "1"}}},
+		{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{kmv1.KeyReplica: "1"}}}, // duplicate
+		{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{kmv1.KeyReplica: "notanint"}}},
+	}
+	grouped := groupPodsByReplica(pods)
+	assert.Len(t, grouped[0], 1)
+	assert.Len(t, grouped[1], 2)
+	assert.Len(t, grouped[-1], 1, "invalid annotation bucketed under -1")
+}
+
+func TestAddRemoveFinalizer(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	addFinalizer(ad)
+	addFinalizer(ad) // idempotent
+	assert.Equal(t, []string{FinalizerName}, ad.Finalizers)
+	removeFinalizer(ad)
+	assert.Empty(t, ad.Finalizers)
+}
+
+func TestReconcile_CreatesPodsAndService(t *testing.T) {
+	ad := newAgentDeploy("greeter", 3)
+	r, c := newTestReconciler(t, ad)
+
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	pods := listPods(t, c)
+	assert.Len(t, pods, 3, "one pod per replica")
+
+	indices := map[string]bool{}
+	for _, p := range pods {
+		indices[p.Annotations[kmv1.KeyReplica]] = true
+		require.Len(t, p.OwnerReferences, 1)
+		assert.True(t, *p.OwnerReferences[0].Controller)
+	}
+	assert.True(t, indices["0"] && indices["1"] && indices["2"])
+
+	var svc corev1.Service
+	require.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter-headless"}, &svc))
+	assert.Equal(t, corev1.ClusterIPNone, svc.Spec.ClusterIP)
+}
+
+func TestReconcile_ScaleUp(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	r, c := newTestReconciler(t, ad)
+
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	assert.Len(t, listPods(t, c), 1)
+
+	// Bump replicas to 3 and reconcile again.
+	var live kmv1.AgentDeploy
+	require.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter"}, &live))
+	three := int32(3)
+	live.Spec.Replicas = &three
+	require.NoError(t, c.Update(context.Background(), &live))
+
+	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	assert.Len(t, listPods(t, c), 3)
+}
+
+func TestReconcile_ScaleDown(t *testing.T) {
+	ad := newAgentDeploy("greeter", 3)
+	r, c := newTestReconciler(t, ad)
+
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	require.Len(t, listPods(t, c), 3)
+
+	var live kmv1.AgentDeploy
+	require.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter"}, &live))
+	one := int32(1)
+	live.Spec.Replicas = &one
+	require.NoError(t, c.Update(context.Background(), &live))
+
+	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	pods := listPods(t, c)
+	assert.Len(t, pods, 1)
+	assert.Equal(t, "0", pods[0].Annotations[kmv1.KeyReplica], "replica 0 should survive scale-down")
+}
+
+func TestReconcile_HashDriftRecreatesPod(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	r, c := newTestReconciler(t, ad)
+
+	// First reconcile creates the pod.
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	pods := listPods(t, c)
+	require.Len(t, pods, 1)
+	originalName := pods[0].Name
+
+	// Force a hash mismatch by overwriting the pod's stamped hash.
+	pods[0].Annotations[kmv1.KeyHash] = "stale"
+	require.NoError(t, c.Update(context.Background(), &pods[0]))
+
+	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	pods = listPods(t, c)
+	require.Len(t, pods, 1, "stale pod replaced by current-hash one")
+	assert.NotEqual(t, originalName, pods[0].Name, "delete-and-recreate produces a new name")
+	assert.NotEqual(t, "stale", pods[0].Annotations[kmv1.KeyHash])
+}
+
+func TestReconcile_DeletesOrphanedReplica(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	// Pre-seed an orphan pod at replica index 5 (well outside desired window).
+	orphan := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNamespace,
+			Name:      "greeter-5-zzzzz",
+			Labels: map[string]string{
+				kmv1.KeyAppName:   "greeter",
+				kmv1.KeyManagedBy: ControllerName,
+				kmv1.KeyReplica:   "5",
+			},
+			Annotations: map[string]string{kmv1.KeyReplica: "5"},
+		},
+	}
+	r, c := newTestReconciler(t, ad, orphan)
+
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	pods := listPods(t, c)
+	for _, p := range pods {
+		idx, _ := strconv.Atoi(p.Annotations[kmv1.KeyReplica])
+		assert.Less(t, idx, 1, "orphan replica index should be deleted")
+	}
+}
+
+func TestReconcile_ServiceDriftRecreates(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	r, c := newTestReconciler(t, ad)
+
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	var svc corev1.Service
+	require.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter-headless"}, &svc))
+	svc.Annotations[kmv1.KeyHash] = "stale"
+	require.NoError(t, c.Update(context.Background(), &svc))
+
+	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	var got corev1.Service
+	require.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter-headless"}, &got))
+	assert.NotEqual(t, "stale", got.Annotations[kmv1.KeyHash], "stale service should be replaced")
+}
+
+func TestReconcile_DeletionCleansEverything(t *testing.T) {
+	now := metav1.NewTime(time.Now())
+	ad := newAgentDeploy("greeter", 2)
+	ad.DeletionTimestamp = &now
+	ad.Finalizers = []string{FinalizerName}
+
+	// Seed existing children.
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNamespace,
+			Name:      "greeter-0-aaaaa",
+			Labels: map[string]string{
+				kmv1.KeyAppName:   "greeter",
+				kmv1.KeyManagedBy: ControllerName,
+				kmv1.KeyReplica:   "0",
+			},
+			Annotations: map[string]string{kmv1.KeyReplica: "0"},
+		},
+	}
+	svc := newHeadlessService(ad)
+	svc.Annotations[kmv1.KeyHash] = "x"
+
+	r, c := newTestReconciler(t, ad, pod, svc)
+
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	assert.Empty(t, listPods(t, c), "pods removed on deletion")
+	var lookup corev1.Service
+	err = c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter-headless"}, &lookup)
+	assert.Error(t, err, "headless service removed on deletion")
+}
+
+func TestReconcile_StatusReadyCount(t *testing.T) {
+	ad := newAgentDeploy("greeter", 2)
+	r, c := newTestReconciler(t, ad)
+
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	// Mark one pod ready, then re-reconcile.
+	pods := listPods(t, c)
+	require.Len(t, pods, 2)
+	pods[0].Status.Conditions = []corev1.PodCondition{{Type: corev1.PodReady, Status: corev1.ConditionTrue}}
+	require.NoError(t, c.Status().Update(context.Background(), &pods[0]))
+
+	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	var got kmv1.AgentDeploy
+	require.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter"}, &got))
+	assert.Equal(t, uint32(2), got.Status.DesiredReplicas)
+	assert.Equal(t, uint32(2), got.Status.Replicas)
+	assert.Equal(t, uint32(1), got.Status.ReadyReplicas)
+}
+
+func TestReconcile_NotFoundIsNoop(t *testing.T) {
+	r, _ := newTestReconciler(t)
+	res, err := r.Reconcile(context.Background(), reconcileRequest("missing"))
+	require.NoError(t, err)
+	assert.Equal(t, ctrl.Result{}, res)
+}
