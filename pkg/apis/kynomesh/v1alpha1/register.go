@@ -34,6 +34,9 @@ var (
 
 	AgentSetGroupVersionKind     = SchemeGroupVersion.WithKind("AgentSet")
 	AgentSetGroupVersionResource = SchemeGroupVersion.WithResource("agentsets")
+
+	AgentDeployGroupVersionKind     = SchemeGroupVersion.WithKind("AgentDeploy")
+	AgentDeployGroupVersionResource = SchemeGroupVersion.WithResource("agentdeploys")
 )
 
 // Resource takes an unqualified resource and returns a Group qualified GroupResource
@@ -45,6 +48,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&AgentSet{},
 		&AgentSetList{},
+		&AgentDeploy{},
+		&AgentDeployList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

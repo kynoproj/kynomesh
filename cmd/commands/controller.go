@@ -17,6 +17,7 @@ limitations under the License.
 package commands
 
 import (
+	ctrlcmd "github.com/kynoproj/kynomesh/pkg/reconciler/cmd"
 	sharedutil "github.com/kynoproj/kynomesh/pkg/shared/util"
 
 	"github.com/spf13/cobra"
@@ -33,7 +34,7 @@ func NewControllerCommand() *cobra.Command {
 		Use:   "controller",
 		Short: "Start a kynomesh controller",
 		Run: func(cmd *cobra.Command, args []string) {
-			// ctrlcmd.Start(namespaced, managedNamespace)
+			ctrlcmd.Start(namespaced, managedNamespace)
 		},
 	}
 	command.Flags().BoolVar(&namespaced, "namespaced", sharedutil.LookupEnvBoolOr("KYNOMESH_CONTROLLER_NAMESPACED", false), "Whether to run in namespaced scope, defaults to false.")
