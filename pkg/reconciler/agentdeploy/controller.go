@@ -79,6 +79,14 @@ const (
 	// (the Dockerfile installs it at /bin/kynomesh).
 	brokerBinaryPath = "/bin/kynomesh"
 
+	// EnvNamespace / EnvPodName are downward-API env vars the controller
+	// injects into every container of an AgentDeploy pod (agent, broker,
+	// and any user-supplied sidecars), so workloads can read their own
+	// pod identity without a downward-API mount. Names match what the
+	// controller itself consumes for self-discovery.
+	EnvNamespace = "NAMESPACE"
+	EnvPodName   = "POD_NAME"
+
 	// headlessServiceSuffix produces the per-deploy headless Service name.
 	headlessServiceSuffix = "-headless"
 
@@ -441,7 +449,64 @@ func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
 		Subdomain:      headlessServiceName(ad),
 	}
 	ad.Spec.ApplyToPodSpec(&ps)
+
+	// Inject downward-API env into every container so workloads can read
+	// their own pod identity. Done last so it covers user-supplied
+	// sidecars too. Built-in env always wins on key conflict — users must
+	// not be able to lie about their own pod identity.
+	builtin := downwardAPIEnv()
+	for i := range ps.Containers {
+		ps.Containers[i].Env = mergeEnv(ps.Containers[i].Env, builtin)
+	}
 	return ps
+}
+
+// downwardAPIEnv returns the env vars every AgentDeploy container receives:
+// NAMESPACE (the pod's namespace) and POD_NAME (the pod's name), both via
+// the downward API so no values need to be threaded through at build time.
+func downwardAPIEnv() []corev1.EnvVar {
+	return []corev1.EnvVar{
+		{
+			Name: EnvNamespace,
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.namespace"},
+			},
+		},
+		{
+			Name: EnvPodName,
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"},
+			},
+		},
+	}
+}
+
+// mergeEnv returns existing with overrides applied: any entry in overrides
+// replaces an entry in existing with the same Name, and anything not already
+// present is appended. overrides wins — used here to guarantee the controller's
+// downward-API env can't be shadowed by user-supplied values.
+func mergeEnv(existing, overrides []corev1.EnvVar) []corev1.EnvVar {
+	overrideByName := make(map[string]corev1.EnvVar, len(overrides))
+	for _, o := range overrides {
+		overrideByName[o.Name] = o
+	}
+	out := make([]corev1.EnvVar, 0, len(existing)+len(overrides))
+	seen := make(map[string]struct{}, len(existing))
+	for _, e := range existing {
+		if o, ok := overrideByName[e.Name]; ok {
+			out = append(out, o)
+		} else {
+			out = append(out, e)
+		}
+		seen[e.Name] = struct{}{}
+	}
+	for _, o := range overrides {
+		if _, ok := seen[o.Name]; ok {
+			continue
+		}
+		out = append(out, o)
+	}
+	return out
 }
 
 // newBrokerContainer builds the A2A broker sidecar. The image is supplied by

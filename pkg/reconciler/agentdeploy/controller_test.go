@@ -154,6 +154,69 @@ func TestBuildPodSpec_PreservesUserSidecarsAfterBroker(t *testing.T) {
 	assert.Equal(t, "user-sidecar", ps.Containers[2].Name)
 }
 
+func TestBuildPodSpec_InjectsDownwardAPIEnv(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
+	ps := buildPodSpec(ad, testBrokerImage)
+
+	for _, c := range ps.Containers {
+		t.Run(c.Name, func(t *testing.T) {
+			ns := findEnv(c.Env, EnvNamespace)
+			require.NotNil(t, ns, "expected NAMESPACE env on %s", c.Name)
+			require.NotNil(t, ns.ValueFrom)
+			require.NotNil(t, ns.ValueFrom.FieldRef)
+			assert.Equal(t, "metadata.namespace", ns.ValueFrom.FieldRef.FieldPath)
+
+			pn := findEnv(c.Env, EnvPodName)
+			require.NotNil(t, pn, "expected POD_NAME env on %s", c.Name)
+			require.NotNil(t, pn.ValueFrom)
+			require.NotNil(t, pn.ValueFrom.FieldRef)
+			assert.Equal(t, "metadata.name", pn.ValueFrom.FieldRef.FieldPath)
+		})
+	}
+}
+
+func TestBuildPodSpec_BuiltinEnvWinsOnConflict(t *testing.T) {
+	// Built-in identity env (NAMESPACE / POD_NAME) must always come from
+	// the downward API, even if the user tries to set them — workloads
+	// must not be able to misrepresent their own pod identity.
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.ContainerTemplate = &kmv1.ContainerTemplate{
+		Env: []corev1.EnvVar{{Name: EnvNamespace, Value: "user-override"}},
+	}
+	ps := buildPodSpec(ad, testBrokerImage)
+
+	agent := ps.Containers[0]
+	ns := findEnv(agent.Env, EnvNamespace)
+	require.NotNil(t, ns)
+	assert.Empty(t, ns.Value, "user-supplied literal must be replaced by the downward-API ref")
+	require.NotNil(t, ns.ValueFrom)
+	require.NotNil(t, ns.ValueFrom.FieldRef)
+	assert.Equal(t, "metadata.namespace", ns.ValueFrom.FieldRef.FieldPath)
+
+	// Built-in entry replaces the user entry in place — no duplicate key.
+	var nsCount int
+	for _, e := range agent.Env {
+		if e.Name == EnvNamespace {
+			nsCount++
+		}
+	}
+	assert.Equal(t, 1, nsCount, "merged env must not contain duplicate NAMESPACE entries")
+
+	pn := findEnv(agent.Env, EnvPodName)
+	require.NotNil(t, pn)
+	require.NotNil(t, pn.ValueFrom)
+}
+
+func findEnv(env []corev1.EnvVar, name string) *corev1.EnvVar {
+	for i := range env {
+		if env[i].Name == name {
+			return &env[i]
+		}
+	}
+	return nil
+}
+
 func TestNewHeadlessService(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	svc := newHeadlessService(ad)
