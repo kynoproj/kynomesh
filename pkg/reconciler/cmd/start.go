@@ -21,11 +21,19 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
+	"fmt"
+	"os"
+	"time"
+
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -58,6 +66,22 @@ const (
 	envLeaderElectionDisabled = "KYNOMESH_LEADER_ELECTION_DISABLED"
 	envMetricsAddr            = "KYNOMESH_METRICS_BIND_ADDRESS"
 	envProbeAddr              = "KYNOMESH_HEALTH_PROBE_BIND_ADDRESS"
+
+	// envPodName / envPodNamespace are downward-API env vars the controller
+	// Deployment is expected to set so the controller can look up its own
+	// pod and discover its image.
+	envPodName      = "POD_NAME"
+	envPodNamespace = "POD_NAMESPACE"
+
+	// controllerContainerName is the name of the controller container
+	// inside its own pod. Used to pick the right image when the pod has
+	// other containers (sidecars, etc.).
+	controllerContainerName = "controller-manager"
+
+	// imageDiscoveryTimeout caps the one-shot self-pod lookup at startup.
+	// If the API server is unreachable that long, fail fast — the
+	// controller can't function without it anyway.
+	imageDiscoveryTimeout = 30 * time.Second
 )
 
 // Start boots the controller manager. It blocks until the signal handler
@@ -98,7 +122,15 @@ func Start(namespaced bool, managedNamespace string) {
 		}
 	}
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), opts)
+	cfg := ctrl.GetConfigOrDie()
+
+	brokerImage, err := discoverControllerImage(cfg)
+	if err != nil {
+		logger.Fatalw("failed to discover controller image for broker sidecar", "err", err)
+	}
+	logger.Infow("discovered broker sidecar image", "image", brokerImage)
+
+	mgr, err := ctrl.NewManager(cfg, opts)
 	if err != nil {
 		logger.Fatalw("failed to create controller manager", "err", err)
 	}
@@ -113,7 +145,7 @@ func Start(namespaced bool, managedNamespace string) {
 	if err := registerAgentSetController(mgr, logger); err != nil {
 		logger.Fatalw("failed to register AgentSet controller", "err", err)
 	}
-	if err := registerAgentDeployController(mgr, logger); err != nil {
+	if err := registerAgentDeployController(mgr, logger, brokerImage); err != nil {
 		logger.Fatalw("failed to register AgentDeploy controller", "err", err)
 	}
 
@@ -123,6 +155,7 @@ func Start(namespaced bool, managedNamespace string) {
 		"leaderElection", opts.LeaderElection,
 		"metricsBindAddress", opts.Metrics.BindAddress,
 		"healthProbeBindAddress", opts.HealthProbeBindAddress,
+		"brokerImage", brokerImage,
 	)
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		logger.Fatalw("controller manager exited with error", "err", err)
@@ -202,12 +235,13 @@ func registerAgentSetController(mgr manager.Manager, logger *zap.SugaredLogger) 
 //
 //   - Service (owned): enqueue the controlling AgentDeploy if the headless
 //     service is mutated or deleted out from under us.
-func registerAgentDeployController(mgr manager.Manager, logger *zap.SugaredLogger) error {
+func registerAgentDeployController(mgr manager.Manager, logger *zap.SugaredLogger, brokerImage string) error {
 	r := agentdeploy.NewReconciler(
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		logger.Named(agentdeploy.ControllerName),
 		mgr.GetEventRecorder(agentdeploy.ControllerName),
+		brokerImage,
 	)
 
 	c, err := controller.New(agentdeploy.ControllerName, mgr, controller.Options{
@@ -272,4 +306,62 @@ func buildScheme(logger *zap.SugaredLogger) *runtime.Scheme {
 		logger.Fatalw("failed to register kynomesh types", "err", err)
 	}
 	return s
+}
+
+// discoverControllerImage reads the controller's own pod from the API server
+// and returns the image of the controller-manager container. The pod
+// coordinates are taken from the POD_NAME / POD_NAMESPACE env vars, which
+// the controller Deployment is expected to populate via the downward API.
+//
+// Failing at startup is the right behaviour: the controller cannot create
+// AgentDeploy pods without a broker image, so silent fallbacks would just
+// surface as broken pods later.
+func discoverControllerImage(cfg *rest.Config) (string, error) {
+	podName := os.Getenv(envPodName)
+	if podName == "" {
+		return "", fmt.Errorf("env %s is not set; the controller Deployment must expose it via downward API", envPodName)
+	}
+	podNamespace := os.Getenv(envPodNamespace)
+	if podNamespace == "" {
+		return "", fmt.Errorf("env %s is not set; the controller Deployment must expose it via downward API", envPodNamespace)
+	}
+
+	clientset, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return "", fmt.Errorf("failed to build kubernetes clientset: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), imageDiscoveryTimeout)
+	defer cancel()
+
+	pod, err := clientset.CoreV1().Pods(podNamespace).Get(ctx, podName, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to get own pod %s/%s: %w", podNamespace, podName, err)
+	}
+	return controllerImageFromPod(pod)
+}
+
+// controllerImageFromPod picks the image of the controller-manager container
+// out of a pod spec. If the pod has a single container we accept it; if
+// multiple, we look for one named controllerContainerName.
+func controllerImageFromPod(pod *corev1.Pod) (string, error) {
+	containers := pod.Spec.Containers
+	if len(containers) == 0 {
+		return "", fmt.Errorf("pod %s/%s has no containers", pod.Namespace, pod.Name)
+	}
+	if len(containers) == 1 {
+		if containers[0].Image == "" {
+			return "", fmt.Errorf("pod %s/%s container %q has empty image", pod.Namespace, pod.Name, containers[0].Name)
+		}
+		return containers[0].Image, nil
+	}
+	for _, c := range containers {
+		if c.Name == controllerContainerName {
+			if c.Image == "" {
+				return "", fmt.Errorf("pod %s/%s container %q has empty image", pod.Namespace, pod.Name, c.Name)
+			}
+			return c.Image, nil
+		}
+	}
+	return "", fmt.Errorf("pod %s/%s has no container named %q", pod.Namespace, pod.Name, controllerContainerName)
 }
