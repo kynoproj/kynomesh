@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -115,4 +116,84 @@ func TestPackageConstants(t *testing.T) {
 	assert.Equal(t, "KYNOMESH_LEADER_ELECTION_DISABLED", envLeaderElectionDisabled)
 	assert.Equal(t, "KYNOMESH_METRICS_BIND_ADDRESS", envMetricsAddr)
 	assert.Equal(t, "KYNOMESH_HEALTH_PROBE_BIND_ADDRESS", envProbeAddr)
+	assert.Equal(t, "POD_NAME", envPodName)
+}
+
+func TestControllerImageFromPod(t *testing.T) {
+	cases := []struct {
+		name      string
+		pod       *corev1.Pod
+		want      string
+		wantErr   bool
+		errSubstr string
+	}{
+		{
+			name: "single container — use it",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "p"},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{Name: "anything", Image: "img:v1"}},
+				},
+			},
+			want: "img:v1",
+		},
+		{
+			name: "multi container — match by name",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "p"},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "sidecar", Image: "side:v1"},
+						{Name: controllerContainerName, Image: "ctrl:v1"},
+					},
+				},
+			},
+			want: "ctrl:v1",
+		},
+		{
+			name: "no containers — error",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "p"},
+			},
+			wantErr:   true,
+			errSubstr: "no containers",
+		},
+		{
+			name: "multi container without controller-manager — error",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "p"},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{Name: "a", Image: "a:v1"},
+						{Name: "b", Image: "b:v1"},
+					},
+				},
+			},
+			wantErr:   true,
+			errSubstr: "no container named",
+		},
+		{
+			name: "single container with empty image — error",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "p"},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{Name: "a"}},
+				},
+			},
+			wantErr:   true,
+			errSubstr: "empty image",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := controllerImageFromPod(tc.pod)
+			if tc.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errSubstr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
 }

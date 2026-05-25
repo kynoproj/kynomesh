@@ -17,19 +17,6 @@ images:
 patches:
   # For release scripts
   - patch: |-
-      apiVersion: apps/v1
-      kind: Deployment
-      metadata:
-        name: kynomesh-controller
-      spec:
-        template:
-          spec:
-            containers:
-              - name: controller-manager
-                env:
-                  - name: KYNOMESH_IMAGE
-                    value: quay.io/kynoproj/kynomesh:latest
-  - patch: |-
       apiVersion: v1
       kind: ConfigMap
       metadata:

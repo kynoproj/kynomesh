@@ -9,18 +9,3 @@ resources:
 images:
   - name: quay.io/kynoproj/kynomesh
     newTag: latest
-
-patches:
-  - patch: |-
-      apiVersion: apps/v1
-      kind: Deployment
-      metadata:
-        name: kynomesh-controller
-      spec:
-        template:
-          spec:
-            containers:
-              - name: controller-manager
-                env:
-                  - name: KYNOMESH_IMAGE
-                    value: quay.io/kynoproj/kynomesh:latest

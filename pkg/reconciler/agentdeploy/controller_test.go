@@ -37,7 +37,10 @@ import (
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
-const testNamespace = "test-ns"
+const (
+	testNamespace   = "test-ns"
+	testBrokerImage = "quay.io/kynoproj/kynomesh:test"
+)
 
 func mustScheme(t *testing.T) *runtime.Scheme {
 	t.Helper()
@@ -70,7 +73,7 @@ func newTestReconciler(t *testing.T, objs ...client.Object) (*Reconciler, client
 		WithObjects(objs...).
 		WithStatusSubresource(&kmv1.AgentDeploy{}).
 		Build()
-	r := NewReconciler(c, scheme, nil, &events.FakeRecorder{})
+	r := NewReconciler(c, scheme, nil, &events.FakeRecorder{}, testBrokerImage)
 	return r, c
 }
 
@@ -110,6 +113,45 @@ func TestNewPod_InheritsAgentSetLabel(t *testing.T) {
 	ad.Labels = map[string]string{kmv1.KeyAgentSetName: "greeter-set"}
 	pod := newPod(ad, 0, corev1.PodSpec{}, "h")
 	assert.Equal(t, "greeter-set", pod.Labels[kmv1.KeyAgentSetName])
+}
+
+func TestBuildPodSpec_InjectsBrokerSidecar(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ps := buildPodSpec(ad, testBrokerImage)
+
+	// Container order must be [agent, broker, ...]. Anything else would
+	// change the default-container annotation contract.
+	require.GreaterOrEqual(t, len(ps.Containers), 2)
+	assert.Equal(t, agentContainerName, ps.Containers[0].Name)
+
+	broker := ps.Containers[1]
+	assert.Equal(t, brokerContainerName, broker.Name)
+	assert.Equal(t, testBrokerImage, broker.Image)
+	assert.Equal(t, []string{brokerBinaryPath}, broker.Command)
+	assert.Equal(t, []string{"broker"}, broker.Args)
+	require.Len(t, broker.Ports, 1)
+	assert.Equal(t, int32(brokerPort), broker.Ports[0].ContainerPort)
+	assert.Equal(t, corev1.ProtocolTCP, broker.Ports[0].Protocol)
+}
+
+func TestBuildPodSpec_BrokerImageInHash(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	a := buildPodSpec(ad, "image-a")
+	b := buildPodSpec(ad, "image-b")
+	// Different broker images must produce different pod specs so the
+	// hash-based drift detector rolls pods when the controller is upgraded.
+	assert.NotEqual(t, a, b)
+}
+
+func TestBuildPodSpec_PreservesUserSidecarsAfterBroker(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
+	ps := buildPodSpec(ad, testBrokerImage)
+
+	require.Len(t, ps.Containers, 3)
+	assert.Equal(t, agentContainerName, ps.Containers[0].Name)
+	assert.Equal(t, brokerContainerName, ps.Containers[1].Name)
+	assert.Equal(t, "user-sidecar", ps.Containers[2].Name)
 }
 
 func TestNewHeadlessService(t *testing.T) {

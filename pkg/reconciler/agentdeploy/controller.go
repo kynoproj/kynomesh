@@ -65,6 +65,20 @@ const (
 	// container. Sidecar / init containers keep whatever name the user gave.
 	agentContainerName = "agent"
 
+	// brokerContainerName is the name of the broker sidecar the controller
+	// injects into every AgentDeploy pod. The broker fronts the agent over
+	// the A2A protocol (JSON-RPC, REST, gRPC on one port).
+	brokerContainerName = "broker"
+
+	// brokerPort is the port the broker listens on inside each pod. Matches
+	// the broker CLI default (KYNOMESH_BROKER_PORT). Kept const so the
+	// headless-service DNS pattern + this port form a stable agent address.
+	brokerPort = 9100
+
+	// brokerBinaryPath is the in-image entrypoint of the kynomesh binary
+	// (the Dockerfile installs it at /bin/kynomesh).
+	brokerBinaryPath = "/bin/kynomesh"
+
 	// headlessServiceSuffix produces the per-deploy headless Service name.
 	headlessServiceSuffix = "-headless"
 
@@ -77,13 +91,19 @@ const (
 // Reconciler implements controller-runtime's reconcile.Reconciler.
 type Reconciler struct {
 	client.Client
-	scheme   *runtime.Scheme
-	logger   *zap.SugaredLogger
-	recorder events.EventRecorder
+	scheme      *runtime.Scheme
+	logger      *zap.SugaredLogger
+	recorder    events.EventRecorder
+	brokerImage string
 }
 
 // NewReconciler returns a Reconciler bound to the supplied client and scheme.
-func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredLogger, recorder events.EventRecorder) *Reconciler {
+//
+// brokerImage is the container image used for the A2A broker sidecar that the
+// controller injects into every AgentDeploy pod. It is captured once at
+// startup (discovered from the controller's own pod) so reconciliation does
+// not need to call the API server to find it.
+func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredLogger, recorder events.EventRecorder, brokerImage string) *Reconciler {
 	if logger == nil {
 		logger = logging.NewLogger().Named(ControllerName)
 	}
@@ -91,10 +111,11 @@ func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredL
 		recorder = noopRecorder{}
 	}
 	return &Reconciler{
-		Client:   c,
-		scheme:   scheme,
-		logger:   logger,
-		recorder: recorder,
+		Client:      c,
+		scheme:      scheme,
+		logger:      logger,
+		recorder:    recorder,
+		brokerImage: brokerImage,
 	}
 }
 
@@ -184,7 +205,7 @@ func (r *Reconciler) reconcilePods(ctx context.Context, ad *kmv1.AgentDeploy) er
 	desired := desiredReplicas(ad)
 	ad.Status.DesiredReplicas = uint32(desired)
 
-	desiredPodSpec := buildPodSpec(ad)
+	desiredPodSpec := buildPodSpec(ad, r.brokerImage)
 	desiredHash := sharedutil.MustHash(desiredPodSpec)
 	ad.Status.UpdateHash = desiredHash
 
@@ -396,16 +417,21 @@ func desiredReplicas(ad *kmv1.AgentDeploy) int {
 }
 
 // buildPodSpec composes the corev1.PodSpec from the AgentDeploy spec. It is
-// deterministic per (spec, template) so the hash over it is a meaningful
-// drift signal.
-func buildPodSpec(ad *kmv1.AgentDeploy) corev1.PodSpec {
+// deterministic per (spec, template, brokerImage) so the hash over it is a
+// meaningful drift signal — changing the broker image triggers a pod
+// recreate, just like changing the agent spec.
+//
+// Container order: [agent, broker, ...sidecars]. The broker sits between the
+// user's agent and any user-supplied sidecars so the conventional default
+// container annotation still points at "agent" for kubectl exec/logs.
+func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
 	agentContainer := corev1.Container{
 		Name: agentContainerName,
 	}
 	if ct := ad.Spec.ContainerTemplate; ct != nil {
 		ct.ApplyToContainer(&agentContainer)
 	}
-	containers := []corev1.Container{agentContainer}
+	containers := []corev1.Container{agentContainer, newBrokerContainer(brokerImage)}
 	containers = append(containers, ad.Spec.Sidecars...)
 
 	ps := corev1.PodSpec{
@@ -416,6 +442,23 @@ func buildPodSpec(ad *kmv1.AgentDeploy) corev1.PodSpec {
 	}
 	ad.Spec.ApplyToPodSpec(&ps)
 	return ps
+}
+
+// newBrokerContainer builds the A2A broker sidecar. The image is supplied by
+// the controller (typically discovered as the controller's own image) so the
+// broker stays bit-for-bit in sync with the controller release.
+func newBrokerContainer(image string) corev1.Container {
+	return corev1.Container{
+		Name:    brokerContainerName,
+		Image:   image,
+		Command: []string{brokerBinaryPath},
+		Args:    []string{"broker"},
+		Ports: []corev1.ContainerPort{{
+			Name:          "a2a",
+			ContainerPort: brokerPort,
+			Protocol:      corev1.ProtocolTCP,
+		}},
+	}
 }
 
 // newPod renders a corev1.Pod for the given replica index. The random
