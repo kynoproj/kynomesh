@@ -42,6 +42,7 @@ import (
 	"github.com/kynoproj/kynomesh/pkg/reconciler/agentset"
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 	sharedutil "github.com/kynoproj/kynomesh/pkg/shared/util"
+	"github.com/kynoproj/kynomesh/pkg/version"
 )
 
 const (
@@ -73,6 +74,16 @@ func Start(namespaced bool, managedNamespace string) {
 	// SetLogger") on any path that runs before the manager prints its
 	// startup banner.
 	ctrllog.SetLogger(zapr.NewLogger(logger.Desugar()))
+
+	v := version.GetVersion()
+	logger.Infow("Starting kynomesh controller",
+		"version", v.Version,
+		"buildDate", v.BuildDate,
+		"gitCommit", v.GitCommit,
+		"gitTreeState", v.GitTreeState,
+		"goVersion", v.GoVersion,
+		"platform", v.Platform,
+	)
 
 	opts := ctrl.Options{
 		Scheme:                 buildScheme(logger),
@@ -106,7 +117,7 @@ func Start(namespaced bool, managedNamespace string) {
 		logger.Fatalw("failed to register AgentDeploy controller", "err", err)
 	}
 
-	logger.Infow("starting controller-manager",
+	logger.Infow("Starting controller-manager",
 		"namespaced", namespaced,
 		"managedNamespace", managedNamespace,
 		"leaderElection", opts.LeaderElection,
