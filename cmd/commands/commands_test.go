@@ -41,6 +41,17 @@ func TestRootCmd_HasControllerSubcommand(t *testing.T) {
 	assert.True(t, found, "expected 'controller' subcommand to be registered on rootCmd")
 }
 
+func TestRootCmd_HasBrokerSubcommand(t *testing.T) {
+	var found bool
+	for _, sub := range rootCmd.Commands() {
+		if sub.Use == "broker" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected 'broker' subcommand to be registered on rootCmd")
+}
+
 func TestRootCmd_RunPrintsHelp(t *testing.T) {
 	var out bytes.Buffer
 	rootCmd.SetOut(&out)
