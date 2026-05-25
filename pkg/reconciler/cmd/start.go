@@ -71,7 +71,7 @@ const (
 	// Deployment is expected to set so the controller can look up its own
 	// pod and discover its image.
 	envPodName      = "POD_NAME"
-	envPodNamespace = "POD_NAMESPACE"
+	envPodNamespace = "NAMESPACE"
 
 	// controllerContainerName is the name of the controller container
 	// inside its own pod. Used to pick the right image when the pod has
@@ -310,7 +310,7 @@ func buildScheme(logger *zap.SugaredLogger) *runtime.Scheme {
 
 // discoverControllerImage reads the controller's own pod from the API server
 // and returns the image of the controller-manager container. The pod
-// coordinates are taken from the POD_NAME / POD_NAMESPACE env vars, which
+// coordinates are taken from the POD_NAME / NAMESPACE env vars, which
 // the controller Deployment is expected to populate via the downward API.
 //
 // Failing at startup is the right behaviour: the controller cannot create

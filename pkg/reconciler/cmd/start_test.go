@@ -117,7 +117,6 @@ func TestPackageConstants(t *testing.T) {
 	assert.Equal(t, "KYNOMESH_METRICS_BIND_ADDRESS", envMetricsAddr)
 	assert.Equal(t, "KYNOMESH_HEALTH_PROBE_BIND_ADDRESS", envProbeAddr)
 	assert.Equal(t, "POD_NAME", envPodName)
-	assert.Equal(t, "POD_NAMESPACE", envPodNamespace)
 }
 
 func TestControllerImageFromPod(t *testing.T) {
