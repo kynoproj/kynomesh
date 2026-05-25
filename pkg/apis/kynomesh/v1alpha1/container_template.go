@@ -17,7 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"dario.cat/mergo"
+	"maps"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -35,9 +36,11 @@ type ContainerTemplate struct {
 	EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty" protobuf:"bytes,5,rep,name=envFrom"`
 }
 
-// ApplyToContainer updates the Container with the values from the ContainerTemplate
+// ApplyToContainer updates the Container with the values from the
+// ContainerTemplate.
 func (ct *ContainerTemplate) ApplyToContainer(c *corev1.Container) {
-	_ = mergo.Merge(&c.Resources, ct.Resources, mergo.WithOverride)
+	c.Resources.Requests = mergeResourceList(c.Resources.Requests, ct.Resources.Requests)
+	c.Resources.Limits = mergeResourceList(c.Resources.Limits, ct.Resources.Limits)
 	c.SecurityContext = ct.SecurityContext
 	if c.ImagePullPolicy == "" {
 		c.ImagePullPolicy = ct.ImagePullPolicy
@@ -48,4 +51,17 @@ func (ct *ContainerTemplate) ApplyToContainer(c *corev1.Container) {
 	if len(ct.EnvFrom) > 0 {
 		c.EnvFrom = append(c.EnvFrom, ct.EnvFrom...)
 	}
+}
+
+// mergeResourceList returns base with override applied per-key. Returns
+// base unchanged when override is empty so a nil-template field doesn't
+// allocate an empty map onto the container.
+func mergeResourceList(base, override corev1.ResourceList) corev1.ResourceList {
+	if len(override) == 0 {
+		return base
+	}
+	out := make(corev1.ResourceList, len(base)+len(override))
+	maps.Copy(out, base)
+	maps.Copy(out, override)
+	return out
 }
