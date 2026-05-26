@@ -30,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/events"
 	"k8s.io/utils/ptr"
@@ -533,4 +534,158 @@ func TestReconcile_NotFoundIsNoop(t *testing.T) {
 	res, err := r.Reconcile(context.Background(), reconcileRequest("missing"))
 	require.NoError(t, err)
 	assert.Equal(t, ctrl.Result{}, res)
+}
+
+// markAllPodsReady flips every pod's PodReady condition to True via the
+// status subresource. Used to advance the rolling-update wait gate
+// between batches.
+func markAllPodsReady(t *testing.T, c client.Client) {
+	t.Helper()
+	var list corev1.PodList
+	require.NoError(t, c.List(context.Background(), &list, client.InNamespace(testNamespace)))
+	for i := range list.Items {
+		p := &list.Items[i]
+		p.Status.Conditions = []corev1.PodCondition{{Type: corev1.PodReady, Status: corev1.ConditionTrue}}
+		require.NoError(t, c.Status().Update(context.Background(), p))
+	}
+}
+
+func TestReconcile_RollingUpdate_RespectsMaxUnavailable(t *testing.T) {
+	// 4 replicas with MaxUnavailable=1 → exactly one pod replaced per pass.
+	// All four pods drift from the desired hash. Verify the controller
+	// touches only one slot per reconcile, and that it waits for the
+	// in-flight replacement to go Ready before starting the next batch.
+	ad := newAgentDeploy("greeter", 4)
+	ad.Spec.UpdateStrategy = kmv1.UpdateStrategy{
+		Type: kmv1.RollingUpdateStrategyType,
+		RollingUpdate: &kmv1.RollingUpdateStrategy{
+			MaxUnavailable: ptr.To(intstr.FromInt(1)),
+		},
+	}
+	r, c := newTestReconciler(t, ad)
+
+	// Initial bring-up creates all 4 in one pass (creates aren't gated).
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	require.Len(t, listPods(t, c), 4)
+	markAllPodsReady(t, c)
+
+	// Force drift on all four pods by stamping a stale hash.
+	pods := listPods(t, c)
+	for i := range pods {
+		pods[i].Annotations[kmv1.KeyHash] = "stale"
+		require.NoError(t, c.Update(context.Background(), &pods[i]))
+	}
+
+	// Each pass should replace exactly one slot. Between passes we must
+	// mark the new pod Ready or the wait gate will block the next batch.
+	stalePerPass := []int{3, 2, 1, 0}
+	for pass, wantStale := range stalePerPass {
+		_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+		require.NoError(t, err, "pass %d", pass)
+
+		gotStale := 0
+		for _, p := range listPods(t, c) {
+			if p.Annotations[kmv1.KeyHash] == "stale" {
+				gotStale++
+			}
+		}
+		assert.Equal(t, wantStale, gotStale, "pass %d: only one slot replaced per pass", pass)
+		markAllPodsReady(t, c)
+	}
+
+	// Final state: no stale pods, all 4 slots filled.
+	finalPods := listPods(t, c)
+	assert.Len(t, finalPods, 4)
+	for _, p := range finalPods {
+		assert.NotEqual(t, "stale", p.Annotations[kmv1.KeyHash])
+	}
+}
+
+func TestReconcile_RollingUpdate_WaitGateBlocksUntilReady(t *testing.T) {
+	// Without readiness, the next batch must NOT start. Set MaxUnavailable=1
+	// over 3 replicas, drift all three, and run two reconciles back-to-back
+	// without marking the new pod Ready. The second reconcile must be a noop.
+	ad := newAgentDeploy("greeter", 3)
+	ad.Spec.UpdateStrategy = kmv1.UpdateStrategy{
+		Type: kmv1.RollingUpdateStrategyType,
+		RollingUpdate: &kmv1.RollingUpdateStrategy{
+			MaxUnavailable: ptr.To(intstr.FromInt(1)),
+		},
+	}
+	r, c := newTestReconciler(t, ad)
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	markAllPodsReady(t, c)
+
+	for _, p := range listPods(t, c) {
+		p.Annotations[kmv1.KeyHash] = "stale"
+		require.NoError(t, c.Update(context.Background(), &p))
+	}
+
+	// First pass replaces one — leaves it not-Ready.
+	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	staleAfter1 := countStale(listPods(t, c))
+	assert.Equal(t, 2, staleAfter1)
+
+	// Second pass: new pod still not Ready → gate must block.
+	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	assert.Equal(t, 2, countStale(listPods(t, c)), "wait gate must block until the new pod is Ready")
+}
+
+func countStale(pods []corev1.Pod) int {
+	n := 0
+	for _, p := range pods {
+		if p.Annotations[kmv1.KeyHash] == "stale" {
+			n++
+		}
+	}
+	return n
+}
+
+func TestReconcile_RollingUpdate_InitialCreateNotGated(t *testing.T) {
+	// MaxUnavailable=1 must not slow down initial bring-up — empty slots
+	// are creates, not replacements, and aren't subject to the rolling-update
+	// budget. A fresh deploy with replicas=4 reaches steady state in one pass.
+	ad := newAgentDeploy("greeter", 4)
+	ad.Spec.UpdateStrategy = kmv1.UpdateStrategy{
+		Type: kmv1.RollingUpdateStrategyType,
+		RollingUpdate: &kmv1.RollingUpdateStrategy{
+			MaxUnavailable: ptr.To(intstr.FromInt(1)),
+		},
+	}
+	r, c := newTestReconciler(t, ad)
+
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	assert.Len(t, listPods(t, c), 4, "initial bring-up creates all slots in one pass")
+}
+
+func TestReconcile_RollingUpdate_NewSpecResetsUpdateCursor(t *testing.T) {
+	// A spec change mid-rollout must reset Status.UpdateHash so the rollout
+	// restarts from scratch against the new hash.
+	ad := newAgentDeploy("greeter", 2)
+	r, c := newTestReconciler(t, ad)
+
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	var afterInitial kmv1.AgentDeploy
+	require.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter"}, &afterInitial))
+	firstHash := afterInitial.Status.UpdateHash
+	require.NotEmpty(t, firstHash)
+
+	// Mutate the spec — the agent's identity is hashed into the broker env,
+	// so renaming flips the desired hash.
+	afterInitial.Spec.Name = "renamed"
+	require.NoError(t, c.Update(context.Background(), &afterInitial))
+
+	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	var afterChange kmv1.AgentDeploy
+	require.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter"}, &afterChange))
+	assert.NotEqual(t, firstHash, afterChange.Status.UpdateHash, "UpdateHash must track the new spec")
 }

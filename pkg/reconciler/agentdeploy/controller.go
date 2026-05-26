@@ -44,6 +44,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -177,17 +178,33 @@ func (r *Reconciler) reconcile(ctx context.Context, ad *kmv1.AgentDeploy) error 
 	return nil
 }
 
-// reconcilePods drives the per-replica pod set: bucket existing pods by
-// replica index, then for each index in [0, desired) ensure exactly one pod
-// whose hash matches the desired hash. Stale pods (wrong hash, duplicate,
-// or out-of-range replica) are deleted.
+// reconcilePods drives the per-replica pod set toward the desired spec
+// with rolling update:
+//
+//  1. Scale-down first — pods at indices outside [0, desired) are deleted
+//     unconditionally; that work doesn't count against MaxUnavailable.
+//  2. Initial bring-up — if no slot in [0, desired) is on the desired hash
+//     yet (fresh deploy, or a full wipe), create the entire window in one
+//     pass. MaxUnavailable only gates *replacement* of existing pods.
+//  3. Rolling replacement — for slots not yet on the desired hash, replace
+//     them delete-then-create, batched by MaxUnavailable. Between batches
+//     the reconciler waits for the in-flight replacements to go Ready (it
+//     returns nil and lets the pod-watch event drive the next pass).
 func (r *Reconciler) reconcilePods(ctx context.Context, ad *kmv1.AgentDeploy) error {
 	desired := desiredReplicas(ad)
 	ad.Status.DesiredReplicas = uint32(desired)
 
 	desiredPodSpec := buildPodSpec(ad, r.brokerImage)
 	desiredHash := sharedutil.MustHash(desiredPodSpec)
-	ad.Status.UpdateHash = desiredHash
+
+	// Detect a spec change: reset the rollout cursor so a mid-rollout
+	// spec edit restarts from slot 0. updatePodStatus will reconcile this
+	// back to the live count at the end of Reconcile.
+	if ad.Status.UpdateHash != desiredHash {
+		ad.Status.UpdateHash = desiredHash
+		ad.Status.UpdatedReplicas = 0
+		ad.Status.UpdatedReadyReplicas = 0
+	}
 
 	existing, err := r.listOwnedPods(ctx, ad)
 	if err != nil {
@@ -195,27 +212,8 @@ func (r *Reconciler) reconcilePods(ctx context.Context, ad *kmv1.AgentDeploy) er
 	}
 	byReplica := groupPodsByReplica(existing)
 
-	for replica := range desired {
-		pods := byReplica[replica]
-		var kept *corev1.Pod
-		for i := range pods {
-			p := pods[i]
-			if kept == nil && p.Annotations[kmv1.KeyHash] == desiredHash && p.DeletionTimestamp.IsZero() {
-				kept = p
-				continue
-			}
-			if err := r.deletePod(ctx, ad, p, "drift or duplicate"); err != nil {
-				return err
-			}
-		}
-		if kept != nil {
-			continue
-		}
-		if err := r.createPodForReplica(ctx, ad, replica, desiredPodSpec, desiredHash); err != nil {
-			return err
-		}
-	}
-
+	// (1) Scale-down: delete pods outside the desired window. Pods with an
+	// invalid replica annotation land in bucket -1 and are treated the same.
 	for replica, pods := range byReplica {
 		if replica >= 0 && replica < desired {
 			continue
@@ -226,7 +224,110 @@ func (r *Reconciler) reconcilePods(ctx context.Context, ad *kmv1.AgentDeploy) er
 			}
 		}
 	}
+
+	// Classify each in-window slot:
+	//   - "satisfied": already has a non-terminating pod on the desired hash
+	//   - "needsCreate": no live pod at all — a scale-up or initial-bring-up slot
+	//   - "needsReplace": has a live pod on a non-desired hash — rolling-update target
+	// Within-slot duplicates and pods already being deleted are pruned
+	// unconditionally; they're not part of the desired state regardless of
+	// rolling-update batching.
+	needsCreate := make([]int, 0, desired)
+	needsReplace := make([]int, 0, desired)
+	updatedOnDesired := 0
+	updatedReadyOnDesired := 0
+	for replica := range desired {
+		pods := byReplica[replica]
+		var kept *corev1.Pod
+		hasLiveOld := false
+		for _, p := range pods {
+			if !p.DeletionTimestamp.IsZero() {
+				continue // terminating — let it finish; don't count it
+			}
+			if p.Annotations[kmv1.KeyHash] == desiredHash {
+				if kept == nil {
+					kept = p
+					continue
+				}
+				// Duplicate on the desired hash — keep one, delete extras.
+				if err := r.deletePod(ctx, ad, p, "duplicate"); err != nil {
+					return err
+				}
+				continue
+			}
+			hasLiveOld = true
+		}
+		switch {
+		case kept != nil:
+			updatedOnDesired++
+			if podReady(kept) {
+				updatedReadyOnDesired++
+			}
+		case hasLiveOld:
+			needsReplace = append(needsReplace, replica)
+		default:
+			needsCreate = append(needsCreate, replica)
+		}
+	}
+
+	// Empty slots are never gated — they aren't a rolling-update concern.
+	// This covers initial bring-up *and* scale-up of an in-progress deploy.
+	for _, replica := range needsCreate {
+		if err := r.createPodForReplica(ctx, ad, replica, desiredPodSpec, desiredHash); err != nil {
+			return err
+		}
+	}
+
+	if len(needsReplace) == 0 {
+		// Every slot is either on the desired hash or has just been created.
+		// Promote CurrentHash once the full window is on UpdateHash.
+		if updatedOnDesired+len(needsCreate) == desired {
+			ad.Status.CurrentHash = desiredHash
+		}
+		return nil
+	}
+
+	// Rolling replacement: bound the number of slots we touch per pass by
+	// MaxUnavailable, and wait between batches for the in-flight new pods
+	// to become Ready.
+	maxUnavailable := resolveMaxUnavailable(ad, desired)
+
+	// Wait gate: if a previous batch's replacements haven't all gone Ready,
+	// hold off — the pod-watch event will requeue us when one becomes Ready.
+	// Computed from the live pod set rather than Status counters so a
+	// half-finished rollout where Status drifted from reality doesn't
+	// deadlock the controller.
+	if updatedOnDesired > 0 && updatedReadyOnDesired < updatedOnDesired {
+		return nil
+	}
+
+	batch := min(maxUnavailable, len(needsReplace))
+
+	for _, replica := range needsReplace[:batch] {
+		for _, p := range byReplica[replica] {
+			if !p.DeletionTimestamp.IsZero() || p.Annotations[kmv1.KeyHash] == desiredHash {
+				continue
+			}
+			if err := r.deletePod(ctx, ad, p, "rolling update"); err != nil {
+				return err
+			}
+		}
+		if err := r.createPodForReplica(ctx, ad, replica, desiredPodSpec, desiredHash); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+// resolveMaxUnavailable returns the per-pass replacement budget. Always at
+// least 1 so a rollout can make forward progress.
+func resolveMaxUnavailable(ad *kmv1.AgentDeploy, desired int) int {
+	mu := ad.Spec.UpdateStrategy.GetRollingUpdateStrategy().GetMaxUnavailable()
+	n, err := intstr.GetScaledValueFromIntOrPercent(&mu, desired, true)
+	if err != nil || n < 1 {
+		n = 1
+	}
+	return n
 }
 
 func (r *Reconciler) createPodForReplica(ctx context.Context, ad *kmv1.AgentDeploy, replica int, podSpec corev1.PodSpec, hash string) error {
