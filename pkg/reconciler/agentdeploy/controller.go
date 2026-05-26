@@ -510,13 +510,7 @@ func mergeEnv(existing, overrides []corev1.EnvVar) []corev1.EnvVar {
 	return out
 }
 
-// newBrokerContainer builds the A2A broker sidecar. The image is supplied by
-// the controller (typically discovered as the controller's own image) so the
-// broker stays bit-for-bit in sync with the controller release.
-//
-// encodedAgentDeploy is a base64-encoded JSON serialisation of the trimmed
-// AgentDeploy (AgentDeploy.SimpleCopy). It is exposed as a single env var
-// so the broker can introspect its parent agent at boot.
+// newBrokerContainer builds the A2A broker sidecar.
 func newBrokerContainer(image, encodedAgentDeploy string) corev1.Container {
 	return corev1.Container{
 		Name:    brokerContainerName,
@@ -534,9 +528,7 @@ func newBrokerContainer(image, encodedAgentDeploy string) corev1.Container {
 	}
 }
 
-// encodeAgentDeploy returns the base64-encoded JSON of ad.SimpleCopy(). The
-// broker sidecar reads this from kmv1.EnvAgentDeployObject to learn what agent it
-// is brokering for.
+// encodeAgentDeploy returns the base64-encoded JSON of ad.SimpleCopy().
 func encodeAgentDeploy(ad *kmv1.AgentDeploy) string {
 	simple := ad.SimpleCopy()
 	return base64.StdEncoding.EncodeToString([]byte(sharedutil.MustJSON(simple)))

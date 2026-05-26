@@ -162,8 +162,6 @@ func (ad *AgentDeploy) SimpleCopy() AgentDeploy {
 			Namespace: ad.Namespace,
 			Name:      ad.Name,
 		},
-		// DeepCopy so zeroing the orchestration fields below doesn't mutate
-		// the caller's AgentDeploy.
 		Spec: *ad.Spec.DeepCopy(),
 	}
 	out.Spec.Replicas = nil

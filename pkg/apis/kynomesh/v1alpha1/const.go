@@ -29,12 +29,6 @@ const (
 	KeyReplica          = "kynomesh.kyno.sh/replica"
 	KeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 
-	// EnvAgentDeployObject is the env var the controller injects into the
-	// broker sidecar of every AgentDeploy pod. The value is a base64-
-	// encoded JSON serialisation of the parent AgentDeploy as returned by
-	// AgentDeploy.SimpleCopy(), so the broker can introspect its parent
-	// agent without calling the API server. Lives here (rather than next
-	// to the controller) because it is part of the controller↔broker
-	// public contract.
+	// ENV vars
 	EnvAgentDeployObject = "KYNOMESH_AGENT_DEPLOY_OBJECT"
 )
