@@ -135,6 +135,24 @@ type AgentDeployList struct {
 	Items           []AgentDeploy `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
+// SimpleCopy returns a slimmed-down copy of the AgentDeploy suitable for
+// embedding into a downstream consumer.
+func (ad *AgentDeploy) SimpleCopy() AgentDeploy {
+	out := AgentDeploy{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ad.Namespace,
+			Name:      ad.Name,
+		},
+		Spec: *ad.Spec.DeepCopy(),
+	}
+	out.Spec.Replicas = nil
+	out.Spec.Sidecars = nil
+	out.Spec.InitContainers = nil
+	out.Spec.Volumes = nil
+	out.Spec.UpdateStrategy = UpdateStrategy{}
+	return out
+}
+
 type AgentDeployTemplate struct {
 	// +optional
 	AbstractPodTemplate `json:",inline" protobuf:"bytes,1,opt,name=abstractPodTemplate"`

@@ -18,6 +18,8 @@ package agentdeploy
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"strconv"
 	"testing"
 	"time"
@@ -30,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/events"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -152,6 +155,72 @@ func TestBuildPodSpec_PreservesUserSidecarsAfterBroker(t *testing.T) {
 	assert.Equal(t, agentContainerName, ps.Containers[0].Name)
 	assert.Equal(t, brokerContainerName, ps.Containers[1].Name)
 	assert.Equal(t, "user-sidecar", ps.Containers[2].Name)
+}
+
+func TestBuildPodSpec_BrokerCarriesEncodedAgentDeployEnv(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ps := buildPodSpec(ad, testBrokerImage)
+
+	broker := ps.Containers[1]
+	env := findEnv(broker.Env, kmv1.EnvAgentDeployObject)
+	require.NotNil(t, env, "broker container must carry %s", kmv1.EnvAgentDeployObject)
+	require.NotEmpty(t, env.Value, "env value must be a base64-encoded JSON payload")
+
+	// Decode → JSON unmarshal → must match SimpleCopy().
+	raw, err := base64.StdEncoding.DecodeString(env.Value)
+	require.NoError(t, err, "value must be valid base64")
+
+	var got kmv1.AgentDeploy
+	require.NoError(t, json.Unmarshal(raw, &got), "decoded payload must be valid AgentDeploy JSON")
+	assert.Equal(t, ad.SimpleCopy(), got)
+}
+
+func TestBuildPodSpec_AgentDeployEnvOnlyOnBroker(t *testing.T) {
+	// The encoded AgentDeploy is broker-only. Agent and user sidecars must
+	// not receive it — they have no need for it, and leaking it expands
+	// the trust boundary unnecessarily.
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
+	ps := buildPodSpec(ad, testBrokerImage)
+
+	for i, c := range ps.Containers {
+		got := findEnv(c.Env, kmv1.EnvAgentDeployObject)
+		if c.Name == brokerContainerName {
+			assert.NotNil(t, got, "container %d (%s) must have %s", i, c.Name, kmv1.EnvAgentDeployObject)
+		} else {
+			assert.Nil(t, got, "container %d (%s) must NOT have %s", i, c.Name, kmv1.EnvAgentDeployObject)
+		}
+	}
+}
+
+func TestBuildPodSpec_AgentNameChangeFlowsIntoBrokerEnv(t *testing.T) {
+	// A change to the agent's identity (Spec.Name) must change the broker's
+	// env-var payload — that's how the hash detects the drift and rolls
+	// the pod.
+	a := newAgentDeploy("greeter", 1)
+	b := newAgentDeploy("greeter", 1)
+	b.Spec.Name = "renamed"
+
+	envA := findEnv(buildPodSpec(a, testBrokerImage).Containers[1].Env, kmv1.EnvAgentDeployObject)
+	envB := findEnv(buildPodSpec(b, testBrokerImage).Containers[1].Env, kmv1.EnvAgentDeployObject)
+	require.NotNil(t, envA)
+	require.NotNil(t, envB)
+	assert.NotEqual(t, envA.Value, envB.Value)
+}
+
+func TestBuildPodSpec_ReplicasChangeDoesNotAffectBrokerEnv(t *testing.T) {
+	// Replicas is dropped by SimpleCopy — scaling up/down must not change
+	// the broker env-var payload, otherwise every scale event would roll
+	// every pod.
+	a := newAgentDeploy("greeter", 1)
+	b := newAgentDeploy("greeter", 1)
+	b.Spec.Replicas = ptr.To[int32](5)
+
+	envA := findEnv(buildPodSpec(a, testBrokerImage).Containers[1].Env, kmv1.EnvAgentDeployObject)
+	envB := findEnv(buildPodSpec(b, testBrokerImage).Containers[1].Env, kmv1.EnvAgentDeployObject)
+	require.NotNil(t, envA)
+	require.NotNil(t, envB)
+	assert.Equal(t, envA.Value, envB.Value)
 }
 
 func TestBuildPodSpec_InjectsDownwardAPIEnv(t *testing.T) {

@@ -28,4 +28,7 @@ const (
 	KeyAgentSetName     = "kynomesh.kyno.sh/agentset-name"
 	KeyReplica          = "kynomesh.kyno.sh/replica"
 	KeyDefaultContainer = "kubectl.kubernetes.io/default-container"
+
+	// ENV vars
+	EnvAgentDeployObject = "KYNOMESH_AGENT_DEPLOY_OBJECT"
 )

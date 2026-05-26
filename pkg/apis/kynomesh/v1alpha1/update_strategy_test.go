@@ -70,11 +70,11 @@ func TestUpdateStrategy_GetRollingUpdateStrategy(t *testing.T) {
 			name: "NonNilRollingUpdate",
 			strategy: UpdateStrategy{
 				RollingUpdate: &RollingUpdateStrategy{
-					MaxUnavailable: ptr.To[intstr.IntOrString](intstr.FromString("2")),
+					MaxUnavailable: ptr.To(intstr.FromString("2")),
 				},
 			},
 			expected: RollingUpdateStrategy{
-				MaxUnavailable: ptr.To[intstr.IntOrString](intstr.FromString("2")),
+				MaxUnavailable: ptr.To(intstr.FromString("2")),
 			},
 		},
 		{
