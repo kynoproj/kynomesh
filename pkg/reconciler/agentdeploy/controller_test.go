@@ -94,7 +94,7 @@ func listPods(t *testing.T, c client.Client) []corev1.Pod {
 func TestNewPod_NamingAndDNSWiring(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	hash := "abc123"
-	pod := newPod(ad, 2, corev1.PodSpec{Containers: []corev1.Container{{Name: agentContainerName}}}, hash)
+	pod := newPod(ad, 2, corev1.PodSpec{Containers: []corev1.Container{{Name: kmv1.ContainerNameAgent}}}, hash)
 
 	// Pod name: <deploy>-<replica>-<rand5>
 	assert.Regexp(t, `^greeter-2-[a-z0-9]{5}$`, pod.Name)
@@ -106,7 +106,7 @@ func TestNewPod_NamingAndDNSWiring(t *testing.T) {
 	assert.Equal(t, "2", pod.Annotations[kmv1.KeyReplica])
 	assert.Equal(t, hash, pod.Annotations[kmv1.KeyHash])
 	assert.Equal(t, "greeter", pod.Labels[kmv1.KeyAppName])
-	assert.Equal(t, ControllerName, pod.Labels[kmv1.KeyManagedBy])
+	assert.Equal(t, kmv1.ControllerAgentDeploy, pod.Labels[kmv1.KeyManagedBy])
 	require.Len(t, pod.OwnerReferences, 1)
 	assert.True(t, *pod.OwnerReferences[0].Controller)
 }
@@ -125,15 +125,15 @@ func TestBuildPodSpec_InjectsBrokerSidecar(t *testing.T) {
 	// Container order must be [agent, broker, ...]. Anything else would
 	// change the default-container annotation contract.
 	require.GreaterOrEqual(t, len(ps.Containers), 2)
-	assert.Equal(t, agentContainerName, ps.Containers[0].Name)
+	assert.Equal(t, kmv1.ContainerNameAgent, ps.Containers[0].Name)
 
 	broker := ps.Containers[1]
-	assert.Equal(t, brokerContainerName, broker.Name)
+	assert.Equal(t, kmv1.ContainerNameAgentBroker, broker.Name)
 	assert.Equal(t, testBrokerImage, broker.Image)
-	assert.Equal(t, []string{brokerBinaryPath}, broker.Command)
+	assert.Empty(t, broker.Command, "Command must be unset so the Dockerfile ENTRYPOINT is used")
 	assert.Equal(t, []string{"broker"}, broker.Args)
 	require.Len(t, broker.Ports, 1)
-	assert.Equal(t, int32(brokerPort), broker.Ports[0].ContainerPort)
+	assert.Equal(t, int32(kmv1.AgentBrokerPort), broker.Ports[0].ContainerPort)
 	assert.Equal(t, corev1.ProtocolTCP, broker.Ports[0].Protocol)
 }
 
@@ -152,8 +152,8 @@ func TestBuildPodSpec_PreservesUserSidecarsAfterBroker(t *testing.T) {
 	ps := buildPodSpec(ad, testBrokerImage)
 
 	require.Len(t, ps.Containers, 3)
-	assert.Equal(t, agentContainerName, ps.Containers[0].Name)
-	assert.Equal(t, brokerContainerName, ps.Containers[1].Name)
+	assert.Equal(t, kmv1.ContainerNameAgent, ps.Containers[0].Name)
+	assert.Equal(t, kmv1.ContainerNameAgentBroker, ps.Containers[1].Name)
 	assert.Equal(t, "user-sidecar", ps.Containers[2].Name)
 }
 
@@ -185,7 +185,7 @@ func TestBuildPodSpec_AgentDeployEnvOnlyOnBroker(t *testing.T) {
 
 	for i, c := range ps.Containers {
 		got := findEnv(c.Env, kmv1.EnvAgentDeployObject)
-		if c.Name == brokerContainerName {
+		if c.Name == kmv1.ContainerNameAgentBroker {
 			assert.NotNil(t, got, "container %d (%s) must have %s", i, c.Name, kmv1.EnvAgentDeployObject)
 		} else {
 			assert.Nil(t, got, "container %d (%s) must NOT have %s", i, c.Name, kmv1.EnvAgentDeployObject)
@@ -230,13 +230,13 @@ func TestBuildPodSpec_InjectsDownwardAPIEnv(t *testing.T) {
 
 	for _, c := range ps.Containers {
 		t.Run(c.Name, func(t *testing.T) {
-			ns := findEnv(c.Env, EnvNamespace)
+			ns := findEnv(c.Env, kmv1.EnvNamespace)
 			require.NotNil(t, ns, "expected NAMESPACE env on %s", c.Name)
 			require.NotNil(t, ns.ValueFrom)
 			require.NotNil(t, ns.ValueFrom.FieldRef)
 			assert.Equal(t, "metadata.namespace", ns.ValueFrom.FieldRef.FieldPath)
 
-			pn := findEnv(c.Env, EnvPodName)
+			pn := findEnv(c.Env, kmv1.EnvPodName)
 			require.NotNil(t, pn, "expected POD_NAME env on %s", c.Name)
 			require.NotNil(t, pn.ValueFrom)
 			require.NotNil(t, pn.ValueFrom.FieldRef)
@@ -251,12 +251,12 @@ func TestBuildPodSpec_BuiltinEnvWinsOnConflict(t *testing.T) {
 	// must not be able to misrepresent their own pod identity.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.ContainerTemplate = &kmv1.ContainerTemplate{
-		Env: []corev1.EnvVar{{Name: EnvNamespace, Value: "user-override"}},
+		Env: []corev1.EnvVar{{Name: kmv1.EnvNamespace, Value: "user-override"}},
 	}
 	ps := buildPodSpec(ad, testBrokerImage)
 
 	agent := ps.Containers[0]
-	ns := findEnv(agent.Env, EnvNamespace)
+	ns := findEnv(agent.Env, kmv1.EnvNamespace)
 	require.NotNil(t, ns)
 	assert.Empty(t, ns.Value, "user-supplied literal must be replaced by the downward-API ref")
 	require.NotNil(t, ns.ValueFrom)
@@ -266,13 +266,13 @@ func TestBuildPodSpec_BuiltinEnvWinsOnConflict(t *testing.T) {
 	// Built-in entry replaces the user entry in place — no duplicate key.
 	var nsCount int
 	for _, e := range agent.Env {
-		if e.Name == EnvNamespace {
+		if e.Name == kmv1.EnvNamespace {
 			nsCount++
 		}
 	}
 	assert.Equal(t, 1, nsCount, "merged env must not contain duplicate NAMESPACE entries")
 
-	pn := findEnv(agent.Env, EnvPodName)
+	pn := findEnv(agent.Env, kmv1.EnvPodName)
 	require.NotNil(t, pn)
 	require.NotNil(t, pn.ValueFrom)
 }
@@ -434,7 +434,7 @@ func TestReconcile_DeletesOrphanedReplica(t *testing.T) {
 			Name:      "greeter-5-zzzzz",
 			Labels: map[string]string{
 				kmv1.KeyAppName:   "greeter",
-				kmv1.KeyManagedBy: ControllerName,
+				kmv1.KeyManagedBy: kmv1.ControllerAgentDeploy,
 				kmv1.KeyReplica:   "5",
 			},
 			Annotations: map[string]string{kmv1.KeyReplica: "5"},
@@ -485,7 +485,7 @@ func TestReconcile_DeletionCleansEverything(t *testing.T) {
 			Name:      "greeter-0-aaaaa",
 			Labels: map[string]string{
 				kmv1.KeyAppName:   "greeter",
-				kmv1.KeyManagedBy: ControllerName,
+				kmv1.KeyManagedBy: kmv1.ControllerAgentDeploy,
 				kmv1.KeyReplica:   "0",
 			},
 			Annotations: map[string]string{kmv1.KeyReplica: "0"},

@@ -19,14 +19,10 @@ package commands
 import (
 	"github.com/spf13/cobra"
 
+	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 	brokercmd "github.com/kynoproj/kynomesh/pkg/broker/cmd"
 	sharedutil "github.com/kynoproj/kynomesh/pkg/shared/util"
 )
-
-// defaultBrokerPort is the shared port all three A2A transports — JSON-RPC,
-// REST, and gRPC — bind to. Picked to sit distinct from the controller's
-// metrics/probe ports (:9090/:8081).
-const defaultBrokerPort = 9100
 
 func NewBrokerCommand() *cobra.Command {
 	var (
@@ -46,7 +42,7 @@ func NewBrokerCommand() *cobra.Command {
 		},
 	}
 	command.Flags().IntVar(&port, "port",
-		sharedutil.LookupEnvIntOr("KYNOMESH_BROKER_PORT", defaultBrokerPort),
+		sharedutil.LookupEnvIntOr("KYNOMESH_BROKER_PORT", kmv1.AgentBrokerPort),
 		"Port the broker listens on; all A2A transports share it.")
 	command.Flags().StringVar(&advertiseHost, "advertise-host",
 		sharedutil.LookupEnvStringOr("KYNOMESH_BROKER_ADVERTISE_HOST", brokercmd.AdvertiseHostDefault),

@@ -22,6 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
 func TestNewBrokerCommand_Metadata(t *testing.T) {
@@ -51,7 +53,7 @@ func TestNewBrokerCommand_FlagDefaults_NoEnv(t *testing.T) {
 
 	c := NewBrokerCommand()
 
-	assert.Equal(t, strconv.Itoa(defaultBrokerPort), c.Flags().Lookup("port").DefValue)
+	assert.Equal(t, strconv.Itoa(kmv1.AgentBrokerPort), c.Flags().Lookup("port").DefValue)
 	assert.Equal(t, "127.0.0.1", c.Flags().Lookup("advertise-host").DefValue)
 }
 
