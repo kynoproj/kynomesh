@@ -33,6 +33,7 @@ package agentdeploy
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"reflect"
 	"slices"
@@ -439,7 +440,7 @@ func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
 	if ct := ad.Spec.ContainerTemplate; ct != nil {
 		ct.ApplyToContainer(&agentContainer)
 	}
-	containers := []corev1.Container{agentContainer, newBrokerContainer(brokerImage)}
+	containers := []corev1.Container{agentContainer, newBrokerContainer(brokerImage, encodeAgentDeploy(ad))}
 	containers = append(containers, ad.Spec.Sidecars...)
 
 	ps := corev1.PodSpec{
@@ -512,18 +513,33 @@ func mergeEnv(existing, overrides []corev1.EnvVar) []corev1.EnvVar {
 // newBrokerContainer builds the A2A broker sidecar. The image is supplied by
 // the controller (typically discovered as the controller's own image) so the
 // broker stays bit-for-bit in sync with the controller release.
-func newBrokerContainer(image string) corev1.Container {
+//
+// encodedAgentDeploy is a base64-encoded JSON serialisation of the trimmed
+// AgentDeploy (AgentDeploy.SimpleCopy). It is exposed as a single env var
+// so the broker can introspect its parent agent at boot.
+func newBrokerContainer(image, encodedAgentDeploy string) corev1.Container {
 	return corev1.Container{
 		Name:    brokerContainerName,
 		Image:   image,
 		Command: []string{brokerBinaryPath},
 		Args:    []string{"broker"},
+		Env: []corev1.EnvVar{
+			{Name: kmv1.EnvAgentDeployObject, Value: encodedAgentDeploy},
+		},
 		Ports: []corev1.ContainerPort{{
 			Name:          "a2a",
 			ContainerPort: brokerPort,
 			Protocol:      corev1.ProtocolTCP,
 		}},
 	}
+}
+
+// encodeAgentDeploy returns the base64-encoded JSON of ad.SimpleCopy(). The
+// broker sidecar reads this from kmv1.EnvAgentDeployObject to learn what agent it
+// is brokering for.
+func encodeAgentDeploy(ad *kmv1.AgentDeploy) string {
+	simple := ad.SimpleCopy()
+	return base64.StdEncoding.EncodeToString([]byte(sharedutil.MustJSON(simple)))
 }
 
 // newPod renders a corev1.Pod for the given replica index. The random

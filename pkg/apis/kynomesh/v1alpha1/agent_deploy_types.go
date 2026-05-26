@@ -135,6 +135,45 @@ type AgentDeployList struct {
 	Items           []AgentDeploy `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
+// SimpleCopy returns a slimmed-down copy of the AgentDeploy suitable for
+// embedding into a downstream consumer (e.g., serialised into the broker
+// sidecar's environment so the broker can introspect its parent agent).
+//
+// What's kept:
+//   - ObjectMeta: only Namespace and Name. Everything else (UID,
+//     resourceVersion, managed fields, annotations, labels, finalizers) is
+//     either ephemeral, server-set, or noise from the broker's point of view.
+//   - Spec: the user-declared agent configuration, MINUS fields that govern
+//     pod orchestration rather than what the agent IS:
+//     Replicas, Sidecars, InitContainers, Volumes, UpdateStrategy.
+//
+// What's dropped:
+//   - Status (downstream of pod creation — embedding it would create churn).
+//   - TypeMeta (env-var noise; the consumer knows the type).
+//
+// IMPORTANT: this method describes what travels alongside the AgentDeploy
+// into the broker, NOT the set of fields that trigger pod recreation. The
+// AgentDeploy reconciler hashes the full corev1.PodSpec, so Volumes,
+// InitContainers, and Sidecars still drive pod recreation through the
+// pod-spec path; Replicas / UpdateStrategy / Scale correctly do not.
+func (ad *AgentDeploy) SimpleCopy() AgentDeploy {
+	out := AgentDeploy{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ad.Namespace,
+			Name:      ad.Name,
+		},
+		// DeepCopy so zeroing the orchestration fields below doesn't mutate
+		// the caller's AgentDeploy.
+		Spec: *ad.Spec.DeepCopy(),
+	}
+	out.Spec.Replicas = nil
+	out.Spec.Sidecars = nil
+	out.Spec.InitContainers = nil
+	out.Spec.Volumes = nil
+	out.Spec.UpdateStrategy = UpdateStrategy{}
+	return out
+}
+
 type AgentDeployTemplate struct {
 	// +optional
 	AbstractPodTemplate `json:",inline" protobuf:"bytes,1,opt,name=abstractPodTemplate"`
