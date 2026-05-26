@@ -45,12 +45,9 @@ import (
 )
 
 const (
-	// ControllerName identifies this controller in event sources and logs.
-	ControllerName = "agentset-controller"
-
 	// FinalizerName guards an AgentSet against deletion until the controller
 	// has removed its child AgentDeploy objects.
-	FinalizerName = "kynomesh.kyno.sh/agentset-controller"
+	FinalizerName = "kynomesh.kyno.sh/" + kmv1.ControllerAgentSet
 )
 
 // Reconciler implements sigs.k8s.io/controller-runtime/pkg/reconcile.Reconciler
@@ -68,7 +65,7 @@ type Reconciler struct {
 // client and scheme.
 func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredLogger, recorder events.EventRecorder) *Reconciler {
 	if logger == nil {
-		logger = logging.NewLogger().Named(ControllerName)
+		logger = logging.NewLogger().Named(kmv1.ControllerAgentSet)
 	}
 	return &Reconciler{
 		Client:   c,
@@ -331,9 +328,9 @@ func (r *Reconciler) newAgentDeploy(as *kmv1.AgentSet, agent kmv1.AbstractAgentD
 			Name:      childName(as.Name, agent.Name),
 			Labels: map[string]string{
 				kmv1.KeyAgentSetName: as.Name,
-				kmv1.KeyComponent:    "agent",
+				kmv1.KeyComponent:    kmv1.ComponentAgent,
 				kmv1.KeyPartOf:       kmv1.Project,
-				kmv1.KeyManagedBy:    ControllerName,
+				kmv1.KeyManagedBy:    kmv1.ControllerAgentSet,
 				kmv1.KeyAppName:      agent.Name,
 			},
 		},

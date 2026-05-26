@@ -111,12 +111,8 @@ func TestBuildScheme_ObjectKindsResolvesKynomeshTypes(t *testing.T) {
 
 func TestPackageConstants(t *testing.T) {
 	assert.Equal(t, "kynomesh-controller-lock", leaderElectionID)
-	assert.Equal(t, ":9090", defaultMetricsAddr)
-	assert.Equal(t, ":8081", defaultProbeAddr)
-	assert.Equal(t, "KYNOMESH_LEADER_ELECTION_DISABLED", envLeaderElectionDisabled)
-	assert.Equal(t, "KYNOMESH_METRICS_BIND_ADDRESS", envMetricsAddr)
-	assert.Equal(t, "KYNOMESH_HEALTH_PROBE_BIND_ADDRESS", envProbeAddr)
-	assert.Equal(t, "POD_NAME", envPodName)
+	assert.Equal(t, ":9090", metricsAddr)
+	assert.Equal(t, ":8081", probeAddr)
 }
 
 func TestControllerImageFromPod(t *testing.T) {
@@ -144,7 +140,7 @@ func TestControllerImageFromPod(t *testing.T) {
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{Name: "sidecar", Image: "side:v1"},
-						{Name: controllerContainerName, Image: "ctrl:v1"},
+						{Name: kmv1.ContainerNameController, Image: "ctrl:v1"},
 					},
 				},
 			},

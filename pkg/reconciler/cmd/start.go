@@ -58,25 +58,8 @@ const (
 	// replicas race for leadership.
 	leaderElectionID = "kynomesh-controller-lock"
 
-	// defaultMetricsAddr / defaultProbeAddr are the conventional ports
-	// kube-prometheus / kubelet probe by default.
-	defaultMetricsAddr = ":9090"
-	defaultProbeAddr   = ":8081"
-
-	envLeaderElectionDisabled = "KYNOMESH_LEADER_ELECTION_DISABLED"
-	envMetricsAddr            = "KYNOMESH_METRICS_BIND_ADDRESS"
-	envProbeAddr              = "KYNOMESH_HEALTH_PROBE_BIND_ADDRESS"
-
-	// envPodName / envPodNamespace are downward-API env vars the controller
-	// Deployment is expected to set so the controller can look up its own
-	// pod and discover its image.
-	envPodName      = "POD_NAME"
-	envPodNamespace = "NAMESPACE"
-
-	// controllerContainerName is the name of the controller container
-	// inside its own pod. Used to pick the right image when the pod has
-	// other containers (sidecars, etc.).
-	controllerContainerName = "controller-manager"
+	metricsAddr = ":9090"
+	probeAddr   = ":8081"
 
 	// imageDiscoveryTimeout caps the one-shot self-pod lookup at startup.
 	// If the API server is unreachable that long, fail fast — the
@@ -111,9 +94,9 @@ func Start(namespaced bool, managedNamespace string) {
 
 	opts := ctrl.Options{
 		Scheme:                 buildScheme(logger),
-		Metrics:                metricsserver.Options{BindAddress: sharedutil.LookupEnvStringOr(envMetricsAddr, defaultMetricsAddr)},
-		HealthProbeBindAddress: sharedutil.LookupEnvStringOr(envProbeAddr, defaultProbeAddr),
-		LeaderElection:         !sharedutil.LookupEnvBoolOr(envLeaderElectionDisabled, false),
+		Metrics:                metricsserver.Options{BindAddress: metricsAddr},
+		HealthProbeBindAddress: probeAddr,
+		LeaderElection:         !sharedutil.LookupEnvBoolOr(kmv1.EnvLeaderElectionDisabled, false),
 		LeaderElectionID:       leaderElectionID,
 	}
 	if namespaced {
@@ -180,11 +163,11 @@ func registerAgentSetController(mgr manager.Manager, logger *zap.SugaredLogger) 
 	r := agentset.NewReconciler(
 		mgr.GetClient(),
 		mgr.GetScheme(),
-		logger.Named(agentset.ControllerName),
-		mgr.GetEventRecorder(agentset.ControllerName),
+		logger.Named(kmv1.ControllerAgentSet),
+		mgr.GetEventRecorder(kmv1.ControllerAgentSet),
 	)
 
-	c, err := controller.New(agentset.ControllerName, mgr, controller.Options{
+	c, err := controller.New(kmv1.ControllerAgentSet, mgr, controller.Options{
 		Reconciler:              r,
 		MaxConcurrentReconciles: 1,
 	})
@@ -239,12 +222,12 @@ func registerAgentDeployController(mgr manager.Manager, logger *zap.SugaredLogge
 	r := agentdeploy.NewReconciler(
 		mgr.GetClient(),
 		mgr.GetScheme(),
-		logger.Named(agentdeploy.ControllerName),
-		mgr.GetEventRecorder(agentdeploy.ControllerName),
+		logger.Named(kmv1.ControllerAgentDeploy),
+		mgr.GetEventRecorder(kmv1.ControllerAgentDeploy),
 		brokerImage,
 	)
 
-	c, err := controller.New(agentdeploy.ControllerName, mgr, controller.Options{
+	c, err := controller.New(kmv1.ControllerAgentDeploy, mgr, controller.Options{
 		Reconciler:              r,
 		MaxConcurrentReconciles: 1,
 	})
@@ -317,13 +300,13 @@ func buildScheme(logger *zap.SugaredLogger) *runtime.Scheme {
 // AgentDeploy pods without a broker image, so silent fallbacks would just
 // surface as broken pods later.
 func discoverControllerImage(cfg *rest.Config) (string, error) {
-	podName := os.Getenv(envPodName)
+	podName := os.Getenv(kmv1.EnvPodName)
 	if podName == "" {
-		return "", fmt.Errorf("env %s is not set; the controller Deployment must expose it via downward API", envPodName)
+		return "", fmt.Errorf("env %s is not set; the controller Deployment must expose it via downward API", kmv1.EnvPodName)
 	}
-	podNamespace := os.Getenv(envPodNamespace)
+	podNamespace := os.Getenv(kmv1.EnvNamespace)
 	if podNamespace == "" {
-		return "", fmt.Errorf("env %s is not set; the controller Deployment must expose it via downward API", envPodNamespace)
+		return "", fmt.Errorf("env %s is not set; the controller Deployment must expose it via downward API", kmv1.EnvNamespace)
 	}
 
 	clientset, err := kubernetes.NewForConfig(cfg)
@@ -343,7 +326,7 @@ func discoverControllerImage(cfg *rest.Config) (string, error) {
 
 // controllerImageFromPod picks the image of the controller-manager container
 // out of a pod spec. If the pod has a single container we accept it; if
-// multiple, we look for one named controllerContainerName.
+// multiple, we look for one named kmv1.ControllerContainerName.
 func controllerImageFromPod(pod *corev1.Pod) (string, error) {
 	containers := pod.Spec.Containers
 	if len(containers) == 0 {
@@ -356,12 +339,12 @@ func controllerImageFromPod(pod *corev1.Pod) (string, error) {
 		return containers[0].Image, nil
 	}
 	for _, c := range containers {
-		if c.Name == controllerContainerName {
+		if c.Name == kmv1.ContainerNameController {
 			if c.Image == "" {
 				return "", fmt.Errorf("pod %s/%s container %q has empty image", pod.Namespace, pod.Name, c.Name)
 			}
 			return c.Image, nil
 		}
 	}
-	return "", fmt.Errorf("pod %s/%s has no container named %q", pod.Namespace, pod.Name, controllerContainerName)
+	return "", fmt.Errorf("pod %s/%s has no container named %q", pod.Namespace, pod.Name, kmv1.ContainerNameController)
 }

@@ -55,38 +55,9 @@ import (
 )
 
 const (
-	// ControllerName identifies this controller in event sources and logs.
-	ControllerName = "agentdeploy-controller"
-
 	// FinalizerName guards an AgentDeploy against deletion until the
 	// controller has cleaned up the owned pods and service.
-	FinalizerName = "kynomesh.kyno.sh/agentdeploy-controller"
-
-	// agentContainerName is the conventional name of the main user-supplied
-	// container. Sidecar / init containers keep whatever name the user gave.
-	agentContainerName = "agent"
-
-	// brokerContainerName is the name of the broker sidecar the controller
-	// injects into every AgentDeploy pod. The broker fronts the agent over
-	// the A2A protocol (JSON-RPC, REST, gRPC on one port).
-	brokerContainerName = "broker"
-
-	// brokerPort is the port the broker listens on inside each pod. Matches
-	// the broker CLI default (KYNOMESH_BROKER_PORT). Kept const so the
-	// headless-service DNS pattern + this port form a stable agent address.
-	brokerPort = 9100
-
-	// brokerBinaryPath is the in-image entrypoint of the kynomesh binary
-	// (the Dockerfile installs it at /bin/kynomesh).
-	brokerBinaryPath = "/bin/kynomesh"
-
-	// EnvNamespace / EnvPodName are downward-API env vars the controller
-	// injects into every container of an AgentDeploy pod (agent, broker,
-	// and any user-supplied sidecars), so workloads can read their own
-	// pod identity without a downward-API mount. Names match what the
-	// controller itself consumes for self-discovery.
-	EnvNamespace = "NAMESPACE"
-	EnvPodName   = "POD_NAME"
+	FinalizerName = "kynomesh.kyno.sh/" + kmv1.ControllerAgentDeploy
 
 	// headlessServiceSuffix produces the per-deploy headless Service name.
 	headlessServiceSuffix = "-headless"
@@ -114,7 +85,7 @@ type Reconciler struct {
 // not need to call the API server to find it.
 func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredLogger, recorder events.EventRecorder, brokerImage string) *Reconciler {
 	if logger == nil {
-		logger = logging.NewLogger().Named(ControllerName)
+		logger = logging.NewLogger().Named(kmv1.ControllerAgentDeploy)
 	}
 	if recorder == nil {
 		recorder = noopRecorder{}
@@ -341,7 +312,7 @@ func (r *Reconciler) listOwnedPods(ctx context.Context, ad *kmv1.AgentDeploy) ([
 	var list corev1.PodList
 	if err := r.List(ctx, &list,
 		client.InNamespace(ad.Namespace),
-		client.MatchingLabels{kmv1.KeyAppName: ad.Name, kmv1.KeyManagedBy: ControllerName},
+		client.MatchingLabels{kmv1.KeyAppName: ad.Name, kmv1.KeyManagedBy: kmv1.ControllerAgentDeploy},
 	); err != nil {
 		return nil, err
 	}
@@ -382,7 +353,7 @@ func (r *Reconciler) updatePodStatus(ctx context.Context, ad *kmv1.AgentDeploy) 
 	ad.Status.UpdatedReplicas = updated
 	ad.Status.UpdatedReadyReplicas = updatedReady
 	ad.Status.Selector = fmt.Sprintf("%s=%s,%s=%s",
-		kmv1.KeyAppName, ad.Name, kmv1.KeyManagedBy, ControllerName)
+		kmv1.KeyAppName, ad.Name, kmv1.KeyManagedBy, kmv1.ControllerAgentDeploy)
 	return nil
 }
 
@@ -435,7 +406,7 @@ func desiredReplicas(ad *kmv1.AgentDeploy) int {
 // container annotation still points at "agent" for kubectl exec/logs.
 func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
 	agentContainer := corev1.Container{
-		Name: agentContainerName,
+		Name: kmv1.ContainerNameAgent,
 	}
 	if ct := ad.Spec.ContainerTemplate; ct != nil {
 		ct.ApplyToContainer(&agentContainer)
@@ -468,13 +439,13 @@ func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
 func downwardAPIEnv() []corev1.EnvVar {
 	return []corev1.EnvVar{
 		{
-			Name: EnvNamespace,
+			Name: kmv1.EnvNamespace,
 			ValueFrom: &corev1.EnvVarSource{
 				FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.namespace"},
 			},
 		},
 		{
-			Name: EnvPodName,
+			Name: kmv1.EnvPodName,
 			ValueFrom: &corev1.EnvVarSource{
 				FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"},
 			},
@@ -513,16 +484,18 @@ func mergeEnv(existing, overrides []corev1.EnvVar) []corev1.EnvVar {
 // newBrokerContainer builds the A2A broker sidecar.
 func newBrokerContainer(image, encodedAgentDeploy string) corev1.Container {
 	return corev1.Container{
-		Name:    brokerContainerName,
-		Image:   image,
-		Command: []string{brokerBinaryPath},
-		Args:    []string{"broker"},
+		Name:  kmv1.ContainerNameAgentBroker,
+		Image: image,
+		// Args appended to the Dockerfile ENTRYPOINT (/bin/kynomesh); we
+		// deliberately leave Command unset so the entrypoint stays in one
+		// place — the image — rather than being mirrored here.
+		Args: []string{"broker"},
 		Env: []corev1.EnvVar{
 			{Name: kmv1.EnvAgentDeployObject, Value: encodedAgentDeploy},
 		},
 		Ports: []corev1.ContainerPort{{
 			Name:          "a2a",
-			ContainerPort: brokerPort,
+			ContainerPort: kmv1.AgentBrokerPort,
 			Protocol:      corev1.ProtocolTCP,
 		}},
 	}
@@ -548,15 +521,15 @@ func newPod(ad *kmv1.AgentDeploy, replica int, podSpec corev1.PodSpec, hash stri
 			Name:      name,
 			Labels: map[string]string{
 				kmv1.KeyAppName:   ad.Name,
-				kmv1.KeyComponent: "agent",
+				kmv1.KeyComponent: kmv1.ComponentAgent,
 				kmv1.KeyPartOf:    kmv1.Project,
-				kmv1.KeyManagedBy: ControllerName,
+				kmv1.KeyManagedBy: kmv1.ControllerAgentDeploy,
 				kmv1.KeyReplica:   strconv.Itoa(replica),
 			},
 			Annotations: map[string]string{
 				kmv1.KeyHash:             hash,
 				kmv1.KeyReplica:          strconv.Itoa(replica),
-				kmv1.KeyDefaultContainer: agentContainerName,
+				kmv1.KeyDefaultContainer: kmv1.ContainerNameAgent,
 			},
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ad, kmv1.AgentDeployGroupVersionKind)},
 		},
@@ -584,9 +557,9 @@ func newHeadlessService(ad *kmv1.AgentDeploy) *corev1.Service {
 			Name:      headlessServiceName(ad),
 			Labels: map[string]string{
 				kmv1.KeyAppName:   ad.Name,
-				kmv1.KeyComponent: "agent",
+				kmv1.KeyComponent: kmv1.ComponentAgent,
 				kmv1.KeyPartOf:    kmv1.Project,
-				kmv1.KeyManagedBy: ControllerName,
+				kmv1.KeyManagedBy: kmv1.ControllerAgentDeploy,
 			},
 			Annotations:     map[string]string{},
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ad, kmv1.AgentDeployGroupVersionKind)},
@@ -595,7 +568,7 @@ func newHeadlessService(ad *kmv1.AgentDeploy) *corev1.Service {
 			ClusterIP: corev1.ClusterIPNone,
 			Selector: map[string]string{
 				kmv1.KeyAppName:   ad.Name,
-				kmv1.KeyManagedBy: ControllerName,
+				kmv1.KeyManagedBy: kmv1.ControllerAgentDeploy,
 			},
 			// Pods get a DNS A record the instant the kubelet posts an IP,
 			// without waiting for readiness. Agents typically need to

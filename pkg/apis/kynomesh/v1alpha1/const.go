@@ -30,5 +30,27 @@ const (
 	KeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 
 	// ENV vars
-	EnvAgentDeployObject = "KYNOMESH_AGENT_DEPLOY_OBJECT"
+	EnvNamespace              = "NAMESPACE"
+	EnvPodName                = "POD_NAME"
+	EnvAgentDeployObject      = "KYNOMESH_AGENT_DEPLOY_OBJECT"
+	EnvLeaderElectionDisabled = "KYNOMESH_LEADER_ELECTION_DISABLED"
+
+	// Container names
+	ContainerNameAgent       = "agent"
+	ContainerNameAgentBroker = "broker"
+	ContainerNameController  = "controller-manager"
+
+	// Component label values (for KeyComponent)
+	ComponentAgent             = "agent"
+	ComponentControllerManager = "controller-manager"
+
+	// Controller names
+	ControllerAgentDeploy = "agentdeploy-controller"
+	ControllerAgentSet    = "agentset-controller"
+
+	// AgentBrokerPort is the port the broker listens on inside an AgentDeploy
+	// pod, shared by all three A2A transports (JSON-RPC, REST, gRPC).
+	// Used by both the controller (to set the broker container's
+	// containerPort) and the broker CLI (as its default --port).
+	AgentBrokerPort = 9100
 )

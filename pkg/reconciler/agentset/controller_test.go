@@ -94,7 +94,7 @@ func TestBuildAgentDeploys(t *testing.T) {
 		assert.Equal(t, testNamespace, ad.Namespace)
 		assert.Equal(t, agent, ad.Spec.Name)
 		assert.Equal(t, "greeter", ad.Labels[kmv1.KeyAgentSetName])
-		assert.Equal(t, ControllerName, ad.Labels[kmv1.KeyManagedBy])
+		assert.Equal(t, kmv1.ControllerAgentSet, ad.Labels[kmv1.KeyManagedBy])
 		assert.NotEmpty(t, ad.Annotations[kmv1.KeyHash])
 		require.Len(t, ad.OwnerReferences, 1, "controller reference must be set")
 		assert.Equal(t, "greeter", ad.OwnerReferences[0].Name)
