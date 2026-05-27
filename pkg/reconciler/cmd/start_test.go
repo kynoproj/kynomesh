@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -113,6 +114,118 @@ func TestPackageConstants(t *testing.T) {
 	assert.Equal(t, "kynomesh-controller-lock", leaderElectionID)
 	assert.Equal(t, ":9090", metricsAddr)
 	assert.Equal(t, ":8081", probeAddr)
+	// Defaults match client-go upstream so the controller behaves like
+	// every other controller-runtime operator out of the box.
+	assert.Equal(t, 15*time.Second, defaultLeaseDuration)
+	assert.Equal(t, 10*time.Second, defaultRenewDeadline)
+	assert.Equal(t, 2*time.Second, defaultRetryPeriod)
+}
+
+// clearLeaderElectionEnv unsets all three lease env vars for the duration
+// of a test. Necessary because t.Setenv only handles set values, but the
+// helper-under-test reads via os.LookupEnv — a value leaking from another
+// test (or the host shell) would corrupt the defaults assertion.
+func clearLeaderElectionEnv(t *testing.T) {
+	t.Helper()
+	t.Setenv(kmv1.EnvLeaderElectionLeaseDuration, "")
+	t.Setenv(kmv1.EnvLeaderElectionRenewDeadline, "")
+	t.Setenv(kmv1.EnvLeaderElectionRetryPeriod, "")
+}
+
+func TestResolveLeaderElectionTimings_Defaults(t *testing.T) {
+	clearLeaderElectionEnv(t)
+
+	lease, renew, retry, err := resolveLeaderElectionTimings()
+	require.NoError(t, err)
+	assert.Equal(t, defaultLeaseDuration, lease)
+	assert.Equal(t, defaultRenewDeadline, renew)
+	assert.Equal(t, defaultRetryPeriod, retry)
+}
+
+func TestResolveLeaderElectionTimings_HonorsEnvOverrides(t *testing.T) {
+	t.Setenv(kmv1.EnvLeaderElectionLeaseDuration, "30s")
+	t.Setenv(kmv1.EnvLeaderElectionRenewDeadline, "20s")
+	t.Setenv(kmv1.EnvLeaderElectionRetryPeriod, "5s")
+
+	lease, renew, retry, err := resolveLeaderElectionTimings()
+	require.NoError(t, err)
+	assert.Equal(t, 30*time.Second, lease)
+	assert.Equal(t, 20*time.Second, renew)
+	assert.Equal(t, 5*time.Second, retry)
+}
+
+func TestResolveLeaderElectionTimings_RejectsUnparseable(t *testing.T) {
+	cases := []struct {
+		name   string
+		envKey string
+	}{
+		{"lease duration", kmv1.EnvLeaderElectionLeaseDuration},
+		{"renew deadline", kmv1.EnvLeaderElectionRenewDeadline},
+		{"retry period", kmv1.EnvLeaderElectionRetryPeriod},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			clearLeaderElectionEnv(t)
+			t.Setenv(tc.envKey, "not-a-duration")
+
+			_, _, _, err := resolveLeaderElectionTimings()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.envKey, "error must name the offending env var")
+		})
+	}
+}
+
+func TestResolveLeaderElectionTimings_RejectsInvalidOrdering(t *testing.T) {
+	// controller-runtime requires retry < renew < lease. The helper
+	// should reject any input that violates the invariant before the
+	// manager even sees it.
+	cases := []struct {
+		name   string
+		lease  string
+		renew  string
+		retry  string
+		errSub string
+	}{
+		{
+			name:   "retry equals renew",
+			lease:  "15s",
+			renew:  "10s",
+			retry:  "10s",
+			errSub: "retry < renew < lease",
+		},
+		{
+			name:   "renew equals lease",
+			lease:  "10s",
+			renew:  "10s",
+			retry:  "2s",
+			errSub: "retry < renew < lease",
+		},
+		{
+			name:   "lease shorter than renew",
+			lease:  "5s",
+			renew:  "10s",
+			retry:  "2s",
+			errSub: "retry < renew < lease",
+		},
+		{
+			name:   "retry larger than renew",
+			lease:  "15s",
+			renew:  "10s",
+			retry:  "12s",
+			errSub: "retry < renew < lease",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv(kmv1.EnvLeaderElectionLeaseDuration, tc.lease)
+			t.Setenv(kmv1.EnvLeaderElectionRenewDeadline, tc.renew)
+			t.Setenv(kmv1.EnvLeaderElectionRetryPeriod, tc.retry)
+
+			_, _, _, err := resolveLeaderElectionTimings()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.errSub)
+		})
+	}
 }
 
 func TestControllerImageFromPod(t *testing.T) {

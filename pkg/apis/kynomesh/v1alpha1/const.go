@@ -30,10 +30,13 @@ const (
 	KeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 
 	// ENV vars
-	EnvNamespace              = "NAMESPACE"
-	EnvPodName                = "POD_NAME"
-	EnvAgentDeployObject      = "KYNOMESH_AGENT_DEPLOY_OBJECT"
-	EnvLeaderElectionDisabled = "KYNOMESH_LEADER_ELECTION_DISABLED"
+	EnvNamespace                   = "NAMESPACE"
+	EnvPodName                     = "POD_NAME"
+	EnvAgentDeployObject           = "KYNOMESH_AGENT_DEPLOY_OBJECT"
+	EnvLeaderElectionDisabled      = "KYNOMESH_LEADER_ELECTION_DISABLED"
+	EnvLeaderElectionLeaseDuration = "KYNOMESH_LEADER_ELECTION_LEASE_DURATION"
+	EnvLeaderElectionRenewDeadline = "KYNOMESH_LEADER_ELECTION_RENEW_DEADLINE"
+	EnvLeaderElectionRetryPeriod   = "KYNOMESH_LEADER_ELECTION_RETRY_PERIOD"
 
 	// Container names
 	ContainerNameAgent       = "agent"
