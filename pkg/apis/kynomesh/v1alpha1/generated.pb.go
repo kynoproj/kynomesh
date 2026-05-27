@@ -480,8 +480,13 @@ func (m *AgentDeploySpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	if m.Replicas != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.Replicas))
 		i--
-		dAtA[i] = 0x10
+		dAtA[i] = 0x18
 	}
+	i -= len(m.AgentSetName)
+	copy(dAtA[i:], m.AgentSetName)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.AgentSetName)))
+	i--
+	dAtA[i] = 0x12
 	{
 		size, err := m.AbstractAgentDeploy.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
@@ -1365,6 +1370,8 @@ func (m *AgentDeploySpec) Size() (n int) {
 	_ = l
 	l = m.AbstractAgentDeploy.Size()
 	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.AgentSetName)
+	n += 1 + l + sovGenerated(uint64(l))
 	if m.Replicas != nil {
 		n += 1 + sovGenerated(uint64(*m.Replicas))
 	}
@@ -1753,6 +1760,7 @@ func (this *AgentDeploySpec) String() string {
 	}
 	s := strings.Join([]string{`&AgentDeploySpec{`,
 		`AbstractAgentDeploy:` + strings.Replace(strings.Replace(this.AbstractAgentDeploy.String(), "AbstractAgentDeploy", "AbstractAgentDeploy", 1), `&`, ``, 1) + `,`,
+		`AgentSetName:` + fmt.Sprintf("%v", this.AgentSetName) + `,`,
 		`Replicas:` + valueToStringGenerated(this.Replicas) + `,`,
 		`}`,
 	}, "")
@@ -3219,6 +3227,38 @@ func (m *AgentDeploySpec) Unmarshal(dAtA []byte) error {
 			}
 			iNdEx = postIndex
 		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AgentSetName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AgentSetName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Replicas", wireType)
 			}

@@ -735,6 +735,14 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy"),
 						},
 					},
+					"agentSetName": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AgentSetName is the name of the AgentSet that owns this AgentDeploy.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"replicas": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"integer"},
@@ -742,7 +750,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 						},
 					},
 				},
-				Required: []string{"name"},
+				Required: []string{"name", "agentSetName"},
 			},
 		},
 		Dependencies: []string{

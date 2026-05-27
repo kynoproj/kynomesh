@@ -23770,6 +23770,10 @@
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity",
           "description": "The pod's scheduling constraints More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/"
         },
+        "agentSetName": {
+          "description": "AgentSetName is the name of the AgentSet that owns this AgentDeploy.",
+          "type": "string"
+        },
         "automountServiceAccountToken": {
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",
           "type": "boolean"
@@ -23882,7 +23886,8 @@
         }
       },
       "required": [
-        "name"
+        "name",
+        "agentSetName"
       ],
       "type": "object"
     },

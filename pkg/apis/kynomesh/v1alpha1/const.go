@@ -26,6 +26,7 @@ const (
 	KeyManagedBy        = "app.kubernetes.io/managed-by"
 	KeyAppName          = "app.kubernetes.io/name"
 	KeyAgentSetName     = "kynomesh.kyno.sh/agentset-name"
+	KeyAgentDeployName  = "kynomesh.kyno.sh/agentdeploy-name"
 	KeyReplica          = "kynomesh.kyno.sh/replica"
 	KeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 

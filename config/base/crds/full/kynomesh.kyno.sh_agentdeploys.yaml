@@ -489,6 +489,8 @@ spec:
                         x-kubernetes-list-type: atomic
                     type: object
                 type: object
+              agentSetName:
+                type: string
               automountServiceAccountToken:
                 type: boolean
               containerTemplate:
@@ -3176,6 +3178,7 @@ spec:
                   type: object
                 type: array
             required:
+            - agentSetName
             - name
             type: object
           status:

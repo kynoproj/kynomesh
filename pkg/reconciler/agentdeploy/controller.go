@@ -413,7 +413,15 @@ func (r *Reconciler) listOwnedPods(ctx context.Context, ad *kmv1.AgentDeploy) ([
 	var list corev1.PodList
 	if err := r.List(ctx, &list,
 		client.InNamespace(ad.Namespace),
-		client.MatchingLabels{kmv1.KeyAppName: ad.Name, kmv1.KeyManagedBy: kmv1.ControllerAgentDeploy},
+		client.MatchingLabels{
+			// KeyAgentDeployName is the bare agent name (ad.Spec.Name),
+			// not the compound metadata name ad.Name. The {set, agent}
+			// pair is unique by construction, so the three-label
+			// selector still scopes correctly to this AgentDeploy.
+			kmv1.KeyAgentDeployName: ad.Spec.Name,
+			kmv1.KeyAgentSetName:    ad.Spec.AgentSetName,
+			kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
+		},
 	); err != nil {
 		return nil, err
 	}
@@ -453,8 +461,10 @@ func (r *Reconciler) updatePodStatus(ctx context.Context, ad *kmv1.AgentDeploy) 
 	ad.Status.ReadyReplicas = ready
 	ad.Status.UpdatedReplicas = updated
 	ad.Status.UpdatedReadyReplicas = updatedReady
-	ad.Status.Selector = fmt.Sprintf("%s=%s,%s=%s",
-		kmv1.KeyAppName, ad.Name, kmv1.KeyManagedBy, kmv1.ControllerAgentDeploy)
+	ad.Status.Selector = fmt.Sprintf("%s=%s,%s=%s,%s=%s",
+		kmv1.KeyAgentDeployName, ad.Spec.Name,
+		kmv1.KeyAgentSetName, ad.Spec.AgentSetName,
+		kmv1.KeyManagedBy, kmv1.ControllerAgentDeploy)
 	return nil
 }
 
@@ -621,11 +631,17 @@ func newPod(ad *kmv1.AgentDeploy, replica int, podSpec corev1.PodSpec, hash stri
 			Namespace: ad.Namespace,
 			Name:      name,
 			Labels: map[string]string{
-				kmv1.KeyAppName:   ad.Name,
-				kmv1.KeyComponent: kmv1.ComponentAgent,
-				kmv1.KeyPartOf:    kmv1.Project,
-				kmv1.KeyManagedBy: kmv1.ControllerAgentDeploy,
-				kmv1.KeyReplica:   strconv.Itoa(replica),
+				kmv1.KeyAppName: ad.Name,
+				// KeyAgentDeployName carries the *bare* agent name from
+				// spec, not the compound {set}-{agent} metadata name.
+				// Selectors combine it with KeyAgentSetName, which is
+				// unique by construction.
+				kmv1.KeyAgentDeployName: ad.Spec.Name,
+				kmv1.KeyAgentSetName:    ad.Spec.AgentSetName,
+				kmv1.KeyComponent:       kmv1.ComponentAgent,
+				kmv1.KeyPartOf:          kmv1.Project,
+				kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
+				kmv1.KeyReplica:         strconv.Itoa(replica),
 			},
 			Annotations: map[string]string{
 				kmv1.KeyHash:             hash,
@@ -635,11 +651,6 @@ func newPod(ad *kmv1.AgentDeploy, replica int, podSpec corev1.PodSpec, hash stri
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ad, kmv1.AgentDeployGroupVersionKind)},
 		},
 		Spec: podSpec,
-	}
-	// Carry the AgentSet label through if present, so set-level selectors
-	// still find the pods.
-	if setName, ok := ad.Labels[kmv1.KeyAgentSetName]; ok {
-		pod.Labels[kmv1.KeyAgentSetName] = setName
 	}
 	pod.Spec.Hostname = hostname
 	if pod.Spec.Subdomain == "" {
@@ -657,10 +668,12 @@ func newHeadlessService(ad *kmv1.AgentDeploy) *corev1.Service {
 			Namespace: ad.Namespace,
 			Name:      headlessServiceName(ad),
 			Labels: map[string]string{
-				kmv1.KeyAppName:   ad.Name,
-				kmv1.KeyComponent: kmv1.ComponentAgent,
-				kmv1.KeyPartOf:    kmv1.Project,
-				kmv1.KeyManagedBy: kmv1.ControllerAgentDeploy,
+				kmv1.KeyAppName:         ad.Name,
+				kmv1.KeyAgentDeployName: ad.Spec.Name,
+				kmv1.KeyAgentSetName:    ad.Spec.AgentSetName,
+				kmv1.KeyComponent:       kmv1.ComponentAgent,
+				kmv1.KeyPartOf:          kmv1.Project,
+				kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
 			},
 			Annotations:     map[string]string{},
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ad, kmv1.AgentDeployGroupVersionKind)},
@@ -668,8 +681,9 @@ func newHeadlessService(ad *kmv1.AgentDeploy) *corev1.Service {
 		Spec: corev1.ServiceSpec{
 			ClusterIP: corev1.ClusterIPNone,
 			Selector: map[string]string{
-				kmv1.KeyAppName:   ad.Name,
-				kmv1.KeyManagedBy: kmv1.ControllerAgentDeploy,
+				kmv1.KeyAgentDeployName: ad.Spec.Name,
+				kmv1.KeyAgentSetName:    ad.Spec.AgentSetName,
+				kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
 			},
 			// Pods get a DNS A record the instant the kubelet posts an IP,
 			// without waiting for readiness. Agents typically need to

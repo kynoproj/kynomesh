@@ -93,6 +93,10 @@ func TestBuildAgentDeploys(t *testing.T) {
 		require.True(t, ok, "missing child for %s", agent)
 		assert.Equal(t, testNamespace, ad.Namespace)
 		assert.Equal(t, agent, ad.Spec.Name)
+		// AgentSetName lives in spec (source of truth, used by AgentDeploy
+		// controller to project the label onto pods) and as a metadata
+		// label (so kubectl get agentdeploy -l ... works).
+		assert.Equal(t, "greeter", ad.Spec.AgentSetName)
 		assert.Equal(t, "greeter", ad.Labels[kmv1.KeyAgentSetName])
 		assert.Equal(t, kmv1.ControllerAgentSet, ad.Labels[kmv1.KeyManagedBy])
 		assert.NotEmpty(t, ad.Annotations[kmv1.KeyHash])

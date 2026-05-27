@@ -190,9 +190,13 @@ message AgentDeployList {
 message AgentDeploySpec {
   optional AbstractAgentDeploy abstractAgentDeploy = 1;
 
+  // AgentSetName is the name of the AgentSet that owns this AgentDeploy.
+  // +kubebuilder:validation:Required
+  optional string agentSetName = 2;
+
   // +kubebuilder:default=1
   // +optional
-  optional int32 replicas = 2;
+  optional int32 replicas = 3;
 }
 
 message AgentDeployStatus {

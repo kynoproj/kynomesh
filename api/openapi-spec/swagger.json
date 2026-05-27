@@ -23771,12 +23771,17 @@
     "sh.kyno.kynomesh.v1alpha1.AgentDeploySpec": {
       "type": "object",
       "required": [
-        "name"
+        "name",
+        "agentSetName"
       ],
       "properties": {
         "affinity": {
           "description": "The pod's scheduling constraints More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/",
           "$ref": "#/definitions/io.k8s.api.core.v1.Affinity"
+        },
+        "agentSetName": {
+          "description": "AgentSetName is the name of the AgentSet that owns this AgentDeploy.",
+          "type": "string"
         },
         "automountServiceAccountToken": {
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",

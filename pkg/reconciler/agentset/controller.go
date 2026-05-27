@@ -336,6 +336,7 @@ func (r *Reconciler) newAgentDeploy(as *kmv1.AgentSet, agent kmv1.AbstractAgentD
 		},
 		Spec: kmv1.AgentDeploySpec{
 			AbstractAgentDeploy: abstract,
+			AgentSetName:        as.Name,
 		},
 	}
 	if r.scheme != nil {
