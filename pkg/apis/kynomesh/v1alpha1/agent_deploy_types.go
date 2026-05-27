@@ -60,9 +60,12 @@ type AgentDeploy struct {
 
 type AgentDeploySpec struct {
 	AbstractAgentDeploy `json:",inline" protobuf:"bytes,1,opt,name=abstractAgentDeploy"`
+	// AgentSetName is the name of the AgentSet that owns this AgentDeploy.
+	// +kubebuilder:validation:Required
+	AgentSetName string `json:"agentSetName" protobuf:"bytes,2,opt,name=agentSetName"`
 	// +kubebuilder:default=1
 	// +optional
-	Replicas *int32 `json:"replicas,omitempty" protobuf:"varint,2,opt,name=replicas"`
+	Replicas *int32 `json:"replicas,omitempty" protobuf:"varint,3,opt,name=replicas"`
 }
 
 type AbstractAgentDeploy struct {

@@ -675,6 +675,24 @@ type.)
 
 <td>
 
+<code>agentSetName</code></br> <em> string </em>
+</td>
+
+<td>
+
+<p>
+
+AgentSetName is the name of the AgentSet that owns this AgentDeploy.
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
 <code>replicas</code></br> <em> int32 </em>
 </td>
 
@@ -780,6 +798,24 @@ AbstractAgentDeploy </a> </em>
 
 (Members of <code>AbstractAgentDeploy</code> are embedded into this
 type.)
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>agentSetName</code></br> <em> string </em>
+</td>
+
+<td>
+
+<p>
+
+AgentSetName is the name of the AgentSet that owns this AgentDeploy.
 </p>
 
 </td>

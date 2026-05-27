@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -65,6 +66,7 @@ func newAgentDeploy(name string, replicas int32) *kmv1.AgentDeploy {
 		Spec: kmv1.AgentDeploySpec{
 			AbstractAgentDeploy: kmv1.AbstractAgentDeploy{Name: name},
 			Replicas:            &replicas,
+			AgentSetName:        name + "-set",
 		},
 	}
 }
@@ -107,14 +109,50 @@ func TestNewPod_NamingAndDNSWiring(t *testing.T) {
 	assert.Equal(t, "2", pod.Annotations[kmv1.KeyReplica])
 	assert.Equal(t, hash, pod.Annotations[kmv1.KeyHash])
 	assert.Equal(t, "greeter", pod.Labels[kmv1.KeyAppName])
+	// Controller-namespaced identity labels: this is what listOwnedPods,
+	// the headless Service selector, and Status.Selector all key on.
+	assert.Equal(t, "greeter", pod.Labels[kmv1.KeyAgentDeployName])
+	assert.Equal(t, ad.Spec.AgentSetName, pod.Labels[kmv1.KeyAgentSetName])
 	assert.Equal(t, kmv1.ControllerAgentDeploy, pod.Labels[kmv1.KeyManagedBy])
 	require.Len(t, pod.OwnerReferences, 1)
 	assert.True(t, *pod.OwnerReferences[0].Controller)
 }
 
-func TestNewPod_InheritsAgentSetLabel(t *testing.T) {
+func TestNewPod_LabelsUseSpecNameNotMetadataName(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
-	ad.Labels = map[string]string{kmv1.KeyAgentSetName: "greeter-set"}
+	ad.Name = "greeter-set-greeter" // compound metadata name (what AgentSet controller produces)
+	ad.Spec.Name = "greeter"        // bare agent name
+
+	pod := newPod(ad, 0, corev1.PodSpec{}, "h")
+	assert.Equal(t, "greeter", pod.Labels[kmv1.KeyAgentDeployName],
+		"KeyAgentDeployName must be the bare ad.Spec.Name, not the compound ad.Name")
+	// KeyAppName intentionally keeps the compound metadata name — it's
+	// the kubectl/dashboards-facing convention.
+	assert.Equal(t, "greeter-set-greeter", pod.Labels[kmv1.KeyAppName])
+	// Pod name still derives from the compound metadata name so it's
+	// globally unique within the namespace.
+	assert.Contains(t, pod.Name, "greeter-set-greeter-")
+}
+
+func TestNewHeadlessService_SelectorUsesSpecName(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ad.Name = "greeter-set-greeter"
+	ad.Spec.Name = "greeter"
+
+	svc := newHeadlessService(ad)
+	assert.Equal(t, "greeter", svc.Spec.Selector[kmv1.KeyAgentDeployName])
+	assert.Equal(t, "greeter", svc.Labels[kmv1.KeyAgentDeployName])
+	// Service name still derives from the compound metadata name.
+	assert.Equal(t, "greeter-set-greeter-headless", svc.Name)
+}
+
+func TestNewPod_ProjectsAgentSetNameFromSpec(t *testing.T) {
+	// AgentSet ownership is structural: every AgentDeploy carries
+	// Spec.AgentSetName, and newPod projects it onto pod labels. This is
+	// what set-level selectors (e.g. "give me all pods in agent-set X")
+	// rely on.
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.AgentSetName = "greeter-set"
 	pod := newPod(ad, 0, corev1.PodSpec{}, "h")
 	assert.Equal(t, "greeter-set", pod.Labels[kmv1.KeyAgentSetName])
 }
@@ -293,7 +331,16 @@ func TestNewHeadlessService(t *testing.T) {
 	assert.Equal(t, "greeter-headless", svc.Name)
 	assert.Equal(t, corev1.ClusterIPNone, svc.Spec.ClusterIP)
 	assert.True(t, svc.Spec.PublishNotReadyAddresses)
-	assert.Equal(t, "greeter", svc.Spec.Selector[kmv1.KeyAppName])
+	// Selector keys on the controller-namespaced AgentDeploy + AgentSet
+	// labels so it doesn't conflate with the generic app.kubernetes.io/name.
+	assert.Equal(t, "greeter", svc.Spec.Selector[kmv1.KeyAgentDeployName])
+	assert.Equal(t, ad.Spec.AgentSetName, svc.Spec.Selector[kmv1.KeyAgentSetName])
+	assert.Equal(t, kmv1.ControllerAgentDeploy, svc.Spec.Selector[kmv1.KeyManagedBy])
+	// Metadata labels: KeyAppName for kubectl/dashboards; KeyAgentDeployName
+	// and KeyAgentSetName for the controller's own selectors.
+	assert.Equal(t, "greeter", svc.Labels[kmv1.KeyAppName])
+	assert.Equal(t, "greeter", svc.Labels[kmv1.KeyAgentDeployName])
+	assert.Equal(t, ad.Spec.AgentSetName, svc.Labels[kmv1.KeyAgentSetName])
 	require.Len(t, svc.OwnerReferences, 1)
 }
 
@@ -434,9 +481,11 @@ func TestReconcile_DeletesOrphanedReplica(t *testing.T) {
 			Namespace: testNamespace,
 			Name:      "greeter-5-zzzzz",
 			Labels: map[string]string{
-				kmv1.KeyAppName:   "greeter",
-				kmv1.KeyManagedBy: kmv1.ControllerAgentDeploy,
-				kmv1.KeyReplica:   "5",
+				kmv1.KeyAppName:         "greeter",
+				kmv1.KeyAgentDeployName: "greeter",
+				kmv1.KeyAgentSetName:    "greeter-set",
+				kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
+				kmv1.KeyReplica:         "5",
 			},
 			Annotations: map[string]string{kmv1.KeyReplica: "5"},
 		},
@@ -485,9 +534,11 @@ func TestReconcile_DeletionCleansEverything(t *testing.T) {
 			Namespace: testNamespace,
 			Name:      "greeter-0-aaaaa",
 			Labels: map[string]string{
-				kmv1.KeyAppName:   "greeter",
-				kmv1.KeyManagedBy: kmv1.ControllerAgentDeploy,
-				kmv1.KeyReplica:   "0",
+				kmv1.KeyAppName:         "greeter",
+				kmv1.KeyAgentDeployName: "greeter",
+				kmv1.KeyAgentSetName:    "greeter-set",
+				kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
+				kmv1.KeyReplica:         "0",
 			},
 			Annotations: map[string]string{kmv1.KeyReplica: "0"},
 		},
@@ -527,6 +578,11 @@ func TestReconcile_StatusReadyCount(t *testing.T) {
 	assert.Equal(t, uint32(2), got.Status.DesiredReplicas)
 	assert.Equal(t, uint32(2), got.Status.Replicas)
 	assert.Equal(t, uint32(1), got.Status.ReadyReplicas)
+	wantSelector := fmt.Sprintf("%s=greeter,%s=%s,%s=%s",
+		kmv1.KeyAgentDeployName,
+		kmv1.KeyAgentSetName, got.Spec.AgentSetName,
+		kmv1.KeyManagedBy, kmv1.ControllerAgentDeploy)
+	assert.Equal(t, wantSelector, got.Status.Selector)
 }
 
 func TestReconcile_NotFoundIsNoop(t *testing.T) {
