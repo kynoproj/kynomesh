@@ -65,6 +65,13 @@ const (
 	// If the API server is unreachable that long, fail fast — the
 	// controller can't function without it anyway.
 	imageDiscoveryTimeout = 30 * time.Second
+
+	// Leader-election lease defaults. These match the client-go upstream
+	// defaults (and numaflow's choices) so the controller behaves
+	// predictably for operators familiar with controller-runtime.
+	defaultLeaseDuration = 15 * time.Second
+	defaultRenewDeadline = 10 * time.Second
+	defaultRetryPeriod   = 2 * time.Second
 )
 
 // Start boots the controller manager. It blocks until the signal handler
@@ -92,12 +99,20 @@ func Start(namespaced bool, managedNamespace string) {
 		"platform", v.Platform,
 	)
 
+	leaseDuration, renewDeadline, retryPeriod, err := resolveLeaderElectionTimings()
+	if err != nil {
+		logger.Fatalw("invalid leader election timings", "err", err)
+	}
+
 	opts := ctrl.Options{
 		Scheme:                 buildScheme(logger),
 		Metrics:                metricsserver.Options{BindAddress: metricsAddr},
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         !sharedutil.LookupEnvBoolOr(kmv1.EnvLeaderElectionDisabled, false),
 		LeaderElectionID:       leaderElectionID,
+		LeaseDuration:          &leaseDuration,
+		RenewDeadline:          &renewDeadline,
+		RetryPeriod:            &retryPeriod,
 	}
 	if namespaced {
 		opts.Cache = cache.Options{
@@ -136,6 +151,9 @@ func Start(namespaced bool, managedNamespace string) {
 		"namespaced", namespaced,
 		"managedNamespace", managedNamespace,
 		"leaderElection", opts.LeaderElection,
+		"leaseDuration", leaseDuration,
+		"renewDeadline", renewDeadline,
+		"retryPeriod", retryPeriod,
 		"metricsBindAddress", opts.Metrics.BindAddress,
 		"healthProbeBindAddress", opts.HealthProbeBindAddress,
 		"brokerImage", brokerImage,
@@ -143,6 +161,41 @@ func Start(namespaced bool, managedNamespace string) {
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		logger.Fatalw("controller manager exited with error", "err", err)
 	}
+}
+
+// resolveLeaderElectionTimings reads the lease-duration / renew-deadline /
+// retry-period env vars, parses each via time.ParseDuration, falls back to
+// the client-go defaults on missing values.
+func resolveLeaderElectionTimings() (lease, renew, retry time.Duration, err error) {
+	type entry struct {
+		envKey string
+		def    time.Duration
+		out    *time.Duration
+	}
+	entries := []entry{
+		{kmv1.EnvLeaderElectionLeaseDuration, defaultLeaseDuration, &lease},
+		{kmv1.EnvLeaderElectionRenewDeadline, defaultRenewDeadline, &renew},
+		{kmv1.EnvLeaderElectionRetryPeriod, defaultRetryPeriod, &retry},
+	}
+	for _, e := range entries {
+		raw := sharedutil.LookupEnvStringOr(e.envKey, "")
+		if raw == "" {
+			*e.out = e.def
+			continue
+		}
+		d, parseErr := time.ParseDuration(raw)
+		if parseErr != nil {
+			return 0, 0, 0, fmt.Errorf("invalid %s=%q: %w", e.envKey, raw, parseErr)
+		}
+		*e.out = d
+	}
+	if retry >= renew || renew >= lease {
+		return 0, 0, 0, fmt.Errorf(
+			"leader election timings must satisfy retry < renew < lease (got retry=%s renew=%s lease=%s)",
+			retry, renew, lease,
+		)
+	}
+	return lease, renew, retry, nil
 }
 
 // registerAgentSetController wires the AgentSet reconciler into the manager.
@@ -292,13 +345,7 @@ func buildScheme(logger *zap.SugaredLogger) *runtime.Scheme {
 }
 
 // discoverControllerImage reads the controller's own pod from the API server
-// and returns the image of the controller-manager container. The pod
-// coordinates are taken from the POD_NAME / NAMESPACE env vars, which
-// the controller Deployment is expected to populate via the downward API.
-//
-// Failing at startup is the right behaviour: the controller cannot create
-// AgentDeploy pods without a broker image, so silent fallbacks would just
-// surface as broken pods later.
+// and returns the image of the controller-manager container.
 func discoverControllerImage(cfg *rest.Config) (string, error) {
 	podName := os.Getenv(kmv1.EnvPodName)
 	if podName == "" {
