@@ -117,13 +117,16 @@ const JSONRPCEndpoint = "/rpc"
 const RESTEndpoint = "/api"
 
 // JSONRPCAddr / RESTAddr / GRPCAddr format the bind address into the URL
-// shape each transport advertises on its AgentInterface entry.
+// shape each transport advertises on its AgentInterface entry. The broker
+// terminates TLS on its single shared port using an in-process self-signed
+// cert, so JSON-RPC and REST advertise https URLs and gRPC clients must
+// dial with TLS credentials.
 func JSONRPCAddr(host string, port int) string {
-	return fmt.Sprintf("http://%s:%d%s", host, port, JSONRPCEndpoint)
+	return fmt.Sprintf("https://%s:%d%s", host, port, JSONRPCEndpoint)
 }
 
 func RESTAddr(host string, port int) string {
-	return fmt.Sprintf("http://%s:%d%s", host, port, RESTEndpoint)
+	return fmt.Sprintf("https://%s:%d%s", host, port, RESTEndpoint)
 }
 
 func GRPCAddr(host string, port int) string {
