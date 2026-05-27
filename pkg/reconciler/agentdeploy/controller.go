@@ -414,12 +414,8 @@ func (r *Reconciler) listOwnedPods(ctx context.Context, ad *kmv1.AgentDeploy) ([
 	if err := r.List(ctx, &list,
 		client.InNamespace(ad.Namespace),
 		client.MatchingLabels{
-			// KeyAgentDeployName is the bare agent name (ad.Spec.Name),
-			// not the compound metadata name ad.Name. The {set, agent}
-			// pair is unique by construction, so the three-label
-			// selector still scopes correctly to this AgentDeploy.
-			kmv1.KeyAgentDeployName: ad.Spec.Name,
 			kmv1.KeyAgentSetName:    ad.Spec.AgentSetName,
+			kmv1.KeyAgentDeployName: ad.Spec.Name,
 			kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
 		},
 	); err != nil {
@@ -462,8 +458,8 @@ func (r *Reconciler) updatePodStatus(ctx context.Context, ad *kmv1.AgentDeploy) 
 	ad.Status.UpdatedReplicas = updated
 	ad.Status.UpdatedReadyReplicas = updatedReady
 	ad.Status.Selector = fmt.Sprintf("%s=%s,%s=%s,%s=%s",
-		kmv1.KeyAgentDeployName, ad.Spec.Name,
 		kmv1.KeyAgentSetName, ad.Spec.AgentSetName,
+		kmv1.KeyAgentDeployName, ad.Spec.Name,
 		kmv1.KeyManagedBy, kmv1.ControllerAgentDeploy)
 	return nil
 }
@@ -631,13 +627,9 @@ func newPod(ad *kmv1.AgentDeploy, replica int, podSpec corev1.PodSpec, hash stri
 			Namespace: ad.Namespace,
 			Name:      name,
 			Labels: map[string]string{
-				kmv1.KeyAppName: ad.Name,
-				// KeyAgentDeployName carries the *bare* agent name from
-				// spec, not the compound {set}-{agent} metadata name.
-				// Selectors combine it with KeyAgentSetName, which is
-				// unique by construction.
-				kmv1.KeyAgentDeployName: ad.Spec.Name,
+				kmv1.KeyAppName:         ad.Name,
 				kmv1.KeyAgentSetName:    ad.Spec.AgentSetName,
+				kmv1.KeyAgentDeployName: ad.Spec.Name,
 				kmv1.KeyComponent:       kmv1.ComponentAgent,
 				kmv1.KeyPartOf:          kmv1.Project,
 				kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
@@ -669,8 +661,8 @@ func newHeadlessService(ad *kmv1.AgentDeploy) *corev1.Service {
 			Name:      headlessServiceName(ad),
 			Labels: map[string]string{
 				kmv1.KeyAppName:         ad.Name,
-				kmv1.KeyAgentDeployName: ad.Spec.Name,
 				kmv1.KeyAgentSetName:    ad.Spec.AgentSetName,
+				kmv1.KeyAgentDeployName: ad.Spec.Name,
 				kmv1.KeyComponent:       kmv1.ComponentAgent,
 				kmv1.KeyPartOf:          kmv1.Project,
 				kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
@@ -681,8 +673,8 @@ func newHeadlessService(ad *kmv1.AgentDeploy) *corev1.Service {
 		Spec: corev1.ServiceSpec{
 			ClusterIP: corev1.ClusterIPNone,
 			Selector: map[string]string{
-				kmv1.KeyAgentDeployName: ad.Spec.Name,
 				kmv1.KeyAgentSetName:    ad.Spec.AgentSetName,
+				kmv1.KeyAgentDeployName: ad.Spec.Name,
 				kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
 			},
 			// Pods get a DNS A record the instant the kubelet posts an IP,

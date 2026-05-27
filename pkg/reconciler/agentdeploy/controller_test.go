@@ -56,13 +56,6 @@ func mustScheme(t *testing.T) *runtime.Scheme {
 }
 
 func newAgentDeploy(name string, replicas int32) *kmv1.AgentDeploy {
-	// Every AgentDeploy has an AgentSet parent in production. The helper
-	// synthesises a deterministic AgentSet name so the controller's
-	// label-projection and selector logic exercises the realistic path.
-	// metadata.Name and Spec.Name are kept equal here for test ergonomics
-	// — most tests address the object by its bare name. The "compound
-	// metadata name, bare spec name" production shape is exercised
-	// explicitly by TestNewPod_LabelsUseSpecNameNotMetadataName.
 	return &kmv1.AgentDeploy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:       name,
