@@ -119,12 +119,6 @@ func TestNewPod_NamingAndDNSWiring(t *testing.T) {
 }
 
 func TestNewPod_LabelsUseSpecNameNotMetadataName(t *testing.T) {
-	// In production the AgentSet controller stamps the AgentDeploy's
-	// metadata.Name as "{setName}-{agentName}" but Spec.Name carries the
-	// bare agent name. Selectors and labels must key on Spec.Name —
-	// otherwise two AgentSets each defining an agent "alpha" would
-	// produce different KeyAgentDeployName values even though they
-	// model the same logical agent.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Name = "greeter-set-greeter" // compound metadata name (what AgentSet controller produces)
 	ad.Spec.Name = "greeter"        // bare agent name
@@ -141,9 +135,6 @@ func TestNewPod_LabelsUseSpecNameNotMetadataName(t *testing.T) {
 }
 
 func TestNewHeadlessService_SelectorUsesSpecName(t *testing.T) {
-	// Same invariant as TestNewPod_LabelsUseSpecNameNotMetadataName, but
-	// for the headless Service — its selector must match the pod labels
-	// we just verified, which means keying on ad.Spec.Name.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Name = "greeter-set-greeter"
 	ad.Spec.Name = "greeter"
@@ -587,9 +578,6 @@ func TestReconcile_StatusReadyCount(t *testing.T) {
 	assert.Equal(t, uint32(2), got.Status.DesiredReplicas)
 	assert.Equal(t, uint32(2), got.Status.Replicas)
 	assert.Equal(t, uint32(1), got.Status.ReadyReplicas)
-	// Status.Selector is observable to kubectl scale — it must key on the
-	// same labels that listOwnedPods and the headless Service select on:
-	// AgentDeploy identity, AgentSet identity, and the managed-by sentinel.
 	wantSelector := fmt.Sprintf("%s=greeter,%s=%s,%s=%s",
 		kmv1.KeyAgentDeployName,
 		kmv1.KeyAgentSetName, got.Spec.AgentSetName,
