@@ -22,6 +22,7 @@ package cmd
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
@@ -34,11 +35,11 @@ import (
 	a2agrpc "github.com/a2aproject/a2a-go/v2/a2agrpc/v1"
 	"github.com/a2aproject/a2a-go/v2/a2asrv"
 	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 
 	"github.com/kynoproj/kynomesh/pkg/broker"
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
+	sharedtls "github.com/kynoproj/kynomesh/pkg/shared/tls"
 	"github.com/kynoproj/kynomesh/pkg/version"
 )
 
@@ -55,10 +56,11 @@ const (
 )
 
 // Start boots the broker. All three A2A transports — JSON-RPC, REST, and
-// gRPC — share a single TCP port, multiplexed by an h2c-wrapped HTTP
-// handler that dispatches HTTP/2 gRPC traffic to the gRPC server and
-// everything else to the HTTP mux. The function blocks until SIGINT or
-// SIGTERM is received, then gracefully shuts the listener down.
+// gRPC — share a single TCP port served over TLS with a freshly minted
+// self-signed cert. HTTP/2 is negotiated via ALPN, and gRPC requests are
+// dispatched to the gRPC server based on Content-Type; HTTP/1.1 JSON-RPC
+// and REST share the same handler chain. The function blocks until SIGINT
+// or SIGTERM is received, then gracefully shuts the listener down.
 //
 // advertiseHost is what the published AgentCard tells clients to dial. If
 // empty, AdvertiseHostDefault is used.
@@ -93,7 +95,15 @@ func Start(port int, advertiseHost string) {
 	grpcSrv := grpc.NewServer()
 	a2agrpc.NewHandler(requestHandler).RegisterWith(grpcSrv)
 
-	httpSrv := newMultiplexedServer(port, requestHandler, agentCard, grpcSrv)
+	cert, err := sharedtls.GenerateX509KeyPair()
+	if err != nil {
+		logger.Fatalw("failed to generate broker TLS certificate", "err", err)
+	}
+
+	httpSrv, err := newMultiplexedServer(port, requestHandler, agentCard, grpcSrv, cert)
+	if err != nil {
+		logger.Fatalw("failed to build broker server", "err", err)
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -103,8 +113,10 @@ func Start(port int, advertiseHost string) {
 		logger.Infow("starting A2A transports on shared port",
 			"port", port,
 			"jsonrpcPath", broker.JSONRPCEndpoint,
+			"tls", true,
 		)
-		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		// Empty cert/key paths → use httpSrv.TLSConfig.Certificates.
+		if err := httpSrv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serveErr <- fmt.Errorf("broker server: %w", err)
 			return
 		}
@@ -135,16 +147,18 @@ func Start(port int, advertiseHost string) {
 	logger.Infow("broker stopped cleanly")
 }
 
-// newMultiplexedServer builds the single *http.Server that fronts all three
-// A2A transports. The h2c wrapper lets gRPC (HTTP/2 cleartext) share the
-// listener with HTTP/1.1 JSON-RPC and REST traffic; the inner dispatch
-// routes by Content-Type so the gRPC server only sees gRPC frames.
+// newMultiplexedServer builds the single *http.Server that fronts all
+// three A2A transports over TLS. HTTP/2 is negotiated via ALPN ("h2"),
+// which lets gRPC ride the same listener as HTTP/1.1 JSON-RPC and REST.
+// The handler dispatches by Content-Type so the gRPC server only sees
+// gRPC frames.
 func newMultiplexedServer(
 	port int,
 	h a2asrv.RequestHandler,
 	card *a2a.AgentCard,
 	grpcSrv *grpc.Server,
-) *http.Server {
+	cert *tls.Certificate,
+) (*http.Server, error) {
 	httpMux := http.NewServeMux()
 	httpMux.Handle(broker.JSONRPCEndpoint, a2asrv.NewJSONRPCHandler(h))
 	httpMux.Handle(a2asrv.WellKnownAgentCardPath, a2asrv.NewStaticAgentCardHandler(card))
@@ -162,11 +176,25 @@ func newMultiplexedServer(
 		httpMux.ServeHTTP(w, r)
 	})
 
-	return &http.Server{
+	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", port),
-		Handler:           h2c.NewHandler(dispatch, &http2.Server{}),
+		Handler:           dispatch,
 		ReadHeaderTimeout: 10 * time.Second,
+		TLSConfig: &tls.Config{
+			Certificates: []tls.Certificate{*cert},
+			MinVersion:   tls.VersionTLS12,
+			// ALPN advertises h2 first so gRPC clients land on HTTP/2;
+			// http/1.1 stays for the JSON-RPC and REST transports.
+			NextProtos: []string{"h2", "http/1.1"},
+		},
 	}
+	// Wire the http2 server into srv so ServeTLS will dispatch H2 frames
+	// to net/http's HTTP/2 stack — which then calls our Handler with
+	// r.ProtoMajor == 2 for gRPC traffic.
+	if err := http2.ConfigureServer(srv, &http2.Server{}); err != nil {
+		return nil, fmt.Errorf("configure http/2: %w", err)
+	}
+	return srv, nil
 }
 
 // isGRPCRequest reports whether r looks like a gRPC call. gRPC speaks

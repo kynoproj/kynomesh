@@ -26,8 +26,11 @@ import (
 )
 
 func TestAddrHelpers(t *testing.T) {
-	assert.Equal(t, "http://broker.local:9100/rpc", JSONRPCAddr("broker.local", 9100))
-	assert.Equal(t, "http://broker.local:9101/api", RESTAddr("broker.local", 9101))
+	// JSON-RPC and REST advertise https because the broker terminates TLS
+	// on its shared port. gRPC URLs are host:port (no scheme) — clients
+	// supply TLS credentials directly.
+	assert.Equal(t, "https://broker.local:9100/rpc", JSONRPCAddr("broker.local", 9100))
+	assert.Equal(t, "https://broker.local:9101/api", RESTAddr("broker.local", 9101))
 	assert.Equal(t, "broker.local:9102", GRPCAddr("broker.local", 9102))
 }
 
