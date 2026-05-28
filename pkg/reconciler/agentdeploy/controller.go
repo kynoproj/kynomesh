@@ -487,10 +487,6 @@ func (r *Reconciler) persist(ctx context.Context, original, updated *kmv1.AgentD
 	return nil
 }
 
-// ---------------------------------------------------------------------------
-// Builders
-// ---------------------------------------------------------------------------
-
 // desiredReplicas returns the replica count from spec, defaulting to 1.
 func desiredReplicas(ad *kmv1.AgentDeploy) int {
 	if ad.Spec.Replicas == nil {
@@ -507,10 +503,6 @@ func desiredReplicas(ad *kmv1.AgentDeploy) int {
 // deterministic per (spec, template, brokerImage) so the hash over it is a
 // meaningful drift signal — changing the broker image triggers a pod
 // recreate, just like changing the agent spec.
-//
-// Container order: [agent, broker, ...sidecars]. The broker sits between the
-// user's agent and any user-supplied sidecars so the conventional default
-// container annotation still points at "agent" for kubectl exec/logs.
 func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
 	agentContainer := corev1.Container{
 		Name: kmv1.ContainerNameAgent,
@@ -524,20 +516,59 @@ func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
 	ps := corev1.PodSpec{
 		Containers:     containers,
 		InitContainers: ad.Spec.InitContainers,
-		Volumes:        ad.Spec.Volumes,
+		Volumes:        append([]corev1.Volume{kynomeshRunVolume()}, ad.Spec.Volumes...),
 		Subdomain:      headlessServiceName(ad),
 	}
 	ad.Spec.ApplyToPodSpec(&ps)
 
-	// Inject downward-API env into every container so workloads can read
-	// their own pod identity. Done last so it covers user-supplied
-	// sidecars too. Built-in env always wins on key conflict — users must
-	// not be able to lie about their own pod identity.
 	builtin := downwardAPIEnv()
 	for i := range ps.Containers {
 		ps.Containers[i].Env = mergeEnv(ps.Containers[i].Env, builtin)
 	}
+
+	// Mount the shared kynomesh-run tmpfs on every runtime container.
+	mount := kynomeshRunMount()
+	for i := range ps.Containers {
+		ps.Containers[i].VolumeMounts = appendMountIfAbsent(ps.Containers[i].VolumeMounts, mount)
+	}
 	return ps
+}
+
+// kynomeshRunVolume returns the tmpfs-backed Volume used by every
+// AgentDeploy pod.
+func kynomeshRunVolume() corev1.Volume {
+	return corev1.Volume{
+		Name: kmv1.VolumeNameKynomeshRun,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{
+				Medium: corev1.StorageMediumMemory,
+			},
+		},
+	}
+}
+
+// kynomeshRunMount returns the per-container mount for the shared
+// kynomesh-run volume. Mounted read-write because both the broker
+// (writer) and the agent (reader) need access; ReadOnly would lock the
+// broker out.
+func kynomeshRunMount() corev1.VolumeMount {
+	return corev1.VolumeMount{
+		Name:      kmv1.VolumeNameKynomeshRun,
+		MountPath: kmv1.PathKynomeshRun,
+	}
+}
+
+// appendMountIfAbsent adds m to mounts unless an entry with the same
+// Name is already present. Idempotent so a user can spec their own
+// VolumeMount for kynomesh-run (e.g., with a different MountPath) without
+// the controller appending a duplicate that would fail pod admission.
+func appendMountIfAbsent(mounts []corev1.VolumeMount, m corev1.VolumeMount) []corev1.VolumeMount {
+	for _, existing := range mounts {
+		if existing.Name == m.Name {
+			return mounts
+		}
+	}
+	return append(mounts, m)
 }
 
 // downwardAPIEnv returns the env vars every AgentDeploy container receives:

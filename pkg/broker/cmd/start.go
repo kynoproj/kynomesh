@@ -80,12 +80,12 @@ const (
 // process's whole lifetime — handed around between Start and its helpers
 // to keep their signatures compact.
 type brokerRuntime struct {
-	logger       *zap.SugaredLogger
-	counters     *broker.Counters
-	enabled      map[a2a.TransportProtocol]bool
-	httpProxies  map[a2a.TransportProtocol]http.Handler
-	grpcServer   *grpc.Server
-	grpcConn     *grpc.ClientConn // nil if gRPC isn't enabled
+	logger      *zap.SugaredLogger
+	counters    *broker.Counters
+	enabled     map[a2a.TransportProtocol]bool
+	httpProxies map[a2a.TransportProtocol]http.Handler
+	grpcServer  *grpc.Server
+	grpcConn    *grpc.ClientConn // nil if gRPC isn't enabled
 }
 
 // Start boots the broker. It reads the user agent's AgentCard, brings up

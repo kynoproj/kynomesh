@@ -196,6 +196,97 @@ func TestBuildPodSpec_PreservesUserSidecarsAfterBroker(t *testing.T) {
 	assert.Equal(t, "user-sidecar", ps.Containers[2].Name)
 }
 
+func TestBuildPodSpec_InjectsKynomeshRunVolume(t *testing.T) {
+	// The volume is tmpfs-backed so the broker's UDS socket lives in
+	// memory, not on disk. Exactly one copy must appear; appearing
+	// multiple times would fail pod admission.
+	ad := newAgentDeploy("greeter", 1)
+	ps := buildPodSpec(ad, testBrokerImage)
+
+	var got *corev1.Volume
+	matches := 0
+	for i := range ps.Volumes {
+		if ps.Volumes[i].Name == kmv1.VolumeNameKynomeshRun {
+			matches++
+			got = &ps.Volumes[i]
+		}
+	}
+	require.Equal(t, 1, matches, "kynomesh-run volume must be present exactly once")
+	require.NotNil(t, got.EmptyDir, "expected an EmptyDir source")
+	assert.Equal(t, corev1.StorageMediumMemory, got.EmptyDir.Medium,
+		"emptyDir must use tmpfs so the UDS socket doesn't touch disk")
+}
+
+func TestBuildPodSpec_MountsKynomeshRunOnRuntimeContainersOnly(t *testing.T) {
+	// All runtime containers — agent, broker, user sidecars — need the
+	// shared mount so the agent can reach the broker's UDS socket. Init
+	// containers are intentionally excluded: they run before the broker
+	// has even started and shouldn't be in the socket's lifecycle path.
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
+	ad.Spec.InitContainers = []corev1.Container{{Name: "init-1", Image: "busybox"}}
+
+	ps := buildPodSpec(ad, testBrokerImage)
+
+	checkMount := func(t *testing.T, mounts []corev1.VolumeMount, owner string) {
+		t.Helper()
+		matches := 0
+		for _, m := range mounts {
+			if m.Name == kmv1.VolumeNameKynomeshRun {
+				matches++
+				assert.Equal(t, kmv1.PathKynomeshRun, m.MountPath,
+					"%s must mount kynomesh-run at the canonical path", owner)
+			}
+		}
+		assert.Equal(t, 1, matches, "%s must have exactly one kynomesh-run mount", owner)
+	}
+
+	require.Len(t, ps.Containers, 3)
+	checkMount(t, ps.Containers[0].VolumeMounts, kmv1.ContainerNameAgent)
+	checkMount(t, ps.Containers[1].VolumeMounts, kmv1.ContainerNameAgentBroker)
+	checkMount(t, ps.Containers[2].VolumeMounts, "user-sidecar")
+
+	// Init containers must NOT receive the mount.
+	require.Len(t, ps.InitContainers, 1)
+	for _, m := range ps.InitContainers[0].VolumeMounts {
+		assert.NotEqual(t, kmv1.VolumeNameKynomeshRun, m.Name,
+			"init containers must not carry the kynomesh-run mount")
+	}
+}
+
+func TestBuildPodSpec_PreservesUserVolumesAlongsideKynomeshRun(t *testing.T) {
+	// User-supplied volumes must still flow through unchanged — the
+	// controller-injected kynomesh-run is additive.
+	userVol := corev1.Volume{
+		Name:         "user-config",
+		VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}},
+	}
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.Volumes = []corev1.Volume{userVol}
+
+	ps := buildPodSpec(ad, testBrokerImage)
+
+	names := make(map[string]int, len(ps.Volumes))
+	for _, v := range ps.Volumes {
+		names[v.Name]++
+	}
+	assert.Equal(t, 1, names[kmv1.VolumeNameKynomeshRun])
+	assert.Equal(t, 1, names["user-config"])
+}
+
+func TestAppendMountIfAbsent_IdempotentOnNameMatch(t *testing.T) {
+	// If a user's container already declares a mount with the kynomesh-run
+	// volume name (e.g., they shadowed it via their own template), the
+	// controller's append step must not produce a duplicate — K8s rejects
+	// pods with duplicate mount names.
+	existing := []corev1.VolumeMount{
+		{Name: kmv1.VolumeNameKynomeshRun, MountPath: "/custom/path"},
+	}
+	got := appendMountIfAbsent(existing, kynomeshRunMount())
+	require.Len(t, got, 1)
+	assert.Equal(t, "/custom/path", got[0].MountPath, "user-supplied mount path must be preserved")
+}
+
 func TestBuildPodSpec_BrokerCarriesEncodedAgentDeployEnv(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	ps := buildPodSpec(ad, testBrokerImage)
