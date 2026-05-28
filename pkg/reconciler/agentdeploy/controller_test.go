@@ -147,10 +147,6 @@ func TestNewHeadlessService_SelectorUsesSpecName(t *testing.T) {
 }
 
 func TestNewPod_ProjectsAgentSetNameFromSpec(t *testing.T) {
-	// AgentSet ownership is structural: every AgentDeploy carries
-	// Spec.AgentSetName, and newPod projects it onto pod labels. This is
-	// what set-level selectors (e.g. "give me all pods in agent-set X")
-	// rely on.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.AgentSetName = "greeter-set"
 	pod := newPod(ad, 0, corev1.PodSpec{}, "h")
@@ -219,9 +215,9 @@ func TestBuildPodSpec_InjectsKynomeshRunVolume(t *testing.T) {
 
 func TestBuildPodSpec_MountsKynomeshRunOnRuntimeContainersOnly(t *testing.T) {
 	// All runtime containers — agent, broker, user sidecars — need the
-	// shared mount so the agent can reach the broker's UDS socket. Init
-	// containers are intentionally excluded: they run before the broker
-	// has even started and shouldn't be in the socket's lifecycle path.
+	// shared mount so the agent can reach the broker's UDS socket. The
+	// controller-injected init-socket container also gets the mount
+	// (it writes the placeholder); user-supplied init containers do not.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
 	ad.Spec.InitContainers = []corev1.Container{{Name: "init-1", Image: "busybox"}}
@@ -246,12 +242,39 @@ func TestBuildPodSpec_MountsKynomeshRunOnRuntimeContainersOnly(t *testing.T) {
 	checkMount(t, ps.Containers[1].VolumeMounts, kmv1.ContainerNameAgentBroker)
 	checkMount(t, ps.Containers[2].VolumeMounts, "user-sidecar")
 
-	// Init containers must NOT receive the mount.
-	require.Len(t, ps.InitContainers, 1)
-	for _, m := range ps.InitContainers[0].VolumeMounts {
+	// Init containers: index 0 is the controller-injected init-socket
+	// (must have the mount); index 1 is the user's init-1 (must not).
+	require.Len(t, ps.InitContainers, 2)
+	assert.Equal(t, kmv1.ContainerNameInitSocket, ps.InitContainers[0].Name)
+	checkMount(t, ps.InitContainers[0].VolumeMounts, kmv1.ContainerNameInitSocket)
+
+	assert.Equal(t, "init-1", ps.InitContainers[1].Name)
+	for _, m := range ps.InitContainers[1].VolumeMounts {
 		assert.NotEqual(t, kmv1.VolumeNameKynomeshRun, m.Name,
-			"init containers must not carry the kynomesh-run mount")
+			"user-supplied init containers must not carry the kynomesh-run mount")
 	}
+}
+
+func TestBuildPodSpec_PrependsInitSocketContainer(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.InitContainers = []corev1.Container{{Name: "user-init", Image: "busybox"}}
+
+	ps := buildPodSpec(ad, testBrokerImage)
+	require.Len(t, ps.InitContainers, 2)
+
+	init := ps.InitContainers[0]
+	assert.Equal(t, kmv1.ContainerNameInitSocket, init.Name)
+	assert.Equal(t, testBrokerImage, init.Image, "must reuse the broker image — they share the kynomesh binary")
+	assert.Equal(t, []string{"init-socket"}, init.Args)
+
+	// The init container must carry the kynomesh-run mount so it can
+	// write the placeholder file there.
+	require.Len(t, init.VolumeMounts, 1)
+	assert.Equal(t, kmv1.VolumeNameKynomeshRun, init.VolumeMounts[0].Name)
+	assert.Equal(t, kmv1.PathKynomeshRun, init.VolumeMounts[0].MountPath)
+
+	// User init containers are preserved verbatim after the injected one.
+	assert.Equal(t, "user-init", ps.InitContainers[1].Name)
 }
 
 func TestBuildPodSpec_PreservesUserVolumesAlongsideKynomeshRun(t *testing.T) {
