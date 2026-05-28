@@ -44,6 +44,7 @@ const (
 	ContainerNameAgent       = "agent"
 	ContainerNameAgentBroker = "broker"
 	ContainerNameController  = "controller-manager"
+	ContainerNameInitSocket  = "init-socket"
 
 	// Component label values (for KeyComponent)
 	ComponentAgent             = "agent"

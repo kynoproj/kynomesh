@@ -513,9 +513,11 @@ func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
 	containers := []corev1.Container{agentContainer, newBrokerContainer(brokerImage, encodeAgentDeploy(ad))}
 	containers = append(containers, ad.Spec.Sidecars...)
 
+	initContainers := append([]corev1.Container{newInitSocketContainer(brokerImage)}, ad.Spec.InitContainers...)
+
 	ps := corev1.PodSpec{
 		Containers:     containers,
-		InitContainers: ad.Spec.InitContainers,
+		InitContainers: initContainers,
 		Volumes:        append([]corev1.Volume{kynomeshRunVolume()}, ad.Spec.Volumes...),
 		Subdomain:      headlessServiceName(ad),
 	}
@@ -548,9 +550,7 @@ func kynomeshRunVolume() corev1.Volume {
 }
 
 // kynomeshRunMount returns the per-container mount for the shared
-// kynomesh-run volume. Mounted read-write because both the broker
-// (writer) and the agent (reader) need access; ReadOnly would lock the
-// broker out.
+// kynomesh-run volume.
 func kynomeshRunMount() corev1.VolumeMount {
 	return corev1.VolumeMount{
 		Name:      kmv1.VolumeNameKynomeshRun,
@@ -559,9 +559,7 @@ func kynomeshRunMount() corev1.VolumeMount {
 }
 
 // appendMountIfAbsent adds m to mounts unless an entry with the same
-// Name is already present. Idempotent so a user can spec their own
-// VolumeMount for kynomesh-run (e.g., with a different MountPath) without
-// the controller appending a duplicate that would fail pod admission.
+// Name is already present.
 func appendMountIfAbsent(mounts []corev1.VolumeMount, m corev1.VolumeMount) []corev1.VolumeMount {
 	for _, existing := range mounts {
 		if existing.Name == m.Name {
@@ -636,6 +634,17 @@ func newBrokerContainer(image, encodedAgentDeploy string) corev1.Container {
 			ContainerPort: kmv1.AgentBrokerPort,
 			Protocol:      corev1.ProtocolTCP,
 		}},
+	}
+}
+
+// newInitSocketContainer builds the controller-injected init container
+// that prepares the broker UDS socket path.
+func newInitSocketContainer(image string) corev1.Container {
+	return corev1.Container{
+		Name:         kmv1.ContainerNameInitSocket,
+		Image:        image,
+		Args:         []string{"init-socket"},
+		VolumeMounts: []corev1.VolumeMount{kynomeshRunMount()},
 	}
 }
 
