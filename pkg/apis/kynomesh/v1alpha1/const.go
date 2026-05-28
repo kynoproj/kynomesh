@@ -58,4 +58,8 @@ const (
 	// Used by both the controller (to set the broker container's
 	// containerPort) and the broker CLI (as its default --port).
 	AgentBrokerPort = 9100
+
+	VolumeNameKynomeshRun = "kynomesh-run"                   // Volume name of /var/run/kynowmesh
+	PathKynomeshRun       = "/var/run/kynomesh"              // Volume mount path
+	BrokerSocketPath      = PathKynomeshRun + "/broker.sock" // Socket path
 )
