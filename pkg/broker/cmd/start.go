@@ -220,10 +220,7 @@ func buildRuntime(logger *zap.SugaredLogger, udsTransport *http.Transport, card 
 
 // dialAgentGRPCOverUDS opens a connection to the agent's gRPC
 // server over the shared Unix Domain Socket. gRPC-Go natively resolves
-// "unix:///path/to/sock" targets — no custom resolver needed.
-//
-// Plaintext is fine: TLS terminates externally at the broker, and
-// same-pod traffic is trusted by definition.
+// "unix:///path/to/sock" targets.
 func dialAgentGRPCOverUDS(socketPath string) (*grpc.ClientConn, error) {
 	return grpc.NewClient("unix://"+socketPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
 }
