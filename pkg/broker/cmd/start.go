@@ -16,14 +16,7 @@ limitations under the License.
 
 // Package cmd boots the kynomesh broker. The broker reads the user
 // agent's AgentCard at startup, determines which A2A transports the
-// agent supports, and brings up the matching pass-through proxies on a
-// single TLS-fronted port. All traffic to the agent flows over the
-// shared in-pod Unix Domain Socket — TCP is not used between the
-// broker and the agent. The broker itself is protocol-agnostic at the
-// message layer — JSON-RPC and REST traffic is forwarded by
-// httputil.ReverseProxy, and gRPC traffic by a hand-rolled
-// UnknownServiceHandler that shuttles raw frames. It blocks until the
-// process is signalled to exit.
+// agent supports, and brings up the matching pass-through proxies.
 package cmd
 
 import (
@@ -82,14 +75,7 @@ type brokerRuntime struct {
 	grpcConn    *grpc.ClientConn // nil if gRPC isn't enabled
 }
 
-// Start boots the broker. It reads the user agent's AgentCard over the
-// shared UDS, brings up only the transports the agent advertises (each
-// via its own dumb proxy), and serves them all on one TLS port. The
-// function blocks until SIGINT or SIGTERM is received, then gracefully
-// shuts down.
-//
-// advertiseHost is what the published AgentCard tells external clients
-// to dial. If empty, AdvertiseHostDefault is used.
+// Start boots the broker.
 func Start(port int, advertiseHost string) {
 	logger := logging.NewLogger().Named("broker")
 
@@ -107,16 +93,9 @@ func Start(port int, advertiseHost string) {
 		advertiseHost = AdvertiseHostDefault
 	}
 
-	// All agent traffic flows over the in-pod UDS. The socket path is
-	// hardcoded — agent and broker share kmv1.BrokerSocketPath via the
-	// emptyDir volume the controller injects into every AgentDeploy pod.
 	agentHTTPClient := broker.NewUDSHTTPClient(kmv1.BrokerSocketPath)
 	agentHTTPTransport := agentHTTPClient.Transport.(*http.Transport)
 
-	// Startup probe: fail fast if the user's agent isn't reachable on
-	// the UDS. Also tells us which transports it speaks so we can mount
-	// the right proxies. Sidecar mode (where the agent comes up after
-	// the broker) is a future concern.
 	probeCtx, probeCancel := context.WithTimeout(context.Background(), agentProbeTimeout)
 	agentCard, err := agentcard.NewResolver(agentHTTPClient).Resolve(probeCtx, "http://"+broker.AgentBackendHost)
 	probeCancel()
@@ -198,10 +177,7 @@ func Start(port int, advertiseHost string) {
 }
 
 // buildRuntime inspects the agent's card and provisions the per-transport
-// proxies that match the advertised SupportedInterfaces. The agent's
-// URL field on each interface is ignored — every transport dials the
-// shared in-pod UDS regardless of what the card claims, so the agent
-// can't accidentally redirect traffic elsewhere.
+// proxies that match the advertised SupportedInterfaces.
 //
 //   - JSON-RPC and REST share udsTransport, forwarded by an
 //     httputil.ReverseProxy that targets a synthetic
@@ -242,7 +218,7 @@ func buildRuntime(logger *zap.SugaredLogger, udsTransport *http.Transport, card 
 	return rt, nil
 }
 
-// dialAgentGRPCOverUDS opens an insecure connection to the agent's gRPC
+// dialAgentGRPCOverUDS opens a connection to the agent's gRPC
 // server over the shared Unix Domain Socket. gRPC-Go natively resolves
 // "unix:///path/to/sock" targets — no custom resolver needed.
 //

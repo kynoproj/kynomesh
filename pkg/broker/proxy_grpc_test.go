@@ -45,9 +45,6 @@ type grpcPair struct {
 func startGRPCPair(t *testing.T) *grpcPair {
 	t.Helper()
 
-	// --- backend: standard gRPC health server on a UDS, matching the
-	// production setup where the agent listens on the shared in-pod
-	// socket and the broker dials it via "unix://...".
 	socketPath := filepath.Join(shortSocketDir(t), "g.sock")
 	backendLn, err := net.Listen("unix", socketPath)
 	require.NoError(t, err)
@@ -58,7 +55,6 @@ func startGRPCPair(t *testing.T) *grpcPair {
 	go func() { _ = backendSrv.Serve(backendLn) }()
 	t.Cleanup(backendSrv.Stop)
 
-	// --- broker: pass-through gRPC server forwarding to the UDS backend ---
 	backendConn, err := grpc.NewClient("unix://"+socketPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = backendConn.Close() })
