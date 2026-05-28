@@ -16,12 +16,7 @@ limitations under the License.
 
 // Package cmd boots the kynomesh broker. The broker reads the user
 // agent's AgentCard at startup, determines which A2A transports the
-// agent supports, and brings up the matching pass-through proxies on a
-// single TLS-fronted port. The broker itself is protocol-agnostic at
-// the message layer — JSON-RPC and REST traffic is forwarded by
-// httputil.ReverseProxy, and gRPC traffic by a hand-rolled
-// UnknownServiceHandler that shuttles raw frames. It blocks until the
-// process is signalled to exit.
+// agent supports, and brings up the matching pass-through proxies.
 package cmd
 
 import (
@@ -30,8 +25,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
-	"os"
 	"os/signal"
 	"strings"
 	"syscall"
@@ -59,12 +52,6 @@ const (
 	// KYNOMESH_BROKER_ADVERTISE_HOST to the Service / ingress hostname.
 	AdvertiseHostDefault = "127.0.0.1"
 
-	// AgentEndpointDefault is the URL the broker dials to reach the
-	// user's agent container. The agent runs in the same pod, so
-	// localhost is the natural default. Override via
-	// KYNOMESH_AGENT_ENDPOINT for testing or unusual topologies.
-	AgentEndpointDefault = "http://localhost:8000"
-
 	shutdownTimeout = 10 * time.Second
 
 	// agentProbeTimeout caps the startup AgentCard fetch. The broker
@@ -88,13 +75,7 @@ type brokerRuntime struct {
 	grpcConn    *grpc.ClientConn // nil if gRPC isn't enabled
 }
 
-// Start boots the broker. It reads the user agent's AgentCard, brings up
-// only the transports the agent advertises (each via its own dumb
-// proxy), and serves them all on one TLS port. The function blocks
-// until SIGINT or SIGTERM is received, then gracefully shuts down.
-//
-// advertiseHost is what the published AgentCard tells external clients
-// to dial. If empty, AdvertiseHostDefault is used.
+// Start boots the broker.
 func Start(port int, advertiseHost string) {
 	logger := logging.NewLogger().Named("broker")
 
@@ -112,31 +93,26 @@ func Start(port int, advertiseHost string) {
 		advertiseHost = AdvertiseHostDefault
 	}
 
-	agentEndpoint := os.Getenv(kmv1.EnvAgentEndpoint)
-	if agentEndpoint == "" {
-		agentEndpoint = AgentEndpointDefault
-	}
+	agentHTTPClient := broker.NewUDSHTTPClient(kmv1.BrokerSocketPath)
+	agentHTTPTransport := agentHTTPClient.Transport.(*http.Transport)
 
-	// Startup probe: fail fast if the user's agent isn't reachable.
-	// Also tells us which transports it speaks so we can mount the
-	// right proxies — sidecar mode (where the agent is brought up
-	// after the broker) is a future concern.
 	probeCtx, probeCancel := context.WithTimeout(context.Background(), agentProbeTimeout)
-	agentCard, err := agentcard.NewResolver(http.DefaultClient).Resolve(probeCtx, agentEndpoint)
+	agentCard, err := agentcard.NewResolver(agentHTTPClient).Resolve(probeCtx, "http://"+broker.AgentBackendHost)
 	probeCancel()
 	if err != nil {
-		logger.Fatalw("failed to fetch AgentCard from agent endpoint — refusing to start",
-			"agentEndpoint", agentEndpoint, "err", err)
+		logger.Fatalw("failed to fetch AgentCard over UDS — refusing to start",
+			"socket", kmv1.BrokerSocketPath, "err", err)
 	}
-	logger.Infow("agent endpoint reachable", "agentEndpoint", agentEndpoint, "agentName", agentCard.Name)
+	logger.Infow("agent reachable over UDS",
+		"socket", kmv1.BrokerSocketPath, "agentName", agentCard.Name)
 
-	rt, err := buildRuntime(logger, agentEndpoint, agentCard)
+	rt, err := buildRuntime(logger, agentHTTPTransport, agentCard)
 	if err != nil {
 		logger.Fatalw("failed to build broker runtime", "err", err)
 	}
 	if len(rt.enabled) == 0 {
 		logger.Fatalw("agent AgentCard advertised no transports the broker can proxy — refusing to start",
-			"agentEndpoint", agentEndpoint)
+			"socket", kmv1.BrokerSocketPath)
 	}
 	defer func() {
 		if rt.grpcConn != nil {
@@ -144,7 +120,7 @@ func Start(port int, advertiseHost string) {
 		}
 	}()
 
-	cardProxy := broker.NewAgentCardProxy(agentEndpoint, advertiseHost, port, rt.enabled)
+	cardProxy := broker.NewAgentCardProxy(agentHTTPClient, advertiseHost, port, rt.enabled)
 
 	cert, err := sharedtls.GenerateX509KeyPair()
 	if err != nil {
@@ -201,17 +177,16 @@ func Start(port int, advertiseHost string) {
 }
 
 // buildRuntime inspects the agent's card and provisions the per-transport
-// proxies that match the advertised SupportedInterfaces. For HTTP-based
-// transports (JSON-RPC, REST) the broker builds a httputil.ReverseProxy
-// pointing at the agent's HTTP base URL. For gRPC it dials a long-lived
-// *grpc.ClientConn and installs an UnknownServiceHandler that forwards
-// every method to that conn. Unknown ProtocolBindings are skipped.
-func buildRuntime(logger *zap.SugaredLogger, agentEndpoint string, card *a2a.AgentCard) (*brokerRuntime, error) {
-	agentURL, err := url.Parse(agentEndpoint)
-	if err != nil {
-		return nil, fmt.Errorf("parse agent endpoint %q: %w", agentEndpoint, err)
-	}
-
+// proxies that match the advertised SupportedInterfaces.
+//
+//   - JSON-RPC and REST share udsTransport, forwarded by an
+//     httputil.ReverseProxy that targets a synthetic
+//     http://kynomesh-agent host.
+//   - gRPC opens a long-lived *grpc.ClientConn against
+//     "unix://<BrokerSocketPath>" and installs an UnknownServiceHandler
+//     that forwards every method to that conn.
+//   - Unknown ProtocolBindings are skipped with a warning.
+func buildRuntime(logger *zap.SugaredLogger, udsTransport *http.Transport, card *a2a.AgentCard) (*brokerRuntime, error) {
 	rt := &brokerRuntime{
 		logger:      logger,
 		counters:    &broker.Counters{},
@@ -222,15 +197,15 @@ func buildRuntime(logger *zap.SugaredLogger, agentEndpoint string, card *a2a.Age
 	for _, iface := range card.SupportedInterfaces {
 		switch iface.ProtocolBinding {
 		case a2a.TransportProtocolJSONRPC:
-			rt.httpProxies[iface.ProtocolBinding] = broker.NewJSONRPCReverseProxy(agentURL, rt.counters)
+			rt.httpProxies[iface.ProtocolBinding] = broker.NewJSONRPCReverseProxy(udsTransport, rt.counters)
 			rt.enabled[iface.ProtocolBinding] = true
 		case a2a.TransportProtocolHTTPJSON:
-			rt.httpProxies[iface.ProtocolBinding] = broker.NewRESTReverseProxy(agentURL, rt.counters)
+			rt.httpProxies[iface.ProtocolBinding] = broker.NewRESTReverseProxy(udsTransport, rt.counters)
 			rt.enabled[iface.ProtocolBinding] = true
 		case a2a.TransportProtocolGRPC:
-			conn, err := dialAgentGRPC(iface.URL)
+			conn, err := dialAgentGRPCOverUDS(kmv1.BrokerSocketPath)
 			if err != nil {
-				return nil, fmt.Errorf("dial agent gRPC at %q: %w", iface.URL, err)
+				return nil, fmt.Errorf("dial agent gRPC over UDS at %q: %w", kmv1.BrokerSocketPath, err)
 			}
 			rt.grpcConn = conn
 			rt.grpcServer = grpc.NewServer(broker.GRPCPassthroughOptions(conn, rt.counters)...)
@@ -243,16 +218,11 @@ func buildRuntime(logger *zap.SugaredLogger, agentEndpoint string, card *a2a.Age
 	return rt, nil
 }
 
-// dialAgentGRPC opens an insecure connection to the agent's gRPC
-// endpoint. The agent shares the broker's pod, so plaintext is fine —
-// TLS terminates externally at the broker, and same-pod traffic is
-// trusted by definition.
-func dialAgentGRPC(grpcURL string) (*grpc.ClientConn, error) {
-	// gRPC target syntax accepts bare host:port — strip any scheme the
-	// AgentCard happened to include (the spec doesn't standardise one).
-	target := strings.TrimPrefix(strings.TrimPrefix(grpcURL, "grpc://"), "http://")
-	target = strings.TrimPrefix(target, "https://")
-	return grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
+// dialAgentGRPCOverUDS opens a connection to the agent's gRPC
+// server over the shared Unix Domain Socket. gRPC-Go natively resolves
+// "unix:///path/to/sock" targets.
+func dialAgentGRPCOverUDS(socketPath string) (*grpc.ClientConn, error) {
+	return grpc.NewClient("unix://"+socketPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
 }
 
 // newMultiplexedServer builds the single *http.Server that fronts every

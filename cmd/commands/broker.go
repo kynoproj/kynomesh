@@ -33,10 +33,6 @@ func NewBrokerCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "broker",
 		Short: "Start the kynomesh A2A broker (JSON-RPC, REST, gRPC on one port)",
-		Long: "Run the kynomesh A2A broker. The broker hosts an A2A server " +
-			"reachable over every transport the a2a-go library supports — " +
-			"JSON-RPC, REST, and gRPC — backed by a single shared request " +
-			"handler and demultiplexed onto a single TCP port.",
 		Run: func(cmd *cobra.Command, args []string) {
 			brokercmd.Start(port, advertiseHost)
 		},

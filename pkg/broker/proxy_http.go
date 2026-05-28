@@ -24,18 +24,21 @@ import (
 )
 
 // NewJSONRPCReverseProxy returns the JSON-RPC pass-through handler.
-func NewJSONRPCReverseProxy(backendBase *url.URL, counters *Counters) http.Handler {
-	return newReverseProxy(backendBase, &counters.jsonRPC)
+func NewJSONRPCReverseProxy(udsTransport *http.Transport, counters *Counters) http.Handler {
+	return newUDSReverseProxy(udsTransport, &counters.jsonRPC)
 }
 
 // NewRESTReverseProxy returns the REST pass-through handler.
-func NewRESTReverseProxy(backendBase *url.URL, counters *Counters) http.Handler {
-	return newReverseProxy(backendBase, &counters.rest)
+func NewRESTReverseProxy(udsTransport *http.Transport, counters *Counters) http.Handler {
+	return newUDSReverseProxy(udsTransport, &counters.rest)
 }
 
-// newReverseProxy is the shared httputil.NewSingleHostReverseProxy
-// builder.
-func newReverseProxy(backendBase *url.URL, counter *atomic.Int64) http.Handler {
-	rp := httputil.NewSingleHostReverseProxy(backendBase)
+// newUDSReverseProxy builds a httputil.ReverseProxy that forwards to
+// the agent over a Unix Domain Socket. The Director plants a synthetic
+// http://kynomesh-agent base on every outgoing request.
+func newUDSReverseProxy(udsTransport *http.Transport, counter *atomic.Int64) http.Handler {
+	target := &url.URL{Scheme: "http", Host: AgentBackendHost}
+	rp := httputil.NewSingleHostReverseProxy(target)
+	rp.Transport = udsTransport
 	return wrapHTTP(counter, rp)
 }

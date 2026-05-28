@@ -32,10 +32,7 @@ func NewInitSocketCommand() *cobra.Command {
 	var path string
 	command := &cobra.Command{
 		Use:   "init-socket",
-		Short: "Initialize the broker UDS socket path (init container entrypoint)",
-		Long: "Remove any stale file at the broker socket path and create a " +
-			"fresh empty placeholder. Intended to run as the init container " +
-			"in AgentDeploy pods before the broker and agent containers start.",
+		Short: "Initialize the broker UDS socket path",
 		RunE: func(_ *cobra.Command, _ []string) error {
 			return initSocket(path)
 		},
