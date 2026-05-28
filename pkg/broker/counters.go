@@ -25,9 +25,6 @@ import (
 // its own counter so autoscaling and observability can attribute load to
 // the protocol it arrived on (an HTTP/2-streaming gRPC call holds a slot
 // for its whole stream lifetime, not just a single request).
-//
-// Counters is safe for concurrent use; readers should call the snapshot
-// accessors rather than touching the atomics directly.
 type Counters struct {
 	jsonRPC atomic.Int64
 	rest    atomic.Int64

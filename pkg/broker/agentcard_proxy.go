@@ -27,18 +27,7 @@ import (
 // NewAgentCardProxy returns an http.Handler that, for every incoming
 // request, fetches the AgentCard from the user's agent, filters and
 // rewrites SupportedInterfaces down to the transports the broker
-// actually exposes, and serves the result. Proxying per-request keeps
-// the agent as the source of truth — if the user updates their skills
-// or capabilities, the change is visible immediately without a broker
-// restart.
-//
-// agentBaseURL is the local agent's base URL (default "http://localhost:8000").
-// advertiseHost and port are what external clients should dial; they
-// are the broker's own listener identity, not the agent's. enabled is
-// the set of transports the broker has wired up (decided at startup
-// from the same AgentCard) — any interface whose ProtocolBinding is
-// not in this set is stripped, so external clients never try a
-// transport the broker won't serve.
+// actually exposes, and serves the result.
 func NewAgentCardProxy(agentBaseURL, advertiseHost string, port int, enabled map[a2a.TransportProtocol]bool) http.Handler {
 	resolver := agentcard.NewResolver(http.DefaultClient)
 	return &agentCardProxy{

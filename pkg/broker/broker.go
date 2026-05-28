@@ -26,13 +26,7 @@ import (
 	"fmt"
 )
 
-// JSONRPCEndpoint is the path the JSON-RPC transport is mounted at on the
-// broker's HTTP listener.
 const JSONRPCEndpoint = "/rpc"
-
-// RESTEndpoint is the path prefix the REST/HTTP-JSON transport is mounted
-// at on the broker's HTTP listener. The a2a-go REST handler serves its
-// own /v2/... routes underneath, so this prefix is stripped before dispatch.
 const RESTEndpoint = "/api"
 
 // JSONRPCAddr / RESTAddr / GRPCAddr format the bind address into the URL

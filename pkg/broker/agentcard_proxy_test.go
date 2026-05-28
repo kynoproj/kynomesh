@@ -39,9 +39,6 @@ func allTransportsEnabled() map[a2a.TransportProtocol]bool {
 	}
 }
 
-// fakeAgent returns an httptest.Server that serves a configurable
-// AgentCard at the well-known path. The caller controls what
-// SupportedInterfaces the card advertises.
 func fakeAgent(t *testing.T, card *a2a.AgentCard) *httptest.Server {
 	t.Helper()
 	mux := http.NewServeMux()
@@ -55,9 +52,6 @@ func fakeAgent(t *testing.T, card *a2a.AgentCard) *httptest.Server {
 }
 
 func TestAgentCardProxy_RewritesInterfaceURLs(t *testing.T) {
-	// The agent advertises its own localhost-style URLs; the proxy must
-	// rewrite each enabled interface's URL to point at the broker's
-	// external listener while keeping name, description, skills, etc.
 	originalCard := &a2a.AgentCard{
 		Name:         "user-agent",
 		Description:  "user-supplied agent",
@@ -102,10 +96,6 @@ func TestAgentCardProxy_RewritesInterfaceURLs(t *testing.T) {
 }
 
 func TestAgentCardProxy_StripsDisabledTransports(t *testing.T) {
-	// Only JSON-RPC is enabled on the broker. The card-rewriter must drop
-	// the REST and gRPC interfaces so external clients don't try a
-	// transport the broker doesn't serve. Unknown bindings are stripped
-	// for the same reason.
 	originalCard := &a2a.AgentCard{
 		Name: "user-agent",
 		SupportedInterfaces: []*a2a.AgentInterface{
@@ -130,10 +120,6 @@ func TestAgentCardProxy_StripsDisabledTransports(t *testing.T) {
 }
 
 func TestAgentCardProxy_AgentUnreachableReturns502(t *testing.T) {
-	// If the agent dies after the broker starts, every AgentCard request
-	// must surface a 502 — the broker has nothing useful to say. Don't
-	// fall back to a cached card; the whole point of proxying per-request
-	// is freshness.
 	proxy := NewAgentCardProxy("http://127.0.0.1:1", "broker.example.com", 9100, allTransportsEnabled())
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", a2asrv.WellKnownAgentCardPath, nil)
