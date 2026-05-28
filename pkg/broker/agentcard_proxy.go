@@ -25,13 +25,18 @@ import (
 )
 
 // NewAgentCardProxy returns an http.Handler that, for every incoming
-// request, fetches the AgentCard from the user's agent, filters and
-// rewrites SupportedInterfaces down to the transports the broker
-// actually exposes, and serves the result.
-func NewAgentCardProxy(agentBaseURL, advertiseHost string, port int, enabled map[a2a.TransportProtocol]bool) http.Handler {
-	resolver := agentcard.NewResolver(http.DefaultClient)
+// request, fetches the AgentCard from the user's agent over the supplied
+// HTTP client (typically the UDS-dialling client from NewUDSHTTPClient),
+// filters and rewrites SupportedInterfaces down to the transports the
+// broker actually exposes, and serves the result.
+//
+// The agent's HTTP server is reached at the synthetic AgentBackendHost
+// — UDS has no real hostname, so we plant a fixed token; the underlying
+// transport dials the socket regardless of the URL's host.
+func NewAgentCardProxy(agentClient *http.Client, advertiseHost string, port int, enabled map[a2a.TransportProtocol]bool) http.Handler {
+	resolver := agentcard.NewResolver(agentClient)
+	agentBaseURL := "http://" + AgentBackendHost
 	return &agentCardProxy{
-		agentBaseURL:  agentBaseURL,
 		advertiseHost: advertiseHost,
 		port:          port,
 		enabled:       enabled,
@@ -42,7 +47,6 @@ func NewAgentCardProxy(agentBaseURL, advertiseHost string, port int, enabled map
 }
 
 type agentCardProxy struct {
-	agentBaseURL  string
 	advertiseHost string
 	port          int
 	enabled       map[a2a.TransportProtocol]bool

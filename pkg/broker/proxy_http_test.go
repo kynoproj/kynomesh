@@ -18,44 +18,65 @@ package broker
 
 import (
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// echoBackend returns an httptest.Server that records the request path
-// + method + body, and writes a fixed response.
+// shortSocketDir returns a tempdir with a path short enough to fit
+// inside the per-platform sockaddr_un.sun_path limit (~104 bytes on
+// macOS). t.TempDir() uses the test name and can blow that budget.
+func shortSocketDir(t *testing.T) string {
+	t.Helper()
+	dir, err := os.MkdirTemp("", "k")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	return dir
+}
+
+// echoBackend records what the most recent request looked like so tests
+// can assert that the broker forwarded the wire bytes faithfully.
 type echoBackend struct {
 	method string
 	path   string
 	body   []byte
 }
 
-func newEchoBackend(t *testing.T, response string) (*httptest.Server, *echoBackend) {
+// newUDSEchoBackend brings up an HTTP server bound to a UDS in
+// t.TempDir() that records each incoming request and replies with a
+// fixed body. Returns the socket path so the test can build a UDS
+// transport that targets it.
+func newUDSEchoBackend(t *testing.T, response string) (string, *echoBackend) {
 	t.Helper()
 	rec := &echoBackend{}
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rec.method = r.Method
-		rec.path = r.URL.Path
-		b, _ := io.ReadAll(r.Body)
-		rec.body = b
-		_, _ = w.Write([]byte(response))
-	}))
-	t.Cleanup(ts.Close)
-	return ts, rec
+	socketPath := filepath.Join(shortSocketDir(t), "e.sock")
+	ln, err := net.Listen("unix", socketPath)
+	require.NoError(t, err)
+	srv := &http.Server{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			rec.method = r.Method
+			rec.path = r.URL.Path
+			b, _ := io.ReadAll(r.Body)
+			rec.body = b
+			_, _ = w.Write([]byte(response))
+		}),
+	}
+	go func() { _ = srv.Serve(ln) }()
+	t.Cleanup(func() { _ = srv.Close() })
+	return socketPath, rec
 }
 
 func TestJSONRPCReverseProxy_ForwardsRequestVerbatim(t *testing.T) {
-	backend, rec := newEchoBackend(t, "backend-reply")
-	backendURL, err := url.Parse(backend.URL)
-	require.NoError(t, err)
+	socketPath, rec := newUDSEchoBackend(t, "backend-reply")
 
 	counters := &Counters{}
-	proxy := NewJSONRPCReverseProxy(backendURL, counters)
+	proxy := NewJSONRPCReverseProxy(NewUDSHTTPTransport(socketPath), counters)
 
 	req := httptest.NewRequest("POST", "/rpc", stringReader("hello"))
 	w := httptest.NewRecorder()
@@ -76,17 +97,21 @@ func TestJSONRPCReverseProxy_IncrementsJSONRPCCounter(t *testing.T) {
 	counters := &Counters{}
 	var midCallJSONRPC, midCallREST, midCallGRPC int64
 
-	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		midCallJSONRPC = counters.JSONRPC()
-		midCallREST = counters.REST()
-		midCallGRPC = counters.GRPC()
-		w.WriteHeader(http.StatusOK)
-	}))
-	t.Cleanup(backend.Close)
-
-	backendURL, err := url.Parse(backend.URL)
+	socketPath := filepath.Join(shortSocketDir(t), "a.sock")
+	ln, err := net.Listen("unix", socketPath)
 	require.NoError(t, err)
-	proxy := NewJSONRPCReverseProxy(backendURL, counters)
+	srv := &http.Server{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			midCallJSONRPC = counters.JSONRPC()
+			midCallREST = counters.REST()
+			midCallGRPC = counters.GRPC()
+			w.WriteHeader(http.StatusOK)
+		}),
+	}
+	go func() { _ = srv.Serve(ln) }()
+	t.Cleanup(func() { _ = srv.Close() })
+
+	proxy := NewJSONRPCReverseProxy(NewUDSHTTPTransport(socketPath), counters)
 	proxy.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/rpc", nil))
 
 	assert.Equal(t, int64(1), midCallJSONRPC, "JSON-RPC counter must be 1 while the request is in flight")
@@ -100,16 +125,20 @@ func TestRESTReverseProxy_IncrementsRESTCounter(t *testing.T) {
 	counters := &Counters{}
 	var midCallREST, midCallJSONRPC int64
 
-	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		midCallREST = counters.REST()
-		midCallJSONRPC = counters.JSONRPC()
-		w.WriteHeader(http.StatusOK)
-	}))
-	t.Cleanup(backend.Close)
-
-	backendURL, err := url.Parse(backend.URL)
+	socketPath := filepath.Join(shortSocketDir(t), "a.sock")
+	ln, err := net.Listen("unix", socketPath)
 	require.NoError(t, err)
-	proxy := NewRESTReverseProxy(backendURL, counters)
+	srv := &http.Server{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			midCallREST = counters.REST()
+			midCallJSONRPC = counters.JSONRPC()
+			w.WriteHeader(http.StatusOK)
+		}),
+	}
+	go func() { _ = srv.Serve(ln) }()
+	t.Cleanup(func() { _ = srv.Close() })
+
+	proxy := NewRESTReverseProxy(NewUDSHTTPTransport(socketPath), counters)
 	proxy.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/api/foo", nil))
 
 	assert.Equal(t, int64(1), midCallREST)

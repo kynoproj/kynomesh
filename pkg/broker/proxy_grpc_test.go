@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 	"net"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -44,8 +45,11 @@ type grpcPair struct {
 func startGRPCPair(t *testing.T) *grpcPair {
 	t.Helper()
 
-	// --- backend: standard gRPC health server ---
-	backendLn, err := net.Listen("tcp", "127.0.0.1:0")
+	// --- backend: standard gRPC health server on a UDS, matching the
+	// production setup where the agent listens on the shared in-pod
+	// socket and the broker dials it via "unix://...".
+	socketPath := filepath.Join(shortSocketDir(t), "g.sock")
+	backendLn, err := net.Listen("unix", socketPath)
 	require.NoError(t, err)
 	backendSrv := grpc.NewServer()
 	hsvc := health.NewServer()
@@ -54,8 +58,8 @@ func startGRPCPair(t *testing.T) *grpcPair {
 	go func() { _ = backendSrv.Serve(backendLn) }()
 	t.Cleanup(backendSrv.Stop)
 
-	// --- broker: pass-through gRPC server forwarding to backend ---
-	backendConn, err := grpc.NewClient(backendLn.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// --- broker: pass-through gRPC server forwarding to the UDS backend ---
+	backendConn, err := grpc.NewClient("unix://"+socketPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = backendConn.Close() })
 
@@ -67,7 +71,7 @@ func startGRPCPair(t *testing.T) *grpcPair {
 	t.Cleanup(brokerSrv.Stop)
 
 	return &grpcPair{
-		backendAddr: backendLn.Addr().String(),
+		backendAddr: socketPath,
 		brokerAddr:  brokerLn.Addr().String(),
 		counters:    counters,
 	}

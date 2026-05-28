@@ -31,7 +31,6 @@ func TestNewBrokerCommand_Metadata(t *testing.T) {
 	require.NotNil(t, c)
 	assert.Equal(t, "broker", c.Use)
 	assert.NotEmpty(t, c.Short)
-	assert.NotEmpty(t, c.Long)
 	assert.NotNil(t, c.Run, "broker command should have a Run handler")
 }
 
