@@ -578,9 +578,9 @@ func TestReconcile_StatusReadyCount(t *testing.T) {
 	assert.Equal(t, uint32(2), got.Status.DesiredReplicas)
 	assert.Equal(t, uint32(2), got.Status.Replicas)
 	assert.Equal(t, uint32(1), got.Status.ReadyReplicas)
-	wantSelector := fmt.Sprintf("%s=greeter,%s=%s,%s=%s",
-		kmv1.KeyAgentDeployName,
+	wantSelector := fmt.Sprintf("%s=%s,%s=greeter,%s=%s",
 		kmv1.KeyAgentSetName, got.Spec.AgentSetName,
+		kmv1.KeyAgentDeployName,
 		kmv1.KeyManagedBy, kmv1.ControllerAgentDeploy)
 	assert.Equal(t, wantSelector, got.Status.Selector)
 }

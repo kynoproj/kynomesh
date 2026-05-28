@@ -29,12 +29,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/a2aproject/a2a-go/v2/a2a"
+	"github.com/a2aproject/a2a-go/v2/a2asrv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	grpccredentials "google.golang.org/grpc/credentials"
-
-	"github.com/a2aproject/a2a-go/v2/a2asrv"
 
 	"github.com/kynoproj/kynomesh/pkg/broker"
 	sharedtls "github.com/kynoproj/kynomesh/pkg/shared/tls"
@@ -67,6 +67,48 @@ func TestIsGRPCRequest(t *testing.T) {
 	}
 }
 
+const testAgentName = "stub-agent"
+
+// stubCardHandler stands in for the production AgentCard proxy. It writes
+// a minimal valid card body so tests can assert routing without spinning
+// up a fake agent.
+func stubCardHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"name":"` + testAgentName + `"}`))
+	})
+}
+
+// stubOKHandler returns an http.Handler that always responds 200 with a
+// fixed body. Used to back the runtime's per-transport proxy slots so
+// the multiplexer tests can assert that requests to /rpc or /api/* land
+// on the right slot — without spinning up a real upstream.
+func stubOKHandler(body string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(body))
+	})
+}
+
+// testRuntime builds a brokerRuntime with stub HTTP proxies for both
+// JSON-RPC and REST, and no gRPC server. The grpcConn field is left nil
+// so the multiplexer falls back to the HTTP mux for everything — which
+// is what these unit tests want; the full gRPC path is exercised in the
+// dedicated proxy_grpc test under pkg/broker.
+func testRuntime(t *testing.T) *brokerRuntime {
+	t.Helper()
+	return &brokerRuntime{
+		counters: &broker.Counters{},
+		enabled: map[a2a.TransportProtocol]bool{
+			a2a.TransportProtocolJSONRPC:  true,
+			a2a.TransportProtocolHTTPJSON: true,
+		},
+		httpProxies: map[a2a.TransportProtocol]http.Handler{
+			a2a.TransportProtocolJSONRPC:  stubOKHandler("jsonrpc-ok"),
+			a2a.TransportProtocolHTTPJSON: stubOKHandler("rest-ok"),
+		},
+	}
+}
+
 // TestMultiplexedServer_RoutesHTTPTraffic exercises the HTTP/1.1 routes —
 // AgentCard, JSON-RPC mount, and the REST subtree — over a single httptest
 // server, proving the mux wired by newMultiplexedServer dispatches
@@ -74,19 +116,10 @@ func TestIsGRPCRequest(t *testing.T) {
 // gRPC test would need a real listener with HTTP/2 cleartext, which is out
 // of scope for a unit test.
 func TestMultiplexedServer_RoutesHTTPTraffic(t *testing.T) {
-	card := broker.NewAgentCard(
-		broker.JSONRPCAddr("test", 1234),
-		broker.RESTAddr("test", 1234),
-		broker.GRPCAddr("test", 1234),
-	)
-	rh := a2asrv.NewHandler(broker.NewDefaultExecutor(), a2asrv.WithExtendedAgentCard(card))
-	grpcSrv := grpc.NewServer()
-	t.Cleanup(grpcSrv.Stop)
-
 	cert, err := sharedtls.GenerateX509KeyPair()
 	require.NoError(t, err)
 
-	srv, err := newMultiplexedServer(0, rh, card, grpcSrv, cert)
+	srv, err := newMultiplexedServer(0, testRuntime(t), stubCardHandler(), cert)
 	require.NoError(t, err)
 	ts := httptest.NewServer(srv.Handler)
 	t.Cleanup(ts.Close)
@@ -98,26 +131,23 @@ func TestMultiplexedServer_RoutesHTTPTraffic(t *testing.T) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 
-	t.Run("JSON-RPC endpoint accepts POST", func(t *testing.T) {
-		body := strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"agent/getAuthenticatedExtendedCard"}`)
+	t.Run("JSON-RPC endpoint reaches its proxy", func(t *testing.T) {
+		body := strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"x"}`)
 		resp, err := http.Post(ts.URL+broker.JSONRPCEndpoint, "application/json", body)
 		require.NoError(t, err)
 		t.Cleanup(func() { _ = resp.Body.Close() })
-		// The handler should accept the request — we only care that the
-		// mux routed it, not the JSON-RPC semantics. Anything below 500
-		// means it reached the JSON-RPC handler rather than 404ing.
-		assert.Less(t, resp.StatusCode, http.StatusInternalServerError)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		gotBody, _ := io.ReadAll(resp.Body)
+		assert.Equal(t, "jsonrpc-ok", string(gotBody))
 	})
 
 	t.Run("REST routes mount under /api", func(t *testing.T) {
-		// /api/extendedAgentCard is one of the REST handler's GET routes;
-		// reaching it (any status other than 404) proves the StripPrefix
-		// wrapper is dispatching correctly.
-		resp, err := http.Get(ts.URL + broker.RESTEndpoint + "/extendedAgentCard")
+		resp, err := http.Get(ts.URL + broker.RESTEndpoint + "/anything")
 		require.NoError(t, err)
 		t.Cleanup(func() { _ = resp.Body.Close() })
-		assert.NotEqual(t, http.StatusNotFound, resp.StatusCode,
-			"REST mount should route /api/extendedAgentCard to the a2a-go handler")
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		gotBody, _ := io.ReadAll(resp.Body)
+		assert.Equal(t, "rest-ok", string(gotBody))
 	})
 
 	t.Run("unknown paths return 404", func(t *testing.T) {
@@ -136,15 +166,6 @@ func TestMultiplexedServer_RoutesHTTPTraffic(t *testing.T) {
 func startTLSServer(t *testing.T) (port int, cert *tls.Certificate) {
 	t.Helper()
 
-	card := broker.NewAgentCard(
-		broker.JSONRPCAddr("localhost", 0),
-		broker.RESTAddr("localhost", 0),
-		broker.GRPCAddr("localhost", 0),
-	)
-	rh := a2asrv.NewHandler(broker.NewDefaultExecutor(), a2asrv.WithExtendedAgentCard(card))
-	grpcSrv := grpc.NewServer()
-	t.Cleanup(grpcSrv.Stop)
-
 	cert, err := sharedtls.GenerateX509KeyPair()
 	require.NoError(t, err)
 
@@ -153,7 +174,7 @@ func startTLSServer(t *testing.T) (port int, cert *tls.Certificate) {
 	require.NoError(t, err)
 	port = ln.Addr().(*net.TCPAddr).Port
 
-	srv, err := newMultiplexedServer(port, rh, card, grpcSrv, cert)
+	srv, err := newMultiplexedServer(port, testRuntime(t), stubCardHandler(), cert)
 	require.NoError(t, err)
 
 	tlsLn := tls.NewListener(ln, srv.TLSConfig)
@@ -199,7 +220,9 @@ func newTrustingHTTPSClient(t *testing.T, cert *tls.Certificate) *http.Client {
 
 func TestBrokerServer_TLS_ServesAgentCard(t *testing.T) {
 	// End-to-end: real TLS listener, real HTTPS client, well-known
-	// AgentCard route returns 200 with the body the broker advertised.
+	// AgentCard route returns 200 with the body the stub card handler
+	// emitted (proving the route reaches the AgentCard handler, not
+	// some other route by accident).
 	port, cert := startTLSServer(t)
 	client := newTrustingHTTPSClient(t, cert)
 
@@ -211,7 +234,7 @@ func TestBrokerServer_TLS_ServesAgentCard(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
-	assert.Contains(t, string(body), broker.AgentName)
+	assert.Contains(t, string(body), testAgentName)
 }
 
 func TestBrokerServer_TLS_RejectsPlaintext(t *testing.T) {
@@ -230,7 +253,7 @@ func TestBrokerServer_TLS_RejectsPlaintext(t *testing.T) {
 
 	assert.NotEqual(t, http.StatusOK, resp.StatusCode, "plaintext request must not reach the AgentCard handler")
 	body, _ := io.ReadAll(resp.Body)
-	assert.NotContains(t, string(body), broker.AgentName)
+	assert.NotContains(t, string(body), testAgentName)
 }
 
 func TestBrokerServer_TLS_GRPCDialSucceeds(t *testing.T) {
