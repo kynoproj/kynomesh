@@ -54,28 +54,21 @@ const (
 
 	shutdownTimeout = 10 * time.Second
 
-	// agentProbeTimeout caps the startup AgentCard fetch. The broker
-	// refuses to come up if the agent isn't reachable within this window
-	// — the alternative is to start healthy and 502 every request, which
-	// hides the misconfiguration from CrashLoopBackoff and the operator.
+	// agentProbeTimeout caps the startup AgentCard fetch.
 	agentProbeTimeout = 5 * time.Second
 
 	grpcContentType = "application/grpc"
 )
 
 // brokerRuntime aggregates the pieces of broker state that live for the
-// process's whole lifetime — handed around between Start and its helpers
-// to keep their signatures compact.
+// process's whole lifetime.
 type brokerRuntime struct {
 	logger      *zap.SugaredLogger
 	counters    *broker.Counters
 	enabled     map[a2a.TransportProtocol]bool
 	httpProxies map[a2a.TransportProtocol]http.Handler
 	// passthrough is the catch-all HTTP reverse proxy used for any
-	// non-canonical route. The agent container is allowed to expose
-	// arbitrary HTTP surface (UI, custom REST, websockets, ...); the
-	// broker forwards it verbatim and increments the Passthrough
-	// counter so non-A2A load is observable separately.
+	// non-canonical route.
 	passthrough http.Handler
 	grpcServer  *grpc.Server
 	grpcConn    *grpc.ClientConn // nil if gRPC isn't enabled
@@ -199,10 +192,6 @@ func buildRuntime(logger *zap.SugaredLogger, udsTransport *http.Transport, card 
 		counters:    counters,
 		enabled:     map[a2a.TransportProtocol]bool{},
 		httpProxies: map[a2a.TransportProtocol]http.Handler{},
-		// The catch-all is always wired — the agent container is free
-		// to serve non-A2A HTTP surface on the shared UDS, and we
-		// don't want those routes to silently 404 just because the
-		// AgentCard didn't list them.
 		passthrough: broker.NewPassthroughReverseProxy(udsTransport, counters),
 	}
 
@@ -261,10 +250,7 @@ func newMultiplexedServer(
 		httpMux.Handle(broker.RESTEndpoint+"/", h)
 	}
 	// Catch-all: any HTTP request not matching a more-specific A2A
-	// route falls through to the agent's HTTP surface. http.ServeMux
-	// does longest-prefix matching, so "/rpc", "/api/", and
-	// "/.well-known/agent-card.json" registered above win over this
-	// "/" handler. Entry-agent UIs and custom REST endpoints land here.
+	// route falls through to the agent's HTTP surface.
 	if rt.passthrough != nil {
 		httpMux.Handle("/", rt.passthrough)
 	}

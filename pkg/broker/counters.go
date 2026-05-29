@@ -25,12 +25,8 @@ import (
 // its own counter so autoscaling and observability can attribute load
 // to the protocol it arrived on (an HTTP/2-streaming gRPC call holds a
 // slot for its whole stream lifetime, not just a single request).
-//
 // Passthrough covers requests the broker forwards to the agent over
-// the catch-all reverse proxy — i.e., HTTP traffic that isn't one of
-// the canonical A2A routes (/.well-known/agent-card.json, /rpc, /api/)
-// and isn't gRPC. The agent's UI, custom REST endpoints, and any other
-// HTTP surface land here.
+// the catch-all reverse proxy.
 type Counters struct {
 	jsonRPC     atomic.Int64
 	rest        atomic.Int64
