@@ -33,6 +33,16 @@ func NewRESTReverseProxy(udsTransport *http.Transport, counters *Counters) http.
 	return newUDSReverseProxy(udsTransport, &counters.rest)
 }
 
+// NewPassthroughReverseProxy returns the catch-all HTTP pass-through
+// handler. It forwards every request to the agent's UDS unchanged —
+// used for traffic the agent serves outside the canonical A2A routes
+// (UIs, custom REST endpoints, WebSocket upgrades, etc.). Increments
+// the Passthrough counter so non-A2A load is observable separately
+// from A2A traffic.
+func NewPassthroughReverseProxy(udsTransport *http.Transport, counters *Counters) http.Handler {
+	return newUDSReverseProxy(udsTransport, &counters.passthrough)
+}
+
 // newUDSReverseProxy builds a httputil.ReverseProxy that forwards to
 // the agent over a Unix Domain Socket. The Director plants a synthetic
 // http://kynomesh-agent base on every outgoing request.

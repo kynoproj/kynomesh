@@ -146,6 +146,58 @@ func TestRESTReverseProxy_IncrementsRESTCounter(t *testing.T) {
 	assert.Equal(t, int64(0), counters.REST())
 }
 
+func TestPassthroughReverseProxy_ForwardsArbitraryPath(t *testing.T) {
+	// The catch-all proxy forwards arbitrary paths verbatim — entry
+	// agents serve UIs and custom REST endpoints under the same shared
+	// port and the broker just passes those through.
+	socketPath, rec := newUDSEchoBackend(t, "ui-html")
+
+	counters := &Counters{}
+	proxy := NewPassthroughReverseProxy(NewUDSHTTPTransport(socketPath), counters)
+
+	req := httptest.NewRequest("GET", "/my-app/v1/sessions", nil)
+	w := httptest.NewRecorder()
+	proxy.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "ui-html", w.Body.String())
+	assert.Equal(t, "GET", rec.method)
+	assert.Equal(t, "/my-app/v1/sessions", rec.path,
+		"passthrough must forward the path verbatim — no rewriting")
+}
+
+func TestPassthroughReverseProxy_OnlyIncrementsPassthroughCounter(t *testing.T) {
+	// Counter isolation: non-A2A traffic must not move JSON-RPC, REST,
+	// or gRPC counters, so autoscaling on A2A load isn't contaminated
+	// by UI traffic.
+	counters := &Counters{}
+	var midPassthrough, midJSONRPC, midREST, midGRPC int64
+
+	socketPath := filepath.Join(shortSocketDir(t), "p.sock")
+	ln, err := net.Listen("unix", socketPath)
+	require.NoError(t, err)
+	srv := &http.Server{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			midPassthrough = counters.Passthrough()
+			midJSONRPC = counters.JSONRPC()
+			midREST = counters.REST()
+			midGRPC = counters.GRPC()
+			w.WriteHeader(http.StatusOK)
+		}),
+	}
+	go func() { _ = srv.Serve(ln) }()
+	t.Cleanup(func() { _ = srv.Close() })
+
+	proxy := NewPassthroughReverseProxy(NewUDSHTTPTransport(socketPath), counters)
+	proxy.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/ui", nil))
+
+	assert.Equal(t, int64(1), midPassthrough, "Passthrough counter must be 1 in flight")
+	assert.Equal(t, int64(0), midJSONRPC)
+	assert.Equal(t, int64(0), midREST)
+	assert.Equal(t, int64(0), midGRPC)
+	assert.Equal(t, int64(0), counters.Passthrough(), "Passthrough counter must return to 0 after request completes")
+}
+
 // stringReader returns an io.Reader for a string without pulling strings.Reader
 // out of the strings package — keeping the test's imports minimal.
 func stringReader(s string) io.Reader {

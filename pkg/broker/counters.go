@@ -22,13 +22,20 @@ import (
 )
 
 // Counters tracks in-flight requests per transport. Each transport gets
-// its own counter so autoscaling and observability can attribute load to
-// the protocol it arrived on (an HTTP/2-streaming gRPC call holds a slot
-// for its whole stream lifetime, not just a single request).
+// its own counter so autoscaling and observability can attribute load
+// to the protocol it arrived on (an HTTP/2-streaming gRPC call holds a
+// slot for its whole stream lifetime, not just a single request).
+//
+// Passthrough covers requests the broker forwards to the agent over
+// the catch-all reverse proxy — i.e., HTTP traffic that isn't one of
+// the canonical A2A routes (/.well-known/agent-card.json, /rpc, /api/)
+// and isn't gRPC. The agent's UI, custom REST endpoints, and any other
+// HTTP surface land here.
 type Counters struct {
-	jsonRPC atomic.Int64
-	rest    atomic.Int64
-	grpc    atomic.Int64
+	jsonRPC     atomic.Int64
+	rest        atomic.Int64
+	grpc        atomic.Int64
+	passthrough atomic.Int64
 }
 
 // JSONRPC returns the current in-flight JSON-RPC request count.
@@ -39,6 +46,9 @@ func (c *Counters) REST() int64 { return c.rest.Load() }
 
 // GRPC returns the current in-flight gRPC stream count.
 func (c *Counters) GRPC() int64 { return c.grpc.Load() }
+
+// Passthrough returns the current in-flight non-A2A HTTP request count.
+func (c *Counters) Passthrough() int64 { return c.passthrough.Load() }
 
 // wrapHTTP returns an http.Handler that brackets every request with an
 // increment/decrement on the supplied counter. The defer guarantees the

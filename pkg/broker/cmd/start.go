@@ -71,6 +71,12 @@ type brokerRuntime struct {
 	counters    *broker.Counters
 	enabled     map[a2a.TransportProtocol]bool
 	httpProxies map[a2a.TransportProtocol]http.Handler
+	// passthrough is the catch-all HTTP reverse proxy used for any
+	// non-canonical route. The agent container is allowed to expose
+	// arbitrary HTTP surface (UI, custom REST, websockets, ...); the
+	// broker forwards it verbatim and increments the Passthrough
+	// counter so non-A2A load is observable separately.
+	passthrough http.Handler
 	grpcServer  *grpc.Server
 	grpcConn    *grpc.ClientConn // nil if gRPC isn't enabled
 }
@@ -187,11 +193,17 @@ func Start(port int, advertiseHost string) {
 //     that forwards every method to that conn.
 //   - Unknown ProtocolBindings are skipped with a warning.
 func buildRuntime(logger *zap.SugaredLogger, udsTransport *http.Transport, card *a2a.AgentCard) (*brokerRuntime, error) {
+	counters := &broker.Counters{}
 	rt := &brokerRuntime{
 		logger:      logger,
-		counters:    &broker.Counters{},
+		counters:    counters,
 		enabled:     map[a2a.TransportProtocol]bool{},
 		httpProxies: map[a2a.TransportProtocol]http.Handler{},
+		// The catch-all is always wired — the agent container is free
+		// to serve non-A2A HTTP surface on the shared UDS, and we
+		// don't want those routes to silently 404 just because the
+		// AgentCard didn't list them.
+		passthrough: broker.NewPassthroughReverseProxy(udsTransport, counters),
 	}
 
 	for _, iface := range card.SupportedInterfaces {
@@ -247,6 +259,14 @@ func newMultiplexedServer(
 		// root. The downstream agent serves the same path layout, so
 		// no prefix stripping is needed.
 		httpMux.Handle(broker.RESTEndpoint+"/", h)
+	}
+	// Catch-all: any HTTP request not matching a more-specific A2A
+	// route falls through to the agent's HTTP surface. http.ServeMux
+	// does longest-prefix matching, so "/rpc", "/api/", and
+	// "/.well-known/agent-card.json" registered above win over this
+	// "/" handler. Entry-agent UIs and custom REST endpoints land here.
+	if rt.passthrough != nil {
+		httpMux.Handle("/", rt.passthrough)
 	}
 
 	dispatch := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
