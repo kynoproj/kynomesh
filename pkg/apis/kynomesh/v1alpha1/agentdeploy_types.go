@@ -69,10 +69,11 @@ type AgentDeploySpec struct {
 }
 
 type AbstractAgentDeploy struct {
+	// +kubebuilder:validation:Required
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 	// +optional
 	AbstractPodTemplate `json:",inline" protobuf:"bytes,2,opt,name=abstractPodTemplate"`
-	// Agent container. Required — the user's agent code runs here.
+	// Agent container, the user's agent code runs here.
 	// +kubebuilder:validation:Required
 	Container *Container `json:"container" protobuf:"bytes,3,opt,name=container"`
 	// Container template for the broker container.

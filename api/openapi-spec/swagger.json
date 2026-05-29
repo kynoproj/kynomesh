@@ -23541,7 +23541,7 @@
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ContainerTemplate"
         },
         "container": {
-          "description": "Agent container. Required — the user's agent code runs here.",
+          "description": "Agent container, the user's agent code runs here.",
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Container"
         },
         "dnsConfig": {
@@ -23798,7 +23798,7 @@
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ContainerTemplate"
         },
         "container": {
-          "description": "Agent container. Required — the user's agent code runs here.",
+          "description": "Agent container, the user's agent code runs here.",
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Container"
         },
         "dnsConfig": {

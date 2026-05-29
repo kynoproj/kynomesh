@@ -111,7 +111,7 @@ type.)
 
 <p>
 
-Agent container. Required — the user’s agent code runs here.
+Agent container, the user’s agent code runs here.
 </p>
 
 </td>

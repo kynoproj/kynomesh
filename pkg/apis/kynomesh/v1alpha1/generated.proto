@@ -29,12 +29,13 @@ import "k8s.io/apimachinery/pkg/util/intstr/generated.proto";
 option go_package = "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1";
 
 message AbstractAgentDeploy {
+  // +kubebuilder:validation:Required
   optional string name = 1;
 
   // +optional
   optional AbstractPodTemplate abstractPodTemplate = 2;
 
-  // Agent container. Required — the user's agent code runs here.
+  // Agent container, the user's agent code runs here.
   // +kubebuilder:validation:Required
   optional Container container = 3;
 

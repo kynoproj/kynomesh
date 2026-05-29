@@ -23533,7 +23533,7 @@
         },
         "container": {
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Container",
-          "description": "Agent container. Required — the user's agent code runs here."
+          "description": "Agent container, the user's agent code runs here."
         },
         "dnsConfig": {
           "$ref": "#/definitions/io.k8s.api.core.v1.PodDNSConfig",
@@ -23789,7 +23789,7 @@
         },
         "container": {
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Container",
-          "description": "Agent container. Required — the user's agent code runs here."
+          "description": "Agent container, the user's agent code runs here."
         },
         "dnsConfig": {
           "$ref": "#/definitions/io.k8s.api.core.v1.PodDNSConfig",

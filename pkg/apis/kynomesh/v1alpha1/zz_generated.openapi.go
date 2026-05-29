@@ -200,7 +200,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 					},
 					"container": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Agent container. Required — the user's agent code runs here.",
+							Description: "Agent container, the user's agent code runs here.",
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container"),
 						},
 					},
@@ -677,7 +677,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 					},
 					"container": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Agent container. Required — the user's agent code runs here.",
+							Description: "Agent container, the user's agent code runs here.",
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container"),
 						},
 					},
