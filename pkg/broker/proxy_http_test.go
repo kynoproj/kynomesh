@@ -90,10 +90,6 @@ func TestJSONRPCReverseProxy_ForwardsRequestVerbatim(t *testing.T) {
 }
 
 func TestJSONRPCReverseProxy_IncrementsJSONRPCCounter(t *testing.T) {
-	// The reverse proxy must bump the JSON-RPC counter — and only that
-	// counter — for the duration of every forwarded request. The
-	// in-handler observation runs inside the backend so the counter is
-	// still elevated at the time we read it.
 	counters := &Counters{}
 	var midCallJSONRPC, midCallREST, midCallGRPC int64
 
@@ -147,9 +143,6 @@ func TestRESTReverseProxy_IncrementsRESTCounter(t *testing.T) {
 }
 
 func TestPassthroughReverseProxy_ForwardsArbitraryPath(t *testing.T) {
-	// The catch-all proxy forwards arbitrary paths verbatim — entry
-	// agents serve UIs and custom REST endpoints under the same shared
-	// port and the broker just passes those through.
 	socketPath, rec := newUDSEchoBackend(t, "ui-html")
 
 	counters := &Counters{}
@@ -167,9 +160,6 @@ func TestPassthroughReverseProxy_ForwardsArbitraryPath(t *testing.T) {
 }
 
 func TestPassthroughReverseProxy_OnlyIncrementsPassthroughCounter(t *testing.T) {
-	// Counter isolation: non-A2A traffic must not move JSON-RPC, REST,
-	// or gRPC counters, so autoscaling on A2A load isn't contaminated
-	// by UI traffic.
 	counters := &Counters{}
 	var midPassthrough, midJSONRPC, midREST, midGRPC int64
 
