@@ -90,10 +90,6 @@ func TestJSONRPCReverseProxy_ForwardsRequestVerbatim(t *testing.T) {
 }
 
 func TestJSONRPCReverseProxy_IncrementsJSONRPCCounter(t *testing.T) {
-	// The reverse proxy must bump the JSON-RPC counter — and only that
-	// counter — for the duration of every forwarded request. The
-	// in-handler observation runs inside the backend so the counter is
-	// still elevated at the time we read it.
 	counters := &Counters{}
 	var midCallJSONRPC, midCallREST, midCallGRPC int64
 
@@ -144,6 +140,52 @@ func TestRESTReverseProxy_IncrementsRESTCounter(t *testing.T) {
 	assert.Equal(t, int64(1), midCallREST)
 	assert.Equal(t, int64(0), midCallJSONRPC)
 	assert.Equal(t, int64(0), counters.REST())
+}
+
+func TestPassthroughReverseProxy_ForwardsArbitraryPath(t *testing.T) {
+	socketPath, rec := newUDSEchoBackend(t, "ui-html")
+
+	counters := &Counters{}
+	proxy := NewPassthroughReverseProxy(NewUDSHTTPTransport(socketPath), counters)
+
+	req := httptest.NewRequest("GET", "/my-app/v1/sessions", nil)
+	w := httptest.NewRecorder()
+	proxy.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "ui-html", w.Body.String())
+	assert.Equal(t, "GET", rec.method)
+	assert.Equal(t, "/my-app/v1/sessions", rec.path,
+		"passthrough must forward the path verbatim — no rewriting")
+}
+
+func TestPassthroughReverseProxy_OnlyIncrementsPassthroughCounter(t *testing.T) {
+	counters := &Counters{}
+	var midPassthrough, midJSONRPC, midREST, midGRPC int64
+
+	socketPath := filepath.Join(shortSocketDir(t), "p.sock")
+	ln, err := net.Listen("unix", socketPath)
+	require.NoError(t, err)
+	srv := &http.Server{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			midPassthrough = counters.Passthrough()
+			midJSONRPC = counters.JSONRPC()
+			midREST = counters.REST()
+			midGRPC = counters.GRPC()
+			w.WriteHeader(http.StatusOK)
+		}),
+	}
+	go func() { _ = srv.Serve(ln) }()
+	t.Cleanup(func() { _ = srv.Close() })
+
+	proxy := NewPassthroughReverseProxy(NewUDSHTTPTransport(socketPath), counters)
+	proxy.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/ui", nil))
+
+	assert.Equal(t, int64(1), midPassthrough, "Passthrough counter must be 1 in flight")
+	assert.Equal(t, int64(0), midJSONRPC)
+	assert.Equal(t, int64(0), midREST)
+	assert.Equal(t, int64(0), midGRPC)
+	assert.Equal(t, int64(0), counters.Passthrough(), "Passthrough counter must return to 0 after request completes")
 }
 
 // stringReader returns an io.Reader for a string without pulling strings.Reader

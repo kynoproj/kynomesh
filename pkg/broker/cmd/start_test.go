@@ -90,10 +90,11 @@ func stubOKHandler(body string) http.Handler {
 }
 
 // testRuntime builds a brokerRuntime with stub HTTP proxies for both
-// JSON-RPC and REST, and no gRPC server. The grpcConn field is left nil
-// so the multiplexer falls back to the HTTP mux for everything — which
-// is what these unit tests want; the full gRPC path is exercised in the
-// dedicated proxy_grpc test under pkg/broker.
+// JSON-RPC and REST, a stub passthrough catch-all, and no gRPC server.
+// The grpcConn field is left nil so the multiplexer falls back to the
+// HTTP mux for everything — which is what these unit tests want; the
+// full gRPC path is exercised in the dedicated proxy_grpc test under
+// pkg/broker.
 func testRuntime(t *testing.T) *brokerRuntime {
 	t.Helper()
 	return &brokerRuntime{
@@ -106,6 +107,7 @@ func testRuntime(t *testing.T) *brokerRuntime {
 			a2a.TransportProtocolJSONRPC:  stubOKHandler("jsonrpc-ok"),
 			a2a.TransportProtocolHTTPJSON: stubOKHandler("rest-ok"),
 		},
+		passthrough: stubOKHandler("passthrough-ok"),
 	}
 }
 
@@ -150,14 +152,41 @@ func TestMultiplexedServer_RoutesHTTPTraffic(t *testing.T) {
 		assert.Equal(t, "rest-ok", string(gotBody))
 	})
 
-	t.Run("unknown paths return 404", func(t *testing.T) {
-		// Without a "/" catch-all, unknown paths must 404 instead of
-		// accidentally reaching the REST handler.
-		resp, err := http.Get(ts.URL + "/does-not-exist")
+	t.Run("unknown paths fall through to the passthrough catch-all", func(t *testing.T) {
+		resp, err := http.Get(ts.URL + "/some/user-app/path")
 		require.NoError(t, err)
 		t.Cleanup(func() { _ = resp.Body.Close() })
-		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		gotBody, _ := io.ReadAll(resp.Body)
+		assert.Equal(t, "passthrough-ok", string(gotBody))
 	})
+
+	t.Run("canonical A2A paths win over passthrough on collision", func(t *testing.T) {
+		resp, err := http.Post(ts.URL+broker.JSONRPCEndpoint, "application/json",
+			strings.NewReader(`{}`))
+		require.NoError(t, err)
+		t.Cleanup(func() { _ = resp.Body.Close() })
+		gotBody, _ := io.ReadAll(resp.Body)
+		assert.Equal(t, "jsonrpc-ok", string(gotBody),
+			"canonical JSON-RPC route must not be eclipsed by the passthrough catch-all")
+	})
+}
+
+func TestMultiplexedServer_NoPassthroughLeavesUnknownPaths404(t *testing.T) {
+	rt := testRuntime(t)
+	rt.passthrough = nil
+
+	cert, err := sharedtls.GenerateX509KeyPair()
+	require.NoError(t, err)
+	srv, err := newMultiplexedServer(0, rt, stubCardHandler(), cert)
+	require.NoError(t, err)
+	ts := httptest.NewServer(srv.Handler)
+	t.Cleanup(ts.Close)
+
+	resp, err := http.Get(ts.URL + "/does-not-exist")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = resp.Body.Close() })
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
 
 // startTLSServer brings up the multiplexed broker on an ephemeral port
@@ -219,10 +248,6 @@ func newTrustingHTTPSClient(t *testing.T, cert *tls.Certificate) *http.Client {
 }
 
 func TestBrokerServer_TLS_ServesAgentCard(t *testing.T) {
-	// End-to-end: real TLS listener, real HTTPS client, well-known
-	// AgentCard route returns 200 with the body the stub card handler
-	// emitted (proving the route reaches the AgentCard handler, not
-	// some other route by accident).
 	port, cert := startTLSServer(t)
 	client := newTrustingHTTPSClient(t, cert)
 
@@ -238,11 +263,6 @@ func TestBrokerServer_TLS_ServesAgentCard(t *testing.T) {
 }
 
 func TestBrokerServer_TLS_RejectsPlaintext(t *testing.T) {
-	// A plaintext HTTP request must NOT receive the AgentCard. The
-	// net/http server detects the bad TLS handshake and writes back a
-	// 400 with "client sent an HTTP request to an HTTPS server" — the
-	// transport call succeeds but the response is decidedly not a 200
-	// with our card payload.
 	port, _ := startTLSServer(t)
 
 	client := &http.Client{Timeout: 2 * time.Second}
@@ -257,10 +277,6 @@ func TestBrokerServer_TLS_RejectsPlaintext(t *testing.T) {
 }
 
 func TestBrokerServer_TLS_GRPCDialSucceeds(t *testing.T) {
-	// gRPC clients dialling with TLS credentials must connect. We don't
-	// invoke any RPC here — the a2a-go service is registered but we
-	// haven't generated a client stub for it. The connection handshake
-	// alone proves ALPN negotiated h2 and the server accepted the cert.
 	port, cert := startTLSServer(t)
 
 	leaf, err := x509.ParseCertificate(cert.Certificate[0])

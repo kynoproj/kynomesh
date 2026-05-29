@@ -54,23 +54,22 @@ const (
 
 	shutdownTimeout = 10 * time.Second
 
-	// agentProbeTimeout caps the startup AgentCard fetch. The broker
-	// refuses to come up if the agent isn't reachable within this window
-	// — the alternative is to start healthy and 502 every request, which
-	// hides the misconfiguration from CrashLoopBackoff and the operator.
+	// agentProbeTimeout caps the startup AgentCard fetch.
 	agentProbeTimeout = 5 * time.Second
 
 	grpcContentType = "application/grpc"
 )
 
 // brokerRuntime aggregates the pieces of broker state that live for the
-// process's whole lifetime — handed around between Start and its helpers
-// to keep their signatures compact.
+// process's whole lifetime.
 type brokerRuntime struct {
 	logger      *zap.SugaredLogger
 	counters    *broker.Counters
 	enabled     map[a2a.TransportProtocol]bool
 	httpProxies map[a2a.TransportProtocol]http.Handler
+	// passthrough is the catch-all HTTP reverse proxy used for any
+	// non-canonical route.
+	passthrough http.Handler
 	grpcServer  *grpc.Server
 	grpcConn    *grpc.ClientConn // nil if gRPC isn't enabled
 }
@@ -187,11 +186,13 @@ func Start(port int, advertiseHost string) {
 //     that forwards every method to that conn.
 //   - Unknown ProtocolBindings are skipped with a warning.
 func buildRuntime(logger *zap.SugaredLogger, udsTransport *http.Transport, card *a2a.AgentCard) (*brokerRuntime, error) {
+	counters := &broker.Counters{}
 	rt := &brokerRuntime{
 		logger:      logger,
-		counters:    &broker.Counters{},
+		counters:    counters,
 		enabled:     map[a2a.TransportProtocol]bool{},
 		httpProxies: map[a2a.TransportProtocol]http.Handler{},
+		passthrough: broker.NewPassthroughReverseProxy(udsTransport, counters),
 	}
 
 	for _, iface := range card.SupportedInterfaces {
@@ -247,6 +248,11 @@ func newMultiplexedServer(
 		// root. The downstream agent serves the same path layout, so
 		// no prefix stripping is needed.
 		httpMux.Handle(broker.RESTEndpoint+"/", h)
+	}
+	// Catch-all: any HTTP request not matching a more-specific A2A
+	// route falls through to the agent's HTTP surface.
+	if rt.passthrough != nil {
+		httpMux.Handle("/", rt.passthrough)
 	}
 
 	dispatch := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
