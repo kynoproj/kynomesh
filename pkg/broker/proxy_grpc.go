@@ -74,11 +74,12 @@ func (rawCodec) Unmarshal(data []byte, v any) error {
 //
 // The broker's gRPC server should register no other services.
 func GRPCPassthroughOptions(backendConn *grpc.ClientConn, counters *Counters) []grpc.ServerOption {
+	gauge := counters.GRPC()
 	return []grpc.ServerOption{
 		grpc.ForceServerCodec(rawCodec{}),
 		grpc.UnknownServiceHandler(func(_ any, ss grpc.ServerStream) error {
-			counters.grpc.Add(1)
-			defer counters.grpc.Add(-1)
+			gauge.Inc()
+			defer gauge.Dec()
 			return forwardGRPCStream(backendConn, ss)
 		}),
 	}

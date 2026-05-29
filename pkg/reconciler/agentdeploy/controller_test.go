@@ -165,9 +165,15 @@ func TestBuildPodSpec_BrokerIsFirstMainContainer(t *testing.T) {
 	assert.Equal(t, testBrokerImage, broker.Image)
 	assert.Empty(t, broker.Command, "Command must be unset so the Dockerfile ENTRYPOINT is used")
 	assert.Equal(t, []string{"broker"}, broker.Args)
-	require.Len(t, broker.Ports, 1)
-	assert.Equal(t, int32(kmv1.AgentBrokerPort), broker.Ports[0].ContainerPort)
-	assert.Equal(t, corev1.ProtocolTCP, broker.Ports[0].Protocol)
+	// Broker exposes two ports: the main A2A port and the introspection
+	// port for /metrics, /healthz, /readyz.
+	require.Len(t, broker.Ports, 2)
+	gotPorts := map[string]int32{}
+	for _, p := range broker.Ports {
+		gotPorts[p.Name] = p.ContainerPort
+	}
+	assert.Equal(t, int32(kmv1.AgentBrokerPort), gotPorts["broker"])
+	assert.Equal(t, int32(kmv1.AgentBrokerIntrospectionPort), gotPorts["introspect"])
 
 	// The agent must NOT appear in main containers.
 	for _, c := range ps.Containers {

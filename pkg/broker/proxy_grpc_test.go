@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -59,7 +61,7 @@ func startGRPCPair(t *testing.T) *grpcPair {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = backendConn.Close() })
 
-	counters := &Counters{}
+	counters := NewCounters(prometheus.NewRegistry())
 	brokerLn, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	brokerSrv := grpc.NewServer(GRPCPassthroughOptions(backendConn, counters)...)
@@ -89,7 +91,7 @@ func TestGRPCPassthrough_UnaryCall(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, healthpb.HealthCheckResponse_SERVING, resp.Status)
 	// Counter must balance to 0 once the unary call returns.
-	assert.Equal(t, int64(0), pair.counters.GRPC())
+	assert.Equal(t, float64(0), testutil.ToFloat64(pair.counters.GRPC()))
 }
 
 func TestGRPCPassthrough_StreamingCall(t *testing.T) {
@@ -114,7 +116,7 @@ func TestGRPCPassthrough_StreamingCall(t *testing.T) {
 	assert.Equal(t, healthpb.HealthCheckResponse_SERVING, resp.Status)
 
 	// Stream is still open; the counter must reflect the in-flight call.
-	require.Eventually(t, func() bool { return pair.counters.GRPC() == 1 },
+	require.Eventually(t, func() bool { return testutil.ToFloat64(pair.counters.GRPC()) == 1 },
 		2*time.Second, 10*time.Millisecond, "gRPC counter should reflect the open stream")
 
 	// Cancelling the client context should tear the stream down on
@@ -126,7 +128,7 @@ func TestGRPCPassthrough_StreamingCall(t *testing.T) {
 			break
 		}
 	}
-	require.Eventually(t, func() bool { return pair.counters.GRPC() == 0 },
+	require.Eventually(t, func() bool { return testutil.ToFloat64(pair.counters.GRPC()) == 0 },
 		2*time.Second, 10*time.Millisecond, "counter must return to 0 after stream closes")
 }
 

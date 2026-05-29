@@ -18,41 +18,65 @@ package broker
 
 import (
 	"net/http"
-	"sync/atomic"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-// Counters tracks in-flight requests per transport. Each transport gets
-// its own counter so autoscaling and observability can attribute load
-// to the protocol it arrived on (an HTTP/2-streaming gRPC call holds a
-// slot for its whole stream lifetime, not just a single request).
-// Passthrough covers requests the broker forwards to the agent over
-// the catch-all reverse proxy.
+// Counters owns the broker's per-transport in-flight gauge.
+//
+// Transports:
+//
+//   - "jsonrpc"     — A2A JSON-RPC over HTTP/1.1
+//   - "rest"        — A2A REST/HTTP+JSON over HTTP/1.1
+//   - "grpc"        — A2A gRPC over HTTP/2
+//   - "passthrough" — non-canonical HTTP traffic forwarded to the agent
+//
+// Each transport's gauge holds the count of in-flight requests; an
+// HTTP/2-streaming gRPC call holds its slot for the whole stream
+// lifetime, not just a single request.
 type Counters struct {
-	jsonRPC     atomic.Int64
-	rest        atomic.Int64
-	grpc        atomic.Int64
-	passthrough atomic.Int64
+	inflight *prometheus.GaugeVec
 }
 
-// JSONRPC returns the current in-flight JSON-RPC request count.
-func (c *Counters) JSONRPC() int64 { return c.jsonRPC.Load() }
+// NewCounters registers the in-flight gauge on registry. Use a fresh
+// prometheus.NewRegistry() in tests to avoid bleed-through; production
+// should pass the registry that backs /metrics.
+func NewCounters(registry prometheus.Registerer) *Counters {
+	return &Counters{
+		inflight: promauto.With(registry).NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "kynomesh_broker_inflight_requests",
+				Help: "Number of in-flight requests the broker is currently proxying, by transport.",
+			},
+			[]string{"transport"},
+		),
+	}
+}
 
-// REST returns the current in-flight REST request count.
-func (c *Counters) REST() int64 { return c.rest.Load() }
+// JSONRPC returns the gauge for the JSON-RPC transport.
+func (c *Counters) JSONRPC() prometheus.Gauge { return c.inflight.WithLabelValues("jsonrpc") }
 
-// GRPC returns the current in-flight gRPC stream count.
-func (c *Counters) GRPC() int64 { return c.grpc.Load() }
+// REST returns the gauge for the REST/HTTP+JSON transport.
+func (c *Counters) REST() prometheus.Gauge { return c.inflight.WithLabelValues("rest") }
 
-// Passthrough returns the current in-flight non-A2A HTTP request count.
-func (c *Counters) Passthrough() int64 { return c.passthrough.Load() }
+// GRPC returns the gauge for the gRPC transport.
+func (c *Counters) GRPC() prometheus.Gauge { return c.inflight.WithLabelValues("grpc") }
 
-// wrapHTTP returns an http.Handler that brackets every request with an
-// increment/decrement on the supplied counter. The defer guarantees the
-// counter balances even when the handler panics.
-func wrapHTTP(counter *atomic.Int64, h http.Handler) http.Handler {
+// Passthrough returns the gauge for non-A2A HTTP traffic.
+func (c *Counters) Passthrough() prometheus.Gauge { return c.inflight.WithLabelValues("passthrough") }
+
+// Collector returns the underlying GaugeVec so the introspection
+// handler can MustRegister it without exposing the field directly.
+func (c *Counters) Collector() prometheus.Collector { return c.inflight }
+
+// wrapHTTP returns an http.Handler that brackets every request with a
+// Gauge Inc/Dec. The defer guarantees the counter balances even when
+// the handler panics.
+func wrapHTTP(gauge prometheus.Gauge, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		counter.Add(1)
-		defer counter.Add(-1)
+		gauge.Inc()
+		defer gauge.Dec()
 		h.ServeHTTP(w, r)
 	})
 }

@@ -55,9 +55,10 @@ const (
 
 	// AgentBrokerPort is the port the broker listens on inside an AgentDeploy
 	// pod, shared by all three A2A transports (JSON-RPC, REST, gRPC).
-	// Used by both the controller (to set the broker container's
-	// containerPort) and the broker CLI (as its default --port).
 	AgentBrokerPort = 9100
+	// AgentBrokerIntrospectionPort is a separate port the broker listens on
+	// for observability and probes (/metrics, /healthz, /readyz).
+	AgentBrokerIntrospectionPort = 9101
 
 	VolumeNameKynomeshRun = "kynomesh-run"                   // Volume name of /var/run/kynowmesh
 	PathKynomeshRun       = "/var/run/kynomesh"              // Volume mount path
