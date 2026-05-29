@@ -33,6 +33,7 @@ import (
 	"github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/a2aproject/a2a-go/v2/a2aclient/agentcard"
 	"github.com/a2aproject/a2a-go/v2/a2asrv"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"google.golang.org/grpc"
@@ -75,7 +76,7 @@ type brokerRuntime struct {
 }
 
 // Start boots the broker.
-func Start(port int, advertiseHost string) {
+func Start(port, introspectionPort int, advertiseHost string) {
 	logger := logging.NewLogger().Named("broker")
 
 	v := version.GetVersion()
@@ -105,7 +106,13 @@ func Start(port int, advertiseHost string) {
 	logger.Infow("agent reachable over UDS",
 		"socket", kmv1.BrokerSocketPath, "agentName", agentCard.Name)
 
-	rt, err := buildRuntime(logger, agentHTTPTransport, agentCard)
+	// Single registry per broker process. Counters register their
+	// gauge on it; the introspection handler scrapes from the same
+	// registry. Using a private registry (not the global) keeps test
+	// runs isolated and avoids inheriting unrelated Go-runtime
+	// metrics we don't want exposed here.
+	metricsRegistry := prometheus.NewRegistry()
+	rt, err := buildRuntime(logger, metricsRegistry, agentHTTPTransport, agentCard)
 	if err != nil {
 		logger.Fatalw("failed to build broker runtime", "err", err)
 	}
@@ -131,10 +138,19 @@ func Start(port int, advertiseHost string) {
 		logger.Fatalw("failed to build broker server", "err", err)
 	}
 
+	// Introspection listener — separate TLS port, same cert. Carries
+	// /metrics, /healthz, /readyz; never user traffic. Ready is true
+	// once the AgentCard probe succeeded and the runtime is wired,
+	// which is the point we've reached here, so the gate is a closure
+	// over rt that returns nil on every call until process exit.
+	ready := func() error { return nil }
+	introspectionHandler := broker.NewIntrospectionHandler(metricsRegistry, ready)
+	introspectionSrv := newIntrospectionServer(introspectionPort, introspectionHandler, cert)
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	serveErr := make(chan error, 1)
+	mainServeErr := make(chan error, 1)
 	go func() {
 		logger.Infow("starting broker on shared port",
 			"port", port,
@@ -143,20 +159,39 @@ func Start(port int, advertiseHost string) {
 		)
 		// Empty cert/key paths → use httpSrv.TLSConfig.Certificates.
 		if err := httpSrv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			serveErr <- fmt.Errorf("broker server: %w", err)
+			mainServeErr <- fmt.Errorf("broker server: %w", err)
 			return
 		}
-		serveErr <- nil
+		mainServeErr <- nil
 	}()
 
+	introspectionServeErr := make(chan error, 1)
+	go func() {
+		logger.Infow("starting broker introspection listener",
+			"port", introspectionPort, "tls", true)
+		if err := introspectionSrv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			introspectionServeErr <- fmt.Errorf("broker introspection server: %w", err)
+			return
+		}
+		introspectionServeErr <- nil
+	}()
+
+	// Wait for either a shutdown signal or a fatal server exit on
+	// either listener. Once one fires, gracefully shut both down.
 	select {
 	case <-ctx.Done():
 		logger.Infow("broker received shutdown signal, stopping transports")
-	case err := <-serveErr:
+	case err := <-mainServeErr:
 		if err != nil {
 			logger.Fatalw("broker exited with error", "err", err)
 		}
 		logger.Infow("broker stopped cleanly")
+		return
+	case err := <-introspectionServeErr:
+		if err != nil {
+			logger.Fatalw("broker introspection exited with error", "err", err)
+		}
+		logger.Infow("broker introspection stopped cleanly")
 		return
 	}
 
@@ -165,14 +200,35 @@ func Start(port int, advertiseHost string) {
 	if err := httpSrv.Shutdown(shutdownCtx); err != nil {
 		logger.Warnw("broker server shutdown error", "err", err)
 	}
+	if err := introspectionSrv.Shutdown(shutdownCtx); err != nil {
+		logger.Warnw("broker introspection shutdown error", "err", err)
+	}
 	if rt.grpcServer != nil {
 		rt.grpcServer.GracefulStop()
 	}
 
-	if err := <-serveErr; err != nil {
+	if err := <-mainServeErr; err != nil {
 		logger.Fatalw("broker exited with error", "err", err)
 	}
+	if err := <-introspectionServeErr; err != nil {
+		logger.Fatalw("broker introspection exited with error", "err", err)
+	}
 	logger.Infow("broker stopped cleanly")
+}
+
+// newIntrospectionServer builds a minimal *http.Server for the broker's
+// secondary listener: same cert as the main port, no HTTP/2 magic, no
+// gRPC dispatch. /metrics, /healthz, /readyz only.
+func newIntrospectionServer(port int, handler http.Handler, cert *tls.Certificate) *http.Server {
+	return &http.Server{
+		Addr:              fmt.Sprintf(":%d", port),
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		TLSConfig: &tls.Config{
+			Certificates: []tls.Certificate{*cert},
+			MinVersion:   tls.VersionTLS12,
+		},
+	}
 }
 
 // buildRuntime inspects the agent's card and provisions the per-transport
@@ -185,8 +241,8 @@ func Start(port int, advertiseHost string) {
 //     "unix://<BrokerSocketPath>" and installs an UnknownServiceHandler
 //     that forwards every method to that conn.
 //   - Unknown ProtocolBindings are skipped with a warning.
-func buildRuntime(logger *zap.SugaredLogger, udsTransport *http.Transport, card *a2a.AgentCard) (*brokerRuntime, error) {
-	counters := &broker.Counters{}
+func buildRuntime(logger *zap.SugaredLogger, registry *prometheus.Registry, udsTransport *http.Transport, card *a2a.AgentCard) (*brokerRuntime, error) {
+	counters := broker.NewCounters(registry)
 	rt := &brokerRuntime{
 		logger:      logger,
 		counters:    counters,

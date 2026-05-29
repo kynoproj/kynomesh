@@ -645,11 +645,18 @@ func newBrokerContainer(image, encodedAgentDeploy string, tmpl *kmv1.ContainerTe
 		Env: []corev1.EnvVar{
 			{Name: kmv1.EnvAgentDeployObject, Value: encodedAgentDeploy},
 		},
-		Ports: []corev1.ContainerPort{{
-			Name:          "broker",
-			ContainerPort: kmv1.AgentBrokerPort,
-			Protocol:      corev1.ProtocolTCP,
-		}},
+		Ports: []corev1.ContainerPort{
+			{
+				Name:          "broker",
+				ContainerPort: kmv1.AgentBrokerPort,
+				Protocol:      corev1.ProtocolTCP,
+			},
+			{
+				Name:          "introspect",
+				ContainerPort: kmv1.AgentBrokerIntrospectionPort,
+				Protocol:      corev1.ProtocolTCP,
+			},
+		},
 	}
 	if tmpl != nil {
 		tmpl.ApplyToContainer(&c)

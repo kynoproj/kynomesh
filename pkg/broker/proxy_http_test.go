@@ -25,6 +25,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -75,7 +77,7 @@ func newUDSEchoBackend(t *testing.T, response string) (string, *echoBackend) {
 func TestJSONRPCReverseProxy_ForwardsRequestVerbatim(t *testing.T) {
 	socketPath, rec := newUDSEchoBackend(t, "backend-reply")
 
-	counters := &Counters{}
+	counters := NewCounters(prometheus.NewRegistry())
 	proxy := NewJSONRPCReverseProxy(NewUDSHTTPTransport(socketPath), counters)
 
 	req := httptest.NewRequest("POST", "/rpc", stringReader("hello"))
@@ -90,17 +92,17 @@ func TestJSONRPCReverseProxy_ForwardsRequestVerbatim(t *testing.T) {
 }
 
 func TestJSONRPCReverseProxy_IncrementsJSONRPCCounter(t *testing.T) {
-	counters := &Counters{}
-	var midCallJSONRPC, midCallREST, midCallGRPC int64
+	counters := NewCounters(prometheus.NewRegistry())
+	var midCallJSONRPC, midCallREST, midCallGRPC float64
 
 	socketPath := filepath.Join(shortSocketDir(t), "a.sock")
 	ln, err := net.Listen("unix", socketPath)
 	require.NoError(t, err)
 	srv := &http.Server{
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			midCallJSONRPC = counters.JSONRPC()
-			midCallREST = counters.REST()
-			midCallGRPC = counters.GRPC()
+			midCallJSONRPC = testutil.ToFloat64(counters.JSONRPC())
+			midCallREST = testutil.ToFloat64(counters.REST())
+			midCallGRPC = testutil.ToFloat64(counters.GRPC())
 			w.WriteHeader(http.StatusOK)
 		}),
 	}
@@ -110,24 +112,25 @@ func TestJSONRPCReverseProxy_IncrementsJSONRPCCounter(t *testing.T) {
 	proxy := NewJSONRPCReverseProxy(NewUDSHTTPTransport(socketPath), counters)
 	proxy.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/rpc", nil))
 
-	assert.Equal(t, int64(1), midCallJSONRPC, "JSON-RPC counter must be 1 while the request is in flight")
-	assert.Equal(t, int64(0), midCallREST, "REST counter must not move on a JSON-RPC request")
-	assert.Equal(t, int64(0), midCallGRPC, "gRPC counter must not move on a JSON-RPC request")
-	assert.Equal(t, int64(0), counters.JSONRPC(), "JSON-RPC counter must return to 0 after request completes")
+	assert.Equal(t, float64(1), midCallJSONRPC, "JSON-RPC counter must be 1 while the request is in flight")
+	assert.Equal(t, float64(0), midCallREST, "REST counter must not move on a JSON-RPC request")
+	assert.Equal(t, float64(0), midCallGRPC, "gRPC counter must not move on a JSON-RPC request")
+	assert.Equal(t, float64(0), testutil.ToFloat64(counters.JSONRPC()),
+		"JSON-RPC counter must return to 0 after request completes")
 }
 
 func TestRESTReverseProxy_IncrementsRESTCounter(t *testing.T) {
 	// Symmetric to the JSON-RPC variant.
-	counters := &Counters{}
-	var midCallREST, midCallJSONRPC int64
+	counters := NewCounters(prometheus.NewRegistry())
+	var midCallREST, midCallJSONRPC float64
 
 	socketPath := filepath.Join(shortSocketDir(t), "a.sock")
 	ln, err := net.Listen("unix", socketPath)
 	require.NoError(t, err)
 	srv := &http.Server{
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			midCallREST = counters.REST()
-			midCallJSONRPC = counters.JSONRPC()
+			midCallREST = testutil.ToFloat64(counters.REST())
+			midCallJSONRPC = testutil.ToFloat64(counters.JSONRPC())
 			w.WriteHeader(http.StatusOK)
 		}),
 	}
@@ -137,15 +140,15 @@ func TestRESTReverseProxy_IncrementsRESTCounter(t *testing.T) {
 	proxy := NewRESTReverseProxy(NewUDSHTTPTransport(socketPath), counters)
 	proxy.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/api/foo", nil))
 
-	assert.Equal(t, int64(1), midCallREST)
-	assert.Equal(t, int64(0), midCallJSONRPC)
-	assert.Equal(t, int64(0), counters.REST())
+	assert.Equal(t, float64(1), midCallREST)
+	assert.Equal(t, float64(0), midCallJSONRPC)
+	assert.Equal(t, float64(0), testutil.ToFloat64(counters.REST()))
 }
 
 func TestPassthroughReverseProxy_ForwardsArbitraryPath(t *testing.T) {
 	socketPath, rec := newUDSEchoBackend(t, "ui-html")
 
-	counters := &Counters{}
+	counters := NewCounters(prometheus.NewRegistry())
 	proxy := NewPassthroughReverseProxy(NewUDSHTTPTransport(socketPath), counters)
 
 	req := httptest.NewRequest("GET", "/my-app/v1/sessions", nil)
@@ -160,18 +163,18 @@ func TestPassthroughReverseProxy_ForwardsArbitraryPath(t *testing.T) {
 }
 
 func TestPassthroughReverseProxy_OnlyIncrementsPassthroughCounter(t *testing.T) {
-	counters := &Counters{}
-	var midPassthrough, midJSONRPC, midREST, midGRPC int64
+	counters := NewCounters(prometheus.NewRegistry())
+	var midPassthrough, midJSONRPC, midREST, midGRPC float64
 
 	socketPath := filepath.Join(shortSocketDir(t), "p.sock")
 	ln, err := net.Listen("unix", socketPath)
 	require.NoError(t, err)
 	srv := &http.Server{
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			midPassthrough = counters.Passthrough()
-			midJSONRPC = counters.JSONRPC()
-			midREST = counters.REST()
-			midGRPC = counters.GRPC()
+			midPassthrough = testutil.ToFloat64(counters.Passthrough())
+			midJSONRPC = testutil.ToFloat64(counters.JSONRPC())
+			midREST = testutil.ToFloat64(counters.REST())
+			midGRPC = testutil.ToFloat64(counters.GRPC())
 			w.WriteHeader(http.StatusOK)
 		}),
 	}
@@ -181,11 +184,12 @@ func TestPassthroughReverseProxy_OnlyIncrementsPassthroughCounter(t *testing.T) 
 	proxy := NewPassthroughReverseProxy(NewUDSHTTPTransport(socketPath), counters)
 	proxy.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/ui", nil))
 
-	assert.Equal(t, int64(1), midPassthrough, "Passthrough counter must be 1 in flight")
-	assert.Equal(t, int64(0), midJSONRPC)
-	assert.Equal(t, int64(0), midREST)
-	assert.Equal(t, int64(0), midGRPC)
-	assert.Equal(t, int64(0), counters.Passthrough(), "Passthrough counter must return to 0 after request completes")
+	assert.Equal(t, float64(1), midPassthrough, "Passthrough counter must be 1 in flight")
+	assert.Equal(t, float64(0), midJSONRPC)
+	assert.Equal(t, float64(0), midREST)
+	assert.Equal(t, float64(0), midGRPC)
+	assert.Equal(t, float64(0), testutil.ToFloat64(counters.Passthrough()),
+		"Passthrough counter must return to 0 after request completes")
 }
 
 // stringReader returns an io.Reader for a string without pulling strings.Reader

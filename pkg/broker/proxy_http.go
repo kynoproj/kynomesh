@@ -20,17 +20,18 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"sync/atomic"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // NewJSONRPCReverseProxy returns the JSON-RPC pass-through handler.
 func NewJSONRPCReverseProxy(udsTransport *http.Transport, counters *Counters) http.Handler {
-	return newUDSReverseProxy(udsTransport, &counters.jsonRPC)
+	return newUDSReverseProxy(udsTransport, counters.JSONRPC())
 }
 
 // NewRESTReverseProxy returns the REST pass-through handler.
 func NewRESTReverseProxy(udsTransport *http.Transport, counters *Counters) http.Handler {
-	return newUDSReverseProxy(udsTransport, &counters.rest)
+	return newUDSReverseProxy(udsTransport, counters.REST())
 }
 
 // NewPassthroughReverseProxy returns the catch-all HTTP pass-through
@@ -40,15 +41,15 @@ func NewRESTReverseProxy(udsTransport *http.Transport, counters *Counters) http.
 // the Passthrough counter so non-A2A load is observable separately
 // from A2A traffic.
 func NewPassthroughReverseProxy(udsTransport *http.Transport, counters *Counters) http.Handler {
-	return newUDSReverseProxy(udsTransport, &counters.passthrough)
+	return newUDSReverseProxy(udsTransport, counters.Passthrough())
 }
 
 // newUDSReverseProxy builds a httputil.ReverseProxy that forwards to
 // the agent over a Unix Domain Socket. The Director plants a synthetic
 // http://kynomesh-agent base on every outgoing request.
-func newUDSReverseProxy(udsTransport *http.Transport, counter *atomic.Int64) http.Handler {
+func newUDSReverseProxy(udsTransport *http.Transport, gauge prometheus.Gauge) http.Handler {
 	target := &url.URL{Scheme: "http", Host: AgentBackendHost}
 	rp := httputil.NewSingleHostReverseProxy(target)
 	rp.Transport = udsTransport
-	return wrapHTTP(counter, rp)
+	return wrapHTTP(gauge, rp)
 }
