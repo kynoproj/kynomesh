@@ -756,6 +756,16 @@ func (m *AgentSetSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.Entry)
+	copy(dAtA[i:], m.Entry)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Entry)))
+	i--
+	dAtA[i] = 0x22
+	i -= len(m.Pattern)
+	copy(dAtA[i:], m.Pattern)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Pattern)))
+	i--
+	dAtA[i] = 0x1a
 	if m.Templates != nil {
 		{
 			size, err := m.Templates.MarshalToSizedBuffer(dAtA[:i])
@@ -1472,6 +1482,10 @@ func (m *AgentSetSpec) Size() (n int) {
 		l = m.Templates.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	l = len(m.Pattern)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Entry)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -1840,6 +1854,8 @@ func (this *AgentSetSpec) String() string {
 	s := strings.Join([]string{`&AgentSetSpec{`,
 		`Agents:` + repeatedStringForAgents + `,`,
 		`Templates:` + strings.Replace(this.Templates.String(), "Templates", "Templates", 1) + `,`,
+		`Pattern:` + fmt.Sprintf("%v", this.Pattern) + `,`,
+		`Entry:` + fmt.Sprintf("%v", this.Entry) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4204,6 +4220,70 @@ func (m *AgentSetSpec) Unmarshal(dAtA []byte) error {
 			if err := m.Templates.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pattern", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Pattern = AgentPattern(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Entry", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Entry = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

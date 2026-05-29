@@ -291,6 +291,27 @@ message AgentSetSpec {
   // Templates are used to customize additional kubernetes resources required for the Pipeline
   // +optional
   optional Templates templates = 2;
+
+  // Pattern describes how the agents in this AgentSet are wired together
+  // at the message-routing layer. The kynomesh controller materialises a
+  // per-agent peer list from this value plus the Entry field; it does
+  // not own per-agent state or memory.
+  //
+  //   - Supervisor: Entry sees every other agent; non-entry agents see
+  //     no peers. Aliases in the wider ecosystem include "manager",
+  //     "orchestrator-worker", and "subagents".
+  //   - Handoff: every agent sees every other agent. Aliases include
+  //     "swarm" and "network".
+  //   - Sequential: each agent sees only the next one in declaration
+  //     order; Entry must be agents[0].
+  // +kubebuilder:validation:Enum=Supervisor;Handoff;Sequential
+  // +kubebuilder:validation:Required
+  optional string pattern = 3;
+
+  // Entry is the name of the agent external callers reach first. Must
+  // match one of agents[].name. For Sequential it must be agents[0].
+  // +kubebuilder:validation:Required
+  optional string entry = 4;
 }
 
 message AgentSetStatus {

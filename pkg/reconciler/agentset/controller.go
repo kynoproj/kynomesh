@@ -24,7 +24,6 @@ package agentset
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -40,6 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/validator"
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 	sharedutil "github.com/kynoproj/kynomesh/pkg/shared/util"
 )
@@ -127,7 +127,7 @@ func (r *Reconciler) reconcile(ctx context.Context, as *kmv1.AgentSet) error {
 
 	addFinalizer(as)
 
-	if err := validateAgentSet(as); err != nil {
+	if err := validator.ValidateAgentSet(as); err != nil {
 		as.Status.MarkFalse(kmv1.AgentSetConditionConfigured, "InvalidSpec", err.Error())
 		as.Status.Phase = kmv1.AgentSetPhaseFailed
 		as.Status.Message = err.Error()
@@ -417,22 +417,6 @@ func removeFinalizer(as *kmv1.AgentSet) {
 		}
 	}
 	as.Finalizers = out
-}
-
-// validateAgentSet enforces invariants the CRD schema can't easily express:
-// non-empty agent name and no duplicates.
-func validateAgentSet(as *kmv1.AgentSet) error {
-	seen := make(map[string]struct{}, len(as.Spec.Agents))
-	for _, a := range as.Spec.Agents {
-		if a.Name == "" {
-			return errors.New("agent name must be non-empty")
-		}
-		if _, dup := seen[a.Name]; dup {
-			return fmt.Errorf("duplicate agent name %q", a.Name)
-		}
-		seen[a.Name] = struct{}{}
-	}
-	return nil
 }
 
 // Reference assertion to surface signature errors at compile time rather

@@ -1167,7 +1167,24 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetSpec(ref common.ReferenceCallback
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Templates"),
 						},
 					},
+					"pattern": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Pattern describes how the agents in this AgentSet are wired together at the message-routing layer. The kynomesh controller materialises a per-agent peer list from this value plus the Entry field; it does not own per-agent state or memory.\n\n  - Supervisor: Entry sees every other agent; non-entry agents see\n    no peers. Aliases in the wider ecosystem include \"manager\",\n    \"orchestrator-worker\", and \"subagents\".\n  - Handoff: every agent sees every other agent. Aliases include\n    \"swarm\" and \"network\".\n  - Sequential: each agent sees only the next one in declaration\n    order; Entry must be agents[0].",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"entry": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Entry is the name of the agent external callers reach first. Must match one of agents[].name. For Sequential it must be agents[0].",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
+				Required: []string{"pattern", "entry"},
 			},
 		},
 		Dependencies: []string{
