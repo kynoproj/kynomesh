@@ -55,9 +55,6 @@ func TestIntrospectionHandler_Readyz(t *testing.T) {
 }
 
 func TestIntrospectionHandler_MetricsExposesCounters(t *testing.T) {
-	// Build a Counters against the same registry the introspection
-	// handler scrapes, bump each transport's gauge to a known value,
-	// then scrape /metrics and assert the exposition reflects them.
 	registry := prometheus.NewRegistry()
 	counters := NewCounters(registry)
 	counters.JSONRPC().Set(3)
@@ -86,9 +83,6 @@ func TestIntrospectionHandler_MetricsExposesCounters(t *testing.T) {
 }
 
 func TestIntrospectionHandler_UnknownPath404(t *testing.T) {
-	// The introspection mux is intentionally narrow — no catch-all. An
-	// unknown path returns 404 so misconfigured Prometheus scrapers /
-	// kubelet probes fail loudly instead of being silently absorbed.
 	h := NewIntrospectionHandler(prometheus.NewRegistry(), func() error { return nil })
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest("GET", "/random", nil))

@@ -106,11 +106,6 @@ func Start(port, introspectionPort int, advertiseHost string) {
 	logger.Infow("agent reachable over UDS",
 		"socket", kmv1.BrokerSocketPath, "agentName", agentCard.Name)
 
-	// Single registry per broker process. Counters register their
-	// gauge on it; the introspection handler scrapes from the same
-	// registry. Using a private registry (not the global) keeps test
-	// runs isolated and avoids inheriting unrelated Go-runtime
-	// metrics we don't want exposed here.
 	metricsRegistry := prometheus.NewRegistry()
 	rt, err := buildRuntime(logger, metricsRegistry, agentHTTPTransport, agentCard)
 	if err != nil {
@@ -138,11 +133,7 @@ func Start(port, introspectionPort int, advertiseHost string) {
 		logger.Fatalw("failed to build broker server", "err", err)
 	}
 
-	// Introspection listener — separate TLS port, same cert. Carries
-	// /metrics, /healthz, /readyz; never user traffic. Ready is true
-	// once the AgentCard probe succeeded and the runtime is wired,
-	// which is the point we've reached here, so the gate is a closure
-	// over rt that returns nil on every call until process exit.
+	// Introspection listener — separate TLS port, same cert.
 	ready := func() error { return nil }
 	introspectionHandler := broker.NewIntrospectionHandler(metricsRegistry, ready)
 	introspectionSrv := newIntrospectionServer(introspectionPort, introspectionHandler, cert)
@@ -217,8 +208,7 @@ func Start(port, introspectionPort int, advertiseHost string) {
 }
 
 // newIntrospectionServer builds a minimal *http.Server for the broker's
-// secondary listener: same cert as the main port, no HTTP/2 magic, no
-// gRPC dispatch. /metrics, /healthz, /readyz only.
+// secondary listener.
 func newIntrospectionServer(port int, handler http.Handler, cert *tls.Certificate) *http.Server {
 	return &http.Server{
 		Addr:              fmt.Sprintf(":%d", port),

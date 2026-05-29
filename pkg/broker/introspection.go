@@ -25,7 +25,6 @@ import (
 
 // NewIntrospectionHandler wires up the broker's
 // introspection listener: Prometheus metrics, liveness, readiness, etc.
-// Served on a separate port from the main A2A surface.
 func NewIntrospectionHandler(registry *prometheus.Registry, ready func() error) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
