@@ -38,6 +38,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentSetList":          schema_pkg_apis_kynomesh_v1alpha1_AgentSetList(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentSetSpec":          schema_pkg_apis_kynomesh_v1alpha1_AgentSetSpec(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentSetStatus":        schema_pkg_apis_kynomesh_v1alpha1_AgentSetStatus(ref),
+		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container":             schema_pkg_apis_kynomesh_v1alpha1_Container(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate":     schema_pkg_apis_kynomesh_v1alpha1_ContainerTemplate(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata":              schema_pkg_apis_kynomesh_v1alpha1_Metadata(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.RollingUpdateStrategy": schema_pkg_apis_kynomesh_v1alpha1_RollingUpdateStrategy(ref),
@@ -197,9 +198,15 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 							},
 						},
 					},
-					"containerTemplate": {
+					"container": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Container template for the main container.",
+							Description: "Agent container. Required — the user's agent code runs here.",
+							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container"),
+						},
+					},
+					"brokerTemplate": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Container template for the broker container.",
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate"),
 						},
 					},
@@ -265,11 +272,11 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 						},
 					},
 				},
-				Required: []string{"name"},
+				Required: []string{"name", "container"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
 	}
 }
 
@@ -668,9 +675,15 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 							},
 						},
 					},
-					"containerTemplate": {
+					"container": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Container template for the main container.",
+							Description: "Agent container. Required — the user's agent code runs here.",
+							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container"),
+						},
+					},
+					"brokerTemplate": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Container template for the broker container.",
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate"),
 						},
 					},
@@ -750,11 +763,11 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 						},
 					},
 				},
-				Required: []string{"name", "agentSetName"},
+				Required: []string{"name", "container", "agentSetName"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
 	}
 }
 
@@ -1027,9 +1040,9 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeployTemplate(ref common.ReferenceC
 							},
 						},
 					},
-					"containerTemplate": {
+					"brokerTemplate": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Template for the AgentDeploy kyno container",
+							Description: "Template for the AgentDeploy broker container",
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate"),
 						},
 					},
@@ -1142,6 +1155,22 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetSpec(ref common.ReferenceCallback
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
 				Properties: map[string]spec.Schema{
+					"pattern": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Pattern describes how the agents in this AgentSet are wired together.\n\n  - Supervisor: Entry sees every other agent; non-entry agents see\n    no peers. Aliases in the wider ecosystem include \"manager\",\n    \"orchestrator-worker\", and \"subagents\".\n  - Handoff: every agent sees every other agent. Aliases include\n    \"swarm\" and \"network\".\n  - Sequential: each agent sees only the next one in declaration\n    order; Entry must be agents[0].",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"entry": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Entry is the name of the agent external callers reach first. Must match one of agents[].name. For Sequential it must be agents[0].",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"agents": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -1165,22 +1194,6 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetSpec(ref common.ReferenceCallback
 						SchemaProps: spec.SchemaProps{
 							Description: "Templates are used to customize additional kubernetes resources required for the Pipeline",
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Templates"),
-						},
-					},
-					"pattern": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Pattern describes how the agents in this AgentSet are wired together at the message-routing layer. The kynomesh controller materialises a per-agent peer list from this value plus the Entry field; it does not own per-agent state or memory.\n\n  - Supervisor: Entry sees every other agent; non-entry agents see\n    no peers. Aliases in the wider ecosystem include \"manager\",\n    \"orchestrator-worker\", and \"subagents\".\n  - Handoff: every agent sees every other agent. Aliases include\n    \"swarm\" and \"network\".\n  - Sequential: each agent sees only the next one in declaration\n    order; Entry must be agents[0].",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"entry": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Entry is the name of the agent external callers reach first. Must match one of agents[].name. For Sequential it must be agents[0].",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
 						},
 					},
 				},
@@ -1257,6 +1270,146 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetStatus(ref common.ReferenceCallba
 		},
 		Dependencies: []string{
 			"k8s.io/apimachinery/pkg/apis/meta/v1.Condition", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+	}
+}
+
+func schema_pkg_apis_kynomesh_v1alpha1_Container(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "Container is used to define the container properties for user agent.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"command": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"args": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"env": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.EnvVar"),
+									},
+								},
+							},
+						},
+					},
+					"envFrom": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.EnvFromSource"),
+									},
+								},
+							},
+						},
+					},
+					"volumeMounts": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.VolumeMount"),
+									},
+								},
+							},
+						},
+					},
+					"resources": {
+						SchemaProps: spec.SchemaProps{
+							Default: map[string]interface{}{},
+							Ref:     ref("k8s.io/api/core/v1.ResourceRequirements"),
+						},
+					},
+					"securityContext": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.SecurityContext"),
+						},
+					},
+					"imagePullPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"readinessProbe": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.Probe"),
+						},
+					},
+					"livenessProbe": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/api/core/v1.Probe"),
+						},
+					},
+					"ports": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-map-keys": []interface{}{
+									"containerPort",
+									"protocol",
+								},
+								"x-kubernetes-list-type":       "map",
+								"x-kubernetes-patch-merge-key": "containerPort",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("k8s.io/api/core/v1.ContainerPort"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.EnvFromSource", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext", "k8s.io/api/core/v1.VolumeMount"},
 	}
 }
 

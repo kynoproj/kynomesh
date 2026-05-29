@@ -66,9 +66,7 @@ const (
 	// controller can't function without it anyway.
 	imageDiscoveryTimeout = 30 * time.Second
 
-	// Leader-election lease defaults. These match the client-go upstream
-	// defaults (and numaflow's choices) so the controller behaves
-	// predictably for operators familiar with controller-runtime.
+	// Leader-election lease defaults.
 	defaultLeaseDuration = 15 * time.Second
 	defaultRenewDeadline = 10 * time.Second
 	defaultRetryPeriod   = 2 * time.Second

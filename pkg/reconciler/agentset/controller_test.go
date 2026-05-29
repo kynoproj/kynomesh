@@ -118,23 +118,23 @@ func TestBuildAgentDeploys_TemplateAppliedAsDefault(t *testing.T) {
 	as := newAgentSet("greeter", "alpha")
 	as.Spec.Templates = &kmv1.Templates{
 		AgentDeployTemplate: &kmv1.AgentDeployTemplate{
-			ContainerTemplate: &kmv1.ContainerTemplate{ImagePullPolicy: tmplPull},
+			BrokerTemplate: &kmv1.ContainerTemplate{ImagePullPolicy: tmplPull},
 		},
 	}
 	out, err := r.buildDesired(as)
 	require.NoError(t, err)
 	ad := out[childName("greeter", "alpha")]
-	require.NotNil(t, ad.Spec.ContainerTemplate)
-	assert.Equal(t, tmplPull, ad.Spec.ContainerTemplate.ImagePullPolicy)
+	require.NotNil(t, ad.Spec.BrokerTemplate)
+	assert.Equal(t, tmplPull, ad.Spec.BrokerTemplate.ImagePullPolicy)
 
 	// Per-agent value wins over template.
 	perAgent := corev1.PullPolicy("IfNotPresent")
-	as.Spec.Agents[0].ContainerTemplate = &kmv1.ContainerTemplate{ImagePullPolicy: perAgent}
+	as.Spec.Agents[0].BrokerTemplate = &kmv1.ContainerTemplate{ImagePullPolicy: perAgent}
 	out, err = r.buildDesired(as)
 	require.NoError(t, err)
 	ad = out[childName("greeter", "alpha")]
-	require.NotNil(t, ad.Spec.ContainerTemplate)
-	assert.Equal(t, perAgent, ad.Spec.ContainerTemplate.ImagePullPolicy,
+	require.NotNil(t, ad.Spec.BrokerTemplate)
+	assert.Equal(t, perAgent, ad.Spec.BrokerTemplate.ImagePullPolicy,
 		"per-agent value should beat the template default")
 }
 

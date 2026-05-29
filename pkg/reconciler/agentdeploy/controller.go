@@ -499,21 +499,16 @@ func desiredReplicas(ad *kmv1.AgentDeploy) int {
 	return r
 }
 
-// buildPodSpec composes the corev1.PodSpec from the AgentDeploy spec. It is
-// deterministic per (spec, template, brokerImage) so the hash over it is a
-// meaningful drift signal — changing the broker image triggers a pod
-// recreate, just like changing the agent spec.
+// buildPodSpec composes the corev1.PodSpec from the AgentDeploy spec.
 func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
-	agentContainer := corev1.Container{
-		Name: kmv1.ContainerNameAgent,
-	}
-	if ct := ad.Spec.ContainerTemplate; ct != nil {
-		ct.ApplyToContainer(&agentContainer)
-	}
-	containers := []corev1.Container{agentContainer, newBrokerContainer(brokerImage, encodeAgentDeploy(ad))}
+	containers := []corev1.Container{newBrokerContainer(brokerImage, encodeAgentDeploy(ad), ad.Spec.BrokerTemplate)}
 	containers = append(containers, ad.Spec.Sidecars...)
 
-	initContainers := append([]corev1.Container{newInitSocketContainer(brokerImage)}, ad.Spec.InitContainers...)
+	initContainers := []corev1.Container{
+		newInitSocketContainer(brokerImage),
+		newAgentContainer(ad),
+	}
+	initContainers = append(initContainers, ad.Spec.InitContainers...)
 
 	ps := corev1.PodSpec{
 		Containers:     containers,
@@ -523,17 +518,41 @@ func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
 	}
 	ad.Spec.ApplyToPodSpec(&ps)
 
-	builtin := downwardAPIEnv()
-	for i := range ps.Containers {
-		ps.Containers[i].Env = mergeEnv(ps.Containers[i].Env, builtin)
-	}
-
-	// Mount the shared kynomesh-run tmpfs on every runtime container.
+	builtinEnvs := downwardAPIEnv()
 	mount := kynomeshRunMount()
 	for i := range ps.Containers {
+		ps.Containers[i].Env = mergeEnv(ps.Containers[i].Env, builtinEnvs)
 		ps.Containers[i].VolumeMounts = appendMountIfAbsent(ps.Containers[i].VolumeMounts, mount)
 	}
 	return ps
+}
+
+// newAgentContainer builds the user's agent container as a K8s-native
+// sidecar.
+func newAgentContainer(ad *kmv1.AgentDeploy) corev1.Container {
+	src := ad.Spec.Container
+	c := corev1.Container{Name: kmv1.ContainerNameAgent}
+	if src != nil {
+		c.Image = src.Image
+		c.Command = src.Command
+		c.Args = src.Args
+		c.Env = src.Env
+		c.EnvFrom = src.EnvFrom
+		c.VolumeMounts = src.VolumeMounts
+		c.Resources = src.Resources
+		c.SecurityContext = src.SecurityContext
+		if src.ImagePullPolicy != nil {
+			c.ImagePullPolicy = *src.ImagePullPolicy
+		}
+		c.ReadinessProbe = src.ReadinessProbe
+		c.LivenessProbe = src.LivenessProbe
+		c.Ports = src.Ports
+	}
+	c.Env = mergeEnv(c.Env, downwardAPIEnv())
+	c.VolumeMounts = appendMountIfAbsent(c.VolumeMounts, kynomeshRunMount())
+	always := corev1.ContainerRestartPolicyAlways
+	c.RestartPolicy = &always
+	return c
 }
 
 // kynomeshRunVolume returns the tmpfs-backed Volume used by every
@@ -617,24 +636,25 @@ func mergeEnv(existing, overrides []corev1.EnvVar) []corev1.EnvVar {
 	return out
 }
 
-// newBrokerContainer builds the A2A broker sidecar.
-func newBrokerContainer(image, encodedAgentDeploy string) corev1.Container {
-	return corev1.Container{
+// newBrokerContainer builds the broker sidecar.
+func newBrokerContainer(image, encodedAgentDeploy string, tmpl *kmv1.ContainerTemplate) corev1.Container {
+	c := corev1.Container{
 		Name:  kmv1.ContainerNameAgentBroker,
 		Image: image,
-		// Args appended to the Dockerfile ENTRYPOINT (/bin/kynomesh); we
-		// deliberately leave Command unset so the entrypoint stays in one
-		// place — the image — rather than being mirrored here.
-		Args: []string{"broker"},
+		Args:  []string{"broker"},
 		Env: []corev1.EnvVar{
 			{Name: kmv1.EnvAgentDeployObject, Value: encodedAgentDeploy},
 		},
 		Ports: []corev1.ContainerPort{{
-			Name:          "a2a",
+			Name:          "broker",
 			ContainerPort: kmv1.AgentBrokerPort,
 			Protocol:      corev1.ProtocolTCP,
 		}},
 	}
+	if tmpl != nil {
+		tmpl.ApplyToContainer(&c)
+	}
+	return c
 }
 
 // newInitSocketContainer builds the controller-injected init container

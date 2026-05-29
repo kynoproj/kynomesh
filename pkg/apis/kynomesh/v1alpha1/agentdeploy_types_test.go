@@ -41,7 +41,7 @@ func newFullAgentDeploy() *AgentDeploy {
 		Spec: AgentDeploySpec{
 			AbstractAgentDeploy: AbstractAgentDeploy{
 				Name: "greeter",
-				ContainerTemplate: &ContainerTemplate{
+				BrokerTemplate: &ContainerTemplate{
 					ImagePullPolicy: corev1.PullAlways,
 				},
 				Volumes:        []corev1.Volume{{Name: "data"}},
@@ -108,8 +108,8 @@ func TestSimpleCopy_KeepsAgentIdentityFields(t *testing.T) {
 
 	// Agent identity / declared config — broker reads these.
 	assert.Equal(t, "greeter", c.Spec.Name)
-	require.NotNil(t, c.Spec.ContainerTemplate)
-	assert.Equal(t, corev1.PullAlways, c.Spec.ContainerTemplate.ImagePullPolicy)
+	require.NotNil(t, c.Spec.BrokerTemplate)
+	assert.Equal(t, corev1.PullAlways, c.Spec.BrokerTemplate.ImagePullPolicy)
 }
 
 func TestSimpleCopy_DoesNotAliasSource(t *testing.T) {
@@ -119,11 +119,11 @@ func TestSimpleCopy_DoesNotAliasSource(t *testing.T) {
 	c := ad.SimpleCopy()
 
 	c.Spec.Name = "mutated"
-	if c.Spec.ContainerTemplate != nil {
-		c.Spec.ContainerTemplate.ImagePullPolicy = corev1.PullNever
+	if c.Spec.BrokerTemplate != nil {
+		c.Spec.BrokerTemplate.ImagePullPolicy = corev1.PullNever
 	}
 
 	assert.Equal(t, "greeter", ad.Spec.Name)
-	require.NotNil(t, ad.Spec.ContainerTemplate)
-	assert.Equal(t, corev1.PullAlways, ad.Spec.ContainerTemplate.ImagePullPolicy)
+	require.NotNil(t, ad.Spec.BrokerTemplate)
+	assert.Equal(t, corev1.PullAlways, ad.Spec.BrokerTemplate.ImagePullPolicy)
 }

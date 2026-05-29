@@ -23527,9 +23527,13 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",
           "type": "boolean"
         },
-        "containerTemplate": {
+        "brokerTemplate": {
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ContainerTemplate",
-          "description": "Container template for the main container."
+          "description": "Container template for the broker container."
+        },
+        "container": {
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Container",
+          "description": "Agent container. Required — the user's agent code runs here."
         },
         "dnsConfig": {
           "$ref": "#/definitions/io.k8s.api.core.v1.PodDNSConfig",
@@ -23631,7 +23635,8 @@
         }
       },
       "required": [
-        "name"
+        "name",
+        "container"
       ],
       "type": "object"
     },
@@ -23778,9 +23783,13 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",
           "type": "boolean"
         },
-        "containerTemplate": {
+        "brokerTemplate": {
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ContainerTemplate",
-          "description": "Container template for the main container."
+          "description": "Container template for the broker container."
+        },
+        "container": {
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Container",
+          "description": "Agent container. Required — the user's agent code runs here."
         },
         "dnsConfig": {
           "$ref": "#/definitions/io.k8s.api.core.v1.PodDNSConfig",
@@ -23887,6 +23896,7 @@
       },
       "required": [
         "name",
+        "container",
         "agentSetName"
       ],
       "type": "object"
@@ -23973,9 +23983,9 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",
           "type": "boolean"
         },
-        "containerTemplate": {
+        "brokerTemplate": {
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ContainerTemplate",
-          "description": "Template for the AgentDeploy kyno container"
+          "description": "Template for the AgentDeploy broker container"
         },
         "dnsConfig": {
           "$ref": "#/definitions/io.k8s.api.core.v1.PodDNSConfig",
@@ -24119,7 +24129,7 @@
           "type": "string"
         },
         "pattern": {
-          "description": "Pattern describes how the agents in this AgentSet are wired together at the message-routing layer. The kynomesh controller materialises a per-agent peer list from this value plus the Entry field; it does not own per-agent state or memory.\n\n  - Supervisor: Entry sees every other agent; non-entry agents see\n    no peers. Aliases in the wider ecosystem include \"manager\",\n    \"orchestrator-worker\", and \"subagents\".\n  - Handoff: every agent sees every other agent. Aliases include\n    \"swarm\" and \"network\".\n  - Sequential: each agent sees only the next one in declaration\n    order; Entry must be agents[0].",
+          "description": "Pattern describes how the agents in this AgentSet are wired together.\n\n  - Supervisor: Entry sees every other agent; non-entry agents see\n    no peers. Aliases in the wider ecosystem include \"manager\",\n    \"orchestrator-worker\", and \"subagents\".\n  - Handoff: every agent sees every other agent. Aliases include\n    \"swarm\" and \"network\".\n  - Sequential: each agent sees only the next one in declaration\n    order; Entry must be agents[0].",
           "type": "string"
         },
         "templates": {
@@ -24165,6 +24175,73 @@
         },
         "phase": {
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "sh.kyno.kynomesh.v1alpha1.Container": {
+      "description": "Container is used to define the container properties for user agent.",
+      "properties": {
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "env": {
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
+          },
+          "type": "array"
+        },
+        "envFrom": {
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvFromSource"
+          },
+          "type": "array"
+        },
+        "image": {
+          "type": "string"
+        },
+        "imagePullPolicy": {
+          "type": "string"
+        },
+        "livenessProbe": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
+        },
+        "ports": {
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.ContainerPort"
+          },
+          "type": "array",
+          "x-kubernetes-list-map-keys": [
+            "containerPort",
+            "protocol"
+          ],
+          "x-kubernetes-list-type": "map",
+          "x-kubernetes-patch-merge-key": "containerPort",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "readinessProbe": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
+        },
+        "resources": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
+        },
+        "securityContext": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext"
+        },
+        "volumeMounts": {
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.VolumeMount"
+          },
+          "type": "array"
         }
       },
       "type": "object"
