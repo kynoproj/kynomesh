@@ -1216,6 +1216,28 @@ Template for the AgentDeploy kyno container
 
 </table>
 
+<h3 id="kynomesh.kyno.sh/v1alpha1.AgentPattern">
+
+AgentPattern (<code>string</code> alias)
+</p>
+
+</h3>
+
+<p>
+
+(<em>Appears on:</em>
+<a href="#kynomesh.kyno.sh/v1alpha1.AgentSetSpec">AgentSetSpec</a>)
+</p>
+
+<p>
+
+<p>
+
+AgentPattern is the message-routing shape of an AgentSet.
+</p>
+
+</p>
+
 <h3 id="kynomesh.kyno.sh/v1alpha1.AgentSet">
 
 AgentSet
@@ -1308,6 +1330,71 @@ Refer to the Kubernetes API documentation for the fields of the
 
 Templates are used to customize additional kubernetes resources required
 for the Pipeline
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>pattern</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.AgentPattern"> AgentPattern </a>
+</em>
+</td>
+
+<td>
+
+<p>
+
+Pattern describes how the agents in this AgentSet are wired together at
+the message-routing layer. The kynomesh controller materialises a
+per-agent peer list from this value plus the Entry field; it does not
+own per-agent state or memory.
+</p>
+
+<ul>
+
+<li>
+
+Supervisor: Entry sees every other agent; non-entry agents see no peers.
+Aliases in the wider ecosystem include “manager”, “orchestrator-worker”,
+and “subagents”.
+</li>
+
+<li>
+
+Handoff: every agent sees every other agent. Aliases include “swarm” and
+“network”.
+</li>
+
+<li>
+
+Sequential: each agent sees only the next one in declaration order;
+Entry must be agents\[0\].
+</li>
+
+</ul>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>entry</code></br> <em> string </em>
+</td>
+
+<td>
+
+<p>
+
+Entry is the name of the agent external callers reach first. Must match
+one of agents\[\].name. For Sequential it must be agents\[0\].
 </p>
 
 </td>
@@ -1424,6 +1511,71 @@ Description
 
 Templates are used to customize additional kubernetes resources required
 for the Pipeline
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>pattern</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.AgentPattern"> AgentPattern </a>
+</em>
+</td>
+
+<td>
+
+<p>
+
+Pattern describes how the agents in this AgentSet are wired together at
+the message-routing layer. The kynomesh controller materialises a
+per-agent peer list from this value plus the Entry field; it does not
+own per-agent state or memory.
+</p>
+
+<ul>
+
+<li>
+
+Supervisor: Entry sees every other agent; non-entry agents see no peers.
+Aliases in the wider ecosystem include “manager”, “orchestrator-worker”,
+and “subagents”.
+</li>
+
+<li>
+
+Handoff: every agent sees every other agent. Aliases include “swarm” and
+“network”.
+</li>
+
+<li>
+
+Sequential: each agent sees only the next one in declaration order;
+Entry must be agents\[0\].
+</li>
+
+</ul>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>entry</code></br> <em> string </em>
+</td>
+
+<td>
+
+<p>
+
+Entry is the name of the agent external callers reach first. Must match
+one of agents\[\].name. For Sequential it must be agents\[0\].
 </p>
 
 </td>

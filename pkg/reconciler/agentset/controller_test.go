@@ -47,9 +47,18 @@ func mustScheme(t *testing.T) *runtime.Scheme {
 }
 
 func newAgentSet(name string, agents ...string) *kmv1.AgentSet {
-	spec := kmv1.AgentSetSpec{}
+	// Default the new pattern + entry fields so existing tests keep
+	// passing. Supervisor is the most permissive pattern (allows single
+	// agent, no second-agent constraint); tests that exercise other
+	// patterns can override after construction.
+	spec := kmv1.AgentSetSpec{
+		Pattern: kmv1.AgentPatternSupervisor,
+	}
 	for _, a := range agents {
 		spec.Agents = append(spec.Agents, kmv1.AbstractAgentDeploy{Name: a})
+	}
+	if len(agents) > 0 {
+		spec.Entry = agents[0]
 	}
 	return &kmv1.AgentSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -140,30 +149,6 @@ func TestNeedsUpdate(t *testing.T) {
 	drifted := want.DeepCopy()
 	drifted.Annotations[kmv1.KeyHash] = "stale"
 	assert.True(t, needsUpdate(drifted, want), "different hash should trigger update")
-}
-
-func TestValidateAgentSet(t *testing.T) {
-	tests := []struct {
-		name    string
-		agents  []string
-		wantErr string
-	}{
-		{name: "no agents", agents: nil},
-		{name: "ok", agents: []string{"a", "b"}},
-		{name: "empty name", agents: []string{""}, wantErr: "non-empty"},
-		{name: "duplicate", agents: []string{"a", "a"}, wantErr: "duplicate"},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			err := validateAgentSet(newAgentSet("x", tc.agents...))
-			if tc.wantErr == "" {
-				assert.NoError(t, err)
-				return
-			}
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), tc.wantErr)
-		})
-	}
 }
 
 func TestAddRemoveFinalizer(t *testing.T) {

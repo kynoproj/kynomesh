@@ -60,13 +60,43 @@ type AgentSet struct {
 }
 
 type AgentSetSpec struct {
+	// Pattern describes how the agents in this AgentSet are wired together.
+	//
+	//   - Supervisor: Entry sees every other agent; non-entry agents see
+	//     no peers. Aliases in the wider ecosystem include "manager",
+	//     "orchestrator-worker", and "subagents".
+	//   - Handoff: every agent sees every other agent. Aliases include
+	//     "swarm" and "network".
+	//   - Sequential: each agent sees only the next one in declaration
+	//     order; Entry must be agents[0].
+	// +kubebuilder:validation:Enum=Supervisor;Handoff;Sequential
+	// +kubebuilder:validation:Required
+	Pattern AgentPattern `json:"pattern" protobuf:"bytes,1,opt,name=pattern,casttype=AgentPattern"`
+	// Entry is the name of the agent external callers reach first. Must
+	// match one of agents[].name. For Sequential it must be agents[0].
+	// +kubebuilder:validation:Required
+	Entry string `json:"entry" protobuf:"bytes,2,opt,name=entry"`
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Agents []AbstractAgentDeploy `json:"agents,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,rep,name=agents"`
+	Agents []AbstractAgentDeploy `json:"agents,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,3,rep,name=agents"`
 	// Templates are used to customize additional kubernetes resources required for the Pipeline
 	// +optional
-	Templates *Templates `json:"templates,omitempty" protobuf:"bytes,2,opt,name=templates"`
+	Templates *Templates `json:"templates,omitempty" protobuf:"bytes,4,opt,name=templates"`
 }
+
+// AgentPattern is the message-routing shape of an AgentSet.
+// +kubebuilder:validation:Enum=Supervisor;Handoff;Sequential
+type AgentPattern string
+
+const (
+	// AgentPatternSupervisor: Entry sees all workers; workers see no peers.
+	AgentPatternSupervisor AgentPattern = "Supervisor"
+	// AgentPatternHandoff: every agent sees every other agent.
+	AgentPatternHandoff AgentPattern = "Handoff"
+	// AgentPatternSequential: each agent sees only the next agent in
+	// declaration order; Entry must be agents[0].
+	AgentPatternSequential AgentPattern = "Sequential"
+)
 
 type Templates struct {
 	AgentDeployTemplate *AgentDeployTemplate `json:"agent,omitempty" protobuf:"bytes,1,opt,name=agent"`

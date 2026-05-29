@@ -6442,6 +6442,19 @@ spec:
                   - name
                   type: object
                 type: array
+              entry:
+                type: string
+              pattern:
+                allOf:
+                - enum:
+                  - Supervisor
+                  - Handoff
+                  - Sequential
+                - enum:
+                  - Supervisor
+                  - Handoff
+                  - Sequential
+                type: string
               templates:
                 properties:
                   agent:
@@ -7273,6 +7286,9 @@ spec:
                         type: array
                     type: object
                 type: object
+            required:
+            - entry
+            - pattern
             type: object
           status:
             properties:
