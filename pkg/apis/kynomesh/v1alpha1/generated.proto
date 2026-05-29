@@ -29,37 +29,42 @@ import "k8s.io/apimachinery/pkg/util/intstr/generated.proto";
 option go_package = "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1";
 
 message AbstractAgentDeploy {
+  // +kubebuilder:validation:Required
   optional string name = 1;
 
   // +optional
   optional AbstractPodTemplate abstractPodTemplate = 2;
 
-  // Container template for the main container.
+  // Agent container, the user's agent code runs here.
+  // +kubebuilder:validation:Required
+  optional Container container = 3;
+
+  // Container template for the broker container.
   // +optional
-  optional ContainerTemplate containerTemplate = 3;
+  optional ContainerTemplate brokerTemplate = 4;
 
   // +optional
   // +patchStrategy=merge
   // +patchMergeKey=name
-  repeated .k8s.io.api.core.v1.Volume volumes = 4;
+  repeated .k8s.io.api.core.v1.Volume volumes = 5;
 
   // Settings for autoscaling
   // +optional
-  optional Scale scale = 5;
+  optional Scale scale = 6;
 
   // List of customized init containers belonging to the pod.
   // More info: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
   // +optional
-  repeated .k8s.io.api.core.v1.Container initContainers = 6;
+  repeated .k8s.io.api.core.v1.Container initContainers = 7;
 
   // List of customized sidecar containers belonging to the pod.
   // +optional
-  repeated .k8s.io.api.core.v1.Container sidecars = 7;
+  repeated .k8s.io.api.core.v1.Container sidecars = 8;
 
   // The strategy to use to replace existing pods with new ones.
   // +kubebuilder:default={"type": "RollingUpdate", "rollingUpdate": {"maxUnavailable": "25%"}}
   // +optional
-  optional UpdateStrategy updateStrategy = 8;
+  optional UpdateStrategy updateStrategy = 9;
 }
 
 // AbstractPodTemplate provides a template for pod customization in vertices, daemon deployments and so on.
@@ -251,9 +256,9 @@ message AgentDeployTemplate {
   // +optional
   optional AbstractPodTemplate abstractPodTemplate = 1;
 
-  // Template for the AgentDeploy kyno container
+  // Template for the AgentDeploy broker container
   // +optional
-  optional ContainerTemplate containerTemplate = 2;
+  optional ContainerTemplate brokerTemplate = 2;
 }
 
 // +genclient
@@ -284,18 +289,7 @@ message AgentSetList {
 }
 
 message AgentSetSpec {
-  // +patchStrategy=merge
-  // +patchMergeKey=name
-  repeated AbstractAgentDeploy agents = 1;
-
-  // Templates are used to customize additional kubernetes resources required for the Pipeline
-  // +optional
-  optional Templates templates = 2;
-
-  // Pattern describes how the agents in this AgentSet are wired together
-  // at the message-routing layer. The kynomesh controller materialises a
-  // per-agent peer list from this value plus the Entry field; it does
-  // not own per-agent state or memory.
+  // Pattern describes how the agents in this AgentSet are wired together.
   //
   //   - Supervisor: Entry sees every other agent; non-entry agents see
   //     no peers. Aliases in the wider ecosystem include "manager",
@@ -306,12 +300,20 @@ message AgentSetSpec {
   //     order; Entry must be agents[0].
   // +kubebuilder:validation:Enum=Supervisor;Handoff;Sequential
   // +kubebuilder:validation:Required
-  optional string pattern = 3;
+  optional string pattern = 1;
 
   // Entry is the name of the agent external callers reach first. Must
   // match one of agents[].name. For Sequential it must be agents[0].
   // +kubebuilder:validation:Required
-  optional string entry = 4;
+  optional string entry = 2;
+
+  // +patchStrategy=merge
+  // +patchMergeKey=name
+  repeated AbstractAgentDeploy agents = 3;
+
+  // Templates are used to customize additional kubernetes resources required for the Pipeline
+  // +optional
+  optional Templates templates = 4;
 }
 
 message AgentSetStatus {
@@ -332,6 +334,50 @@ message AgentSetStatus {
   // The generation observed by the controller.
   // +optional
   optional int64 observedGeneration = 6;
+}
+
+// Container is used to define the container properties for user agent.
+message Container {
+  // +optional
+  optional string image = 1;
+
+  // +optional
+  repeated string command = 2;
+
+  // +optional
+  repeated string args = 3;
+
+  // +optional
+  repeated .k8s.io.api.core.v1.EnvVar env = 4;
+
+  // +optional
+  repeated .k8s.io.api.core.v1.EnvFromSource envFrom = 5;
+
+  // +optional
+  repeated .k8s.io.api.core.v1.VolumeMount volumeMounts = 6;
+
+  // +optional
+  optional .k8s.io.api.core.v1.ResourceRequirements resources = 7;
+
+  // +optional
+  optional .k8s.io.api.core.v1.SecurityContext securityContext = 8;
+
+  // +optional
+  optional string imagePullPolicy = 9;
+
+  // +optional
+  optional .k8s.io.api.core.v1.Probe readinessProbe = 10;
+
+  // +optional
+  optional .k8s.io.api.core.v1.Probe livenessProbe = 11;
+
+  // +optional
+  // +patchMergeKey=containerPort
+  // +patchStrategy=merge
+  // +listType=map
+  // +listMapKey=containerPort
+  // +listMapKey=protocol
+  repeated .k8s.io.api.core.v1.ContainerPort ports = 12;
 }
 
 // ContainerTemplate defines customized spec for a container

@@ -69,30 +69,34 @@ type AgentDeploySpec struct {
 }
 
 type AbstractAgentDeploy struct {
+	// +kubebuilder:validation:Required
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 	// +optional
 	AbstractPodTemplate `json:",inline" protobuf:"bytes,2,opt,name=abstractPodTemplate"`
-	// Container template for the main container.
+	// Agent container, the user's agent code runs here.
+	// +kubebuilder:validation:Required
+	Container *Container `json:"container" protobuf:"bytes,3,opt,name=container"`
+	// Container template for the broker container.
 	// +optional
-	ContainerTemplate *ContainerTemplate `json:"containerTemplate,omitempty" protobuf:"bytes,3,opt,name=containerTemplate"`
+	BrokerTemplate *ContainerTemplate `json:"brokerTemplate,omitempty" protobuf:"bytes,4,opt,name=brokerTemplate"`
 	// +optional
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Volumes []corev1.Volume `json:"volumes,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,4,rep,name=volumes"`
+	Volumes []corev1.Volume `json:"volumes,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,5,rep,name=volumes"`
 	// Settings for autoscaling
 	// +optional
-	Scale Scale `json:"scale,omitempty" protobuf:"bytes,5,opt,name=scale"`
+	Scale Scale `json:"scale,omitempty" protobuf:"bytes,6,opt,name=scale"`
 	// List of customized init containers belonging to the pod.
 	// More info: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
 	// +optional
-	InitContainers []corev1.Container `json:"initContainers,omitempty" protobuf:"bytes,6,rep,name=initContainers"`
+	InitContainers []corev1.Container `json:"initContainers,omitempty" protobuf:"bytes,7,rep,name=initContainers"`
 	// List of customized sidecar containers belonging to the pod.
 	// +optional
-	Sidecars []corev1.Container `json:"sidecars,omitempty" protobuf:"bytes,7,rep,name=sidecars"`
+	Sidecars []corev1.Container `json:"sidecars,omitempty" protobuf:"bytes,8,rep,name=sidecars"`
 	// The strategy to use to replace existing pods with new ones.
 	// +kubebuilder:default={"type": "RollingUpdate", "rollingUpdate": {"maxUnavailable": "25%"}}
 	// +optional
-	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty" protobuf:"bytes,8,opt,name=updateStrategy"`
+	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty" protobuf:"bytes,9,opt,name=updateStrategy"`
 }
 
 type AgentDeployStatus struct {
@@ -159,7 +163,7 @@ func (ad *AgentDeploy) SimpleCopy() AgentDeploy {
 type AgentDeployTemplate struct {
 	// +optional
 	AbstractPodTemplate `json:",inline" protobuf:"bytes,1,opt,name=abstractPodTemplate"`
-	// Template for the AgentDeploy kyno container
+	// Template for the AgentDeploy broker container
 	// +optional
-	ContainerTemplate *ContainerTemplate `json:"containerTemplate,omitempty" protobuf:"bytes,2,opt,name=containerTemplate"`
+	BrokerTemplate *ContainerTemplate `json:"brokerTemplate,omitempty" protobuf:"bytes,2,opt,name=brokerTemplate"`
 }

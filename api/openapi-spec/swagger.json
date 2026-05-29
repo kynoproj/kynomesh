@@ -23524,7 +23524,8 @@
     "sh.kyno.kynomesh.v1alpha1.AbstractAgentDeploy": {
       "type": "object",
       "required": [
-        "name"
+        "name",
+        "container"
       ],
       "properties": {
         "affinity": {
@@ -23535,9 +23536,13 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",
           "type": "boolean"
         },
-        "containerTemplate": {
-          "description": "Container template for the main container.",
+        "brokerTemplate": {
+          "description": "Container template for the broker container.",
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ContainerTemplate"
+        },
+        "container": {
+          "description": "Agent container, the user's agent code runs here.",
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Container"
         },
         "dnsConfig": {
           "description": "Specifies the DNS parameters of a pod. Parameters specified here will be merged to the generated DNS configuration based on DNSPolicy.",
@@ -23772,6 +23777,7 @@
       "type": "object",
       "required": [
         "name",
+        "container",
         "agentSetName"
       ],
       "properties": {
@@ -23787,9 +23793,13 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",
           "type": "boolean"
         },
-        "containerTemplate": {
-          "description": "Container template for the main container.",
+        "brokerTemplate": {
+          "description": "Container template for the broker container.",
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ContainerTemplate"
+        },
+        "container": {
+          "description": "Agent container, the user's agent code runs here.",
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Container"
         },
         "dnsConfig": {
           "description": "Specifies the DNS parameters of a pod. Parameters specified here will be merged to the generated DNS configuration based on DNSPolicy.",
@@ -23978,8 +23988,8 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",
           "type": "boolean"
         },
-        "containerTemplate": {
-          "description": "Template for the AgentDeploy kyno container",
+        "brokerTemplate": {
+          "description": "Template for the AgentDeploy broker container",
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ContainerTemplate"
         },
         "dnsConfig": {
@@ -24119,7 +24129,7 @@
           "type": "string"
         },
         "pattern": {
-          "description": "Pattern describes how the agents in this AgentSet are wired together at the message-routing layer. The kynomesh controller materialises a per-agent peer list from this value plus the Entry field; it does not own per-agent state or memory.\n\n  - Supervisor: Entry sees every other agent; non-entry agents see\n    no peers. Aliases in the wider ecosystem include \"manager\",\n    \"orchestrator-worker\", and \"subagents\".\n  - Handoff: every agent sees every other agent. Aliases include\n    \"swarm\" and \"network\".\n  - Sequential: each agent sees only the next one in declaration\n    order; Entry must be agents[0].",
+          "description": "Pattern describes how the agents in this AgentSet are wired together.\n\n  - Supervisor: Entry sees every other agent; non-entry agents see\n    no peers. Aliases in the wider ecosystem include \"manager\",\n    \"orchestrator-worker\", and \"subagents\".\n  - Handoff: every agent sees every other agent. Aliases include\n    \"swarm\" and \"network\".\n  - Sequential: each agent sees only the next one in declaration\n    order; Entry must be agents[0].",
           "type": "string"
         },
         "templates": {
@@ -24161,6 +24171,73 @@
         },
         "phase": {
           "type": "string"
+        }
+      }
+    },
+    "sh.kyno.kynomesh.v1alpha1.Container": {
+      "description": "Container is used to define the container properties for user agent.",
+      "type": "object",
+      "properties": {
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "env": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvVar"
+          }
+        },
+        "envFrom": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.EnvFromSource"
+          }
+        },
+        "image": {
+          "type": "string"
+        },
+        "imagePullPolicy": {
+          "type": "string"
+        },
+        "livenessProbe": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
+        },
+        "ports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.ContainerPort"
+          },
+          "x-kubernetes-list-map-keys": [
+            "containerPort",
+            "protocol"
+          ],
+          "x-kubernetes-list-type": "map",
+          "x-kubernetes-patch-merge-key": "containerPort",
+          "x-kubernetes-patch-strategy": "merge"
+        },
+        "readinessProbe": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
+        },
+        "resources": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
+        },
+        "securityContext": {
+          "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext"
+        },
+        "volumeMounts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/io.k8s.api.core.v1.VolumeMount"
+          }
         }
       }
     },

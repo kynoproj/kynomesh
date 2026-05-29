@@ -57,6 +57,8 @@ func (m *AgentSetSpec) Reset() { *m = AgentSetSpec{} }
 
 func (m *AgentSetStatus) Reset() { *m = AgentSetStatus{} }
 
+func (m *Container) Reset() { *m = Container{} }
+
 func (m *ContainerTemplate) Reset() { *m = ContainerTemplate{} }
 
 func (m *Metadata) Reset() { *m = Metadata{} }
@@ -100,7 +102,7 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
 	i--
-	dAtA[i] = 0x42
+	dAtA[i] = 0x4a
 	if len(m.Sidecars) > 0 {
 		for iNdEx := len(m.Sidecars) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -112,7 +114,7 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintGenerated(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x3a
+			dAtA[i] = 0x42
 		}
 	}
 	if len(m.InitContainers) > 0 {
@@ -126,7 +128,7 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintGenerated(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x32
+			dAtA[i] = 0x3a
 		}
 	}
 	{
@@ -138,7 +140,7 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
 	i--
-	dAtA[i] = 0x2a
+	dAtA[i] = 0x32
 	if len(m.Volumes) > 0 {
 		for iNdEx := len(m.Volumes) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -150,12 +152,24 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintGenerated(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x22
+			dAtA[i] = 0x2a
 		}
 	}
-	if m.ContainerTemplate != nil {
+	if m.BrokerTemplate != nil {
 		{
-			size, err := m.ContainerTemplate.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.BrokerTemplate.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.Container != nil {
+		{
+			size, err := m.Container.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -611,9 +625,9 @@ func (m *AgentDeployTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.ContainerTemplate != nil {
+	if m.BrokerTemplate != nil {
 		{
-			size, err := m.ContainerTemplate.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.BrokerTemplate.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -756,16 +770,6 @@ func (m *AgentSetSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	i -= len(m.Entry)
-	copy(dAtA[i:], m.Entry)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Entry)))
-	i--
-	dAtA[i] = 0x22
-	i -= len(m.Pattern)
-	copy(dAtA[i:], m.Pattern)
-	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Pattern)))
-	i--
-	dAtA[i] = 0x1a
 	if m.Templates != nil {
 		{
 			size, err := m.Templates.MarshalToSizedBuffer(dAtA[:i])
@@ -776,7 +780,7 @@ func (m *AgentSetSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintGenerated(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x12
+		dAtA[i] = 0x22
 	}
 	if len(m.Agents) > 0 {
 		for iNdEx := len(m.Agents) - 1; iNdEx >= 0; iNdEx-- {
@@ -789,9 +793,19 @@ func (m *AgentSetSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintGenerated(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0xa
+			dAtA[i] = 0x1a
 		}
 	}
+	i -= len(m.Entry)
+	copy(dAtA[i:], m.Entry)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Entry)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Pattern)
+	copy(dAtA[i:], m.Pattern)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Pattern)))
+	i--
+	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -851,6 +865,161 @@ func (m *AgentSetStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= size
 		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *Container) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Container) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Container) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Ports) > 0 {
+		for iNdEx := len(m.Ports) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Ports[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenerated(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x62
+		}
+	}
+	if m.LivenessProbe != nil {
+		{
+			size, err := m.LivenessProbe.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x5a
+	}
+	if m.ReadinessProbe != nil {
+		{
+			size, err := m.ReadinessProbe.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x52
+	}
+	if m.ImagePullPolicy != nil {
+		i -= len(*m.ImagePullPolicy)
+		copy(dAtA[i:], *m.ImagePullPolicy)
+		i = encodeVarintGenerated(dAtA, i, uint64(len(*m.ImagePullPolicy)))
+		i--
+		dAtA[i] = 0x4a
+	}
+	if m.SecurityContext != nil {
+		{
+			size, err := m.SecurityContext.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x42
+	}
+	{
+		size, err := m.Resources.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x3a
+	if len(m.VolumeMounts) > 0 {
+		for iNdEx := len(m.VolumeMounts) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.VolumeMounts[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenerated(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x32
+		}
+	}
+	if len(m.EnvFrom) > 0 {
+		for iNdEx := len(m.EnvFrom) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.EnvFrom[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenerated(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if len(m.Env) > 0 {
+		for iNdEx := len(m.Env) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Env[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenerated(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x22
+		}
+	}
+	if len(m.Args) > 0 {
+		for iNdEx := len(m.Args) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Args[iNdEx])
+			copy(dAtA[i:], m.Args[iNdEx])
+			i = encodeVarintGenerated(dAtA, i, uint64(len(m.Args[iNdEx])))
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.Command) > 0 {
+		for iNdEx := len(m.Command) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Command[iNdEx])
+			copy(dAtA[i:], m.Command[iNdEx])
+			i = encodeVarintGenerated(dAtA, i, uint64(len(m.Command[iNdEx])))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	i -= len(m.Image)
+	copy(dAtA[i:], m.Image)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Image)))
 	i--
 	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
@@ -1244,8 +1413,12 @@ func (m *AbstractAgentDeploy) Size() (n int) {
 	n += 1 + l + sovGenerated(uint64(l))
 	l = m.AbstractPodTemplate.Size()
 	n += 1 + l + sovGenerated(uint64(l))
-	if m.ContainerTemplate != nil {
-		l = m.ContainerTemplate.Size()
+	if m.Container != nil {
+		l = m.Container.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	if m.BrokerTemplate != nil {
+		l = m.BrokerTemplate.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
 	if len(m.Volumes) > 0 {
@@ -1427,8 +1600,8 @@ func (m *AgentDeployTemplate) Size() (n int) {
 	_ = l
 	l = m.AbstractPodTemplate.Size()
 	n += 1 + l + sovGenerated(uint64(l))
-	if m.ContainerTemplate != nil {
-		l = m.ContainerTemplate.Size()
+	if m.BrokerTemplate != nil {
+		l = m.BrokerTemplate.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
 	return n
@@ -1472,6 +1645,10 @@ func (m *AgentSetSpec) Size() (n int) {
 	}
 	var l int
 	_ = l
+	l = len(m.Pattern)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Entry)
+	n += 1 + l + sovGenerated(uint64(l))
 	if len(m.Agents) > 0 {
 		for _, e := range m.Agents {
 			l = e.Size()
@@ -1482,10 +1659,6 @@ func (m *AgentSetSpec) Size() (n int) {
 		l = m.Templates.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	l = len(m.Pattern)
-	n += 1 + l + sovGenerated(uint64(l))
-	l = len(m.Entry)
-	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -1507,6 +1680,71 @@ func (m *AgentSetStatus) Size() (n int) {
 		n += 1 + sovGenerated(uint64(*m.AgentCount))
 	}
 	n += 1 + sovGenerated(uint64(m.ObservedGeneration))
+	return n
+}
+
+func (m *Container) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Image)
+	n += 1 + l + sovGenerated(uint64(l))
+	if len(m.Command) > 0 {
+		for _, s := range m.Command {
+			l = len(s)
+			n += 1 + l + sovGenerated(uint64(l))
+		}
+	}
+	if len(m.Args) > 0 {
+		for _, s := range m.Args {
+			l = len(s)
+			n += 1 + l + sovGenerated(uint64(l))
+		}
+	}
+	if len(m.Env) > 0 {
+		for _, e := range m.Env {
+			l = e.Size()
+			n += 1 + l + sovGenerated(uint64(l))
+		}
+	}
+	if len(m.EnvFrom) > 0 {
+		for _, e := range m.EnvFrom {
+			l = e.Size()
+			n += 1 + l + sovGenerated(uint64(l))
+		}
+	}
+	if len(m.VolumeMounts) > 0 {
+		for _, e := range m.VolumeMounts {
+			l = e.Size()
+			n += 1 + l + sovGenerated(uint64(l))
+		}
+	}
+	l = m.Resources.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	if m.SecurityContext != nil {
+		l = m.SecurityContext.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	if m.ImagePullPolicy != nil {
+		l = len(*m.ImagePullPolicy)
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	if m.ReadinessProbe != nil {
+		l = m.ReadinessProbe.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	if m.LivenessProbe != nil {
+		l = m.LivenessProbe.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	if len(m.Ports) > 0 {
+		for _, e := range m.Ports {
+			l = e.Size()
+			n += 1 + l + sovGenerated(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -1682,7 +1920,8 @@ func (this *AbstractAgentDeploy) String() string {
 	s := strings.Join([]string{`&AbstractAgentDeploy{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`AbstractPodTemplate:` + strings.Replace(strings.Replace(this.AbstractPodTemplate.String(), "AbstractPodTemplate", "AbstractPodTemplate", 1), `&`, ``, 1) + `,`,
-		`ContainerTemplate:` + strings.Replace(this.ContainerTemplate.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
+		`Container:` + strings.Replace(this.Container.String(), "Container", "Container", 1) + `,`,
+		`BrokerTemplate:` + strings.Replace(this.BrokerTemplate.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
 		`Volumes:` + repeatedStringForVolumes + `,`,
 		`Scale:` + strings.Replace(strings.Replace(this.Scale.String(), "Scale", "Scale", 1), `&`, ``, 1) + `,`,
 		`InitContainers:` + repeatedStringForInitContainers + `,`,
@@ -1809,7 +2048,7 @@ func (this *AgentDeployTemplate) String() string {
 	}
 	s := strings.Join([]string{`&AgentDeployTemplate{`,
 		`AbstractPodTemplate:` + strings.Replace(strings.Replace(this.AbstractPodTemplate.String(), "AbstractPodTemplate", "AbstractPodTemplate", 1), `&`, ``, 1) + `,`,
-		`ContainerTemplate:` + strings.Replace(this.ContainerTemplate.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
+		`BrokerTemplate:` + strings.Replace(this.BrokerTemplate.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1852,10 +2091,10 @@ func (this *AgentSetSpec) String() string {
 	}
 	repeatedStringForAgents += "}"
 	s := strings.Join([]string{`&AgentSetSpec{`,
-		`Agents:` + repeatedStringForAgents + `,`,
-		`Templates:` + strings.Replace(this.Templates.String(), "Templates", "Templates", 1) + `,`,
 		`Pattern:` + fmt.Sprintf("%v", this.Pattern) + `,`,
 		`Entry:` + fmt.Sprintf("%v", this.Entry) + `,`,
+		`Agents:` + repeatedStringForAgents + `,`,
+		`Templates:` + strings.Replace(this.Templates.String(), "Templates", "Templates", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1871,6 +2110,47 @@ func (this *AgentSetStatus) String() string {
 		`LastUpdated:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.LastUpdated), "Time", "v11.Time", 1), `&`, ``, 1) + `,`,
 		`AgentCount:` + valueToStringGenerated(this.AgentCount) + `,`,
 		`ObservedGeneration:` + fmt.Sprintf("%v", this.ObservedGeneration) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Container) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForEnv := "[]EnvVar{"
+	for _, f := range this.Env {
+		repeatedStringForEnv += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForEnv += "}"
+	repeatedStringForEnvFrom := "[]EnvFromSource{"
+	for _, f := range this.EnvFrom {
+		repeatedStringForEnvFrom += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForEnvFrom += "}"
+	repeatedStringForVolumeMounts := "[]VolumeMount{"
+	for _, f := range this.VolumeMounts {
+		repeatedStringForVolumeMounts += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForVolumeMounts += "}"
+	repeatedStringForPorts := "[]ContainerPort{"
+	for _, f := range this.Ports {
+		repeatedStringForPorts += fmt.Sprintf("%v", f) + ","
+	}
+	repeatedStringForPorts += "}"
+	s := strings.Join([]string{`&Container{`,
+		`Image:` + fmt.Sprintf("%v", this.Image) + `,`,
+		`Command:` + fmt.Sprintf("%v", this.Command) + `,`,
+		`Args:` + fmt.Sprintf("%v", this.Args) + `,`,
+		`Env:` + repeatedStringForEnv + `,`,
+		`EnvFrom:` + repeatedStringForEnvFrom + `,`,
+		`VolumeMounts:` + repeatedStringForVolumeMounts + `,`,
+		`Resources:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Resources), "ResourceRequirements", "v1.ResourceRequirements", 1), `&`, ``, 1) + `,`,
+		`SecurityContext:` + strings.Replace(fmt.Sprintf("%v", this.SecurityContext), "SecurityContext", "v1.SecurityContext", 1) + `,`,
+		`ImagePullPolicy:` + valueToStringGenerated(this.ImagePullPolicy) + `,`,
+		`ReadinessProbe:` + strings.Replace(fmt.Sprintf("%v", this.ReadinessProbe), "Probe", "v1.Probe", 1) + `,`,
+		`LivenessProbe:` + strings.Replace(fmt.Sprintf("%v", this.LivenessProbe), "Probe", "v1.Probe", 1) + `,`,
+		`Ports:` + repeatedStringForPorts + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2098,7 +2378,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ContainerTemplate", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Container", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -2125,14 +2405,50 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ContainerTemplate == nil {
-				m.ContainerTemplate = &ContainerTemplate{}
+			if m.Container == nil {
+				m.Container = &Container{}
 			}
-			if err := m.ContainerTemplate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.Container.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
 		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BrokerTemplate", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.BrokerTemplate == nil {
+				m.BrokerTemplate = &ContainerTemplate{}
+			}
+			if err := m.BrokerTemplate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Volumes", wireType)
 			}
@@ -2166,7 +2482,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 5:
+		case 6:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Scale", wireType)
 			}
@@ -2199,7 +2515,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 6:
+		case 7:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field InitContainers", wireType)
 			}
@@ -2233,7 +2549,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 7:
+		case 8:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Sidecars", wireType)
 			}
@@ -2267,7 +2583,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 8:
+		case 9:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field UpdateStrategy", wireType)
 			}
@@ -3801,7 +4117,7 @@ func (m *AgentDeployTemplate) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ContainerTemplate", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field BrokerTemplate", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -3828,10 +4144,10 @@ func (m *AgentDeployTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ContainerTemplate == nil {
-				m.ContainerTemplate = &ContainerTemplate{}
+			if m.BrokerTemplate == nil {
+				m.BrokerTemplate = &ContainerTemplate{}
 			}
-			if err := m.ContainerTemplate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.BrokerTemplate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4153,6 +4469,70 @@ func (m *AgentSetSpec) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pattern", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Pattern = AgentPattern(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Entry", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Entry = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Agents", wireType)
 			}
 			var msglen int
@@ -4185,7 +4565,7 @@ func (m *AgentSetSpec) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 2:
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Templates", wireType)
 			}
@@ -4220,70 +4600,6 @@ func (m *AgentSetSpec) Unmarshal(dAtA []byte) error {
 			if err := m.Templates.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Pattern", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Pattern = AgentPattern(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Entry", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Entry = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4504,6 +4820,462 @@ func (m *AgentSetStatus) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Container) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Container: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Container: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Image", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Image = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Command", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Command = append(m.Command, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Args", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Args = append(m.Args, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Env", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Env = append(m.Env, v1.EnvVar{})
+			if err := m.Env[len(m.Env)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EnvFrom", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EnvFrom = append(m.EnvFrom, v1.EnvFromSource{})
+			if err := m.EnvFrom[len(m.EnvFrom)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VolumeMounts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VolumeMounts = append(m.VolumeMounts, v1.VolumeMount{})
+			if err := m.VolumeMounts[len(m.VolumeMounts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Resources", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Resources.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SecurityContext", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.SecurityContext == nil {
+				m.SecurityContext = &v1.SecurityContext{}
+			}
+			if err := m.SecurityContext.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ImagePullPolicy", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			s := k8s_io_api_core_v1.PullPolicy(dAtA[iNdEx:postIndex])
+			m.ImagePullPolicy = &s
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ReadinessProbe", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ReadinessProbe == nil {
+				m.ReadinessProbe = &v1.Probe{}
+			}
+			if err := m.ReadinessProbe.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LivenessProbe", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.LivenessProbe == nil {
+				m.LivenessProbe = &v1.Probe{}
+			}
+			if err := m.LivenessProbe.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ports", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Ports = append(m.Ports, v1.ContainerPort{})
+			if err := m.Ports[len(m.Ports)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])

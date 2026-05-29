@@ -103,7 +103,26 @@ type.)
 
 <td>
 
-<code>containerTemplate</code></br> <em>
+<code>container</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.Container"> Container </a> </em>
+</td>
+
+<td>
+
+<p>
+
+Agent container, the user’s agent code runs here.
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>brokerTemplate</code></br> <em>
 <a href="#kynomesh.kyno.sh/v1alpha1.ContainerTemplate">
 ContainerTemplate </a> </em>
 </td>
@@ -113,7 +132,7 @@ ContainerTemplate </a> </em>
 <em>(Optional)</em>
 <p>
 
-Container template for the main container.
+Container template for the broker container.
 </p>
 
 </td>
@@ -1195,7 +1214,7 @@ type.)
 
 <td>
 
-<code>containerTemplate</code></br> <em>
+<code>brokerTemplate</code></br> <em>
 <a href="#kynomesh.kyno.sh/v1alpha1.ContainerTemplate">
 ContainerTemplate </a> </em>
 </td>
@@ -1205,7 +1224,7 @@ ContainerTemplate </a> </em>
 <em>(Optional)</em>
 <p>
 
-Template for the AgentDeploy kyno container
+Template for the AgentDeploy broker container
 </p>
 
 </td>
@@ -1304,42 +1323,6 @@ Refer to the Kubernetes API documentation for the fields of the
 
 <td>
 
-<code>agents</code></br> <em>
-<a href="#kynomesh.kyno.sh/v1alpha1.AbstractAgentDeploy">
-\[\]AbstractAgentDeploy </a> </em>
-</td>
-
-<td>
-
-</td>
-
-</tr>
-
-<tr>
-
-<td>
-
-<code>templates</code></br> <em>
-<a href="#kynomesh.kyno.sh/v1alpha1.Templates"> Templates </a> </em>
-</td>
-
-<td>
-
-<em>(Optional)</em>
-<p>
-
-Templates are used to customize additional kubernetes resources required
-for the Pipeline
-</p>
-
-</td>
-
-</tr>
-
-<tr>
-
-<td>
-
 <code>pattern</code></br> <em>
 <a href="#kynomesh.kyno.sh/v1alpha1.AgentPattern"> AgentPattern </a>
 </em>
@@ -1349,10 +1332,7 @@ for the Pipeline
 
 <p>
 
-Pattern describes how the agents in this AgentSet are wired together at
-the message-routing layer. The kynomesh controller materialises a
-per-agent peer list from this value plus the Entry field; it does not
-own per-agent state or memory.
+Pattern describes how the agents in this AgentSet are wired together.
 </p>
 
 <ul>
@@ -1395,6 +1375,42 @@ Entry must be agents\[0\].
 
 Entry is the name of the agent external callers reach first. Must match
 one of agents\[\].name. For Sequential it must be agents\[0\].
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>agents</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.AbstractAgentDeploy">
+\[\]AbstractAgentDeploy </a> </em>
+</td>
+
+<td>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>templates</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.Templates"> Templates </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+Templates are used to customize additional kubernetes resources required
+for the Pipeline
 </p>
 
 </td>
@@ -1485,42 +1501,6 @@ Description
 
 <td>
 
-<code>agents</code></br> <em>
-<a href="#kynomesh.kyno.sh/v1alpha1.AbstractAgentDeploy">
-\[\]AbstractAgentDeploy </a> </em>
-</td>
-
-<td>
-
-</td>
-
-</tr>
-
-<tr>
-
-<td>
-
-<code>templates</code></br> <em>
-<a href="#kynomesh.kyno.sh/v1alpha1.Templates"> Templates </a> </em>
-</td>
-
-<td>
-
-<em>(Optional)</em>
-<p>
-
-Templates are used to customize additional kubernetes resources required
-for the Pipeline
-</p>
-
-</td>
-
-</tr>
-
-<tr>
-
-<td>
-
 <code>pattern</code></br> <em>
 <a href="#kynomesh.kyno.sh/v1alpha1.AgentPattern"> AgentPattern </a>
 </em>
@@ -1530,10 +1510,7 @@ for the Pipeline
 
 <p>
 
-Pattern describes how the agents in this AgentSet are wired together at
-the message-routing layer. The kynomesh controller materialises a
-per-agent peer list from this value plus the Entry field; it does not
-own per-agent state or memory.
+Pattern describes how the agents in this AgentSet are wired together.
 </p>
 
 <ul>
@@ -1576,6 +1553,42 @@ Entry must be agents\[0\].
 
 Entry is the name of the agent external callers reach first. Must match
 one of agents\[\].name. For Sequential it must be agents\[0\].
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>agents</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.AbstractAgentDeploy">
+\[\]AbstractAgentDeploy </a> </em>
+</td>
+
+<td>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>templates</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.Templates"> Templates </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+Templates are used to customize additional kubernetes resources required
+for the Pipeline
 </p>
 
 </td>
@@ -1740,6 +1753,238 @@ ConditionType is a valid value of Condition.Type
 </p>
 
 </p>
+
+<h3 id="kynomesh.kyno.sh/v1alpha1.Container">
+
+Container
+</h3>
+
+<p>
+
+(<em>Appears on:</em>
+<a href="#kynomesh.kyno.sh/v1alpha1.AbstractAgentDeploy">AbstractAgentDeploy</a>)
+</p>
+
+<p>
+
+<p>
+
+Container is used to define the container properties for user agent.
+</p>
+
+</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>
+
+Field
+</th>
+
+<th>
+
+Description
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>
+
+<code>image</code></br> <em> string </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>command</code></br> <em> \[\]string </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>args</code></br> <em> \[\]string </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>env</code></br> <em>
+<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#envvar-v1-core">
+\[\]Kubernetes core/v1.EnvVar </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>envFrom</code></br> <em>
+<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#envfromsource-v1-core">
+\[\]Kubernetes core/v1.EnvFromSource </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>volumeMounts</code></br> <em>
+<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#volumemount-v1-core">
+\[\]Kubernetes core/v1.VolumeMount </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>resources</code></br> <em>
+<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#resourcerequirements-v1-core">
+Kubernetes core/v1.ResourceRequirements </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>securityContext</code></br> <em>
+<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#securitycontext-v1-core">
+Kubernetes core/v1.SecurityContext </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>imagePullPolicy</code></br> <em>
+<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#pullpolicy-v1-core">
+Kubernetes core/v1.PullPolicy </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>readinessProbe</code></br> <em>
+<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#probe-v1-core">
+Kubernetes core/v1.Probe </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>livenessProbe</code></br> <em>
+<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#probe-v1-core">
+Kubernetes core/v1.Probe </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>ports</code></br> <em>
+<a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#containerport-v1-core">
+\[\]Kubernetes core/v1.ContainerPort </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
 
 <h3 id="kynomesh.kyno.sh/v1alpha1.ContainerTemplate">
 
