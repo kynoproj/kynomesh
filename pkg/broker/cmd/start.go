@@ -79,6 +79,9 @@ const (
 	grpcContentType = "application/grpc"
 )
 
+// For testing overwrite.
+var agentSocketPath = kmv1.BrokerSocketPath
+
 // brokerRuntime aggregates the pieces of broker state that live for the
 // process's whole lifetime.
 type brokerRuntime struct {
@@ -91,6 +94,72 @@ type brokerRuntime struct {
 	passthrough http.Handler
 	grpcServer  *grpc.Server
 	grpcConn    *grpc.ClientConn // nil if gRPC isn't enabled
+}
+
+// brokerStack groups the constructed-but-not-yet-serving pieces of the
+// broker.
+type brokerStack struct {
+	rt               *brokerRuntime
+	proxySrv         *http.Server
+	introspectionSrv *http.Server
+}
+
+// assembleBroker performs every step required to bring the broker up to
+// the point of serving traffic: probe the agent over UDS, decide which
+// transports to enable, and wire both the multiplexed traffic server and
+// the introspection server.
+func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int, advertiseHost string) (*brokerStack, error) {
+	if advertiseHost == "" {
+		advertiseHost = AdvertiseHostDefault
+	}
+
+	agentHTTPClient := broker.NewUDSHTTPClient(agentSocketPath)
+	agentHTTPTransport := agentHTTPClient.Transport.(*http.Transport)
+
+	probeCtx, probeCancel := context.WithTimeout(context.Background(), agentProbeTimeout)
+	agentCard, err := probeAgentCard(probeCtx, agentHTTPClient, "http://"+broker.AgentBackendHost)
+	probeCancel()
+	if err != nil {
+		return nil, fmt.Errorf("fetch AgentCard over UDS at %q: %w", agentSocketPath, err)
+	}
+	if agentCard == nil {
+		logger.Infow("Agent reachable over UDS but exposes no AgentCard — running passthrough-only",
+			"socket", agentSocketPath)
+	} else {
+		logger.Infow("Agent reachable over UDS",
+			"socket", agentSocketPath, "agentName", agentCard.Name)
+	}
+
+	metricsRegistry := prometheus.NewRegistry()
+	rt, err := buildRuntime(logger, metricsRegistry, agentHTTPTransport, agentCard)
+	if err != nil {
+		return nil, fmt.Errorf("build broker runtime: %w", err)
+	}
+
+	var cardProxy http.Handler
+	if agentCard != nil {
+		cardProxy = broker.NewAgentCardProxy(agentHTTPClient, advertiseHost, port, rt.enabled)
+	}
+
+	cert, err := sharedtls.GenerateX509KeyPair()
+	if err != nil {
+		return nil, fmt.Errorf("generate broker TLS certificate: %w", err)
+	}
+
+	proxySrv, err := newMultiplexedServer(port, rt, cardProxy, cert)
+	if err != nil {
+		return nil, fmt.Errorf("build broker server: %w", err)
+	}
+
+	ready := func() error { return nil }
+	introspectionHandler := broker.NewIntrospectionHandler(metricsRegistry, ready)
+	introspectionSrv := newIntrospectionServer(introspectionPort, introspectionHandler, cert)
+
+	return &brokerStack{
+		rt:               rt,
+		proxySrv:         proxySrv,
+		introspectionSrv: introspectionSrv,
+	}, nil
 }
 
 // Start boots the broker.
@@ -107,71 +176,40 @@ func Start(port, introspectionPort int, advertiseHost string) {
 		"platform", v.Platform,
 	)
 
-	if advertiseHost == "" {
-		advertiseHost = AdvertiseHostDefault
-	}
-
-	agentHTTPClient := broker.NewUDSHTTPClient(kmv1.BrokerSocketPath)
-	agentHTTPTransport := agentHTTPClient.Transport.(*http.Transport)
-
-	probeCtx, probeCancel := context.WithTimeout(context.Background(), agentProbeTimeout)
-	agentCard, err := probeAgentCard(probeCtx, agentHTTPClient, "http://"+broker.AgentBackendHost)
-	probeCancel()
+	stack, err := assembleBroker(logger, port, introspectionPort, advertiseHost)
 	if err != nil {
-		logger.Fatalw("Failed to fetch AgentCard over UDS — refusing to start",
-			"socket", kmv1.BrokerSocketPath, "err", err)
-	}
-	if agentCard == nil {
-		logger.Infow("Agent reachable over UDS but exposes no AgentCard — running passthrough-only",
-			"socket", kmv1.BrokerSocketPath)
-	} else {
-		logger.Infow("Agent reachable over UDS",
-			"socket", kmv1.BrokerSocketPath, "agentName", agentCard.Name)
+		logger.Fatalw("Failed to assemble broker — refusing to start", "err", err)
 	}
 
-	metricsRegistry := prometheus.NewRegistry()
-	rt, err := buildRuntime(logger, metricsRegistry, agentHTTPTransport, agentCard)
-	if err != nil {
-		logger.Fatalw("failed to build broker runtime", "err", err)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	if err := runServeLoop(ctx, logger, stack, port, introspectionPort); err != nil {
+		logger.Fatalw("Broker exited with error", "err", err)
 	}
+	logger.Infow("Broker stopped cleanly")
+}
+
+// runServeLoop owns the two TLS listeners' lifetimes. It returns nil on
+// a clean shutdown (either ctx cancelled or a listener returned
+// http.ErrServerClosed) and a wrapped error if a listener failed to
+// start or exited abnormally.
+func runServeLoop(ctx context.Context, logger *zap.SugaredLogger, stack *brokerStack, port, introspectionPort int) error {
+	rt, proxySrv, introspectionSrv := stack.rt, stack.proxySrv, stack.introspectionSrv
 	defer func() {
 		if rt.grpcConn != nil {
 			_ = rt.grpcConn.Close()
 		}
 	}()
 
-	var cardProxy http.Handler
-	if agentCard != nil {
-		cardProxy = broker.NewAgentCardProxy(agentHTTPClient, advertiseHost, port, rt.enabled)
-	}
-
-	cert, err := sharedtls.GenerateX509KeyPair()
-	if err != nil {
-		logger.Fatalw("failed to generate broker TLS certificate", "err", err)
-	}
-
-	httpSrv, err := newMultiplexedServer(port, rt, cardProxy, cert)
-	if err != nil {
-		logger.Fatalw("failed to build broker server", "err", err)
-	}
-
-	// Introspection listener — separate TLS port, same cert.
-	ready := func() error { return nil }
-	introspectionHandler := broker.NewIntrospectionHandler(metricsRegistry, ready)
-	introspectionSrv := newIntrospectionServer(introspectionPort, introspectionHandler, cert)
-
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
 	mainServeErr := make(chan error, 1)
 	go func() {
-		logger.Infow("starting broker on shared port",
+		logger.Infow("Starting broker on shared port",
 			"port", port,
 			"enabledTransports", enabledTransportNames(rt.enabled),
 			"tls", true,
 		)
-		// Empty cert/key paths → use httpSrv.TLSConfig.Certificates.
-		if err := httpSrv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := proxySrv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			mainServeErr <- fmt.Errorf("broker server: %w", err)
 			return
 		}
@@ -180,7 +218,7 @@ func Start(port, introspectionPort int, advertiseHost string) {
 
 	introspectionServeErr := make(chan error, 1)
 	go func() {
-		logger.Infow("starting broker introspection listener",
+		logger.Infow("Starting broker introspection listener",
 			"port", introspectionPort, "tls", true)
 		if err := introspectionSrv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			introspectionServeErr <- fmt.Errorf("broker introspection server: %w", err)
@@ -193,40 +231,32 @@ func Start(port, introspectionPort int, advertiseHost string) {
 	// either listener. Once one fires, gracefully shut both down.
 	select {
 	case <-ctx.Done():
-		logger.Infow("broker received shutdown signal, stopping transports")
+		logger.Infow("Broker received shutdown signal, stopping transports")
 	case err := <-mainServeErr:
-		if err != nil {
-			logger.Fatalw("broker exited with error", "err", err)
-		}
-		logger.Infow("broker stopped cleanly")
-		return
+		return err
 	case err := <-introspectionServeErr:
-		if err != nil {
-			logger.Fatalw("broker introspection exited with error", "err", err)
-		}
-		logger.Infow("broker introspection stopped cleanly")
-		return
+		return err
 	}
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
-	if err := httpSrv.Shutdown(shutdownCtx); err != nil {
-		logger.Warnw("broker server shutdown error", "err", err)
+	if err := proxySrv.Shutdown(shutdownCtx); err != nil {
+		logger.Warnw("Broker server shutdown error", "err", err)
 	}
 	if err := introspectionSrv.Shutdown(shutdownCtx); err != nil {
-		logger.Warnw("broker introspection shutdown error", "err", err)
+		logger.Warnw("Broker introspection shutdown error", "err", err)
 	}
 	if rt.grpcServer != nil {
 		rt.grpcServer.GracefulStop()
 	}
 
 	if err := <-mainServeErr; err != nil {
-		logger.Fatalw("broker exited with error", "err", err)
+		return err
 	}
 	if err := <-introspectionServeErr; err != nil {
-		logger.Fatalw("broker introspection exited with error", "err", err)
+		return err
 	}
-	logger.Infow("broker stopped cleanly")
+	return nil
 }
 
 // newIntrospectionServer builds a minimal *http.Server for the broker's
@@ -280,9 +310,9 @@ func buildRuntime(logger *zap.SugaredLogger, registry *prometheus.Registry, udsT
 			rt.httpProxies[iface.ProtocolBinding] = broker.NewRESTReverseProxy(udsTransport, rt.counters)
 			rt.enabled[iface.ProtocolBinding] = true
 		case a2a.TransportProtocolGRPC:
-			conn, err := dialAgentGRPCOverUDS(kmv1.BrokerSocketPath)
+			conn, err := dialAgentGRPC(agentSocketPath)
 			if err != nil {
-				return nil, fmt.Errorf("dial agent gRPC over UDS at %q: %w", kmv1.BrokerSocketPath, err)
+				return nil, fmt.Errorf("dial agent gRPC over UDS at %q: %w", agentSocketPath, err)
 			}
 			rt.grpcConn = conn
 			rt.grpcServer = grpc.NewServer(broker.GRPCPassthroughOptions(conn, rt.counters)...)
@@ -295,9 +325,13 @@ func buildRuntime(logger *zap.SugaredLogger, registry *prometheus.Registry, udsT
 	return rt, nil
 }
 
+// dialAgentGRPC is the seam used by buildRuntime to open the broker's
+// long-lived gRPC connection to the user agent. For testing overwrite
+// so that it does not depend on kmv1.BrokerSocketPath being present on disk.
+var dialAgentGRPC = dialAgentGRPCOverUDS
+
 // dialAgentGRPCOverUDS opens a connection to the agent's gRPC
-// server over the shared Unix Domain Socket. gRPC-Go natively resolves
-// "unix:///path/to/sock" targets.
+// server over the shared Unix Domain Socket.
 func dialAgentGRPCOverUDS(socketPath string) (*grpc.ClientConn, error) {
 	return grpc.NewClient("unix://"+socketPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
 }
@@ -305,8 +339,6 @@ func dialAgentGRPCOverUDS(socketPath string) (*grpc.ClientConn, error) {
 // newMultiplexedServer builds the single *http.Server that fronts every
 // enabled transport over TLS. HTTP/2 is negotiated via ALPN ("h2"),
 // which lets gRPC share the listener with HTTP/1.1 JSON-RPC and REST.
-// The handler dispatches by Content-Type so the gRPC server only sees
-// gRPC frames.
 func newMultiplexedServer(
 	port int,
 	rt *brokerRuntime,
