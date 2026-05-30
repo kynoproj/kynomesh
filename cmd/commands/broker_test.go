@@ -41,29 +41,28 @@ func TestNewBrokerCommand_Flags(t *testing.T) {
 	require.NotNil(t, pf, "expected --port flag")
 	assert.Equal(t, "int", pf.Value.Type())
 
-	hf := c.Flags().Lookup("advertise-host")
-	require.NotNil(t, hf, "expected --advertise-host flag")
-	assert.Equal(t, "string", hf.Value.Type())
+	ipf := c.Flags().Lookup("introspection-port")
+	require.NotNil(t, ipf, "expected --introspection-port flag")
+	assert.Equal(t, "int", ipf.Value.Type())
+
+	assert.Nil(t, c.Flags().Lookup("advertise-host"),
+		"--advertise-host should no longer exist; the broker derives the AgentCard host from the injected AgentDeploy")
 }
 
 func TestNewBrokerCommand_FlagDefaults_NoEnv(t *testing.T) {
 	t.Setenv("KYNOMESH_BROKER_PORT", "")
-	t.Setenv("KYNOMESH_BROKER_ADVERTISE_HOST", "")
 
 	c := NewBrokerCommand()
 
 	assert.Equal(t, strconv.Itoa(kmv1.AgentBrokerPort), c.Flags().Lookup("port").DefValue)
-	assert.Equal(t, "127.0.0.1", c.Flags().Lookup("advertise-host").DefValue)
 }
 
 func TestNewBrokerCommand_FlagDefaults_FromEnv(t *testing.T) {
 	t.Setenv("KYNOMESH_BROKER_PORT", "8080")
-	t.Setenv("KYNOMESH_BROKER_ADVERTISE_HOST", "broker.cluster.local")
 
 	c := NewBrokerCommand()
 
 	assert.Equal(t, "8080", c.Flags().Lookup("port").DefValue)
-	assert.Equal(t, "broker.cluster.local", c.Flags().Lookup("advertise-host").DefValue)
 }
 
 func TestNewBrokerCommand_ReturnsFreshInstance(t *testing.T) {

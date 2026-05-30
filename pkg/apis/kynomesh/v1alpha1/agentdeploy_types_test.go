@@ -127,3 +127,12 @@ func TestSimpleCopy_DoesNotAliasSource(t *testing.T) {
 	require.NotNil(t, ad.Spec.BrokerTemplate)
 	assert.Equal(t, corev1.PullAlways, ad.Spec.BrokerTemplate.ImagePullPolicy)
 }
+
+func TestAgentDeploy_HeadlessServiceName(t *testing.T) {
+	ad := &AgentDeploy{}
+	ad.Name = "myagent"
+	assert.Equal(t, "myagent-headless", ad.HeadlessServiceName())
+
+	empty := &AgentDeploy{}
+	assert.Equal(t, "-headless", empty.HeadlessServiceName())
+}

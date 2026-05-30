@@ -142,6 +142,14 @@ type AgentDeployList struct {
 	Items           []AgentDeploy `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
+// HeadlessServiceName returns the name of the per-AgentDeploy headless
+// Service. Both the AgentDeploy reconciler (which creates the Service)
+// and the broker (which derives its own in-cluster FQDN) need to agree
+// on this shape, so the rule lives here as the single source of truth.
+func (ad *AgentDeploy) HeadlessServiceName() string {
+	return ad.Name + "-headless"
+}
+
 // SimpleCopy returns a slimmed-down copy of the AgentDeploy suitable for
 // embedding into a downstream consumer.
 func (ad *AgentDeploy) SimpleCopy() AgentDeploy {

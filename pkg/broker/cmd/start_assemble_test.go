@@ -28,6 +28,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
 func shortTempDir(t *testing.T) string {
@@ -78,13 +80,26 @@ func withAgentSocket(t *testing.T, path string) {
 	t.Cleanup(func() { agentSocketPath = prev })
 }
 
+// withInjectedAgentDeploy stamps a synthetic AgentDeploy onto
+// EnvAgentDeployObject so assembleBroker takes its in-cluster derivation
+// path instead of erroring out on a missing advertise host.
+func withInjectedAgentDeploy(t *testing.T, namespace, name string) {
+	t.Helper()
+	ad := &kmv1.AgentDeploy{}
+	ad.Namespace = namespace
+	ad.Name = name
+	t.Setenv(kmv1.EnvAgentDeployObject, kmv1.EncodeAgentDeploy(ad))
+}
+
 // TestAssembleBroker_WithAgentCard exercises the happy path: a reachable
 // agent that advertises one A2A transport. The returned stack should
 // have a wired runtime, a multiplexed HTTP server, and an introspection
-// server bound to the configured ports.
+// server bound to the configured ports. The injected AgentDeploy drives
+// advertiseHost derivation and gets stashed on the runtime.
 func TestAssembleBroker_WithAgentCard(t *testing.T) {
 	sock := startStubAgentUDS(t, `{"name":"agent-1","supportedInterfaces":[{"protocolBinding":"JSONRPC","url":"http://x/rpc"}]}`, http.StatusOK)
 	withAgentSocket(t, sock)
+	withInjectedAgentDeploy(t, "demo-ns", "demo-ad")
 
 	stack, err := assembleBroker(zap.NewNop().Sugar(), 18080, 18081, "")
 	require.NoError(t, err)
@@ -96,11 +111,14 @@ func TestAssembleBroker_WithAgentCard(t *testing.T) {
 	assert.Equal(t, ":18080", stack.proxySrv.Addr)
 	assert.Equal(t, ":18081", stack.introspectionSrv.Addr)
 	assert.True(t, stack.rt.enabled["JSONRPC"], "JSONRPC transport from card should be enabled")
+	require.NotNil(t, stack.rt.agentDeploy, "injected AgentDeploy should be stashed on the runtime")
+	assert.Equal(t, "demo-ad", stack.rt.agentDeploy.Name)
 }
 
 // TestAssembleBroker_NoAgentCard covers the entry-node-as-A2A-client
 // case: the agent responds 404 to the well-known path, and assembly
-// still succeeds with a passthrough-only runtime.
+// still succeeds with a passthrough-only runtime. The explicit
+// advertiseHost override stands in for the reconciler-injected env.
 func TestAssembleBroker_NoAgentCard(t *testing.T) {
 	sock := startStubAgentUDS(t, "", http.StatusNotFound)
 	withAgentSocket(t, sock)
@@ -118,6 +136,7 @@ func TestAssembleBroker_NoAgentCard(t *testing.T) {
 // socket simply does not exist.
 func TestAssembleBroker_AgentUnreachable(t *testing.T) {
 	withAgentSocket(t, filepath.Join(t.TempDir(), "missing.sock"))
+	withInjectedAgentDeploy(t, "demo-ns", "demo-ad")
 
 	stack, err := assembleBroker(zap.NewNop().Sugar(), 18084, 18085, "")
 	require.Error(t, err)
@@ -125,19 +144,16 @@ func TestAssembleBroker_AgentUnreachable(t *testing.T) {
 	assert.Contains(t, err.Error(), "fetch AgentCard over UDS")
 }
 
-// TestAssembleBroker_DefaultsAdvertiseHost confirms an empty
-// advertiseHost falls back to AdvertiseHostDefault rather than producing
-// a degenerate AgentCard URL.
-func TestAssembleBroker_DefaultsAdvertiseHost(t *testing.T) {
-	sock := startStubAgentUDS(t, `{"name":"agent-1","supportedInterfaces":[{"protocolBinding":"JSONRPC","url":"http://x/rpc"}]}`, http.StatusOK)
-	withAgentSocket(t, sock)
+// TestAssembleBroker_NoAdvertiseHostFails confirms the new contract:
+// without either an explicit advertiseHost override or an injected
+// AgentDeploy, assembly must refuse to proceed rather than advertise a
+// host the broker cannot stand behind.
+func TestAssembleBroker_NoAdvertiseHostFails(t *testing.T) {
+	withAgentSocket(t, filepath.Join(t.TempDir(), "missing.sock"))
+	t.Setenv(kmv1.EnvAgentDeployObject, "")
 
-	stack, err := assembleBroker(zap.NewNop().Sugar(), 18086, 18087, "")
-	require.NoError(t, err)
-	require.NotNil(t, stack)
-	// We can't directly inspect the cardProxy from the stack (it lives
-	// in the proxySrv handler closure), but we can prove the assembly
-	// succeeded with no advertise host configured — i.e. the default
-	// path was taken without panicking on the empty string.
-	assert.NotNil(t, stack.proxySrv)
+	stack, err := assembleBroker(zap.NewNop().Sugar(), 18088, 18089, "")
+	require.Error(t, err)
+	assert.Nil(t, stack)
+	assert.Contains(t, err.Error(), "no advertise host")
 }
