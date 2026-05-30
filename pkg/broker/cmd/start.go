@@ -46,6 +46,24 @@ import (
 	"github.com/kynoproj/kynomesh/pkg/version"
 )
 
+// probeAgentCard fetches the AgentCard over UDS. It returns a nil card
+// with a nil error when the agent responds 404 to the well-known path —
+// the agent is reachable but exposes no A2A surface (e.g., an A2A-client
+// node that serves only its own non-A2A REST APIs). Every other error
+// (dial failure, timeout, 5xx, malformed JSON) is propagated so the
+// liveness gate at startup still rejects a dead or broken agent.
+func probeAgentCard(ctx context.Context, client *http.Client, baseURL string) (*a2a.AgentCard, error) {
+	card, err := agentcard.NewResolver(client).Resolve(ctx, baseURL)
+	if err == nil {
+		return card, nil
+	}
+	var statusErr *agentcard.ErrStatusNotOK
+	if errors.As(err, &statusErr) && statusErr.StatusCode == http.StatusNotFound {
+		return nil, nil
+	}
+	return nil, err
+}
+
 const (
 	// AdvertiseHostDefault is the host the AgentCard advertises when the
 	// operator does not provide an externally reachable address. It is
@@ -97,23 +115,24 @@ func Start(port, introspectionPort int, advertiseHost string) {
 	agentHTTPTransport := agentHTTPClient.Transport.(*http.Transport)
 
 	probeCtx, probeCancel := context.WithTimeout(context.Background(), agentProbeTimeout)
-	agentCard, err := agentcard.NewResolver(agentHTTPClient).Resolve(probeCtx, "http://"+broker.AgentBackendHost)
+	agentCard, err := probeAgentCard(probeCtx, agentHTTPClient, "http://"+broker.AgentBackendHost)
 	probeCancel()
 	if err != nil {
 		logger.Fatalw("failed to fetch AgentCard over UDS — refusing to start",
 			"socket", kmv1.BrokerSocketPath, "err", err)
 	}
-	logger.Infow("agent reachable over UDS",
-		"socket", kmv1.BrokerSocketPath, "agentName", agentCard.Name)
+	if agentCard == nil {
+		logger.Infow("agent reachable over UDS but exposes no AgentCard — running passthrough-only",
+			"socket", kmv1.BrokerSocketPath)
+	} else {
+		logger.Infow("agent reachable over UDS",
+			"socket", kmv1.BrokerSocketPath, "agentName", agentCard.Name)
+	}
 
 	metricsRegistry := prometheus.NewRegistry()
 	rt, err := buildRuntime(logger, metricsRegistry, agentHTTPTransport, agentCard)
 	if err != nil {
 		logger.Fatalw("failed to build broker runtime", "err", err)
-	}
-	if len(rt.enabled) == 0 {
-		logger.Fatalw("agent AgentCard advertised no transports the broker can proxy — refusing to start",
-			"socket", kmv1.BrokerSocketPath)
 	}
 	defer func() {
 		if rt.grpcConn != nil {
@@ -121,7 +140,10 @@ func Start(port, introspectionPort int, advertiseHost string) {
 		}
 	}()
 
-	cardProxy := broker.NewAgentCardProxy(agentHTTPClient, advertiseHost, port, rt.enabled)
+	var cardProxy http.Handler
+	if agentCard != nil {
+		cardProxy = broker.NewAgentCardProxy(agentHTTPClient, advertiseHost, port, rt.enabled)
+	}
 
 	cert, err := sharedtls.GenerateX509KeyPair()
 	if err != nil {
@@ -231,6 +253,10 @@ func newIntrospectionServer(port int, handler http.Handler, cert *tls.Certificat
 //     "unix://<BrokerSocketPath>" and installs an UnknownServiceHandler
 //     that forwards every method to that conn.
 //   - Unknown ProtocolBindings are skipped with a warning.
+//   - A nil card means the agent exposes no A2A surface (e.g., an
+//     A2A-client node serving only non-A2A REST). The runtime keeps the
+//     catch-all passthrough so the agent's own HTTP surface remains
+//     reachable, and registers no per-transport A2A proxies.
 func buildRuntime(logger *zap.SugaredLogger, registry *prometheus.Registry, udsTransport *http.Transport, card *a2a.AgentCard) (*brokerRuntime, error) {
 	counters := broker.NewCounters(registry)
 	rt := &brokerRuntime{
@@ -239,6 +265,10 @@ func buildRuntime(logger *zap.SugaredLogger, registry *prometheus.Registry, udsT
 		enabled:     map[a2a.TransportProtocol]bool{},
 		httpProxies: map[a2a.TransportProtocol]http.Handler{},
 		passthrough: broker.NewPassthroughReverseProxy(udsTransport, counters),
+	}
+
+	if card == nil {
+		return rt, nil
 	}
 
 	for _, iface := range card.SupportedInterfaces {
@@ -284,7 +314,9 @@ func newMultiplexedServer(
 	cert *tls.Certificate,
 ) (*http.Server, error) {
 	httpMux := http.NewServeMux()
-	httpMux.Handle(a2asrv.WellKnownAgentCardPath, cardHandler)
+	if cardHandler != nil {
+		httpMux.Handle(a2asrv.WellKnownAgentCardPath, cardHandler)
+	}
 	if h, ok := rt.httpProxies[a2a.TransportProtocolJSONRPC]; ok {
 		httpMux.Handle(broker.JSONRPCEndpoint, h)
 	}
