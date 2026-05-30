@@ -25,19 +25,12 @@ import (
 )
 
 // EncodeAgentDeploy returns the base64-encoded JSON of ad.SimpleCopy().
-// It's the producer side of the EnvAgentDeployObject contract: the
-// reconciler stamps the encoded blob onto the broker container, and the
-// broker decodes it at startup via DecodeAgentDeploy.
 func EncodeAgentDeploy(ad *AgentDeploy) string {
 	simple := ad.SimpleCopy()
 	return base64.StdEncoding.EncodeToString([]byte(sharedutil.MustJSON(simple)))
 }
 
-// DecodeAgentDeploy reverses EncodeAgentDeploy. It accepts the literal
-// value of the EnvAgentDeployObject env var and returns the embedded
-// AgentDeploy. Empty input is treated as an error so callers can
-// distinguish "not configured" from "configured-but-broken" by checking
-// the env var presence before calling.
+// DecodeAgentDeploy reverses EncodeAgentDeploy.
 func DecodeAgentDeploy(encoded string) (*AgentDeploy, error) {
 	if encoded == "" {
 		return nil, fmt.Errorf("empty %s payload", EnvAgentDeployObject)

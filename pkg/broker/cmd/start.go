@@ -89,12 +89,7 @@ func loadInjectedAgentDeploy() (*kmv1.AgentDeploy, error) {
 }
 
 // advertiseHostFor returns the broker's in-cluster FQDN for the given
-// AgentDeploy. The host is the headless Service DNS —
-// "<svc>.<ns>.svc.<domain>" — so a single AgentCard URL resolves to
-// every replica behind the service. Clients reconnect by picking any A
-// record the resolver returns; the broker doesn't claim a specific
-// pod's identity. Returns "" when ad is nil so the caller can choose
-// the fallback.
+// AgentDeploy.
 func advertiseHostFor(ad *kmv1.AgentDeploy) string {
 	if ad == nil {
 		return ""
@@ -106,15 +101,8 @@ func advertiseHostFor(ad *kmv1.AgentDeploy) string {
 // brokerRuntime aggregates the pieces of broker state that live for the
 // process's whole lifetime.
 type brokerRuntime struct {
-	logger   *zap.SugaredLogger
-	counters *broker.Counters
-	// agentDeploy is the AgentDeploy this broker was provisioned to
-	// front, decoded once at startup from EnvAgentDeployObject. nil
-	// when the broker is run outside a reconciler-managed pod (local
-	// dev, manual invocations). Downstream code that needs the
-	// AgentDeploy's identity (namespace, name, AgentSet membership,
-	// container spec, etc.) should read it from here rather than
-	// re-decoding the env var.
+	logger      *zap.SugaredLogger
+	counters    *broker.Counters
 	agentDeploy *kmv1.AgentDeploy
 	enabled     map[a2a.TransportProtocol]bool
 	httpProxies map[a2a.TransportProtocol]http.Handler
@@ -199,10 +187,7 @@ func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int) (*br
 	}, nil
 }
 
-// Start boots the broker. The advertised AgentCard host is derived from
-// the AgentDeploy blob the reconciler injects via EnvAgentDeployObject;
-// callers that need to override (tests, manual local runs) can call
-// assembleBroker directly with an explicit advertiseHost.
+// Start boots the broker.
 func Start(port, introspectionPort int) {
 	logger := logging.NewLogger().Named("broker")
 

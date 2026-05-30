@@ -743,7 +743,6 @@ func newHeadlessService(ad *kmv1.AgentDeploy) *corev1.Service {
 	}
 }
 
-
 // groupPodsByReplica buckets pods by their KeyReplica annotation. Pods
 // without a valid annotation land in bucket -1 and the caller treats them
 // as "outside the desired window".
