@@ -76,9 +76,6 @@ const (
 
 const clusterDNSDomain = "cluster.local"
 
-// EnvAgentAddr lets a developer override the local-dev TCP target.
-const EnvAgentAddr = "KYNOMESH_AGENT_ADDR"
-
 // DefaultLocalAgentAddr is the default agent target in local-dev mode.
 const DefaultLocalAgentAddr = "127.0.0.1:8000"
 
@@ -89,6 +86,9 @@ var inClusterFn = func() bool {
 
 // udsAgentPath is a test seam; production uses kmv1.BrokerSocketPath.
 var udsAgentPath = kmv1.BrokerSocketPath
+
+// tcpAgentAddr is a test seam; production uses DefaultLocalAgentAddr.
+var tcpAgentAddr = DefaultLocalAgentAddr
 
 // agentDial holds either the in-pod UDS path or the local-dev TCP host:port.
 type agentDial struct {
@@ -108,11 +108,7 @@ func resolveAgentDial() agentDial {
 	if inClusterFn() {
 		return agentDial{udsPath: udsAgentPath}
 	}
-	addr := os.Getenv(EnvAgentAddr)
-	if addr == "" {
-		addr = DefaultLocalAgentAddr
-	}
-	return agentDial{tcpAddr: addr}
+	return agentDial{tcpAddr: tcpAgentAddr}
 }
 
 func newAgentHTTPClient(d agentDial) *http.Client {
@@ -452,6 +448,8 @@ func isGRPCRequest(r *http.Request) bool {
 	if r.ProtoMajor != 2 {
 		return false
 	}
+	// HTTP/2 with a Content-Type of "application/grpc" (optionally followed
+	// by a subtype such as "+proto").
 	return strings.HasPrefix(r.Header.Get("Content-Type"), grpcContentType)
 }
 

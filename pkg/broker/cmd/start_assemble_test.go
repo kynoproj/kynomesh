@@ -77,12 +77,13 @@ func withAgentSocket(t *testing.T, path string) {
 	t.Cleanup(func() { udsAgentPath = prev })
 }
 
-// withAgentTCPAddr puts the broker into local-dev mode and pins the TCP
-// dial target via KYNOMESH_AGENT_ADDR.
+// withAgentTCPAddr puts the broker into local-dev mode and pins the TCP dial target.
 func withAgentTCPAddr(t *testing.T, addr string) {
 	t.Helper()
 	withInClusterMode(t, false)
-	t.Setenv(EnvAgentAddr, addr)
+	prev := tcpAgentAddr
+	tcpAgentAddr = addr
+	t.Cleanup(func() { tcpAgentAddr = prev })
 }
 
 // withInClusterMode overrides inClusterFn for the duration of the test.
@@ -208,18 +209,10 @@ func TestResolveAgentDial(t *testing.T) {
 		assert.True(t, d.isUDS())
 		assert.Equal(t, kmv1.BrokerSocketPath, d.udsPath)
 	})
-	t.Run("out-of-cluster falls back to default TCP addr", func(t *testing.T) {
+	t.Run("out-of-cluster uses default TCP addr", func(t *testing.T) {
 		withInClusterMode(t, false)
-		t.Setenv(EnvAgentAddr, "")
 		d := resolveAgentDial()
 		assert.False(t, d.isUDS())
 		assert.Equal(t, DefaultLocalAgentAddr, d.tcpAddr)
-	})
-	t.Run("out-of-cluster honors KYNOMESH_AGENT_ADDR override", func(t *testing.T) {
-		withInClusterMode(t, false)
-		t.Setenv(EnvAgentAddr, "192.168.1.10:9000")
-		d := resolveAgentDial()
-		assert.False(t, d.isUDS())
-		assert.Equal(t, "192.168.1.10:9000", d.tcpAddr)
 	})
 }
