@@ -110,10 +110,6 @@ func TestProbeAgentCard(t *testing.T) {
 // TestProbeAgentCard_DialError covers the "agent unreachable" case — the
 // startup gate must still fail when no listener is on the other end.
 func TestProbeAgentCard_DialError(t *testing.T) {
-	// 127.0.0.1:1 is a reserved well-known port that almost never has
-	// anything listening on it on a developer machine. We use a very
-	// short timeout so the test stays fast even if the OS does decide
-	// to slow-fail the connection.
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	t.Cleanup(cancel)
 	card, err := probeAgentCard(ctx, &http.Client{Timeout: 500 * time.Millisecond}, "http://127.0.0.1:1")
