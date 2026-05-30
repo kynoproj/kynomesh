@@ -77,18 +77,9 @@ const (
 // For testing overwrite.
 var agentSocketPath = kmv1.BrokerSocketPath
 
-// clusterDNSDomain is the suffix appended to in-cluster headless-service
-// records. Every standard Kubernetes install uses "cluster.local"; the
-// few outliers that don't (custom kubelet --cluster-domain) will need to
-// fall back to the explicit advertiseHost flag.
 const clusterDNSDomain = "cluster.local"
 
-// loadInjectedAgentDeploy reads the AgentDeploy blob the reconciler
-// stamps onto the broker container via EnvAgentDeployObject and decodes
-// it. Returns nil with a nil error when the env var is unset — that's
-// the local-dev path. Returns an error when the blob is configured but
-// malformed, so misconfiguration fails visibly rather than silently
-// degrading to the fallback.
+// loadInjectedAgentDeploy loads the AgentDeploy obj from the ENV
 func loadInjectedAgentDeploy() (*kmv1.AgentDeploy, error) {
 	encoded := os.Getenv(kmv1.EnvAgentDeployObject)
 	if encoded == "" {
@@ -146,20 +137,18 @@ type brokerStack struct {
 // the point of serving traffic: probe the agent over UDS, decide which
 // transports to enable, and wire both the multiplexed traffic server and
 // the introspection server.
-func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int, advertiseHost string) (*brokerStack, error) {
+func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int) (*brokerStack, error) {
 	injectedAD, err := loadInjectedAgentDeploy()
 	if err != nil {
 		return nil, fmt.Errorf("decode %s: %w", kmv1.EnvAgentDeployObject, err)
 	}
 
+	advertiseHost := advertiseHostFor(injectedAD)
 	if advertiseHost == "" {
-		advertiseHost = advertiseHostFor(injectedAD)
-		if advertiseHost == "" {
-			return nil, fmt.Errorf("no advertise host: %s not injected and no override supplied", kmv1.EnvAgentDeployObject)
-		}
-		logger.Infow("Derived broker advertise host from injected AgentDeploy",
-			"advertiseHost", advertiseHost)
+		return nil, fmt.Errorf("no advertise host: %s not injected and no override supplied", kmv1.EnvAgentDeployObject)
 	}
+	logger.Infow("Derived broker advertise host from injected AgentDeploy",
+		"advertiseHost", advertiseHost)
 
 	agentHTTPClient := broker.NewUDSHTTPClient(agentSocketPath)
 	agentHTTPTransport := agentHTTPClient.Transport.(*http.Transport)
@@ -227,7 +216,7 @@ func Start(port, introspectionPort int) {
 		"platform", v.Platform,
 	)
 
-	stack, err := assembleBroker(logger, port, introspectionPort, "")
+	stack, err := assembleBroker(logger, port, introspectionPort)
 	if err != nil {
 		logger.Fatalw("Failed to assemble broker — refusing to start", "err", err)
 	}
