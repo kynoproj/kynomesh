@@ -118,14 +118,14 @@ func Start(port, introspectionPort int, advertiseHost string) {
 	agentCard, err := probeAgentCard(probeCtx, agentHTTPClient, "http://"+broker.AgentBackendHost)
 	probeCancel()
 	if err != nil {
-		logger.Fatalw("failed to fetch AgentCard over UDS — refusing to start",
+		logger.Fatalw("Failed to fetch AgentCard over UDS — refusing to start",
 			"socket", kmv1.BrokerSocketPath, "err", err)
 	}
 	if agentCard == nil {
-		logger.Infow("agent reachable over UDS but exposes no AgentCard — running passthrough-only",
+		logger.Infow("Agent reachable over UDS but exposes no AgentCard — running passthrough-only",
 			"socket", kmv1.BrokerSocketPath)
 	} else {
-		logger.Infow("agent reachable over UDS",
+		logger.Infow("Agent reachable over UDS",
 			"socket", kmv1.BrokerSocketPath, "agentName", agentCard.Name)
 	}
 
