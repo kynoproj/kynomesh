@@ -56,7 +56,7 @@ func buildLoopStack(t *testing.T) *brokerStack {
 	}), cert)
 	introSrv.Addr = "127.0.0.1:0"
 
-	return &brokerStack{rt: rt, httpSrv: mainSrv, introspectionSrv: introSrv}
+	return &brokerStack{rt: rt, proxySrv: mainSrv, introspectionSrv: introSrv}
 }
 
 // TestRunServeLoop_CleanShutdownOnContextCancel verifies the happy path:
@@ -91,7 +91,7 @@ func TestRunServeLoop_CleanShutdownOnContextCancel(t *testing.T) {
 // rejects synchronously.
 func TestRunServeLoop_MainListenerError(t *testing.T) {
 	stack := buildLoopStack(t)
-	stack.httpSrv.Addr = "not-a-valid-address"
+	stack.proxySrv.Addr = "not-a-valid-address"
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

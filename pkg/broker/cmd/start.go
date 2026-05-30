@@ -97,17 +97,17 @@ type brokerRuntime struct {
 }
 
 // brokerStack groups the constructed-but-not-yet-serving pieces of the
-// broker. assembleBroker returns one; Start consumes it.
+// broker.
 type brokerStack struct {
 	rt               *brokerRuntime
-	httpSrv          *http.Server
+	proxySrv         *http.Server
 	introspectionSrv *http.Server
 }
 
 // assembleBroker performs every step required to bring the broker up to
 // the point of serving traffic: probe the agent over UDS, decide which
-// transports to enable, generate the in-process TLS cert, and wire both
-// the multiplexed traffic server and the introspection server.
+// transports to enable, and wire both the multiplexed traffic server and
+// the introspection server.
 func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int, advertiseHost string) (*brokerStack, error) {
 	if advertiseHost == "" {
 		advertiseHost = AdvertiseHostDefault
@@ -146,7 +146,7 @@ func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int, adve
 		return nil, fmt.Errorf("generate broker TLS certificate: %w", err)
 	}
 
-	httpSrv, err := newMultiplexedServer(port, rt, cardProxy, cert)
+	proxySrv, err := newMultiplexedServer(port, rt, cardProxy, cert)
 	if err != nil {
 		return nil, fmt.Errorf("build broker server: %w", err)
 	}
@@ -157,7 +157,7 @@ func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int, adve
 
 	return &brokerStack{
 		rt:               rt,
-		httpSrv:          httpSrv,
+		proxySrv:         proxySrv,
 		introspectionSrv: introspectionSrv,
 	}, nil
 }
@@ -195,7 +195,7 @@ func Start(port, introspectionPort int, advertiseHost string) {
 // http.ErrServerClosed) and a wrapped error if a listener failed to
 // start or exited abnormally.
 func runServeLoop(ctx context.Context, logger *zap.SugaredLogger, stack *brokerStack, port, introspectionPort int) error {
-	rt, httpSrv, introspectionSrv := stack.rt, stack.httpSrv, stack.introspectionSrv
+	rt, proxySrv, introspectionSrv := stack.rt, stack.proxySrv, stack.introspectionSrv
 	defer func() {
 		if rt.grpcConn != nil {
 			_ = rt.grpcConn.Close()
@@ -209,7 +209,7 @@ func runServeLoop(ctx context.Context, logger *zap.SugaredLogger, stack *brokerS
 			"enabledTransports", enabledTransportNames(rt.enabled),
 			"tls", true,
 		)
-		if err := httpSrv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := proxySrv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			mainServeErr <- fmt.Errorf("broker server: %w", err)
 			return
 		}
@@ -240,7 +240,7 @@ func runServeLoop(ctx context.Context, logger *zap.SugaredLogger, stack *brokerS
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
-	if err := httpSrv.Shutdown(shutdownCtx); err != nil {
+	if err := proxySrv.Shutdown(shutdownCtx); err != nil {
 		logger.Warnw("Broker server shutdown error", "err", err)
 	}
 	if err := introspectionSrv.Shutdown(shutdownCtx); err != nil {

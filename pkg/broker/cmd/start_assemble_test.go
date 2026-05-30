@@ -90,10 +90,10 @@ func TestAssembleBroker_WithAgentCard(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, stack)
 	require.NotNil(t, stack.rt)
-	require.NotNil(t, stack.httpSrv)
+	require.NotNil(t, stack.proxySrv)
 	require.NotNil(t, stack.introspectionSrv)
 
-	assert.Equal(t, ":18080", stack.httpSrv.Addr)
+	assert.Equal(t, ":18080", stack.proxySrv.Addr)
 	assert.Equal(t, ":18081", stack.introspectionSrv.Addr)
 	assert.True(t, stack.rt.enabled["JSONRPC"], "JSONRPC transport from card should be enabled")
 }
@@ -136,8 +136,8 @@ func TestAssembleBroker_DefaultsAdvertiseHost(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, stack)
 	// We can't directly inspect the cardProxy from the stack (it lives
-	// in the httpSrv handler closure), but we can prove the assembly
+	// in the proxySrv handler closure), but we can prove the assembly
 	// succeeded with no advertise host configured — i.e. the default
 	// path was taken without panicking on the empty string.
-	assert.NotNil(t, stack.httpSrv)
+	assert.NotNil(t, stack.proxySrv)
 }
