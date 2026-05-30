@@ -7,5 +7,5 @@
 [![Release Version](https://img.shields.io/github/v/release/kynoproj/kynomesh?label=kynomesh&color=dca282)](https://github.com/kynoproj/kynomesh/releases/latest)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/13037/badge)](https://bestpractices.coreinfrastructure.org/projects/13037)
 
-Welcome to Kynomesh! A Kubernetes-native platform for running distributed multi
-agents with [A2A](https://a2a-protocol.org/) protocol.
+Welcome to Kynomesh! A Kubernetes-native platform for distributed multi-agent
+systems orchestration.
