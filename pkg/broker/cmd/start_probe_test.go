@@ -123,7 +123,7 @@ func TestProbeAgentCard_DialError(t *testing.T) {
 // own HTTP surface.
 func TestBuildRuntime_NilCard(t *testing.T) {
 	logger := zap.NewNop().Sugar()
-	rt, err := buildRuntime(logger, prometheus.NewRegistry(), &http.Transport{}, nil, nil)
+	rt, err := buildRuntime(logger, prometheus.NewRegistry(), &http.Transport{}, nil, nil, agentDial{udsPath: "/tmp/stub"})
 	require.NoError(t, err)
 	require.NotNil(t, rt)
 	assert.NotNil(t, rt.passthrough, "passthrough must be wired so non-A2A traffic still reaches the agent")
@@ -141,7 +141,7 @@ func TestBuildRuntime_NilCard(t *testing.T) {
 // per-transport proxy slots are empty.
 func TestMultiplexedServer_NoCardHandler(t *testing.T) {
 	logger := zap.NewNop().Sugar()
-	rt, err := buildRuntime(logger, prometheus.NewRegistry(), &http.Transport{}, nil, nil)
+	rt, err := buildRuntime(logger, prometheus.NewRegistry(), &http.Transport{}, nil, nil, agentDial{udsPath: "/tmp/stub"})
 	require.NoError(t, err)
 	// Swap the production passthrough (which would try to dial the UDS
 	// agent) for a stub so we can assert routing without an upstream.

@@ -55,3 +55,24 @@ func NewUDSHTTPTransport(socketPath string) *http.Transport {
 func NewUDSHTTPClient(socketPath string) *http.Client {
 	return &http.Client{Transport: NewUDSHTTPTransport(socketPath)}
 }
+
+// NewTCPHTTPTransport returns an *http.Transport that pins every dial to
+// tcpAddr (host:port) regardless of the request URL's host. It mirrors
+// NewUDSHTTPTransport's contract: callers continue to use URLs with the
+// synthetic AgentBackendHost; the transport intercepts the dial. This
+// lets the broker run outside Kubernetes (no UDS available) by pointing
+// at a TCP-listening agent on the developer's machine.
+func NewTCPHTTPTransport(tcpAddr string) *http.Transport {
+	return &http.Transport{
+		DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+			var d net.Dialer
+			return d.DialContext(ctx, "tcp", tcpAddr)
+		},
+		MaxIdleConnsPerHost: 16,
+	}
+}
+
+// NewTCPHTTPClient is the TCP counterpart to NewUDSHTTPClient.
+func NewTCPHTTPClient(tcpAddr string) *http.Client {
+	return &http.Client{Transport: NewTCPHTTPTransport(tcpAddr)}
+}
