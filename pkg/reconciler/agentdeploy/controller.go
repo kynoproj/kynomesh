@@ -33,7 +33,6 @@ package agentdeploy
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"reflect"
 	"slices"
@@ -59,9 +58,6 @@ const (
 	// FinalizerName guards an AgentDeploy against deletion until the
 	// controller has cleaned up the owned pods and service.
 	FinalizerName = "kynomesh.kyno.sh/" + kmv1.ControllerAgentDeploy
-
-	// headlessServiceSuffix produces the per-deploy headless Service name.
-	headlessServiceSuffix = "-headless"
 
 	// randomSuffixLength is the random tail on pod names — long enough to
 	// avoid collisions across rollouts, short enough to keep names well
@@ -396,7 +392,7 @@ func (r *Reconciler) deleteOwned(ctx context.Context, ad *kmv1.AgentDeploy) erro
 	}
 
 	var svc corev1.Service
-	err = r.Get(ctx, client.ObjectKey{Namespace: ad.Namespace, Name: headlessServiceName(ad)}, &svc)
+	err = r.Get(ctx, client.ObjectKey{Namespace: ad.Namespace, Name: ad.HeadlessServiceName()}, &svc)
 	if apierrors.IsNotFound(err) {
 		return nil
 	}
@@ -501,7 +497,7 @@ func desiredReplicas(ad *kmv1.AgentDeploy) int {
 
 // buildPodSpec composes the corev1.PodSpec from the AgentDeploy spec.
 func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
-	containers := []corev1.Container{newBrokerContainer(brokerImage, encodeAgentDeploy(ad), ad.Spec.BrokerTemplate)}
+	containers := []corev1.Container{newBrokerContainer(brokerImage, kmv1.EncodeAgentDeploy(ad), ad.Spec.BrokerTemplate)}
 	containers = append(containers, ad.Spec.Sidecars...)
 
 	initContainers := []corev1.Container{
@@ -514,7 +510,7 @@ func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
 		Containers:     containers,
 		InitContainers: initContainers,
 		Volumes:        append([]corev1.Volume{kynomeshRunVolume()}, ad.Spec.Volumes...),
-		Subdomain:      headlessServiceName(ad),
+		Subdomain:      ad.HeadlessServiceName(),
 	}
 	ad.Spec.ApplyToPodSpec(&ps)
 
@@ -675,12 +671,6 @@ func newInitSocketContainer(image string) corev1.Container {
 	}
 }
 
-// encodeAgentDeploy returns the base64-encoded JSON of ad.SimpleCopy().
-func encodeAgentDeploy(ad *kmv1.AgentDeploy) string {
-	simple := ad.SimpleCopy()
-	return base64.StdEncoding.EncodeToString([]byte(sharedutil.MustJSON(simple)))
-}
-
 // newPod renders a corev1.Pod for the given replica index. The random
 // suffix on the pod name lets a delete-and-recreate rollout proceed
 // without a name-already-exists race; the stable bits (replica index,
@@ -713,7 +703,7 @@ func newPod(ad *kmv1.AgentDeploy, replica int, podSpec corev1.PodSpec, hash stri
 	}
 	pod.Spec.Hostname = hostname
 	if pod.Spec.Subdomain == "" {
-		pod.Spec.Subdomain = headlessServiceName(ad)
+		pod.Spec.Subdomain = ad.HeadlessServiceName()
 	}
 	return pod
 }
@@ -725,7 +715,7 @@ func newHeadlessService(ad *kmv1.AgentDeploy) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ad.Namespace,
-			Name:      headlessServiceName(ad),
+			Name:      ad.HeadlessServiceName(),
 			Labels: map[string]string{
 				kmv1.KeyAppName:         ad.Name,
 				kmv1.KeyAgentSetName:    ad.Spec.AgentSetName,
@@ -751,10 +741,6 @@ func newHeadlessService(ad *kmv1.AgentDeploy) *corev1.Service {
 			PublishNotReadyAddresses: true,
 		},
 	}
-}
-
-func headlessServiceName(ad *kmv1.AgentDeploy) string {
-	return ad.Name + headlessServiceSuffix
 }
 
 // groupPodsByReplica buckets pods by their KeyReplica annotation. Pods

@@ -28,14 +28,13 @@ func NewBrokerCommand() *cobra.Command {
 	var (
 		port              int
 		introspectionPort int
-		advertiseHost     string
 	)
 
 	command := &cobra.Command{
 		Use:   "broker",
 		Short: "Start the kynomesh A2A broker (JSON-RPC, REST, gRPC on one port)",
 		Run: func(cmd *cobra.Command, args []string) {
-			brokercmd.Start(port, introspectionPort, advertiseHost)
+			brokercmd.Start(port, introspectionPort)
 		},
 	}
 	command.Flags().IntVar(&port, "port",
@@ -44,8 +43,5 @@ func NewBrokerCommand() *cobra.Command {
 	command.Flags().IntVar(&introspectionPort, "introspection-port",
 		sharedutil.LookupEnvIntOr("KYNOMESH_BROKER_INTROSPECTION_PORT", kmv1.AgentBrokerIntrospectionPort),
 		"Separate TLS port for /metrics, /healthz, /readyz.")
-	command.Flags().StringVar(&advertiseHost, "advertise-host",
-		sharedutil.LookupEnvStringOr("KYNOMESH_BROKER_ADVERTISE_HOST", brokercmd.AdvertiseHostDefault),
-		"Hostname or IP advertised on the AgentCard for clients to dial.")
 	return command
 }

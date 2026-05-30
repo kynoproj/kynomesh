@@ -28,6 +28,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
+	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
 func shortTempDir(t *testing.T) string {
@@ -38,10 +40,7 @@ func shortTempDir(t *testing.T) string {
 	return dir
 }
 
-// startStubAgentUDS brings up a tiny HTTP server bound to a Unix
-// Domain Socket in the test's tempdir. It serves cardBody on the
-// well-known AgentCard path with the given status. An empty cardBody
-// with status 404 simulates the "no AgentCard" path.
+// startStubAgentUDS serves cardBody on the well-known AgentCard path over a UDS in t.TempDir.
 func startStubAgentUDS(t *testing.T, cardBody string, status int) string {
 	t.Helper()
 	sock := filepath.Join(shortTempDir(t), "agent.sock")
@@ -68,9 +67,7 @@ func startStubAgentUDS(t *testing.T, cardBody string, status int) string {
 	return sock
 }
 
-// withAgentSocket overrides the package-level agentSocketPath for a
-// single test so assembleBroker dials the stub UDS instead of the
-// production /var/run path.
+// withAgentSocket overrides agentSocketPath for the duration of the test.
 func withAgentSocket(t *testing.T, path string) {
 	t.Helper()
 	prev := agentSocketPath
@@ -78,15 +75,21 @@ func withAgentSocket(t *testing.T, path string) {
 	t.Cleanup(func() { agentSocketPath = prev })
 }
 
-// TestAssembleBroker_WithAgentCard exercises the happy path: a reachable
-// agent that advertises one A2A transport. The returned stack should
-// have a wired runtime, a multiplexed HTTP server, and an introspection
-// server bound to the configured ports.
+// withInjectedAgentDeploy sets EnvAgentDeployObject to a synthetic AgentDeploy for the test.
+func withInjectedAgentDeploy(t *testing.T, namespace, name string) {
+	t.Helper()
+	ad := &kmv1.AgentDeploy{}
+	ad.Namespace = namespace
+	ad.Name = name
+	t.Setenv(kmv1.EnvAgentDeployObject, kmv1.EncodeAgentDeploy(ad))
+}
+
 func TestAssembleBroker_WithAgentCard(t *testing.T) {
 	sock := startStubAgentUDS(t, `{"name":"agent-1","supportedInterfaces":[{"protocolBinding":"JSONRPC","url":"http://x/rpc"}]}`, http.StatusOK)
 	withAgentSocket(t, sock)
+	withInjectedAgentDeploy(t, "demo-ns", "demo-ad")
 
-	stack, err := assembleBroker(zap.NewNop().Sugar(), 18080, 18081, "")
+	stack, err := assembleBroker(zap.NewNop().Sugar(), 18080, 18081)
 	require.NoError(t, err)
 	require.NotNil(t, stack)
 	require.NotNil(t, stack.rt)
@@ -96,48 +99,48 @@ func TestAssembleBroker_WithAgentCard(t *testing.T) {
 	assert.Equal(t, ":18080", stack.proxySrv.Addr)
 	assert.Equal(t, ":18081", stack.introspectionSrv.Addr)
 	assert.True(t, stack.rt.enabled["JSONRPC"], "JSONRPC transport from card should be enabled")
+	require.NotNil(t, stack.rt.agentDeploy, "injected AgentDeploy should be stashed on the runtime")
+	assert.Equal(t, "demo-ad", stack.rt.agentDeploy.Name)
 }
 
-// TestAssembleBroker_NoAgentCard covers the entry-node-as-A2A-client
-// case: the agent responds 404 to the well-known path, and assembly
-// still succeeds with a passthrough-only runtime.
 func TestAssembleBroker_NoAgentCard(t *testing.T) {
 	sock := startStubAgentUDS(t, "", http.StatusNotFound)
 	withAgentSocket(t, sock)
+	withInjectedAgentDeploy(t, "demo-ns", "demo-ad")
 
-	stack, err := assembleBroker(zap.NewNop().Sugar(), 18082, 18083, "broker.example.com")
+	stack, err := assembleBroker(zap.NewNop().Sugar(), 18082, 18083)
 	require.NoError(t, err)
 	require.NotNil(t, stack)
 	assert.Empty(t, stack.rt.enabled, "no card means no A2A transports advertised")
 	assert.NotNil(t, stack.rt.passthrough)
 }
 
-// TestAssembleBroker_AgentUnreachable confirms a dial failure is
-// surfaced as an error rather than swallowed: the broker must refuse to
-// start when the agent is dead. We do not start a stub server, so the
-// socket simply does not exist.
 func TestAssembleBroker_AgentUnreachable(t *testing.T) {
 	withAgentSocket(t, filepath.Join(t.TempDir(), "missing.sock"))
+	withInjectedAgentDeploy(t, "demo-ns", "demo-ad")
 
-	stack, err := assembleBroker(zap.NewNop().Sugar(), 18084, 18085, "")
+	stack, err := assembleBroker(zap.NewNop().Sugar(), 18084, 18085)
 	require.Error(t, err)
 	assert.Nil(t, stack)
 	assert.Contains(t, err.Error(), "fetch AgentCard over UDS")
 }
 
-// TestAssembleBroker_DefaultsAdvertiseHost confirms an empty
-// advertiseHost falls back to AdvertiseHostDefault rather than producing
-// a degenerate AgentCard URL.
-func TestAssembleBroker_DefaultsAdvertiseHost(t *testing.T) {
-	sock := startStubAgentUDS(t, `{"name":"agent-1","supportedInterfaces":[{"protocolBinding":"JSONRPC","url":"http://x/rpc"}]}`, http.StatusOK)
-	withAgentSocket(t, sock)
+func TestAssembleBroker_NoInjectedAgentDeploy(t *testing.T) {
+	withAgentSocket(t, filepath.Join(t.TempDir(), "missing.sock"))
+	t.Setenv(kmv1.EnvAgentDeployObject, "")
 
-	stack, err := assembleBroker(zap.NewNop().Sugar(), 18086, 18087, "")
-	require.NoError(t, err)
-	require.NotNil(t, stack)
-	// We can't directly inspect the cardProxy from the stack (it lives
-	// in the proxySrv handler closure), but we can prove the assembly
-	// succeeded with no advertise host configured — i.e. the default
-	// path was taken without panicking on the empty string.
-	assert.NotNil(t, stack.proxySrv)
+	stack, err := assembleBroker(zap.NewNop().Sugar(), 18088, 18089)
+	require.Error(t, err)
+	assert.Nil(t, stack)
+	assert.Contains(t, err.Error(), "no advertise host")
+}
+
+func TestAssembleBroker_MalformedAgentDeploy(t *testing.T) {
+	withAgentSocket(t, filepath.Join(t.TempDir(), "missing.sock"))
+	t.Setenv(kmv1.EnvAgentDeployObject, "not-valid-base64!!!")
+
+	stack, err := assembleBroker(zap.NewNop().Sugar(), 18090, 18091)
+	require.Error(t, err)
+	assert.Nil(t, stack)
+	assert.Contains(t, err.Error(), "decode "+kmv1.EnvAgentDeployObject)
 }

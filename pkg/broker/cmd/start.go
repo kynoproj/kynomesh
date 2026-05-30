@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"os/signal"
 	"strings"
 	"syscall"
@@ -65,12 +66,6 @@ func probeAgentCard(ctx context.Context, client *http.Client, baseURL string) (*
 }
 
 const (
-	// AdvertiseHostDefault is the host the AgentCard advertises when the
-	// operator does not provide an externally reachable address. It is
-	// deliberately localhost — production deployments should set
-	// KYNOMESH_BROKER_ADVERTISE_HOST to the Service / ingress hostname.
-	AdvertiseHostDefault = "127.0.0.1"
-
 	shutdownTimeout = 10 * time.Second
 
 	// agentProbeTimeout caps the startup AgentCard fetch.
@@ -82,11 +77,33 @@ const (
 // For testing overwrite.
 var agentSocketPath = kmv1.BrokerSocketPath
 
+const clusterDNSDomain = "cluster.local"
+
+// loadInjectedAgentDeploy loads the AgentDeploy obj from the ENV
+func loadInjectedAgentDeploy() (*kmv1.AgentDeploy, error) {
+	encoded := os.Getenv(kmv1.EnvAgentDeployObject)
+	if encoded == "" {
+		return nil, nil
+	}
+	return kmv1.DecodeAgentDeploy(encoded)
+}
+
+// advertiseHostFor returns the broker's in-cluster FQDN for the given
+// AgentDeploy.
+func advertiseHostFor(ad *kmv1.AgentDeploy) string {
+	if ad == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s.%s.svc.%s",
+		ad.HeadlessServiceName(), ad.Namespace, clusterDNSDomain)
+}
+
 // brokerRuntime aggregates the pieces of broker state that live for the
 // process's whole lifetime.
 type brokerRuntime struct {
 	logger      *zap.SugaredLogger
 	counters    *broker.Counters
+	agentDeploy *kmv1.AgentDeploy
 	enabled     map[a2a.TransportProtocol]bool
 	httpProxies map[a2a.TransportProtocol]http.Handler
 	// passthrough is the catch-all HTTP reverse proxy used for any
@@ -108,10 +125,18 @@ type brokerStack struct {
 // the point of serving traffic: probe the agent over UDS, decide which
 // transports to enable, and wire both the multiplexed traffic server and
 // the introspection server.
-func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int, advertiseHost string) (*brokerStack, error) {
-	if advertiseHost == "" {
-		advertiseHost = AdvertiseHostDefault
+func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int) (*brokerStack, error) {
+	injectedAD, err := loadInjectedAgentDeploy()
+	if err != nil {
+		return nil, fmt.Errorf("decode %s: %w", kmv1.EnvAgentDeployObject, err)
 	}
+
+	advertiseHost := advertiseHostFor(injectedAD)
+	if advertiseHost == "" {
+		return nil, fmt.Errorf("no advertise host: %s not injected and no override supplied", kmv1.EnvAgentDeployObject)
+	}
+	logger.Infow("Derived broker advertise host from injected AgentDeploy",
+		"advertiseHost", advertiseHost)
 
 	agentHTTPClient := broker.NewUDSHTTPClient(agentSocketPath)
 	agentHTTPTransport := agentHTTPClient.Transport.(*http.Transport)
@@ -131,7 +156,7 @@ func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int, adve
 	}
 
 	metricsRegistry := prometheus.NewRegistry()
-	rt, err := buildRuntime(logger, metricsRegistry, agentHTTPTransport, agentCard)
+	rt, err := buildRuntime(logger, metricsRegistry, agentHTTPTransport, agentCard, injectedAD)
 	if err != nil {
 		return nil, fmt.Errorf("build broker runtime: %w", err)
 	}
@@ -163,7 +188,7 @@ func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int, adve
 }
 
 // Start boots the broker.
-func Start(port, introspectionPort int, advertiseHost string) {
+func Start(port, introspectionPort int) {
 	logger := logging.NewLogger().Named("broker")
 
 	v := version.GetVersion()
@@ -176,7 +201,7 @@ func Start(port, introspectionPort int, advertiseHost string) {
 		"platform", v.Platform,
 	)
 
-	stack, err := assembleBroker(logger, port, introspectionPort, advertiseHost)
+	stack, err := assembleBroker(logger, port, introspectionPort)
 	if err != nil {
 		logger.Fatalw("Failed to assemble broker — refusing to start", "err", err)
 	}
@@ -287,11 +312,12 @@ func newIntrospectionServer(port int, handler http.Handler, cert *tls.Certificat
 //     A2A-client node serving only non-A2A REST). The runtime keeps the
 //     catch-all passthrough so the agent's own HTTP surface remains
 //     reachable, and registers no per-transport A2A proxies.
-func buildRuntime(logger *zap.SugaredLogger, registry *prometheus.Registry, udsTransport *http.Transport, card *a2a.AgentCard) (*brokerRuntime, error) {
+func buildRuntime(logger *zap.SugaredLogger, registry *prometheus.Registry, udsTransport *http.Transport, card *a2a.AgentCard, agentDeploy *kmv1.AgentDeploy) (*brokerRuntime, error) {
 	counters := broker.NewCounters(registry)
 	rt := &brokerRuntime{
 		logger:      logger,
 		counters:    counters,
+		agentDeploy: agentDeploy,
 		enabled:     map[a2a.TransportProtocol]bool{},
 		httpProxies: map[a2a.TransportProtocol]http.Handler{},
 		passthrough: broker.NewPassthroughReverseProxy(udsTransport, counters),

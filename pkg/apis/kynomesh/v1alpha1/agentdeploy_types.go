@@ -142,6 +142,12 @@ type AgentDeployList struct {
 	Items           []AgentDeploy `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
+// HeadlessServiceName returns the name of the headless Service for each
+// AgentDeploy.
+func (ad *AgentDeploy) HeadlessServiceName() string {
+	return ad.Name + "-headless"
+}
+
 // SimpleCopy returns a slimmed-down copy of the AgentDeploy suitable for
 // embedding into a downstream consumer.
 func (ad *AgentDeploy) SimpleCopy() AgentDeploy {

@@ -32,6 +32,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 	sharedtls "github.com/kynoproj/kynomesh/pkg/shared/tls"
 )
 
@@ -105,7 +106,7 @@ func TestBuildRuntime_CardBranches(t *testing.T) {
 				return grpc.NewClient("passthrough:///stub", grpc.WithTransportCredentials(insecure.NewCredentials()))
 			})
 
-			rt, err := buildRuntime(zap.NewNop().Sugar(), prometheus.NewRegistry(), &http.Transport{}, tc.card)
+			rt, err := buildRuntime(zap.NewNop().Sugar(), prometheus.NewRegistry(), &http.Transport{}, tc.card, nil)
 			require.NoError(t, err)
 			require.NotNil(t, rt)
 
@@ -135,6 +136,20 @@ func TestBuildRuntime_CardBranches(t *testing.T) {
 	}
 }
 
+// TestBuildRuntime_StashesAgentDeploy confirms the AgentDeploy decoded
+// at startup is reachable on brokerRuntime for downstream consumers
+// (no re-decoding from env required later).
+func TestBuildRuntime_StashesAgentDeploy(t *testing.T) {
+	want := &kmv1.AgentDeploy{}
+	want.Namespace = "demo-ns"
+	want.Name = "demo-ad"
+
+	rt, err := buildRuntime(zap.NewNop().Sugar(), prometheus.NewRegistry(), &http.Transport{}, nil, want)
+	require.NoError(t, err)
+	require.NotNil(t, rt)
+	assert.Same(t, want, rt.agentDeploy, "buildRuntime should stash the AgentDeploy pointer verbatim")
+}
+
 // TestBuildRuntime_GRPCDialError ensures a dial failure surfaces as a
 // wrapped error containing the socket path, so operators can diagnose
 // missing or mis-permissioned sockets from the log line alone.
@@ -147,7 +162,7 @@ func TestBuildRuntime_GRPCDialError(t *testing.T) {
 	card := &a2a.AgentCard{SupportedInterfaces: []*a2a.AgentInterface{
 		{ProtocolBinding: a2a.TransportProtocolGRPC, URL: "x:50051"},
 	}}
-	rt, err := buildRuntime(zap.NewNop().Sugar(), prometheus.NewRegistry(), &http.Transport{}, card)
+	rt, err := buildRuntime(zap.NewNop().Sugar(), prometheus.NewRegistry(), &http.Transport{}, card, nil)
 	require.Error(t, err)
 	assert.Nil(t, rt)
 	assert.ErrorIs(t, err, sentinel)
