@@ -36,10 +36,8 @@ import (
 	sharedtls "github.com/kynoproj/kynomesh/pkg/shared/tls"
 )
 
-// withStubGRPCDial overrides the package-level dialAgentGRPC seam for the
-// duration of the test so buildRuntime can take its gRPC branch without
-// needing the production UDS path on disk.
-func withStubGRPCDial(t *testing.T, fn func(string) (*grpc.ClientConn, error)) {
+// withStubGRPCDial overrides dialAgentGRPC for the duration of the test.
+func withStubGRPCDial(t *testing.T, fn func(agentDial) (*grpc.ClientConn, error)) {
 	t.Helper()
 	prev := dialAgentGRPC
 	dialAgentGRPC = fn
@@ -102,11 +100,11 @@ func TestBuildRuntime_CardBranches(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			withStubGRPCDial(t, func(_ string) (*grpc.ClientConn, error) {
+			withStubGRPCDial(t, func(_ agentDial) (*grpc.ClientConn, error) {
 				return grpc.NewClient("passthrough:///stub", grpc.WithTransportCredentials(insecure.NewCredentials()))
 			})
 
-			rt, err := buildRuntime(zap.NewNop().Sugar(), prometheus.NewRegistry(), &http.Transport{}, tc.card, nil)
+			rt, err := buildRuntime(zap.NewNop().Sugar(), prometheus.NewRegistry(), &http.Transport{}, tc.card, nil, agentDial{udsPath: "/tmp/stub"})
 			require.NoError(t, err)
 			require.NotNil(t, rt)
 
@@ -144,43 +142,44 @@ func TestBuildRuntime_StashesAgentDeploy(t *testing.T) {
 	want.Namespace = "demo-ns"
 	want.Name = "demo-ad"
 
-	rt, err := buildRuntime(zap.NewNop().Sugar(), prometheus.NewRegistry(), &http.Transport{}, nil, want)
+	rt, err := buildRuntime(zap.NewNop().Sugar(), prometheus.NewRegistry(), &http.Transport{}, nil, want, agentDial{udsPath: "/tmp/stub"})
 	require.NoError(t, err)
 	require.NotNil(t, rt)
 	assert.Same(t, want, rt.agentDeploy, "buildRuntime should stash the AgentDeploy pointer verbatim")
 }
 
 // TestBuildRuntime_GRPCDialError ensures a dial failure surfaces as a
-// wrapped error containing the socket path, so operators can diagnose
-// missing or mis-permissioned sockets from the log line alone.
+// wrapped error containing the dial target, so operators can diagnose
+// missing or mis-permissioned agents from the log line alone.
 func TestBuildRuntime_GRPCDialError(t *testing.T) {
 	sentinel := errors.New("dial blew up")
-	withStubGRPCDial(t, func(_ string) (*grpc.ClientConn, error) {
+	withStubGRPCDial(t, func(_ agentDial) (*grpc.ClientConn, error) {
 		return nil, sentinel
 	})
 
 	card := &a2a.AgentCard{SupportedInterfaces: []*a2a.AgentInterface{
 		{ProtocolBinding: a2a.TransportProtocolGRPC, URL: "x:50051"},
 	}}
-	rt, err := buildRuntime(zap.NewNop().Sugar(), prometheus.NewRegistry(), &http.Transport{}, card, nil)
+	rt, err := buildRuntime(zap.NewNop().Sugar(), prometheus.NewRegistry(), &http.Transport{}, card, nil, agentDial{udsPath: "/tmp/stub"})
 	require.Error(t, err)
 	assert.Nil(t, rt)
 	assert.ErrorIs(t, err, sentinel)
-	assert.Contains(t, err.Error(), "dial agent gRPC over UDS")
+	assert.Contains(t, err.Error(), "dial agent gRPC")
 }
 
-// TestDialAgentGRPCOverUDS verifies the production helper produces a
-// usable *grpc.ClientConn for a "unix://<path>" target. grpc.NewClient
-// does lazy dialing so the socket does not need to exist for this call
-// to succeed; what matters is the returned client is wired with the
-// insecure-credential transport that the broker depends on.
-func TestDialAgentGRPCOverUDS(t *testing.T) {
+func TestDialAgentGRPCDefault_UDS(t *testing.T) {
 	sock := filepath.Join(t.TempDir(), "agent.sock")
-	conn, err := dialAgentGRPCOverUDS(sock)
+	conn, err := dialAgentGRPCDefault(agentDial{udsPath: sock})
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = conn.Close() })
-	assert.NotNil(t, conn)
 	assert.Equal(t, "unix://"+sock, conn.Target())
+}
+
+func TestDialAgentGRPCDefault_TCP(t *testing.T) {
+	conn, err := dialAgentGRPCDefault(agentDial{tcpAddr: "127.0.0.1:8001"})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = conn.Close() })
+	assert.Equal(t, "127.0.0.1:8001", conn.Target())
 }
 
 func TestEnabledTransportNames(t *testing.T) {

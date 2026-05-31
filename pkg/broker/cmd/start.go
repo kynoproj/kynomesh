@@ -47,12 +47,8 @@ import (
 	"github.com/kynoproj/kynomesh/pkg/version"
 )
 
-// probeAgentCard fetches the AgentCard over UDS. It returns a nil card
-// with a nil error when the agent responds 404 to the well-known path —
-// the agent is reachable but exposes no A2A surface (e.g., an A2A-client
-// node that serves only its own non-A2A REST APIs). Every other error
-// (dial failure, timeout, 5xx, malformed JSON) is propagated so the
-// liveness gate at startup still rejects a dead or broken agent.
+// probeAgentCard fetches the AgentCard, returning (nil, nil) on 404 so
+// callers can distinguish "no A2A surface" from "agent unreachable".
 func probeAgentCard(ctx context.Context, client *http.Client, baseURL string) (*a2a.AgentCard, error) {
 	card, err := agentcard.NewResolver(client).Resolve(ctx, baseURL)
 	if err == nil {
@@ -72,14 +68,74 @@ const (
 	agentProbeTimeout = 5 * time.Second
 
 	grpcContentType = "application/grpc"
-)
 
-// For testing overwrite.
-var agentSocketPath = kmv1.BrokerSocketPath
+	// AdvertiseHostDefault is the AgentCard host used when the broker
+	// runs outside a Kubernetes pod (local dev).
+	AdvertiseHostDefault = "127.0.0.1"
+)
 
 const clusterDNSDomain = "cluster.local"
 
-// loadInjectedAgentDeploy loads the AgentDeploy obj from the ENV
+// DefaultLocalAgentAddr is the default agent target in local-dev mode.
+const DefaultLocalAgentAddr = "127.0.0.1:8000"
+
+// inClusterFn is a test seam; production reads POD_NAME from the downward API.
+var inClusterFn = func() bool {
+	return os.Getenv(kmv1.EnvPodName) != ""
+}
+
+// udsAgentPath is a test seam; production uses kmv1.BrokerSocketPath.
+var udsAgentPath = kmv1.BrokerSocketPath
+
+// tcpAgentAddr is a test seam; production uses DefaultLocalAgentAddr.
+var tcpAgentAddr = DefaultLocalAgentAddr
+
+// agentDial holds either the in-pod UDS path or the local-dev TCP host:port.
+type agentDial struct {
+	udsPath string
+	tcpAddr string
+}
+
+func (d agentDial) isUDS() bool { return d.udsPath != "" }
+func (d agentDial) target() string {
+	if d.isUDS() {
+		return d.udsPath
+	}
+	return d.tcpAddr
+}
+
+func resolveAgentDial() agentDial {
+	if inClusterFn() {
+		return agentDial{udsPath: udsAgentPath}
+	}
+	return agentDial{tcpAddr: tcpAgentAddr}
+}
+
+func newAgentHTTPClient(d agentDial) *http.Client {
+	if d.isUDS() {
+		return broker.NewUDSHTTPClient(d.udsPath)
+	}
+	return broker.NewTCPHTTPClient(d.tcpAddr)
+}
+
+// resolveAdvertiseHost returns the AgentCard host. In-cluster it must
+// come from the injected AgentDeploy; local-dev falls back to the default.
+func resolveAdvertiseHost(logger *zap.SugaredLogger, ad *kmv1.AgentDeploy, dial agentDial) (string, error) {
+	if dial.isUDS() {
+		host := advertiseHostFor(ad)
+		if host == "" {
+			return "", fmt.Errorf("in-cluster broker requires %s; refusing to start", kmv1.EnvAgentDeployObject)
+		}
+		logger.Infow("Derived broker advertise host from injected AgentDeploy",
+			"advertiseHost", host)
+		return host, nil
+	}
+	logger.Infow("Local-dev mode: using default broker advertise host",
+		"advertiseHost", AdvertiseHostDefault, "agent", dial.tcpAddr)
+	return AdvertiseHostDefault, nil
+}
+
+// loadInjectedAgentDeploy returns (nil, nil) when the env var is unset.
 func loadInjectedAgentDeploy() (*kmv1.AgentDeploy, error) {
 	encoded := os.Getenv(kmv1.EnvAgentDeployObject)
 	if encoded == "" {
@@ -88,8 +144,7 @@ func loadInjectedAgentDeploy() (*kmv1.AgentDeploy, error) {
 	return kmv1.DecodeAgentDeploy(encoded)
 }
 
-// advertiseHostFor returns the broker's in-cluster FQDN for the given
-// AgentDeploy.
+// advertiseHostFor returns the headless-service FQDN for ad, or "" if ad is nil.
 func advertiseHostFor(ad *kmv1.AgentDeploy) string {
 	if ad == nil {
 		return ""
@@ -98,65 +153,57 @@ func advertiseHostFor(ad *kmv1.AgentDeploy) string {
 		ad.HeadlessServiceName(), ad.Namespace, clusterDNSDomain)
 }
 
-// brokerRuntime aggregates the pieces of broker state that live for the
-// process's whole lifetime.
+// brokerRuntime holds process-lifetime broker state.
 type brokerRuntime struct {
 	logger      *zap.SugaredLogger
 	counters    *broker.Counters
 	agentDeploy *kmv1.AgentDeploy
 	enabled     map[a2a.TransportProtocol]bool
 	httpProxies map[a2a.TransportProtocol]http.Handler
-	// passthrough is the catch-all HTTP reverse proxy used for any
-	// non-canonical route.
+	// passthrough is the catch-all reverse proxy for non-A2A traffic.
 	passthrough http.Handler
 	grpcServer  *grpc.Server
-	grpcConn    *grpc.ClientConn // nil if gRPC isn't enabled
+	grpcConn    *grpc.ClientConn
 }
 
-// brokerStack groups the constructed-but-not-yet-serving pieces of the
-// broker.
+// brokerStack is the constructed-but-not-yet-serving result of assembleBroker.
 type brokerStack struct {
 	rt               *brokerRuntime
 	proxySrv         *http.Server
 	introspectionSrv *http.Server
 }
 
-// assembleBroker performs every step required to bring the broker up to
-// the point of serving traffic: probe the agent over UDS, decide which
-// transports to enable, and wire both the multiplexed traffic server and
-// the introspection server.
 func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int) (*brokerStack, error) {
 	injectedAD, err := loadInjectedAgentDeploy()
 	if err != nil {
 		return nil, fmt.Errorf("decode %s: %w", kmv1.EnvAgentDeployObject, err)
 	}
 
-	advertiseHost := advertiseHostFor(injectedAD)
-	if advertiseHost == "" {
-		return nil, fmt.Errorf("no advertise host: %s not injected and no override supplied", kmv1.EnvAgentDeployObject)
+	dial := resolveAgentDial()
+	advertiseHost, err := resolveAdvertiseHost(logger, injectedAD, dial)
+	if err != nil {
+		return nil, err
 	}
-	logger.Infow("Derived broker advertise host from injected AgentDeploy",
-		"advertiseHost", advertiseHost)
 
-	agentHTTPClient := broker.NewUDSHTTPClient(agentSocketPath)
+	agentHTTPClient := newAgentHTTPClient(dial)
 	agentHTTPTransport := agentHTTPClient.Transport.(*http.Transport)
 
 	probeCtx, probeCancel := context.WithTimeout(context.Background(), agentProbeTimeout)
 	agentCard, err := probeAgentCard(probeCtx, agentHTTPClient, "http://"+broker.AgentBackendHost)
 	probeCancel()
 	if err != nil {
-		return nil, fmt.Errorf("fetch AgentCard over UDS at %q: %w", agentSocketPath, err)
+		return nil, fmt.Errorf("fetch AgentCard from agent at %q: %w", dial.target(), err)
 	}
 	if agentCard == nil {
-		logger.Infow("Agent reachable over UDS but exposes no AgentCard — running passthrough-only",
-			"socket", agentSocketPath)
+		logger.Infow("Agent reachable but exposes no AgentCard — running passthrough-only",
+			"agent", dial.target())
 	} else {
-		logger.Infow("Agent reachable over UDS",
-			"socket", agentSocketPath, "agentName", agentCard.Name)
+		logger.Infow("Agent reachable",
+			"agent", dial.target(), "agentName", agentCard.Name)
 	}
 
 	metricsRegistry := prometheus.NewRegistry()
-	rt, err := buildRuntime(logger, metricsRegistry, agentHTTPTransport, agentCard, injectedAD)
+	rt, err := buildRuntime(logger, metricsRegistry, agentHTTPTransport, agentCard, injectedAD, dial)
 	if err != nil {
 		return nil, fmt.Errorf("build broker runtime: %w", err)
 	}
@@ -215,10 +262,7 @@ func Start(port, introspectionPort int) {
 	logger.Infow("Broker stopped cleanly")
 }
 
-// runServeLoop owns the two TLS listeners' lifetimes. It returns nil on
-// a clean shutdown (either ctx cancelled or a listener returned
-// http.ErrServerClosed) and a wrapped error if a listener failed to
-// start or exited abnormally.
+// runServeLoop runs both TLS listeners until ctx is cancelled or one exits with an error.
 func runServeLoop(ctx context.Context, logger *zap.SugaredLogger, stack *brokerStack, port, introspectionPort int) error {
 	rt, proxySrv, introspectionSrv := stack.rt, stack.proxySrv, stack.introspectionSrv
 	defer func() {
@@ -284,8 +328,6 @@ func runServeLoop(ctx context.Context, logger *zap.SugaredLogger, stack *brokerS
 	return nil
 }
 
-// newIntrospectionServer builds a minimal *http.Server for the broker's
-// secondary listener.
 func newIntrospectionServer(port int, handler http.Handler, cert *tls.Certificate) *http.Server {
 	return &http.Server{
 		Addr:              fmt.Sprintf(":%d", port),
@@ -298,21 +340,9 @@ func newIntrospectionServer(port int, handler http.Handler, cert *tls.Certificat
 	}
 }
 
-// buildRuntime inspects the agent's card and provisions the per-transport
-// proxies that match the advertised SupportedInterfaces.
-//
-//   - JSON-RPC and REST share udsTransport, forwarded by an
-//     httputil.ReverseProxy that targets a synthetic
-//     http://kynomesh-agent host.
-//   - gRPC opens a long-lived *grpc.ClientConn against
-//     "unix://<BrokerSocketPath>" and installs an UnknownServiceHandler
-//     that forwards every method to that conn.
-//   - Unknown ProtocolBindings are skipped with a warning.
-//   - A nil card means the agent exposes no A2A surface (e.g., an
-//     A2A-client node serving only non-A2A REST). The runtime keeps the
-//     catch-all passthrough so the agent's own HTTP surface remains
-//     reachable, and registers no per-transport A2A proxies.
-func buildRuntime(logger *zap.SugaredLogger, registry *prometheus.Registry, udsTransport *http.Transport, card *a2a.AgentCard, agentDeploy *kmv1.AgentDeploy) (*brokerRuntime, error) {
+// buildRuntime wires per-transport proxies for the agent's advertised interfaces.
+// A nil card yields a passthrough-only runtime.
+func buildRuntime(logger *zap.SugaredLogger, registry *prometheus.Registry, agentTransport *http.Transport, card *a2a.AgentCard, agentDeploy *kmv1.AgentDeploy, dial agentDial) (*brokerRuntime, error) {
 	counters := broker.NewCounters(registry)
 	rt := &brokerRuntime{
 		logger:      logger,
@@ -320,7 +350,7 @@ func buildRuntime(logger *zap.SugaredLogger, registry *prometheus.Registry, udsT
 		agentDeploy: agentDeploy,
 		enabled:     map[a2a.TransportProtocol]bool{},
 		httpProxies: map[a2a.TransportProtocol]http.Handler{},
-		passthrough: broker.NewPassthroughReverseProxy(udsTransport, counters),
+		passthrough: broker.NewPassthroughReverseProxy(agentTransport, counters),
 	}
 
 	if card == nil {
@@ -330,15 +360,15 @@ func buildRuntime(logger *zap.SugaredLogger, registry *prometheus.Registry, udsT
 	for _, iface := range card.SupportedInterfaces {
 		switch iface.ProtocolBinding {
 		case a2a.TransportProtocolJSONRPC:
-			rt.httpProxies[iface.ProtocolBinding] = broker.NewJSONRPCReverseProxy(udsTransport, rt.counters)
+			rt.httpProxies[iface.ProtocolBinding] = broker.NewJSONRPCReverseProxy(agentTransport, rt.counters)
 			rt.enabled[iface.ProtocolBinding] = true
 		case a2a.TransportProtocolHTTPJSON:
-			rt.httpProxies[iface.ProtocolBinding] = broker.NewRESTReverseProxy(udsTransport, rt.counters)
+			rt.httpProxies[iface.ProtocolBinding] = broker.NewRESTReverseProxy(agentTransport, rt.counters)
 			rt.enabled[iface.ProtocolBinding] = true
 		case a2a.TransportProtocolGRPC:
-			conn, err := dialAgentGRPC(agentSocketPath)
+			conn, err := dialAgentGRPC(dial)
 			if err != nil {
-				return nil, fmt.Errorf("dial agent gRPC over UDS at %q: %w", agentSocketPath, err)
+				return nil, fmt.Errorf("dial agent gRPC at %q: %w", dial.target(), err)
 			}
 			rt.grpcConn = conn
 			rt.grpcServer = grpc.NewServer(broker.GRPCPassthroughOptions(conn, rt.counters)...)
@@ -351,20 +381,22 @@ func buildRuntime(logger *zap.SugaredLogger, registry *prometheus.Registry, udsT
 	return rt, nil
 }
 
-// dialAgentGRPC is the seam used by buildRuntime to open the broker's
-// long-lived gRPC connection to the user agent. For testing overwrite
-// so that it does not depend on kmv1.BrokerSocketPath being present on disk.
-var dialAgentGRPC = dialAgentGRPCOverUDS
+// dialAgentGRPC is a test seam.
+var dialAgentGRPC = dialAgentGRPCDefault
 
-// dialAgentGRPCOverUDS opens a connection to the agent's gRPC
-// server over the shared Unix Domain Socket.
-func dialAgentGRPCOverUDS(socketPath string) (*grpc.ClientConn, error) {
-	return grpc.NewClient("unix://"+socketPath, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func dialAgentGRPCDefault(d agentDial) (*grpc.ClientConn, error) {
+	if d.isUDS() {
+		return grpcNewClient("unix://" + d.udsPath)
+	}
+	return grpcNewClient(d.tcpAddr)
 }
 
-// newMultiplexedServer builds the single *http.Server that fronts every
-// enabled transport over TLS. HTTP/2 is negotiated via ALPN ("h2"),
-// which lets gRPC share the listener with HTTP/1.1 JSON-RPC and REST.
+func grpcNewClient(target string) (*grpc.ClientConn, error) {
+	return grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
+}
+
+// newMultiplexedServer builds the shared TLS *http.Server. HTTP/2 is
+// negotiated via ALPN so gRPC shares the listener with HTTP/1.1 traffic.
 func newMultiplexedServer(
 	port int,
 	rt *brokerRuntime,
@@ -379,14 +411,9 @@ func newMultiplexedServer(
 		httpMux.Handle(broker.JSONRPCEndpoint, h)
 	}
 	if h, ok := rt.httpProxies[a2a.TransportProtocolHTTPJSON]; ok {
-		// REST mounts under RESTEndpoint ("/api/"). The trailing slash
-		// on the pattern makes http.ServeMux treat it as a subtree
-		// root. The downstream agent serves the same path layout, so
-		// no prefix stripping is needed.
+		// Trailing slash makes ServeMux treat /api/ as a subtree root.
 		httpMux.Handle(broker.RESTEndpoint+"/", h)
 	}
-	// Catch-all: any HTTP request not matching a more-specific A2A
-	// route falls through to the agent's HTTP surface.
 	if rt.passthrough != nil {
 		httpMux.Handle("/", rt.passthrough)
 	}
@@ -406,31 +433,26 @@ func newMultiplexedServer(
 		TLSConfig: &tls.Config{
 			Certificates: []tls.Certificate{*cert},
 			MinVersion:   tls.VersionTLS12,
-			// ALPN advertises h2 first so gRPC clients land on HTTP/2;
-			// http/1.1 stays for the JSON-RPC and REST transports.
+			// ALPN advertises h2 first so gRPC lands on HTTP/2.
 			NextProtos: []string{"h2", "http/1.1"},
 		},
 	}
-	// Wire the http2 server into srv so ServeTLS will dispatch H2 frames
-	// to net/http's HTTP/2 stack — which then calls our Handler with
-	// r.ProtoMajor == 2 for gRPC traffic.
 	if err := http2.ConfigureServer(srv, &http2.Server{}); err != nil {
 		return nil, fmt.Errorf("configure http/2: %w", err)
 	}
 	return srv, nil
 }
 
-// isGRPCRequest reports whether r looks like a gRPC call. gRPC speaks
-// HTTP/2 with a Content-Type of "application/grpc" (optionally followed
-// by a subtype such as "+proto"); anything else is REST or JSON-RPC.
+// isGRPCRequest reports whether r is an HTTP/2 request with a gRPC Content-Type.
 func isGRPCRequest(r *http.Request) bool {
 	if r.ProtoMajor != 2 {
 		return false
 	}
+	// HTTP/2 with a Content-Type of "application/grpc" (optionally followed
+	// by a subtype such as "+proto").
 	return strings.HasPrefix(r.Header.Get("Content-Type"), grpcContentType)
 }
 
-// enabledTransportNames returns a stable string slice for logging.
 func enabledTransportNames(enabled map[a2a.TransportProtocol]bool) []string {
 	out := make([]string, 0, len(enabled))
 	for k := range enabled {
