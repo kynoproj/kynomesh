@@ -3,6 +3,7 @@
 We use the following static code analysis tools:
 
 - `golangci-lint` for compile time linting.
+- [CodeQL](https://codeql.github.com/) for code analysis
 - [Snyk](https://app.snyk.io/org/kynoproj/projects) for image scanning.
 
 These are at least run daily or on each pull request.

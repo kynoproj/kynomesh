@@ -24,11 +24,8 @@ import (
 	"github.com/a2aproject/a2a-go/v2/a2aclient/agentcard"
 )
 
-// NewAgentCardProxy returns an http.Handler that, for every incoming
-// request, fetches the AgentCard from the user's agent over the supplied
-// HTTP client (typically the UDS-dialling client from NewUDSHTTPClient),
-// filters and rewrites SupportedInterfaces down to the transports the
-// broker actually exposes, and serves the result.
+// NewAgentCardProxy serves the agent's AgentCard with SupportedInterfaces
+// filtered to enabled transports and URLs rewritten to advertiseHost:port.
 func NewAgentCardProxy(agentClient *http.Client, advertiseHost string, port int, enabled map[a2a.TransportProtocol]bool) http.Handler {
 	resolver := agentcard.NewResolver(agentClient)
 	agentBaseURL := "http://" + AgentBackendHost
@@ -59,16 +56,13 @@ func (p *agentCardProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	card.SupportedInterfaces = rewriteAgentCardInterfaces(card.SupportedInterfaces, p.advertiseHost, p.port, p.enabled)
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(card); err != nil {
-		// Header was already written if Encode flushed; nothing useful
-		// we can do here — the client will see a truncated body.
+		// Header is already on the wire if Encode flushed; nothing to do.
 		return
 	}
 }
 
-// rewriteAgentCardInterfaces returns a new slice containing only the
-// interfaces whose ProtocolBinding is in enabled, with each URL rewritten
-// to the broker's external endpoint for that transport. Order is
-// preserved.
+// rewriteAgentCardInterfaces keeps only enabled interfaces and rewrites
+// each URL to the broker's endpoint. Order is preserved.
 func rewriteAgentCardInterfaces(in []*a2a.AgentInterface, advertiseHost string, port int, enabled map[a2a.TransportProtocol]bool) []*a2a.AgentInterface {
 	out := make([]*a2a.AgentInterface, 0, len(in))
 	for _, iface := range in {
