@@ -1,4 +1,4 @@
-name: release
+name: Release
 
 on:
   push:
@@ -35,7 +35,7 @@ jobs:
           chmod -R +x dist
       - name: Make checksums
         run: make checksums
-      - name: store artifacts
+      - name: Store artifacts
         uses: actions/upload-artifact@v5
         with:
           name: binaries
@@ -47,7 +47,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'kynoproj/kynomesh'
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v6
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -67,14 +68,14 @@ jobs:
           name: binaries
           path: dist/
 
-      - name: Registry Login
+      - name: Registry login
         uses: docker/login-action@v4
         with:
           registry: quay.io
           username: ${{ secrets.QUAYIO_USERNAME }}
           password: ${{ secrets.QUAYIO_PASSWORD }}
 
-      - name: Set Version
+      - name: Set version
         id: version
         run: |
           tag=$(basename $GITHUB_REF)
@@ -88,6 +89,7 @@ jobs:
           IMAGE_NAMESPACE=${{ secrets.QUAYIO_ORG }} VERSION=${{ steps.version.outputs.VERSION }} DOCKER_PUSH=true make image-multi
 
   bom:
+    name: Bom
     runs-on: ubuntu-latest
     if: github.repository == 'kynoproj/kynomesh'
     needs: [build-push-linux-multi]
@@ -118,13 +120,14 @@ jobs:
           path: /tmp/sbom.tar.gz
 
   release:
+    name: Release
     runs-on: ubuntu-latest
     if: github.repository == 'kynoproj/kynomesh'
     needs: [build-push-linux-multi, bom]
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-      - name: Set Version
+      - name: Set version
         run: |
           if [ ${GITHUB_REF##*/} = main ]; then
             echo "VERSION=latest" >> $GITHUB_ENV
@@ -140,7 +143,7 @@ jobs:
         with:
           name: sbom.tar.gz
           path: /tmp
-      - name: Registry Login
+      - name: Registry login
         uses: docker/login-action@v4
         with:
           registry: quay.io
