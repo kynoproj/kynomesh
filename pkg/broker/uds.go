@@ -22,46 +22,27 @@ import (
 	"net/http"
 )
 
-// AgentBackendHost is the synthetic Host header value the broker uses
-// when dialling the agent over a Unix Domain Socket. UDS has no real
-// host; net/http still requires a non-empty URL.Host for outgoing
-// requests, so we plant a fixed token the agent will never act on.
+// AgentBackendHost is the synthetic URL.Host the broker uses when
+// dialling the agent. net/http requires a non-empty Host; the transport
+// rewires the actual dial.
 const AgentBackendHost = "kynomesh-agent"
 
-// NewUDSHTTPTransport returns an *http.Transport whose connections are
-// dialled to the given Unix Domain Socket path instead of TCP. The
-// transport ignores the request URL's host/port — every request, no
-// matter what URL it carries, ends up at socketPath.
-//
-// This is the building block for both the AgentCard fetch path (used by
-// agentcard.Resolver) and the HTTP reverse proxies that forward
-// JSON-RPC and REST.
+// NewUDSHTTPTransport returns a Transport that pins every dial to socketPath.
 func NewUDSHTTPTransport(socketPath string) *http.Transport {
 	return &http.Transport{
 		DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
 			var d net.Dialer
 			return d.DialContext(ctx, "unix", socketPath)
 		},
-		// MaxIdleConnsPerHost on a UDS isn't a real concern since there's
-		// one server, but lifting the default (2) avoids serialising
-		// bursts of small requests.
 		MaxIdleConnsPerHost: 16,
 	}
 }
 
-// NewUDSHTTPClient wraps NewUDSHTTPTransport in an *http.Client. The
-// caller is expected to use any URL it wants (typically "http://kynomesh-agent/...");
-// the transport rewires the actual dial to the socket regardless.
 func NewUDSHTTPClient(socketPath string) *http.Client {
 	return &http.Client{Transport: NewUDSHTTPTransport(socketPath)}
 }
 
-// NewTCPHTTPTransport returns an *http.Transport that pins every dial to
-// tcpAddr (host:port) regardless of the request URL's host. It mirrors
-// NewUDSHTTPTransport's contract: callers continue to use URLs with the
-// synthetic AgentBackendHost; the transport intercepts the dial. This
-// lets the broker run outside Kubernetes (no UDS available) by pointing
-// at a TCP-listening agent on the developer's machine.
+// NewTCPHTTPTransport returns a Transport that pins every dial to tcpAddr.
 func NewTCPHTTPTransport(tcpAddr string) *http.Transport {
 	return &http.Transport{
 		DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
@@ -72,7 +53,6 @@ func NewTCPHTTPTransport(tcpAddr string) *http.Transport {
 	}
 }
 
-// NewTCPHTTPClient is the TCP counterpart to NewUDSHTTPClient.
 func NewTCPHTTPClient(tcpAddr string) *http.Client {
 	return &http.Client{Transport: NewTCPHTTPTransport(tcpAddr)}
 }
