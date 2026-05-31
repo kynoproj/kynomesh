@@ -7,8 +7,6 @@ This doc explains how to set up a development environment for Kynomesh.
 1. [`go`](https://golang.org/doc/install) 1.26+.
 1. [`git`](https://help.github.com/articles/set-up-git/).
 1. [`kubectl`](https://kubernetes.io/docs/tasks/tools/#kubectl).
-1. [`pandoc`](https://pandoc.org/installing.html) 3.2.1 for generating API
-   markdown.
 1. A local Kubernetes cluster for development usage, pick either one of
    [`k3d`](https://k3d.io/), [`kind`](https://kind.sigs.k8s.io/), or
    [`minikube`](https://minikube.sigs.k8s.io/docs/start/).
@@ -52,11 +50,11 @@ kubectl patch -n kube-system deployment metrics-server --type=json -p '[{"op":"a
 
 - `make test` Run unit tests.
 
-- `make test-*` Run one e2e test suite. e.g. `make test-kafka-e2e` to run the
-  kafka e2e suite.
+- `make test-*` Run one e2e test suite. e.g. `make test-e2e` to run the e2e
+  suite.
 
-- `make Test*` Run one e2e test case. e.g. `make TestKafkaSourceSink` to run the
-  `TestKafkaSourceSink` case in the kafka e2e suite.
+- `make Test*` Run one e2e test case. e.g. `make TestXxx` to run the `TestXxx`
+  case.
 
 - `make image` Build container image, and import it to `k3d`, `kind`, or
   `minikube` cluster if corresponding `KUBECONFIG` is sourced.

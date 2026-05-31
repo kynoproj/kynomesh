@@ -23,25 +23,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-// Counters owns the broker's per-transport in-flight gauge.
-//
-// Transports:
-//
-//   - "jsonrpc"     — A2A JSON-RPC over HTTP/1.1
-//   - "rest"        — A2A REST/HTTP+JSON over HTTP/1.1
-//   - "grpc"        — A2A gRPC over HTTP/2
-//   - "passthrough" — non-canonical HTTP traffic forwarded to the agent
-//
-// Each transport's gauge holds the count of in-flight requests; an
-// HTTP/2-streaming gRPC call holds its slot for the whole stream
-// lifetime, not just a single request.
+// Counters owns the broker's per-transport in-flight gauge, labeled by
+// transport: jsonrpc, rest, grpc, passthrough. A streaming gRPC call
+// holds its slot for the stream's lifetime, not per request.
 type Counters struct {
 	inflight *prometheus.GaugeVec
 }
 
-// NewCounters registers the in-flight gauge on registry. Use a fresh
-// prometheus.NewRegistry() in tests to avoid bleed-through; production
-// should pass the registry that backs /metrics.
+// NewCounters registers the in-flight gauge. Use a fresh registry in
+// tests to avoid bleed-through across test cases.
 func NewCounters(registry prometheus.Registerer) *Counters {
 	return &Counters{
 		inflight: promauto.With(registry).NewGaugeVec(
@@ -54,25 +44,14 @@ func NewCounters(registry prometheus.Registerer) *Counters {
 	}
 }
 
-// JSONRPC returns the gauge for the JSON-RPC transport.
-func (c *Counters) JSONRPC() prometheus.Gauge { return c.inflight.WithLabelValues("jsonrpc") }
-
-// REST returns the gauge for the REST/HTTP+JSON transport.
-func (c *Counters) REST() prometheus.Gauge { return c.inflight.WithLabelValues("rest") }
-
-// GRPC returns the gauge for the gRPC transport.
-func (c *Counters) GRPC() prometheus.Gauge { return c.inflight.WithLabelValues("grpc") }
-
-// Passthrough returns the gauge for non-A2A HTTP traffic.
+func (c *Counters) JSONRPC() prometheus.Gauge     { return c.inflight.WithLabelValues("jsonrpc") }
+func (c *Counters) REST() prometheus.Gauge        { return c.inflight.WithLabelValues("rest") }
+func (c *Counters) GRPC() prometheus.Gauge        { return c.inflight.WithLabelValues("grpc") }
 func (c *Counters) Passthrough() prometheus.Gauge { return c.inflight.WithLabelValues("passthrough") }
 
-// Collector returns the underlying GaugeVec so the introspection
-// handler can MustRegister it without exposing the field directly.
 func (c *Counters) Collector() prometheus.Collector { return c.inflight }
 
-// wrapHTTP returns an http.Handler that brackets every request with a
-// Gauge Inc/Dec. The defer guarantees the counter balances even when
-// the handler panics.
+// wrapHTTP brackets h with Gauge.Inc/Dec; defer keeps the count balanced through panics.
 func wrapHTTP(gauge prometheus.Gauge, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gauge.Inc()

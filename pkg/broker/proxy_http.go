@@ -24,32 +24,26 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// NewJSONRPCReverseProxy returns the JSON-RPC pass-through handler.
-func NewJSONRPCReverseProxy(udsTransport *http.Transport, counters *Counters) http.Handler {
-	return newUDSReverseProxy(udsTransport, counters.JSONRPC())
+func NewJSONRPCReverseProxy(agentTransport *http.Transport, counters *Counters) http.Handler {
+	return newAgentReverseProxy(agentTransport, counters.JSONRPC())
 }
 
-// NewRESTReverseProxy returns the REST pass-through handler.
-func NewRESTReverseProxy(udsTransport *http.Transport, counters *Counters) http.Handler {
-	return newUDSReverseProxy(udsTransport, counters.REST())
+func NewRESTReverseProxy(agentTransport *http.Transport, counters *Counters) http.Handler {
+	return newAgentReverseProxy(agentTransport, counters.REST())
 }
 
-// NewPassthroughReverseProxy returns the catch-all HTTP pass-through
-// handler. It forwards every request to the agent's UDS unchanged —
-// used for traffic the agent serves outside the canonical A2A routes
-// (UIs, custom REST endpoints, WebSocket upgrades, etc.). Increments
-// the Passthrough counter so non-A2A load is observable separately
-// from A2A traffic.
-func NewPassthroughReverseProxy(udsTransport *http.Transport, counters *Counters) http.Handler {
-	return newUDSReverseProxy(udsTransport, counters.Passthrough())
+// NewPassthroughReverseProxy is the catch-all for non-A2A routes (custom
+// REST, UIs, WebSocket upgrades) so they remain observable separately.
+func NewPassthroughReverseProxy(agentTransport *http.Transport, counters *Counters) http.Handler {
+	return newAgentReverseProxy(agentTransport, counters.Passthrough())
 }
 
-// newUDSReverseProxy builds a httputil.ReverseProxy that forwards to
-// the agent over a Unix Domain Socket. The Director plants a synthetic
-// http://kynomesh-agent base on every outgoing request.
-func newUDSReverseProxy(udsTransport *http.Transport, gauge prometheus.Gauge) http.Handler {
+// newAgentReverseProxy builds a reverse proxy whose Director plants a
+// synthetic AgentBackendHost target; the supplied transport handles the
+// real dial (UDS or TCP).
+func newAgentReverseProxy(agentTransport *http.Transport, gauge prometheus.Gauge) http.Handler {
 	target := &url.URL{Scheme: "http", Host: AgentBackendHost}
 	rp := httputil.NewSingleHostReverseProxy(target)
-	rp.Transport = udsTransport
+	rp.Transport = agentTransport
 	return wrapHTTP(gauge, rp)
 }

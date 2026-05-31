@@ -23,16 +23,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// NewIntrospectionHandler wires up the broker's
-// introspection listener: Prometheus metrics, liveness, readiness, etc.
+// NewIntrospectionHandler serves /metrics, /healthz (liveness), and /readyz.
 func NewIntrospectionHandler(registry *prometheus.Registry, ready func() error) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		// Liveness only proves the process is running. The agent UDS
-		// might be unreachable, the transports might be wedged — that's
-		// what /readyz is for. /healthz returns 200 as long as the HTTP
-		// server is serving.
+		// /healthz is liveness only — agent reachability is /readyz.
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
