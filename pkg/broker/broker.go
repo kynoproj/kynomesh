@@ -26,8 +26,8 @@ import (
 	"fmt"
 )
 
-const JSONRPCEndpoint = "/rpc"
-const RESTEndpoint = "/api"
+const JSONRPCEndpoint = "/a2a/rpc"
+const RESTEndpoint = "/a2a/api"
 
 // JSONRPCAddr / RESTAddr / GRPCAddr format the URL each transport
 // advertises on its AgentInterface entry. The broker terminates TLS on

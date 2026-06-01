@@ -79,10 +79,9 @@ func stubCardHandler() http.Handler {
 	})
 }
 
-// stubOKHandler returns an http.Handler that always responds 200 with a
-// fixed body. Used to back the runtime's per-transport proxy slots so
-// the multiplexer tests can assert that requests to /rpc or /api/* land
-// on the right slot — without spinning up a real upstream.
+// stubOKHandler always responds 200 with a fixed body, backing the
+// per-transport proxy slots so multiplexer tests can assert routing
+// without a real upstream.
 func stubOKHandler(body string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(body))
@@ -143,7 +142,7 @@ func TestMultiplexedServer_RoutesHTTPTraffic(t *testing.T) {
 		assert.Equal(t, "jsonrpc-ok", string(gotBody))
 	})
 
-	t.Run("REST routes mount under /api", func(t *testing.T) {
+	t.Run("REST routes mount under the REST endpoint", func(t *testing.T) {
 		resp, err := http.Get(ts.URL + broker.RESTEndpoint + "/anything")
 		require.NoError(t, err)
 		t.Cleanup(func() { _ = resp.Body.Close() })
