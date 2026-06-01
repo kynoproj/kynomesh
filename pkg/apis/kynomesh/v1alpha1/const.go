@@ -33,7 +33,9 @@ const (
 	// ENV vars
 	EnvNamespace                   = "NAMESPACE"
 	EnvPodName                     = "POD_NAME"
-	EnvAgentDeployObject           = "KYNOMESH_AGENT_DEPLOY_OBJECT"
+	EnvAgentSetName                = "KYNOMESH_AGENTSET_NAME"
+	EnvAgentDeployName             = "KYNOMESH_AGENTDEPLOY_NAME"
+	EnvAgentDeployObject           = "KYNOMESH_AGENTDEPLOY_OBJECT"
 	EnvLeaderElectionDisabled      = "KYNOMESH_LEADER_ELECTION_DISABLED"
 	EnvLeaderElectionLeaseDuration = "KYNOMESH_LEADER_ELECTION_LEASE_DURATION"
 	EnvLeaderElectionRenewDeadline = "KYNOMESH_LEADER_ELECTION_RENEW_DEADLINE"
