@@ -43,7 +43,7 @@ const (
 	ContainerNameAgent       = "agent"
 	ContainerNameAgentBroker = "broker"
 	ContainerNameController  = "controller-manager"
-	ContainerNameInitSocket  = "init-socket"
+	ContainerNameInit        = "init"
 
 	// Component label values (for KeyComponent)
 	ComponentAgent             = "agent"
@@ -55,10 +55,10 @@ const (
 
 	// AgentBrokerPort is the port the broker listens on inside an AgentDeploy
 	// pod, shared by all three A2A transports (JSON-RPC, REST, gRPC).
-	AgentBrokerPort = 9100
+	AgentBrokerPort = 8490
 	// AgentBrokerIntrospectionPort is a separate port the broker listens on
 	// for observability and probes (/metrics, /healthz, /readyz).
-	AgentBrokerIntrospectionPort = 9101
+	AgentBrokerIntrospectionPort = 8491
 
 	VolumeNameKynomeshRun = "kynomesh-run"                   // Volume name of /var/run/kynowmesh
 	PathKynomeshRun       = "/var/run/kynomesh"              // Volume mount path

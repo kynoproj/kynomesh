@@ -23,7 +23,7 @@ import (
 )
 
 func TestAddrHelpers(t *testing.T) {
-	assert.Equal(t, "https://broker.local:9100/rpc", JSONRPCAddr("broker.local", 9100))
-	assert.Equal(t, "https://broker.local:9101/api", RESTAddr("broker.local", 9101))
+	assert.Equal(t, "https://broker.local:9100"+JSONRPCEndpoint, JSONRPCAddr("broker.local", 9100))
+	assert.Equal(t, "https://broker.local:9101"+RESTEndpoint, RESTAddr("broker.local", 9101))
 	assert.Equal(t, "broker.local:9102", GRPCAddr("broker.local", 9102))
 }

@@ -664,7 +664,7 @@ func newBrokerContainer(image, encodedAgentDeploy string, tmpl *kmv1.ContainerTe
 // that prepares the broker UDS socket path.
 func newInitSocketContainer(image string) corev1.Container {
 	return corev1.Container{
-		Name:         kmv1.ContainerNameInitSocket,
+		Name:         kmv1.ContainerNameInit,
 		Image:        image,
 		Args:         []string{"init-socket"},
 		VolumeMounts: []corev1.VolumeMount{kynomeshRunMount()},

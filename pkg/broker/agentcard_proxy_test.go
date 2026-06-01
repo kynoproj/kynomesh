@@ -96,9 +96,9 @@ func TestAgentCardProxy_RewritesInterfaceURLs(t *testing.T) {
 	for _, iface := range got.SupportedInterfaces {
 		switch iface.ProtocolBinding {
 		case a2a.TransportProtocolJSONRPC:
-			assert.Equal(t, "https://broker.example.com:"+strconv.Itoa(wantPort)+"/rpc", iface.URL)
+			assert.Equal(t, "https://broker.example.com:"+strconv.Itoa(wantPort)+JSONRPCEndpoint, iface.URL)
 		case a2a.TransportProtocolHTTPJSON:
-			assert.Equal(t, "https://broker.example.com:"+strconv.Itoa(wantPort)+"/api", iface.URL)
+			assert.Equal(t, "https://broker.example.com:"+strconv.Itoa(wantPort)+RESTEndpoint, iface.URL)
 		case a2a.TransportProtocolGRPC:
 			assert.Equal(t, "broker.example.com:"+strconv.Itoa(wantPort), iface.URL)
 		}

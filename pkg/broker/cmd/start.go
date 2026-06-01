@@ -411,7 +411,7 @@ func newMultiplexedServer(
 		httpMux.Handle(broker.JSONRPCEndpoint, h)
 	}
 	if h, ok := rt.httpProxies[a2a.TransportProtocolHTTPJSON]; ok {
-		// Trailing slash makes ServeMux treat /api/ as a subtree root.
+		// Trailing slash makes ServeMux treat this as a subtree root.
 		httpMux.Handle(broker.RESTEndpoint+"/", h)
 	}
 	if rt.passthrough != nil {

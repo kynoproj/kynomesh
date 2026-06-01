@@ -285,8 +285,8 @@ func TestBuildPodSpec_MountsKynomeshRunOnRuntimeContainersOnly(t *testing.T) {
 
 	// Init containers: [init-socket, agent (sidecar), init-1].
 	require.Len(t, ps.InitContainers, 3)
-	assert.Equal(t, kmv1.ContainerNameInitSocket, ps.InitContainers[0].Name)
-	checkMount(t, ps.InitContainers[0].VolumeMounts, kmv1.ContainerNameInitSocket)
+	assert.Equal(t, kmv1.ContainerNameInit, ps.InitContainers[0].Name)
+	checkMount(t, ps.InitContainers[0].VolumeMounts, kmv1.ContainerNameInit)
 
 	assert.Equal(t, kmv1.ContainerNameAgent, ps.InitContainers[1].Name)
 	checkMount(t, ps.InitContainers[1].VolumeMounts, kmv1.ContainerNameAgent)
@@ -314,7 +314,7 @@ func TestBuildPodSpec_InitContainerOrder(t *testing.T) {
 	require.Len(t, ps.InitContainers, 3)
 
 	initSocket := ps.InitContainers[0]
-	assert.Equal(t, kmv1.ContainerNameInitSocket, initSocket.Name)
+	assert.Equal(t, kmv1.ContainerNameInit, initSocket.Name)
 	assert.Equal(t, testBrokerImage, initSocket.Image, "must reuse the broker image — they share the kynomesh binary")
 	assert.Equal(t, []string{"init-socket"}, initSocket.Args)
 	require.Len(t, initSocket.VolumeMounts, 1)
