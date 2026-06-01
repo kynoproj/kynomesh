@@ -501,7 +501,7 @@ func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
 	containers = append(containers, ad.Spec.Sidecars...)
 
 	initContainers := []corev1.Container{
-		newInitSocketContainer(brokerImage),
+		newInitContainer(brokerImage),
 		newAgentContainer(ad),
 	}
 	initContainers = append(initContainers, ad.Spec.InitContainers...)
@@ -514,7 +514,7 @@ func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
 	}
 	ad.Spec.ApplyToPodSpec(&ps)
 
-	builtinEnvs := downwardAPIEnv()
+	builtinEnvs := commonEnv(ad)
 	mount := kynomeshRunMount()
 	for i := range ps.Containers {
 		ps.Containers[i].Env = mergeEnv(ps.Containers[i].Env, builtinEnvs)
@@ -544,7 +544,7 @@ func newAgentContainer(ad *kmv1.AgentDeploy) corev1.Container {
 		c.LivenessProbe = src.LivenessProbe
 		c.Ports = src.Ports
 	}
-	c.Env = mergeEnv(c.Env, downwardAPIEnv())
+	c.Env = mergeEnv(c.Env, commonEnv(ad))
 	c.VolumeMounts = appendMountIfAbsent(c.VolumeMounts, kynomeshRunMount())
 	always := corev1.ContainerRestartPolicyAlways
 	c.RestartPolicy = &always
@@ -584,10 +584,10 @@ func appendMountIfAbsent(mounts []corev1.VolumeMount, m corev1.VolumeMount) []co
 	return append(mounts, m)
 }
 
-// downwardAPIEnv returns the env vars every AgentDeploy container receives:
-// NAMESPACE (the pod's namespace) and POD_NAME (the pod's name), both via
-// the downward API so no values need to be threaded through at build time.
-func downwardAPIEnv() []corev1.EnvVar {
+// commonEnv returns the env vars every AgentDeploy container receives:
+// NAMESPACE and POD_NAME via the downward API, plus AGENTSET_NAME and
+// AGENTDEPLOY_NAME sourced directly from the AgentDeploy object.
+func commonEnv(ad *kmv1.AgentDeploy) []corev1.EnvVar {
 	return []corev1.EnvVar{
 		{
 			Name: kmv1.EnvNamespace,
@@ -601,6 +601,8 @@ func downwardAPIEnv() []corev1.EnvVar {
 				FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"},
 			},
 		},
+		{Name: kmv1.EnvAgentSetName, Value: ad.Spec.AgentSetName},
+		{Name: kmv1.EnvAgentDeployName, Value: ad.Spec.Name},
 	}
 }
 
@@ -660,9 +662,9 @@ func newBrokerContainer(image, encodedAgentDeploy string, tmpl *kmv1.ContainerTe
 	return c
 }
 
-// newInitSocketContainer builds the controller-injected init container
+// newInitContainer builds the controller-injected init container
 // that prepares the broker UDS socket path.
-func newInitSocketContainer(image string) corev1.Container {
+func newInitContainer(image string) corev1.Container {
 	return corev1.Container{
 		Name:         kmv1.ContainerNameInit,
 		Image:        image,
