@@ -77,7 +77,7 @@ const (
 const clusterDNSDomain = "cluster.local"
 
 // DefaultLocalAgentAddr is the default agent target in local-dev mode.
-const DefaultLocalAgentAddr = "127.0.0.1:8000"
+const DefaultLocalAgentAddr = "127.0.0.1:8088"
 
 // inClusterFn is a test seam; production reads POD_NAME from the downward API.
 var inClusterFn = func() bool {
