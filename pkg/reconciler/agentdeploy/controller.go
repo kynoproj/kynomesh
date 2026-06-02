@@ -570,7 +570,7 @@ func kynomeshRunVolume() corev1.Volume {
 func kynomeshRunMount() corev1.VolumeMount {
 	return corev1.VolumeMount{
 		Name:      kmv1.VolumeNameKynomeshRun,
-		MountPath: kmv1.PathKynomeshRun,
+		MountPath: kmv1.KynomeshRunPath,
 	}
 }
 

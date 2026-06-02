@@ -271,7 +271,7 @@ func TestBuildPodSpec_MountsKynomeshRunOnRuntimeContainersOnly(t *testing.T) {
 		for _, m := range mounts {
 			if m.Name == kmv1.VolumeNameKynomeshRun {
 				matches++
-				assert.Equal(t, kmv1.PathKynomeshRun, m.MountPath,
+				assert.Equal(t, kmv1.KynomeshRunPath, m.MountPath,
 					"%s must mount kynomesh-run at the canonical path", owner)
 			}
 		}
@@ -319,7 +319,7 @@ func TestBuildPodSpec_InitContainerOrder(t *testing.T) {
 	assert.Equal(t, []string{"init-runtime"}, initRuntime.Args)
 	require.Len(t, initRuntime.VolumeMounts, 1)
 	assert.Equal(t, kmv1.VolumeNameKynomeshRun, initRuntime.VolumeMounts[0].Name)
-	assert.Equal(t, kmv1.PathKynomeshRun, initRuntime.VolumeMounts[0].MountPath)
+	assert.Equal(t, kmv1.KynomeshRunPath, initRuntime.VolumeMounts[0].MountPath)
 
 	agent := ps.InitContainers[1]
 	assert.Equal(t, kmv1.ContainerNameAgent, agent.Name)

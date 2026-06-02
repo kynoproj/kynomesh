@@ -62,10 +62,8 @@ const (
 	// for observability and probes (/metrics, /healthz, /readyz).
 	AgentBrokerIntrospectionPort = 8491
 
-	VolumeNameKynomeshRun = "kynomesh-run"                   // Volume name of /var/run/kynowmesh
-	PathKynomeshRun       = "/var/run/kynomesh"              // Volume mount path
-	BrokerSocketPath      = PathKynomeshRun + "/broker.sock" // Socket path
-	// PathTopologyFile is where the init-runtime container writes the
-	// per-agent topology JSON for the broker to consume.
-	PathTopologyFile = PathKynomeshRun + "/topology.json"
+	VolumeNameKynomeshRun = "kynomesh-run"                     // Volume name of /var/run/kynowmesh
+	KynomeshRunPath       = "/var/run/kynomesh"                // Volume mount path
+	BrokerSocketPath      = KynomeshRunPath + "/broker.sock"   // Socket path
+	PTopologyFileath      = KynomeshRunPath + "/topology.json" // Topology file path
 )

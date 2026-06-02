@@ -40,7 +40,7 @@ func NewInitRuntimeCommand() *cobra.Command {
 	}
 	command.Flags().StringVar(&socketPath, "socket-path", kmv1.BrokerSocketPath,
 		"Path at which to (re)create the broker UDS placeholder file.")
-	command.Flags().StringVar(&topologyPath, "topology-path", kmv1.PathTopologyFile,
+	command.Flags().StringVar(&topologyPath, "topology-path", kmv1.PTopologyFileath,
 		"Path at which to write the per-agent topology JSON.")
 	return command
 }
