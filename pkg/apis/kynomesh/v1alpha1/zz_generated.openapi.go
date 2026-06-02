@@ -766,7 +766,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 					},
 					"topology": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Topology is stamped by the AgentSet controller and tells this agent which peers it should discover. Consumed by the broker via the topology file written by the init-runtime container.",
+							Description: "Topology is stamped by the AgentSet controller and tells this agent which peers it should discover.",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Topology"),
 						},
@@ -1717,12 +1717,12 @@ func schema_pkg_apis_kynomesh_v1alpha1_Topology(ref common.ReferenceCallback) co
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "Topology captures everything an agent needs to know about its place in the AgentSet: the routing pattern, whether it is the entry agent, and the set of peers it is allowed to discover.",
+				Description: "Topology captures the information an agent needs to know about: the routing pattern, whether it is the entry agent, and the set of peers it is allowed to discover.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"pattern": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Pattern is the AgentSet's routing pattern, copied here so the broker does not need to read the parent AgentSet.",
+							Description: "Pattern is the AgentSet's routing pattern.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -1736,7 +1736,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_Topology(ref common.ReferenceCallback) co
 					},
 					"peers": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Peers lists the agents this agent is allowed to discover, derived from Pattern. Names are short agent names (matching AbstractAgentDeploy.Name), not full AgentDeploy object names.",
+							Description: "Peers lists the agents this agent is allowed to discover, derived from Pattern. Names are short agent names.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{

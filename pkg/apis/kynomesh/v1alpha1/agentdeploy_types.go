@@ -67,26 +67,23 @@ type AgentDeploySpec struct {
 	// +optional
 	Replicas *int32 `json:"replicas,omitempty" protobuf:"varint,3,opt,name=replicas"`
 	// Topology is stamped by the AgentSet controller and tells this agent
-	// which peers it should discover. Consumed by the broker via the
-	// topology file written by the init-runtime container.
+	// which peers it should discover.
 	// +optional
 	Topology Topology `json:"topology,omitempty" protobuf:"bytes,4,opt,name=topology"`
 }
 
-// Topology captures everything an agent needs to know about its place in
-// the AgentSet: the routing pattern, whether it is the entry agent, and
-// the set of peers it is allowed to discover.
+// Topology captures the information an agent needs to know about: the routing
+// pattern, whether it is the entry agent, and the set of peers it is allowed
+// to discover.
 type Topology struct {
-	// Pattern is the AgentSet's routing pattern, copied here so the broker
-	// does not need to read the parent AgentSet.
+	// Pattern is the AgentSet's routing pattern.
 	// +optional
 	Pattern AgentPattern `json:"pattern,omitempty" protobuf:"bytes,1,opt,name=pattern,casttype=AgentPattern"`
 	// IsEntry is true if this agent is the AgentSet's entry agent.
 	// +optional
 	IsEntry bool `json:"isEntry,omitempty" protobuf:"varint,2,opt,name=isEntry"`
 	// Peers lists the agents this agent is allowed to discover, derived
-	// from Pattern. Names are short agent names (matching
-	// AbstractAgentDeploy.Name), not full AgentDeploy object names.
+	// from Pattern. Names are short agent names.
 	// +optional
 	Peers []Peer `json:"peers,omitempty" protobuf:"bytes,3,rep,name=peers"`
 }

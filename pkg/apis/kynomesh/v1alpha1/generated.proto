@@ -204,8 +204,7 @@ message AgentDeploySpec {
   optional int32 replicas = 3;
 
   // Topology is stamped by the AgentSet controller and tells this agent
-  // which peers it should discover. Consumed by the broker via the
-  // topology file written by the init-runtime container.
+  // which peers it should discover.
   // +optional
   optional Topology topology = 4;
 }
@@ -505,12 +504,11 @@ message Templates {
   optional AgentDeployTemplate agent = 1;
 }
 
-// Topology captures everything an agent needs to know about its place in
-// the AgentSet: the routing pattern, whether it is the entry agent, and
-// the set of peers it is allowed to discover.
+// Topology captures the information an agent needs to know about: the routing
+// pattern, whether it is the entry agent, and the set of peers it is allowed
+// to discover.
 message Topology {
-  // Pattern is the AgentSet's routing pattern, copied here so the broker
-  // does not need to read the parent AgentSet.
+  // Pattern is the AgentSet's routing pattern.
   // +optional
   optional string pattern = 1;
 
@@ -519,8 +517,7 @@ message Topology {
   optional bool isEntry = 2;
 
   // Peers lists the agents this agent is allowed to discover, derived
-  // from Pattern. Names are short agent names (matching
-  // AbstractAgentDeploy.Name), not full AgentDeploy object names.
+  // from Pattern. Names are short agent names.
   // +optional
   repeated Peer peers = 3;
 }

@@ -736,8 +736,7 @@ AgentSetName is the name of the AgentSet that owns this AgentDeploy.
 <p>
 
 Topology is stamped by the AgentSet controller and tells this agent
-which peers it should discover. Consumed by the broker via the topology
-file written by the init-runtime container.
+which peers it should discover.
 </p>
 
 </td>
@@ -891,8 +890,7 @@ AgentSetName is the name of the AgentSet that owns this AgentDeploy.
 <p>
 
 Topology is stamped by the AgentSet controller and tells this agent
-which peers it should discover. Consumed by the broker via the topology
-file written by the init-runtime container.
+which peers it should discover.
 </p>
 
 </td>
@@ -2798,9 +2796,9 @@ Topology
 
 <p>
 
-Topology captures everything an agent needs to know about its place in
-the AgentSet: the routing pattern, whether it is the entry agent, and
-the set of peers it is allowed to discover.
+Topology captures the information an agent needs to know about: the
+routing pattern, whether it is the entry agent, and the set of peers it
+is allowed to discover.
 </p>
 
 </p>
@@ -2841,8 +2839,7 @@ Description
 <em>(Optional)</em>
 <p>
 
-Pattern is the AgentSet’s routing pattern, copied here so the broker
-does not need to read the parent AgentSet.
+Pattern is the AgentSet’s routing pattern.
 </p>
 
 </td>
@@ -2882,8 +2879,7 @@ IsEntry is true if this agent is the AgentSet’s entry agent.
 <p>
 
 Peers lists the agents this agent is allowed to discover, derived from
-Pattern. Names are short agent names (matching
-AbstractAgentDeploy.Name), not full AgentDeploy object names.
+Pattern. Names are short agent names.
 </p>
 
 </td>

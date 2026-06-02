@@ -23892,7 +23892,7 @@
           }
         },
         "topology": {
-          "description": "Topology is stamped by the AgentSet controller and tells this agent which peers it should discover. Consumed by the broker via the topology file written by the init-runtime container.",
+          "description": "Topology is stamped by the AgentSet controller and tells this agent which peers it should discover.",
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Topology"
         },
         "updateStrategy": {
@@ -24398,7 +24398,7 @@
       }
     },
     "sh.kyno.kynomesh.v1alpha1.Topology": {
-      "description": "Topology captures everything an agent needs to know about its place in the AgentSet: the routing pattern, whether it is the entry agent, and the set of peers it is allowed to discover.",
+      "description": "Topology captures the information an agent needs to know about: the routing pattern, whether it is the entry agent, and the set of peers it is allowed to discover.",
       "type": "object",
       "properties": {
         "isEntry": {
@@ -24406,11 +24406,11 @@
           "type": "boolean"
         },
         "pattern": {
-          "description": "Pattern is the AgentSet's routing pattern, copied here so the broker does not need to read the parent AgentSet.",
+          "description": "Pattern is the AgentSet's routing pattern.",
           "type": "string"
         },
         "peers": {
-          "description": "Peers lists the agents this agent is allowed to discover, derived from Pattern. Names are short agent names (matching AbstractAgentDeploy.Name), not full AgentDeploy object names.",
+          "description": "Peers lists the agents this agent is allowed to discover, derived from Pattern. Names are short agent names.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Peer"
