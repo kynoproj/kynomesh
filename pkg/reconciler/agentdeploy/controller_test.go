@@ -210,7 +210,7 @@ func TestBuildPodSpec_AgentRunsAsSidecarInitContainer(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	ps := buildPodSpec(ad, testBrokerImage)
 
-	// Init containers: [init-socket, agent (sidecar)]
+	// Init containers: [init-runtime, agent (sidecar)]
 	require.GreaterOrEqual(t, len(ps.InitContainers), 2)
 	agent := ps.InitContainers[1]
 	assert.Equal(t, kmv1.ContainerNameAgent, agent.Name)
@@ -256,8 +256,8 @@ func TestBuildPodSpec_MountsKynomeshRunOnRuntimeContainersOnly(t *testing.T) {
 	// The shared mount goes on every container that needs to interact
 	// with the UDS socket:
 	//   - main containers: broker, user sidecars
-	//   - init containers: init-socket (writes the placeholder) and the
-	//     agent sidecar (binds the socket)
+	//   - init containers: init-runtime (writes the placeholder + topology)
+	//     and the agent sidecar (binds the socket)
 	// User-supplied init containers do NOT receive the mount.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
@@ -271,7 +271,7 @@ func TestBuildPodSpec_MountsKynomeshRunOnRuntimeContainersOnly(t *testing.T) {
 		for _, m := range mounts {
 			if m.Name == kmv1.VolumeNameKynomeshRun {
 				matches++
-				assert.Equal(t, kmv1.PathKynomeshRun, m.MountPath,
+				assert.Equal(t, kmv1.KynomeshRunPath, m.MountPath,
 					"%s must mount kynomesh-run at the canonical path", owner)
 			}
 		}
@@ -283,10 +283,10 @@ func TestBuildPodSpec_MountsKynomeshRunOnRuntimeContainersOnly(t *testing.T) {
 	checkMount(t, ps.Containers[0].VolumeMounts, kmv1.ContainerNameAgentBroker)
 	checkMount(t, ps.Containers[1].VolumeMounts, "user-sidecar")
 
-	// Init containers: [init-socket, agent (sidecar), init-1].
+	// Init containers: [init-runtime, agent (sidecar), init-1].
 	require.Len(t, ps.InitContainers, 3)
-	assert.Equal(t, kmv1.ContainerNameInit, ps.InitContainers[0].Name)
-	checkMount(t, ps.InitContainers[0].VolumeMounts, kmv1.ContainerNameInit)
+	assert.Equal(t, kmv1.ContainerNameInitRuntime, ps.InitContainers[0].Name)
+	checkMount(t, ps.InitContainers[0].VolumeMounts, kmv1.ContainerNameInitRuntime)
 
 	assert.Equal(t, kmv1.ContainerNameAgent, ps.InitContainers[1].Name)
 	checkMount(t, ps.InitContainers[1].VolumeMounts, kmv1.ContainerNameAgent)
@@ -300,26 +300,26 @@ func TestBuildPodSpec_MountsKynomeshRunOnRuntimeContainersOnly(t *testing.T) {
 
 func TestBuildPodSpec_InitContainerOrder(t *testing.T) {
 	// Init containers must come out in the order:
-	//   [init-socket, agent (sidecar), ...user init containers]
-	// init-socket runs to completion first (creates the placeholder
-	// socket file). The agent sidecar then starts and binds the UDS;
-	// because it's a sidecar (RestartPolicy=Always), the kubelet
+	//   [init-runtime, agent (sidecar), ...user init containers]
+	// init-runtime runs to completion first (writes the socket placeholder
+	// and the topology file). The agent sidecar then starts and binds the
+	// UDS; because it's a sidecar (RestartPolicy=Always), the kubelet
 	// considers the init phase complete and proceeds to the broker.
-	// User init containers come last so users can rely on the socket
-	// being ready if they want to inspect it.
+	// User init containers come last so users can rely on the runtime
+	// directory being ready.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.InitContainers = []corev1.Container{{Name: "user-init", Image: "busybox"}}
 
 	ps := buildPodSpec(ad, testBrokerImage)
 	require.Len(t, ps.InitContainers, 3)
 
-	initSocket := ps.InitContainers[0]
-	assert.Equal(t, kmv1.ContainerNameInit, initSocket.Name)
-	assert.Equal(t, testBrokerImage, initSocket.Image, "must reuse the broker image — they share the kynomesh binary")
-	assert.Equal(t, []string{"init-socket"}, initSocket.Args)
-	require.Len(t, initSocket.VolumeMounts, 1)
-	assert.Equal(t, kmv1.VolumeNameKynomeshRun, initSocket.VolumeMounts[0].Name)
-	assert.Equal(t, kmv1.PathKynomeshRun, initSocket.VolumeMounts[0].MountPath)
+	initRuntime := ps.InitContainers[0]
+	assert.Equal(t, kmv1.ContainerNameInitRuntime, initRuntime.Name)
+	assert.Equal(t, testBrokerImage, initRuntime.Image, "must reuse the broker image — they share the kynomesh binary")
+	assert.Equal(t, []string{"init-runtime"}, initRuntime.Args)
+	require.Len(t, initRuntime.VolumeMounts, 1)
+	assert.Equal(t, kmv1.VolumeNameKynomeshRun, initRuntime.VolumeMounts[0].Name)
+	assert.Equal(t, kmv1.KynomeshRunPath, initRuntime.VolumeMounts[0].MountPath)
 
 	agent := ps.InitContainers[1]
 	assert.Equal(t, kmv1.ContainerNameAgent, agent.Name)
@@ -393,12 +393,15 @@ func TestBuildPodSpec_BrokerCarriesEncodedAgentDeployEnv(t *testing.T) {
 	assert.Equal(t, ad.SimpleCopy(), got)
 }
 
-func TestBuildPodSpec_AgentDeployEnvOnlyOnBroker(t *testing.T) {
-	// The encoded AgentDeploy is broker-only. The agent sidecar (init)
-	// and user sidecars (main) must not receive it — they have no need
-	// for it, and leaking it expands the trust boundary unnecessarily.
+func TestBuildPodSpec_AgentDeployEnvOnlyOnBrokerAndInit(t *testing.T) {
+	// The encoded AgentDeploy is broker- and init-only. The broker
+	// consumes it at runtime; the init container decodes it to derive
+	// the topology file. The agent sidecar and user containers must not
+	// receive it — they have no need for it, and leaking it expands the
+	// trust boundary unnecessarily.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
+	ad.Spec.InitContainers = []corev1.Container{{Name: "user-init", Image: "busybox"}}
 	ps := buildPodSpec(ad, testBrokerImage)
 
 	for i, c := range ps.Containers {
@@ -411,7 +414,11 @@ func TestBuildPodSpec_AgentDeployEnvOnlyOnBroker(t *testing.T) {
 	}
 	for i, c := range ps.InitContainers {
 		got := findEnv(c.Env, kmv1.EnvAgentDeployObject)
-		assert.Nil(t, got, "init container %d (%s) must NOT have %s", i, c.Name, kmv1.EnvAgentDeployObject)
+		if c.Name == kmv1.ContainerNameInitRuntime {
+			assert.NotNil(t, got, "init container %d (%s) must have %s", i, c.Name, kmv1.EnvAgentDeployObject)
+		} else {
+			assert.Nil(t, got, "init container %d (%s) must NOT have %s", i, c.Name, kmv1.EnvAgentDeployObject)
+		}
 	}
 }
 
@@ -448,7 +455,7 @@ func TestBuildPodSpec_ReplicasChangeDoesNotAffectBrokerEnv(t *testing.T) {
 func TestBuildPodSpec_InjectsDownwardAPIEnv(t *testing.T) {
 	// Every container that runs at request-handling time gets the
 	// downward-API env: agent sidecar (in init), broker, user sidecars.
-	// The init-socket utility container does not need it.
+	// The init-runtime utility container does not need it.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
 	ps := buildPodSpec(ad, testBrokerImage)

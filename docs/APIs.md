@@ -722,6 +722,27 @@ AgentSetName is the name of the AgentSet that owns this AgentDeploy.
 
 </tr>
 
+<tr>
+
+<td>
+
+<code>topology</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.Topology"> Topology </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+Topology is stamped by the AgentSet controller and tells this agent
+which peers it should discover.
+</p>
+
+</td>
+
+</tr>
+
 </table>
 
 </td>
@@ -851,6 +872,27 @@ AgentSetName is the name of the AgentSet that owns this AgentDeploy.
 <td>
 
 <em>(Optional)</em>
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>topology</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.Topology"> Topology </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+Topology is stamped by the AgentSet controller and tells this agent
+which peers it should discover.
+</p>
+
 </td>
 
 </tr>
@@ -1245,7 +1287,8 @@ AgentPattern (<code>string</code> alias)
 <p>
 
 (<em>Appears on:</em>
-<a href="#kynomesh.kyno.sh/v1alpha1.AgentSetSpec">AgentSetSpec</a>)
+<a href="#kynomesh.kyno.sh/v1alpha1.AgentSetSpec">AgentSetSpec</a>,
+<a href="#kynomesh.kyno.sh/v1alpha1.Topology">Topology</a>)
 </p>
 
 <p>
@@ -2180,6 +2223,133 @@ Description
 
 </table>
 
+<h3 id="kynomesh.kyno.sh/v1alpha1.Peer">
+
+Peer
+</h3>
+
+<p>
+
+(<em>Appears on:</em>
+<a href="#kynomesh.kyno.sh/v1alpha1.Topology">Topology</a>)
+</p>
+
+<p>
+
+<p>
+
+Peer is a single discoverable agent reference.
+</p>
+
+</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>
+
+Field
+</th>
+
+<th>
+
+Description
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>
+
+<code>name</code></br> <em> string </em>
+</td>
+
+<td>
+
+<p>
+
+Name is the short agent name.
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>kind</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.PeerKind"> PeerKind </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+Kind tells the broker how to reach this peer.
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>url</code></br> <em> string </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+URL is the full URL of the peer’s broker. For Managed peers it is
+populated by the init container from cluster DNS; for External peers it
+must be supplied by the user.
+</p>
+
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="kynomesh.kyno.sh/v1alpha1.PeerKind">
+
+PeerKind (<code>string</code> alias)
+</p>
+
+</h3>
+
+<p>
+
+(<em>Appears on:</em>
+<a href="#kynomesh.kyno.sh/v1alpha1.Peer">Peer</a>)
+</p>
+
+<p>
+
+<p>
+
+PeerKind is how the broker should treat a peer entry.
+</p>
+
+</p>
+
 <h3 id="kynomesh.kyno.sh/v1alpha1.RollingUpdateStrategy">
 
 RollingUpdateStrategy
@@ -2602,6 +2772,115 @@ AgentDeployTemplate </a> </em>
 </td>
 
 <td>
+
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="kynomesh.kyno.sh/v1alpha1.Topology">
+
+Topology
+</h3>
+
+<p>
+
+(<em>Appears on:</em>
+<a href="#kynomesh.kyno.sh/v1alpha1.AgentDeploySpec">AgentDeploySpec</a>)
+</p>
+
+<p>
+
+<p>
+
+Topology captures the information an agent needs to know about: the
+routing pattern, whether it is the entry agent, and the set of peers it
+is allowed to discover.
+</p>
+
+</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>
+
+Field
+</th>
+
+<th>
+
+Description
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>
+
+<code>pattern</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.AgentPattern"> AgentPattern </a>
+</em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+Pattern is the AgentSet’s routing pattern.
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>isEntry</code></br> <em> bool </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+IsEntry is true if this agent is the AgentSet’s entry agent.
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>peers</code></br> <em> <a href="#kynomesh.kyno.sh/v1alpha1.Peer">
+\[\]Peer </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+Peers lists the agents this agent is allowed to discover, derived from
+Pattern. Names are short agent names.
+</p>
 
 </td>
 

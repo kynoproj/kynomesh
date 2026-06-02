@@ -45,7 +45,7 @@ const (
 	ContainerNameAgent       = "agent"
 	ContainerNameAgentBroker = "broker"
 	ContainerNameController  = "controller-manager"
-	ContainerNameInit        = "init"
+	ContainerNameInitRuntime = "init-runtime"
 
 	// Component label values (for KeyComponent)
 	ComponentAgent             = "agent"
@@ -62,7 +62,8 @@ const (
 	// for observability and probes (/metrics, /healthz, /readyz).
 	AgentBrokerIntrospectionPort = 8491
 
-	VolumeNameKynomeshRun = "kynomesh-run"                   // Volume name of /var/run/kynowmesh
-	PathKynomeshRun       = "/var/run/kynomesh"              // Volume mount path
-	BrokerSocketPath      = PathKynomeshRun + "/broker.sock" // Socket path
+	VolumeNameKynomeshRun = "kynomesh-run"                     // Volume name of /var/run/kynowmesh
+	KynomeshRunPath       = "/var/run/kynomesh"                // Volume mount path
+	BrokerSocketPath      = KynomeshRunPath + "/broker.sock"   // Socket path
+	PTopologyFileath      = KynomeshRunPath + "/topology.json" // Topology file path
 )

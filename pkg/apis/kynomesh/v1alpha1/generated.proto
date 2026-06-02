@@ -202,6 +202,11 @@ message AgentDeploySpec {
   // +kubebuilder:default=1
   // +optional
   optional int32 replicas = 3;
+
+  // Topology is stamped by the AgentSet controller and tells this agent
+  // which peers it should discover.
+  // +optional
+  optional Topology topology = 4;
 }
 
 message AgentDeployStatus {
@@ -404,6 +409,25 @@ message Metadata {
   map<string, string> labels = 2;
 }
 
+// Peer is a single discoverable agent reference.
+message Peer {
+  // Name is the short agent name.
+  // +kubebuilder:validation:Required
+  optional string name = 1;
+
+  // Kind tells the broker how to reach this peer.
+  // +kubebuilder:validation:Enum=Managed;External
+  // +kubebuilder:default=Managed
+  // +optional
+  optional string kind = 2;
+
+  // URL is the full URL of the peer's broker. For Managed peers it is
+  // populated by the init container from cluster DNS; for External
+  // peers it must be supplied by the user.
+  // +optional
+  optional string url = 3;
+}
+
 // RollingUpdateStrategy is used to communicate parameter for RollingUpdateStrategyType.
 message RollingUpdateStrategy {
   // The maximum number of pods that can be unavailable during the update.
@@ -478,6 +502,24 @@ message Status {
 
 message Templates {
   optional AgentDeployTemplate agent = 1;
+}
+
+// Topology captures the information an agent needs to know about: the routing
+// pattern, whether it is the entry agent, and the set of peers it is allowed
+// to discover.
+message Topology {
+  // Pattern is the AgentSet's routing pattern.
+  // +optional
+  optional string pattern = 1;
+
+  // IsEntry is true if this agent is the AgentSet's entry agent.
+  // +optional
+  optional bool isEntry = 2;
+
+  // Peers lists the agents this agent is allowed to discover, derived
+  // from Pattern. Names are short agent names.
+  // +optional
+  repeated Peer peers = 3;
 }
 
 // UpdateStrategy indicates the strategy that the

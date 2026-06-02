@@ -138,6 +138,73 @@ func TestBuildAgentDeploys_TemplateAppliedAsDefault(t *testing.T) {
 		"per-agent value should beat the template default")
 }
 
+func TestComputeTopology(t *testing.T) {
+	mk := func(pattern kmv1.AgentPattern, entry string, names ...string) *kmv1.AgentSet {
+		as := newAgentSet("set", names...)
+		as.Spec.Pattern = pattern
+		as.Spec.Entry = entry
+		return as
+	}
+	managed := func(names ...string) []kmv1.Peer {
+		if len(names) == 0 {
+			return nil
+		}
+		out := make([]kmv1.Peer, 0, len(names))
+		for _, n := range names {
+			out = append(out, kmv1.Peer{Name: n, Kind: kmv1.PeerKindManaged})
+		}
+		return out
+	}
+	cases := []struct {
+		name  string
+		as    *kmv1.AgentSet
+		agent string
+		want  kmv1.Topology
+	}{
+		{
+			name:  "supervisor entry sees all workers",
+			as:    mk(kmv1.AgentPatternSupervisor, "alpha", "alpha", "beta", "gamma"),
+			agent: "alpha",
+			want:  kmv1.Topology{Pattern: kmv1.AgentPatternSupervisor, IsEntry: true, Peers: managed("beta", "gamma")},
+		},
+		{
+			name:  "supervisor worker sees nobody",
+			as:    mk(kmv1.AgentPatternSupervisor, "alpha", "alpha", "beta", "gamma"),
+			agent: "beta",
+			want:  kmv1.Topology{Pattern: kmv1.AgentPatternSupervisor},
+		},
+		{
+			name:  "handoff: everyone sees everyone else",
+			as:    mk(kmv1.AgentPatternHandoff, "alpha", "alpha", "beta", "gamma"),
+			agent: "beta",
+			want:  kmv1.Topology{Pattern: kmv1.AgentPatternHandoff, Peers: managed("alpha", "gamma")},
+		},
+		{
+			name:  "sequential: middle sees only the next",
+			as:    mk(kmv1.AgentPatternSequential, "alpha", "alpha", "beta", "gamma"),
+			agent: "beta",
+			want:  kmv1.Topology{Pattern: kmv1.AgentPatternSequential, Peers: managed("gamma")},
+		},
+		{
+			name:  "sequential: last sees nobody",
+			as:    mk(kmv1.AgentPatternSequential, "alpha", "alpha", "beta", "gamma"),
+			agent: "gamma",
+			want:  kmv1.Topology{Pattern: kmv1.AgentPatternSequential},
+		},
+		{
+			name:  "sequential: entry flag set on first",
+			as:    mk(kmv1.AgentPatternSequential, "alpha", "alpha", "beta"),
+			agent: "alpha",
+			want:  kmv1.Topology{Pattern: kmv1.AgentPatternSequential, IsEntry: true, Peers: managed("beta")},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, computeTopology(tc.as, tc.agent))
+		})
+	}
+}
+
 func TestNeedsUpdate(t *testing.T) {
 	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{})
 	desired, err := r.buildDesired(newAgentSet("greeter", "alpha"))

@@ -23891,6 +23891,10 @@
             "$ref": "#/definitions/io.k8s.api.core.v1.Toleration"
           }
         },
+        "topology": {
+          "description": "Topology is stamped by the AgentSet controller and tells this agent which peers it should discover.",
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Topology"
+        },
         "updateStrategy": {
           "description": "The strategy to use to replace existing pods with new ones.",
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.UpdateStrategy"
@@ -24285,6 +24289,27 @@
         }
       }
     },
+    "sh.kyno.kynomesh.v1alpha1.Peer": {
+      "description": "Peer is a single discoverable agent reference.",
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "kind": {
+          "description": "Kind tells the broker how to reach this peer.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name is the short agent name.",
+          "type": "string"
+        },
+        "url": {
+          "description": "URL is the full URL of the peer's broker. For Managed peers it is populated by the init container from cluster DNS; for External peers it must be supplied by the user.",
+          "type": "string"
+        }
+      }
+    },
     "sh.kyno.kynomesh.v1alpha1.RollingUpdateStrategy": {
       "description": "RollingUpdateStrategy is used to communicate parameter for RollingUpdateStrategyType.",
       "type": "object",
@@ -24369,6 +24394,27 @@
       "properties": {
         "agent": {
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.AgentDeployTemplate"
+        }
+      }
+    },
+    "sh.kyno.kynomesh.v1alpha1.Topology": {
+      "description": "Topology captures the information an agent needs to know about: the routing pattern, whether it is the entry agent, and the set of peers it is allowed to discover.",
+      "type": "object",
+      "properties": {
+        "isEntry": {
+          "description": "IsEntry is true if this agent is the AgentSet's entry agent.",
+          "type": "boolean"
+        },
+        "pattern": {
+          "description": "Pattern is the AgentSet's routing pattern.",
+          "type": "string"
+        },
+        "peers": {
+          "description": "Peers lists the agents this agent is allowed to discover, derived from Pattern. Names are short agent names.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Peer"
+          }
         }
       }
     },

@@ -2792,6 +2792,38 @@ spec:
                       type: string
                   type: object
                 type: array
+              topology:
+                properties:
+                  isEntry:
+                    type: boolean
+                  pattern:
+                    enum:
+                    - Supervisor
+                    - Handoff
+                    - Sequential
+                    type: string
+                  peers:
+                    items:
+                      properties:
+                        kind:
+                          allOf:
+                          - enum:
+                            - Managed
+                            - External
+                          - enum:
+                            - Managed
+                            - External
+                          default: Managed
+                          type: string
+                        name:
+                          type: string
+                        url:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
+                type: object
               updateStrategy:
                 default:
                   rollingUpdate:

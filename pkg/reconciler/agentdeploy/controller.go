@@ -497,11 +497,12 @@ func desiredReplicas(ad *kmv1.AgentDeploy) int {
 
 // buildPodSpec composes the corev1.PodSpec from the AgentDeploy spec.
 func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
-	containers := []corev1.Container{newBrokerContainer(brokerImage, kmv1.EncodeAgentDeploy(ad), ad.Spec.BrokerTemplate)}
+	encodedAgentDeploy := kmv1.EncodeAgentDeploy(ad)
+	containers := []corev1.Container{newBrokerContainer(brokerImage, encodedAgentDeploy, ad.Spec.BrokerTemplate)}
 	containers = append(containers, ad.Spec.Sidecars...)
 
 	initContainers := []corev1.Container{
-		newInitContainer(brokerImage),
+		newInitRuntimeContainer(brokerImage, encodedAgentDeploy),
 		newAgentContainer(ad),
 	}
 	initContainers = append(initContainers, ad.Spec.InitContainers...)
@@ -569,7 +570,7 @@ func kynomeshRunVolume() corev1.Volume {
 func kynomeshRunMount() corev1.VolumeMount {
 	return corev1.VolumeMount{
 		Name:      kmv1.VolumeNameKynomeshRun,
-		MountPath: kmv1.PathKynomeshRun,
+		MountPath: kmv1.KynomeshRunPath,
 	}
 }
 
@@ -662,13 +663,15 @@ func newBrokerContainer(image, encodedAgentDeploy string, tmpl *kmv1.ContainerTe
 	return c
 }
 
-// newInitContainer builds the controller-injected init container
-// that prepares the broker UDS socket path.
-func newInitContainer(image string) corev1.Container {
+// newInitRuntimeContainer builds the init container that prepares /var/run/kynomesh.
+func newInitRuntimeContainer(image, encodedAgentDeploy string) corev1.Container {
 	return corev1.Container{
-		Name:         kmv1.ContainerNameInit,
-		Image:        image,
-		Args:         []string{"init-socket"},
+		Name:  kmv1.ContainerNameInitRuntime,
+		Image: image,
+		Args:  []string{"init-runtime"},
+		Env: []corev1.EnvVar{
+			{Name: kmv1.EnvAgentDeployObject, Value: encodedAgentDeploy},
+		},
 		VolumeMounts: []corev1.VolumeMount{kynomeshRunMount()},
 	}
 }

@@ -41,10 +41,12 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container":             schema_pkg_apis_kynomesh_v1alpha1_Container(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate":     schema_pkg_apis_kynomesh_v1alpha1_ContainerTemplate(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata":              schema_pkg_apis_kynomesh_v1alpha1_Metadata(ref),
+		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Peer":                  schema_pkg_apis_kynomesh_v1alpha1_Peer(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.RollingUpdateStrategy": schema_pkg_apis_kynomesh_v1alpha1_RollingUpdateStrategy(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale":                 schema_pkg_apis_kynomesh_v1alpha1_Scale(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Status":                schema_pkg_apis_kynomesh_v1alpha1_Status(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Templates":             schema_pkg_apis_kynomesh_v1alpha1_Templates(ref),
+		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Topology":              schema_pkg_apis_kynomesh_v1alpha1_Topology(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy":        schema_pkg_apis_kynomesh_v1alpha1_UpdateStrategy(ref),
 	}
 }
@@ -762,12 +764,19 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 							Format: "int32",
 						},
 					},
+					"topology": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Topology is stamped by the AgentSet controller and tells this agent which peers it should discover.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Topology"),
+						},
+					},
 				},
 				Required: []string{"name", "container", "agentSetName"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Topology", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
 	}
 }
 
@@ -1513,6 +1522,42 @@ func schema_pkg_apis_kynomesh_v1alpha1_Metadata(ref common.ReferenceCallback) co
 	}
 }
 
+func schema_pkg_apis_kynomesh_v1alpha1_Peer(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "Peer is a single discoverable agent reference.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name is the short agent name.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind tells the broker how to reach this peer.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"url": {
+						SchemaProps: spec.SchemaProps{
+							Description: "URL is the full URL of the peer's broker. For Managed peers it is populated by the init container from cluster DNS; for External peers it must be supplied by the user.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"name"},
+			},
+		},
+	}
+}
+
 func schema_pkg_apis_kynomesh_v1alpha1_RollingUpdateStrategy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1665,6 +1710,49 @@ func schema_pkg_apis_kynomesh_v1alpha1_Templates(ref common.ReferenceCallback) c
 		},
 		Dependencies: []string{
 			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentDeployTemplate"},
+	}
+}
+
+func schema_pkg_apis_kynomesh_v1alpha1_Topology(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "Topology captures the information an agent needs to know about: the routing pattern, whether it is the entry agent, and the set of peers it is allowed to discover.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"pattern": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Pattern is the AgentSet's routing pattern.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"isEntry": {
+						SchemaProps: spec.SchemaProps{
+							Description: "IsEntry is true if this agent is the AgentSet's entry agent.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"peers": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Peers lists the agents this agent is allowed to discover, derived from Pattern. Names are short agent names.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Peer"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Peer"},
 	}
 }
 

@@ -337,6 +337,7 @@ func (r *Reconciler) newAgentDeploy(as *kmv1.AgentSet, agent kmv1.AbstractAgentD
 		Spec: kmv1.AgentDeploySpec{
 			AbstractAgentDeploy: abstract,
 			AgentSetName:        as.Name,
+			Topology:            computeTopology(as, agent.Name),
 		},
 	}
 	if r.scheme != nil {
@@ -372,6 +373,52 @@ func applyTemplate(agent *kmv1.AbstractAgentDeploy, tmpl *kmv1.AgentDeployTempla
 
 func childName(setName, agentName string) string {
 	return setName + "-" + agentName
+}
+
+// computeTopology derives the per-agent topology view from the AgentSet pattern.
+func computeTopology(as *kmv1.AgentSet, agentName string) kmv1.Topology {
+	t := kmv1.Topology{
+		Pattern: as.Spec.Pattern,
+		IsEntry: agentName == as.Spec.Entry,
+	}
+	switch as.Spec.Pattern {
+	case kmv1.AgentPatternHandoff:
+		t.Peers = peersExcluding(as.Spec.Agents, agentName)
+	case kmv1.AgentPatternSupervisor:
+		if t.IsEntry {
+			t.Peers = peersExcluding(as.Spec.Agents, agentName)
+		}
+	case kmv1.AgentPatternSequential:
+		if next, ok := nextAgent(as.Spec.Agents, agentName); ok {
+			t.Peers = []kmv1.Peer{{Name: next, Kind: kmv1.PeerKindManaged}}
+		}
+	}
+	return t
+}
+
+// peersExcluding returns every agent except self as Managed peer entries.
+func peersExcluding(agents []kmv1.AbstractAgentDeploy, self string) []kmv1.Peer {
+	out := make([]kmv1.Peer, 0, len(agents)-1)
+	for _, a := range agents {
+		if a.Name == self {
+			continue
+		}
+		out = append(out, kmv1.Peer{Name: a.Name, Kind: kmv1.PeerKindManaged})
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// nextAgent returns the agent immediately after self in declaration order.
+func nextAgent(agents []kmv1.AbstractAgentDeploy, self string) (string, bool) {
+	for i, a := range agents {
+		if a.Name == self && i+1 < len(agents) {
+			return agents[i+1].Name, true
+		}
+	}
+	return "", false
 }
 
 // needsUpdate compares two AgentDeploy objects to decide whether an Update
