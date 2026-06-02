@@ -42,6 +42,7 @@ import (
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 	"github.com/kynoproj/kynomesh/pkg/broker"
+	"github.com/kynoproj/kynomesh/pkg/broker/serverinfo"
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 	sharedtls "github.com/kynoproj/kynomesh/pkg/shared/tls"
 	"github.com/kynoproj/kynomesh/pkg/version"
@@ -89,6 +90,34 @@ var udsAgentPath = kmv1.BrokerSocketPath
 
 // tcpAgentAddr is a test seam; production uses DefaultLocalAgentAddr.
 var tcpAgentAddr = DefaultLocalAgentAddr
+
+// serverInfoFilePath is a test seam; production uses kmv1.ServerInfoFilePath.
+var serverInfoFilePath = kmv1.ServerInfoFilePath
+
+// publishAgentServerInfo loads the agent server-info file (in-cluster only),
+// logs it, and registers it as a labeled gauge. Missing/unreadable files are
+// tolerated — the agent may not have written one yet.
+func publishAgentServerInfo(logger *zap.SugaredLogger, registry prometheus.Registerer) {
+	if !inClusterFn() {
+		return
+	}
+	info, err := serverinfo.Load(serverInfoFilePath)
+	if err != nil {
+		logger.Warnw("Failed to read agent server-info; skipping", "path", serverInfoFilePath, "err", err)
+		return
+	}
+	if info == nil {
+		logger.Infow("Agent server-info not present; skipping", "path", serverInfoFilePath)
+		return
+	}
+	logger.Infow("Agent server-info loaded",
+		"protocol", info.Protocol,
+		"language", info.Language,
+		"version", info.Version,
+		"metadata", info.Metadata,
+	)
+	serverinfo.RegisterMetric(registry, *info)
+}
 
 // agentDial holds either the in-pod UDS path or the local-dev TCP host:port.
 type agentDial struct {
@@ -203,6 +232,7 @@ func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int) (*br
 	}
 
 	metricsRegistry := prometheus.NewRegistry()
+	publishAgentServerInfo(logger, metricsRegistry)
 	rt, err := buildRuntime(logger, metricsRegistry, agentHTTPTransport, agentCard, injectedAD, dial)
 	if err != nil {
 		return nil, fmt.Errorf("build broker runtime: %w", err)

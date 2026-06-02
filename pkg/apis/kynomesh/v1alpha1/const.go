@@ -66,4 +66,5 @@ const (
 	KynomeshRunPath       = "/var/run/kynomesh"                // Volume mount path
 	BrokerSocketPath      = KynomeshRunPath + "/broker.sock"   // UDS socket the agent listens on and the broker connects to
 	TopologyFilePath      = KynomeshRunPath + "/topology.json" // Topology file path
+	ServerInfoFilePath    = KynomeshRunPath + "/server-info"   // Agent server-info file (written by the agent at startup)
 )
