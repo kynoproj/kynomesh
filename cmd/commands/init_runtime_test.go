@@ -29,51 +29,6 @@ import (
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
-func TestWriteSocketPlaceholder_CreatesPlaceholder(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "broker.sock")
-
-	require.NoError(t, writeSocketPlaceholder(path))
-
-	info, err := os.Stat(path)
-	require.NoError(t, err)
-	assert.True(t, info.Mode().IsRegular(), "must be a regular file, not a socket — the broker rebinds it later")
-	assert.Equal(t, int64(0), info.Size(), "placeholder must be empty")
-}
-
-func TestWriteSocketPlaceholder_RemovesExistingFile(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "broker.sock")
-	require.NoError(t, os.WriteFile(path, []byte("stale content"), 0o644))
-
-	require.NoError(t, writeSocketPlaceholder(path))
-
-	got, err := os.ReadFile(path)
-	require.NoError(t, err)
-	assert.Empty(t, got, "must overwrite, not preserve, prior contents")
-}
-
-func TestWriteSocketPlaceholder_CreatesParentDir(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "nested", "subdir", "broker.sock")
-
-	require.NoError(t, writeSocketPlaceholder(path))
-
-	_, err := os.Stat(path)
-	require.NoError(t, err)
-}
-
-func TestWriteSocketPlaceholder_ErrorsWhenParentIsNotADirectory(t *testing.T) {
-	dir := t.TempDir()
-	blocker := filepath.Join(dir, "not-a-dir")
-	require.NoError(t, os.WriteFile(blocker, []byte("blocker"), 0o644))
-
-	path := filepath.Join(blocker, "broker.sock")
-	err := writeSocketPlaceholder(path)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "create parent dir")
-}
-
 func TestWriteTopology_PopulatesManagedURLs(t *testing.T) {
 	ad := &kmv1.AgentDeploy{
 		ObjectMeta: metav1.ObjectMeta{Name: "demo-greeter", Namespace: "ns"},
@@ -170,30 +125,4 @@ func TestWriteTopology_ErrorsOnEmptyPayload(t *testing.T) {
 	err := writeTopology(path, "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "decode AgentDeploy")
-}
-
-func TestInitRuntime_WritesBothFiles(t *testing.T) {
-	dir := t.TempDir()
-	socketPath := filepath.Join(dir, "broker.sock")
-	topologyPath := filepath.Join(dir, "topology.json")
-
-	ad := &kmv1.AgentDeploy{
-		ObjectMeta: metav1.ObjectMeta{Name: "demo-greeter", Namespace: "ns"},
-		Spec: kmv1.AgentDeploySpec{
-			AbstractAgentDeploy: kmv1.AbstractAgentDeploy{Name: "greeter"},
-			AgentSetName:        "demo",
-			Topology:            kmv1.Topology{Pattern: kmv1.AgentPatternSupervisor, IsEntry: true},
-		},
-	}
-	require.NoError(t, initRuntime(socketPath, topologyPath, kmv1.EncodeAgentDeploy(ad)))
-
-	socketInfo, err := os.Stat(socketPath)
-	require.NoError(t, err)
-	assert.True(t, socketInfo.Mode().IsRegular())
-
-	raw, err := os.ReadFile(topologyPath)
-	require.NoError(t, err)
-	var got kmv1.Topology
-	require.NoError(t, json.Unmarshal(raw, &got))
-	assert.Equal(t, ad.Spec.Topology, got)
 }

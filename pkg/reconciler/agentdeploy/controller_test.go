@@ -253,12 +253,7 @@ func TestBuildPodSpec_InjectsKynomeshRunVolume(t *testing.T) {
 }
 
 func TestBuildPodSpec_MountsKynomeshRunOnRuntimeContainersOnly(t *testing.T) {
-	// The shared mount goes on every container that needs to interact
-	// with the UDS socket:
-	//   - main containers: broker, user sidecars
-	//   - init containers: init-runtime (writes the placeholder + topology)
-	//     and the agent sidecar (binds the socket)
-	// User-supplied init containers do NOT receive the mount.
+	// kynomesh-run mounts on broker, user sidecars, init-runtime, and the agent sidecar; user init containers don't get it.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
 	ad.Spec.InitContainers = []corev1.Container{{Name: "init-1", Image: "busybox"}}
@@ -299,14 +294,7 @@ func TestBuildPodSpec_MountsKynomeshRunOnRuntimeContainersOnly(t *testing.T) {
 }
 
 func TestBuildPodSpec_InitContainerOrder(t *testing.T) {
-	// Init containers must come out in the order:
-	//   [init-runtime, agent (sidecar), ...user init containers]
-	// init-runtime runs to completion first (writes the socket placeholder
-	// and the topology file). The agent sidecar then starts and binds the
-	// UDS; because it's a sidecar (RestartPolicy=Always), the kubelet
-	// considers the init phase complete and proceeds to the broker.
-	// User init containers come last so users can rely on the runtime
-	// directory being ready.
+	// Init containers come out as [init-runtime, agent (sidecar), ...user init containers].
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.InitContainers = []corev1.Container{{Name: "user-init", Image: "busybox"}}
 

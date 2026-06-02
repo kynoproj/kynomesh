@@ -18,7 +18,6 @@ package commands
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -30,47 +29,17 @@ import (
 
 // NewInitRuntimeCommand returns the "init-runtime" subcommand.
 func NewInitRuntimeCommand() *cobra.Command {
-	var socketPath, topologyPath string
+	var topologyPath string
 	command := &cobra.Command{
 		Use:   "init-runtime",
-		Short: "Prepare the broker UDS placeholder and write the per-agent topology file",
+		Short: "Write the per-agent topology file",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return initRuntime(socketPath, topologyPath, os.Getenv(kmv1.EnvAgentDeployObject))
+			return writeTopology(topologyPath, os.Getenv(kmv1.EnvAgentDeployObject))
 		},
 	}
-	command.Flags().StringVar(&socketPath, "socket-path", kmv1.BrokerSocketPath,
-		"Path at which to (re)create the broker UDS placeholder file.")
-	command.Flags().StringVar(&topologyPath, "topology-path", kmv1.PTopologyFileath,
+	command.Flags().StringVar(&topologyPath, "topology-path", kmv1.TopologyFilePath,
 		"Path at which to write the per-agent topology JSON.")
 	return command
-}
-
-// initRuntime writes the socket placeholder and the topology file.
-func initRuntime(socketPath, topologyPath, encodedAgentDeploy string) error {
-	if err := writeSocketPlaceholder(socketPath); err != nil {
-		return err
-	}
-	return writeTopology(topologyPath, encodedAgentDeploy)
-}
-
-// writeSocketPlaceholder creates an empty regular file at path, replacing any existing entry.
-func writeSocketPlaceholder(path string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return fmt.Errorf("create parent dir %q: %w", filepath.Dir(path), err)
-	}
-
-	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("remove existing %q: %w", path, err)
-	}
-
-	f, err := os.Create(path)
-	if err != nil {
-		return fmt.Errorf("create %q: %w", path, err)
-	}
-	if err := f.Close(); err != nil {
-		return fmt.Errorf("close %q: %w", path, err)
-	}
-	return nil
 }
 
 // writeTopology decodes the AgentDeploy payload and atomically writes its Topology as JSON to path.
