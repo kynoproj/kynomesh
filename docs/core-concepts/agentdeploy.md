@@ -19,6 +19,9 @@ spec:
   name: planner
   agentSetName: greeter
   replicas: 2
+  scale:
+    min: 1
+    max: 5
   container:
     image: example/planner:latest
   updateStrategy:
