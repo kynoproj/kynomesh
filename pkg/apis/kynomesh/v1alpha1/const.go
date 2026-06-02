@@ -45,7 +45,7 @@ const (
 	ContainerNameAgent       = "agent"
 	ContainerNameAgentBroker = "broker"
 	ContainerNameController  = "controller-manager"
-	ContainerNameInit        = "init"
+	ContainerNameInitRuntime = "init-runtime"
 
 	// Component label values (for KeyComponent)
 	ComponentAgent             = "agent"
@@ -65,4 +65,7 @@ const (
 	VolumeNameKynomeshRun = "kynomesh-run"                   // Volume name of /var/run/kynowmesh
 	PathKynomeshRun       = "/var/run/kynomesh"              // Volume mount path
 	BrokerSocketPath      = PathKynomeshRun + "/broker.sock" // Socket path
+	// PathTopologyFile is where the init-runtime container writes the
+	// per-agent topology JSON for the broker to consume.
+	PathTopologyFile = PathKynomeshRun + "/topology.json"
 )

@@ -66,7 +66,60 @@ type AgentDeploySpec struct {
 	// +kubebuilder:default=1
 	// +optional
 	Replicas *int32 `json:"replicas,omitempty" protobuf:"varint,3,opt,name=replicas"`
+	// Topology is stamped by the AgentSet controller and tells this agent
+	// which peers it should discover. Consumed by the broker via the
+	// topology file written by the init-runtime container.
+	// +optional
+	Topology Topology `json:"topology,omitempty" protobuf:"bytes,4,opt,name=topology"`
 }
+
+// Topology captures everything an agent needs to know about its place in
+// the AgentSet: the routing pattern, whether it is the entry agent, and
+// the set of peers it is allowed to discover.
+type Topology struct {
+	// Pattern is the AgentSet's routing pattern, copied here so the broker
+	// does not need to read the parent AgentSet.
+	// +optional
+	Pattern AgentPattern `json:"pattern,omitempty" protobuf:"bytes,1,opt,name=pattern,casttype=AgentPattern"`
+	// IsEntry is true if this agent is the AgentSet's entry agent.
+	// +optional
+	IsEntry bool `json:"isEntry,omitempty" protobuf:"varint,2,opt,name=isEntry"`
+	// Peers lists the agents this agent is allowed to discover, derived
+	// from Pattern. Names are short agent names (matching
+	// AbstractAgentDeploy.Name), not full AgentDeploy object names.
+	// +optional
+	Peers []Peer `json:"peers,omitempty" protobuf:"bytes,3,rep,name=peers"`
+}
+
+// Peer is a single discoverable agent reference.
+type Peer struct {
+	// Name is the short agent name.
+	// +kubebuilder:validation:Required
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	// Kind tells the broker how to reach this peer.
+	// +kubebuilder:validation:Enum=Managed;External
+	// +kubebuilder:default=Managed
+	// +optional
+	Kind PeerKind `json:"kind,omitempty" protobuf:"bytes,2,opt,name=kind,casttype=PeerKind"`
+	// URL is the full URL of the peer's broker. For Managed peers it is
+	// populated by the init container from cluster DNS; for External
+	// peers it must be supplied by the user.
+	// +optional
+	URL string `json:"url,omitempty" protobuf:"bytes,3,opt,name=url"`
+}
+
+// PeerKind is how the broker should treat a peer entry.
+// +kubebuilder:validation:Enum=Managed;External
+type PeerKind string
+
+const (
+	// PeerKindManaged is a peer that is another AgentDeploy in the same
+	// AgentSet, reachable via the AgentSet's headless service naming.
+	PeerKindManaged PeerKind = "Managed"
+	// PeerKindExternal is a peer outside the AgentSet, reachable at an
+	// explicit address.
+	PeerKindExternal PeerKind = "External"
+)
 
 type AbstractAgentDeploy struct {
 	// +kubebuilder:validation:Required

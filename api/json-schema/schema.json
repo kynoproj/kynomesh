@@ -23881,6 +23881,10 @@
           },
           "type": "array"
         },
+        "topology": {
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Topology",
+          "description": "Topology is stamped by the AgentSet controller and tells this agent which peers it should discover. Consumed by the broker via the topology file written by the init-runtime container."
+        },
         "updateStrategy": {
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.UpdateStrategy",
           "description": "The strategy to use to replace existing pods with new ones."
@@ -24290,6 +24294,27 @@
       },
       "type": "object"
     },
+    "sh.kyno.kynomesh.v1alpha1.Peer": {
+      "description": "Peer is a single discoverable agent reference.",
+      "properties": {
+        "kind": {
+          "description": "Kind tells the broker how to reach this peer.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Name is the short agent name.",
+          "type": "string"
+        },
+        "url": {
+          "description": "URL is the full URL of the peer's broker. For Managed peers it is populated by the init container from cluster DNS; for External peers it must be supplied by the user.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
     "sh.kyno.kynomesh.v1alpha1.RollingUpdateStrategy": {
       "description": "RollingUpdateStrategy is used to communicate parameter for RollingUpdateStrategyType.",
       "properties": {
@@ -24373,6 +24398,27 @@
       "properties": {
         "agent": {
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.AgentDeployTemplate"
+        }
+      },
+      "type": "object"
+    },
+    "sh.kyno.kynomesh.v1alpha1.Topology": {
+      "description": "Topology captures everything an agent needs to know about its place in the AgentSet: the routing pattern, whether it is the entry agent, and the set of peers it is allowed to discover.",
+      "properties": {
+        "isEntry": {
+          "description": "IsEntry is true if this agent is the AgentSet's entry agent.",
+          "type": "boolean"
+        },
+        "pattern": {
+          "description": "Pattern is the AgentSet's routing pattern, copied here so the broker does not need to read the parent AgentSet.",
+          "type": "string"
+        },
+        "peers": {
+          "description": "Peers lists the agents this agent is allowed to discover, derived from Pattern. Names are short agent names (matching AbstractAgentDeploy.Name), not full AgentDeploy object names.",
+          "items": {
+            "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Peer"
+          },
+          "type": "array"
         }
       },
       "type": "object"
