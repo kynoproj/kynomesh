@@ -125,5 +125,5 @@ func resolvePeerURLs(ad *kmv1.AgentDeploy) kmv1.Topology {
 
 func managedPeerURL(setName, peerName, namespace string) string {
 	host := fmt.Sprintf("%s-%s-headless.%s.svc.cluster.local", setName, peerName, namespace)
-	return fmt.Sprintf("http://%s:%d", host, kmv1.AgentBrokerPort)
+	return fmt.Sprintf("https://%s:%d", host, kmv1.AgentBrokerPort)
 }
