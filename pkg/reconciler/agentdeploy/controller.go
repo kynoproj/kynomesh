@@ -525,10 +525,7 @@ func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
 }
 
 // newAgentContainer builds the user's agent container as a K8s-native
-// sidecar. The probe handler is controller-owned (exec → bundled probe
-// binary over the agent UDS); the timing knobs on the spec's
-// ReadinessProbe/LivenessProbe are honored when set, with controller
-// defaults filling in the rest.
+// sidecar.
 func newAgentContainer(ad *kmv1.AgentDeploy) corev1.Container {
 	src := ad.Spec.Container
 	c := corev1.Container{Name: kmv1.ContainerNameAgent}
