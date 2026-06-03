@@ -80,7 +80,8 @@ jobs:
     env:
       GOPATH: /home/runner/go
     steps:
-      - uses: actions/checkout@v6
+      - name: Check out code
+        uses: actions/checkout@v6
       - name: Setup Golang
         uses: actions/setup-go@v6
         with:
