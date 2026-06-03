@@ -12,7 +12,7 @@ RUN apk update && apk upgrade && \
 COPY dist/kynomesh-linux-${ARCH} /bin/kynomesh
 COPY dist/kynoprobe-linux-${ARCH} /bin/kynoprobe
 
-RUN chmod +x /bin/kynomesh /probe
+RUN chmod +x /bin/kynomesh /bin/kynoprobe
 
 ####################################################################################################
 # kynomesh
