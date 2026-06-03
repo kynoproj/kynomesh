@@ -10,8 +10,9 @@ RUN apk update && apk upgrade && \
     apk --no-cache add tzdata
 
 COPY dist/kynomesh-linux-${ARCH} /bin/kynomesh
+COPY dist/kynoprobe-linux-${ARCH} /bin/kynoprobe
 
-RUN chmod +x /bin/kynomesh
+RUN chmod +x /bin/kynomesh /bin/kynoprobe
 
 ####################################################################################################
 # kynomesh
@@ -23,5 +24,6 @@ ARG ARCH
 COPY --from=base /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=base /bin/kynomesh /bin/kynomesh
+COPY --from=base /bin/kynoprobe /bin/kynoprobe
 
 ENTRYPOINT ["/bin/kynomesh"]

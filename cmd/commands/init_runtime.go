@@ -19,6 +19,7 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -29,16 +30,23 @@ import (
 
 // NewInitRuntimeCommand returns the "init-runtime" subcommand.
 func NewInitRuntimeCommand() *cobra.Command {
-	var topologyPath string
+	var topologyPath, probeSrc, probeDst string
 	command := &cobra.Command{
 		Use:   "init-runtime",
-		Short: "Write the per-agent topology file",
+		Short: "Prepare the per-agent runtime directory (topology, probe binary)",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			return writeTopology(topologyPath, os.Getenv(kmv1.EnvAgentDeployObject))
+			if err := writeTopology(topologyPath, os.Getenv(kmv1.EnvAgentDeployObject)); err != nil {
+				return err
+			}
+			return installProbeBinary(probeSrc, probeDst)
 		},
 	}
 	command.Flags().StringVar(&topologyPath, "topology-path", kmv1.TopologyFilePath,
 		"Path at which to write the per-agent topology JSON.")
+	command.Flags().StringVar(&probeSrc, "probe-src", kmv1.ProbeBinaryImagePath,
+		"Path to the probe binary inside the init-runtime image.")
+	command.Flags().StringVar(&probeDst, "probe-dst", kmv1.ProbeBinaryPath,
+		"Path on the shared kynomesh-run volume where the probe binary is installed.")
 	return command
 }
 
@@ -95,4 +103,43 @@ func resolvePeerURLs(ad *kmv1.AgentDeploy) kmv1.Topology {
 func managedPeerURL(setName, peerName, namespace string) string {
 	host := fmt.Sprintf("%s-%s-headless.%s.svc.cluster.local", setName, peerName, namespace)
 	return fmt.Sprintf("https://%s:%d", host, kmv1.AgentBrokerPort)
+}
+
+// installProbeBinary atomically copies src into dst with mode 0755 so the
+// agent container can exec it as a readiness/liveness probe. The destination
+// lives on the shared kynomesh-run tmpfs.
+func installProbeBinary(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("open probe binary %q: %w", src, err)
+	}
+	defer func() { _ = in.Close() }()
+
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return fmt.Errorf("create parent dir %q: %w", filepath.Dir(dst), err)
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(dst), filepath.Base(dst)+".*.tmp")
+	if err != nil {
+		return fmt.Errorf("create temp probe binary: %w", err)
+	}
+	tmpName := tmp.Name()
+	if _, err := io.Copy(tmp, in); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmpName)
+		return fmt.Errorf("copy probe binary to %q: %w", tmpName, err)
+	}
+	if err := tmp.Chmod(0o755); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmpName)
+		return fmt.Errorf("chmod probe binary %q: %w", tmpName, err)
+	}
+	if err := tmp.Close(); err != nil {
+		_ = os.Remove(tmpName)
+		return fmt.Errorf("close probe binary %q: %w", tmpName, err)
+	}
+	if err := os.Rename(tmpName, dst); err != nil {
+		_ = os.Remove(tmpName)
+		return fmt.Errorf("rename probe binary to %q: %w", dst, err)
+	}
+	return nil
 }

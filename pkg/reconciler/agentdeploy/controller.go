@@ -541,15 +541,47 @@ func newAgentContainer(ad *kmv1.AgentDeploy) corev1.Container {
 		if src.ImagePullPolicy != nil {
 			c.ImagePullPolicy = *src.ImagePullPolicy
 		}
-		c.ReadinessProbe = src.ReadinessProbe
-		c.LivenessProbe = src.LivenessProbe
 		c.Ports = src.Ports
 	}
 	c.Env = mergeEnv(c.Env, commonEnv(ad))
 	c.VolumeMounts = appendMountIfAbsent(c.VolumeMounts, kynomeshRunMount())
+	c.ReadinessProbe = agentReadinessProbe()
+	c.LivenessProbe = agentLivenessProbe()
 	always := corev1.ContainerRestartPolicyAlways
 	c.RestartPolicy = &always
 	return c
+}
+
+// agentProbeExec returns the exec command the agent container runs for
+// both readiness and liveness probes: the bundled probe binary speaks
+// gRPC health over the broker UDS.
+func agentProbeExec() []string {
+	return []string{
+		kmv1.ProbeBinaryPath,
+		"--mode=grpc",
+		"--socket=" + kmv1.BrokerSocketPath,
+	}
+}
+
+func agentReadinessProbe() *corev1.Probe {
+	return &corev1.Probe{
+		ProbeHandler:     corev1.ProbeHandler{Exec: &corev1.ExecAction{Command: agentProbeExec()}},
+		PeriodSeconds:    5,
+		TimeoutSeconds:   2,
+		FailureThreshold: 3,
+		SuccessThreshold: 1,
+	}
+}
+
+func agentLivenessProbe() *corev1.Probe {
+	return &corev1.Probe{
+		ProbeHandler:        corev1.ProbeHandler{Exec: &corev1.ExecAction{Command: agentProbeExec()}},
+		InitialDelaySeconds: 10,
+		PeriodSeconds:       10,
+		TimeoutSeconds:      3,
+		FailureThreshold:    6,
+		SuccessThreshold:    1,
+	}
 }
 
 // kynomeshRunVolume returns the tmpfs-backed Volume used by every

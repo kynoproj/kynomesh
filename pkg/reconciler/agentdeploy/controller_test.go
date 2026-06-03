@@ -192,8 +192,6 @@ func TestBuildPodSpec_BrokerImageInHash(t *testing.T) {
 }
 
 func TestBuildPodSpec_PreservesUserSidecarsAfterBroker(t *testing.T) {
-	// Main containers are [broker, ...user sidecars]. The agent lives in
-	// init containers as a sidecar (covered by other tests).
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
 	ps := buildPodSpec(ad, testBrokerImage)
@@ -204,9 +202,6 @@ func TestBuildPodSpec_PreservesUserSidecarsAfterBroker(t *testing.T) {
 }
 
 func TestBuildPodSpec_AgentRunsAsSidecarInitContainer(t *testing.T) {
-	// The user's agent container runs as a K8s-native sidecar — i.e.,
-	// an init container with RestartPolicy=Always. This guarantees the
-	// agent is up before the broker's startup probe runs.
 	ad := newAgentDeploy("greeter", 1)
 	ps := buildPodSpec(ad, testBrokerImage)
 
@@ -318,8 +313,6 @@ func TestBuildPodSpec_InitContainerOrder(t *testing.T) {
 }
 
 func TestBuildPodSpec_PreservesUserVolumesAlongsideKynomeshRun(t *testing.T) {
-	// User-supplied volumes must still flow through unchanged — the
-	// controller-injected kynomesh-run is additive.
 	userVol := corev1.Volume{
 		Name:         "user-config",
 		VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}},
@@ -338,10 +331,6 @@ func TestBuildPodSpec_PreservesUserVolumesAlongsideKynomeshRun(t *testing.T) {
 }
 
 func TestAppendMountIfAbsent_IdempotentOnNameMatch(t *testing.T) {
-	// If a user's container already declares a mount with the kynomesh-run
-	// volume name (e.g., they shadowed it via their own template), the
-	// controller's append step must not produce a duplicate — K8s rejects
-	// pods with duplicate mount names.
 	existing := []corev1.VolumeMount{
 		{Name: kmv1.VolumeNameKynomeshRun, MountPath: "/custom/path"},
 	}
@@ -382,11 +371,6 @@ func TestBuildPodSpec_BrokerCarriesEncodedAgentDeployEnv(t *testing.T) {
 }
 
 func TestBuildPodSpec_AgentDeployEnvOnlyOnBrokerAndInit(t *testing.T) {
-	// The encoded AgentDeploy is broker- and init-only. The broker
-	// consumes it at runtime; the init container decodes it to derive
-	// the topology file. The agent sidecar and user containers must not
-	// receive it — they have no need for it, and leaking it expands the
-	// trust boundary unnecessarily.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
 	ad.Spec.InitContainers = []corev1.Container{{Name: "user-init", Image: "busybox"}}
@@ -411,9 +395,6 @@ func TestBuildPodSpec_AgentDeployEnvOnlyOnBrokerAndInit(t *testing.T) {
 }
 
 func TestBuildPodSpec_AgentNameChangeFlowsIntoBrokerEnv(t *testing.T) {
-	// A change to the agent's identity (Spec.Name) must change the broker's
-	// env-var payload — that's how the hash detects the drift and rolls
-	// the pod.
 	a := newAgentDeploy("greeter", 1)
 	b := newAgentDeploy("greeter", 1)
 	b.Spec.Name = "renamed"
@@ -426,9 +407,6 @@ func TestBuildPodSpec_AgentNameChangeFlowsIntoBrokerEnv(t *testing.T) {
 }
 
 func TestBuildPodSpec_ReplicasChangeDoesNotAffectBrokerEnv(t *testing.T) {
-	// Replicas is dropped by SimpleCopy — scaling up/down must not change
-	// the broker env-var payload, otherwise every scale event would roll
-	// every pod.
 	a := newAgentDeploy("greeter", 1)
 	b := newAgentDeploy("greeter", 1)
 	b.Spec.Replicas = ptr.To[int32](5)
@@ -441,9 +419,6 @@ func TestBuildPodSpec_ReplicasChangeDoesNotAffectBrokerEnv(t *testing.T) {
 }
 
 func TestBuildPodSpec_InjectsDownwardAPIEnv(t *testing.T) {
-	// Every container that runs at request-handling time gets the
-	// downward-API env: agent sidecar (in init), broker, user sidecars.
-	// The init-runtime utility container does not need it.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
 	ps := buildPodSpec(ad, testBrokerImage)
@@ -476,11 +451,6 @@ func TestBuildPodSpec_InjectsDownwardAPIEnv(t *testing.T) {
 }
 
 func TestBuildPodSpec_BuiltinEnvWinsOnConflict(t *testing.T) {
-	// Built-in identity env (NAMESPACE / POD_NAME) must always come from
-	// the downward API, even if the user tries to set them — workloads
-	// must not be able to misrepresent their own pod identity. The agent
-	// is the most likely target for this since it's the container whose
-	// spec users supply directly.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Container = &kmv1.Container{
 		Env: []corev1.EnvVar{{Name: kmv1.EnvNamespace, Value: "user-override"}},
@@ -519,11 +489,6 @@ func TestBuildPodSpec_BuiltinEnvWinsOnConflict(t *testing.T) {
 }
 
 func TestBuildPodSpec_AgentProjectsContainerFields(t *testing.T) {
-	// The agent container is materialised from ad.Spec.Container — a
-	// full container spec the user supplies. Image, command, args,
-	// resources, probes, ports, etc. flow through; the controller only
-	// owns Name, RestartPolicy (sidecar=Always), and the augmentations
-	// (downward-API env, kynomesh-run mount).
 	pullAlways := corev1.PullAlways
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Container = &kmv1.Container{
@@ -533,20 +498,12 @@ func TestBuildPodSpec_AgentProjectsContainerFields(t *testing.T) {
 		Env:             []corev1.EnvVar{{Name: "AGENT_FLAG", Value: "on"}},
 		EnvFrom:         []corev1.EnvFromSource{{ConfigMapRef: &corev1.ConfigMapEnvSource{LocalObjectReference: corev1.LocalObjectReference{Name: "agent-cfg"}}}},
 		ImagePullPolicy: &pullAlways,
-		ReadinessProbe:  &corev1.Probe{InitialDelaySeconds: 5},
-		LivenessProbe:   &corev1.Probe{InitialDelaySeconds: 10},
 		Ports:           []corev1.ContainerPort{{Name: "user", ContainerPort: 7000}},
 	}
 
 	ps := buildPodSpec(ad, testBrokerImage)
 
-	var agent corev1.Container
-	for _, c := range ps.InitContainers {
-		if c.Name == kmv1.ContainerNameAgent {
-			agent = c
-			break
-		}
-	}
+	agent := initContainerByName(ps, kmv1.ContainerNameAgent)
 	require.Equal(t, kmv1.ContainerNameAgent, agent.Name)
 	assert.Equal(t, "user/agent:v1", agent.Image)
 	assert.Equal(t, []string{"/bin/agent"}, agent.Command)
@@ -555,13 +512,70 @@ func TestBuildPodSpec_AgentProjectsContainerFields(t *testing.T) {
 	require.Len(t, agent.EnvFrom, 1)
 	assert.Equal(t, "agent-cfg", agent.EnvFrom[0].ConfigMapRef.Name)
 	assert.Equal(t, corev1.PullAlways, agent.ImagePullPolicy)
-	require.NotNil(t, agent.ReadinessProbe)
-	assert.Equal(t, int32(5), agent.ReadinessProbe.InitialDelaySeconds)
-	require.NotNil(t, agent.LivenessProbe)
-	assert.Equal(t, int32(10), agent.LivenessProbe.InitialDelaySeconds)
 	require.Len(t, agent.Ports, 1)
 	assert.Equal(t, "user", agent.Ports[0].Name)
 	assert.Equal(t, int32(7000), agent.Ports[0].ContainerPort)
+}
+
+func TestBuildPodSpec_AgentProbesAreControllerOwned(t *testing.T) {
+	wantCmd := []string{
+		kmv1.ProbeBinaryPath,
+		"--mode=grpc",
+		"--socket=" + kmv1.BrokerSocketPath,
+	}
+
+	t.Run("injected_when_spec_has_no_probes", func(t *testing.T) {
+		ad := newAgentDeploy("greeter", 1)
+		ad.Spec.Container = &kmv1.Container{Image: "user/agent:v1"}
+
+		agent := initContainerByName(buildPodSpec(ad, testBrokerImage), kmv1.ContainerNameAgent)
+
+		require.NotNil(t, agent.ReadinessProbe)
+		require.NotNil(t, agent.ReadinessProbe.Exec)
+		assert.Equal(t, wantCmd, agent.ReadinessProbe.Exec.Command)
+		assert.Equal(t, int32(5), agent.ReadinessProbe.PeriodSeconds)
+		assert.Equal(t, int32(2), agent.ReadinessProbe.TimeoutSeconds)
+		assert.Equal(t, int32(3), agent.ReadinessProbe.FailureThreshold)
+
+		require.NotNil(t, agent.LivenessProbe)
+		require.NotNil(t, agent.LivenessProbe.Exec)
+		assert.Equal(t, wantCmd, agent.LivenessProbe.Exec.Command)
+		assert.Equal(t, int32(10), agent.LivenessProbe.InitialDelaySeconds)
+		assert.Equal(t, int32(10), agent.LivenessProbe.PeriodSeconds)
+		assert.Equal(t, int32(3), agent.LivenessProbe.TimeoutSeconds)
+		assert.Equal(t, int32(6), agent.LivenessProbe.FailureThreshold)
+	})
+
+	t.Run("ignores_user_provided_probes", func(t *testing.T) {
+		ad := newAgentDeploy("greeter", 1)
+		ad.Spec.Container = &kmv1.Container{
+			Image:          "user/agent:v1",
+			ReadinessProbe: &corev1.Probe{InitialDelaySeconds: 99, ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{Path: "/user"}}},
+			LivenessProbe:  &corev1.Probe{InitialDelaySeconds: 99, ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{Path: "/user"}}},
+		}
+
+		agent := initContainerByName(buildPodSpec(ad, testBrokerImage), kmv1.ContainerNameAgent)
+
+		require.NotNil(t, agent.ReadinessProbe)
+		require.NotNil(t, agent.ReadinessProbe.Exec, "spec ReadinessProbe must be ignored in favor of controller-owned exec probe")
+		assert.Nil(t, agent.ReadinessProbe.HTTPGet)
+		assert.Equal(t, wantCmd, agent.ReadinessProbe.Exec.Command)
+		assert.NotEqual(t, int32(99), agent.ReadinessProbe.InitialDelaySeconds)
+
+		require.NotNil(t, agent.LivenessProbe)
+		require.NotNil(t, agent.LivenessProbe.Exec)
+		assert.Nil(t, agent.LivenessProbe.HTTPGet)
+		assert.Equal(t, wantCmd, agent.LivenessProbe.Exec.Command)
+	})
+}
+
+func initContainerByName(ps corev1.PodSpec, name string) corev1.Container {
+	for _, c := range ps.InitContainers {
+		if c.Name == name {
+			return c
+		}
+	}
+	return corev1.Container{}
 }
 
 func TestBuildPodSpec_BrokerTemplateAppliedAfterDefaults(t *testing.T) {
@@ -880,10 +894,6 @@ func markAllPodsReady(t *testing.T, c client.Client) {
 }
 
 func TestReconcile_RollingUpdate_RespectsMaxUnavailable(t *testing.T) {
-	// 4 replicas with MaxUnavailable=1 → exactly one pod replaced per pass.
-	// All four pods drift from the desired hash. Verify the controller
-	// touches only one slot per reconcile, and that it waits for the
-	// in-flight replacement to go Ready before starting the next batch.
 	ad := newAgentDeploy("greeter", 4)
 	ad.Spec.UpdateStrategy = kmv1.UpdateStrategy{
 		Type: kmv1.RollingUpdateStrategyType,
@@ -932,9 +942,6 @@ func TestReconcile_RollingUpdate_RespectsMaxUnavailable(t *testing.T) {
 }
 
 func TestReconcile_RollingUpdate_WaitGateBlocksUntilReady(t *testing.T) {
-	// Without readiness, the next batch must NOT start. Set MaxUnavailable=1
-	// over 3 replicas, drift all three, and run two reconciles back-to-back
-	// without marking the new pod Ready. The second reconcile must be a noop.
 	ad := newAgentDeploy("greeter", 3)
 	ad.Spec.UpdateStrategy = kmv1.UpdateStrategy{
 		Type: kmv1.RollingUpdateStrategyType,
@@ -975,9 +982,6 @@ func countStale(pods []corev1.Pod) int {
 }
 
 func TestReconcile_RollingUpdate_InitialCreateNotGated(t *testing.T) {
-	// MaxUnavailable=1 must not slow down initial bring-up — empty slots
-	// are creates, not replacements, and aren't subject to the rolling-update
-	// budget. A fresh deploy with replicas=4 reaches steady state in one pass.
 	ad := newAgentDeploy("greeter", 4)
 	ad.Spec.UpdateStrategy = kmv1.UpdateStrategy{
 		Type: kmv1.RollingUpdateStrategyType,
