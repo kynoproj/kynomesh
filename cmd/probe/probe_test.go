@@ -74,13 +74,13 @@ func startHTTPServer(t *testing.T, socket string, status int) {
 }
 
 func TestRun_RejectsMissingSocket(t *testing.T) {
-	err := Run(context.Background(), Config{Mode: ModeGRPC})
+	err := Run(context.Background(), probeConfig{Mode: ModeGRPC})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "--socket is required")
 }
 
 func TestRun_RejectsUnknownMode(t *testing.T) {
-	err := Run(context.Background(), Config{Mode: "tcp", Socket: "/tmp/x"})
+	err := Run(context.Background(), probeConfig{Mode: "tcp", Socket: "/tmp/x"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `unknown --mode "tcp"`)
 }
@@ -104,7 +104,7 @@ func TestRun_GRPC(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 
-			err := Run(ctx, Config{Mode: ModeGRPC, Socket: socket, Timeout: 2 * time.Second})
+			err := Run(ctx, probeConfig{Mode: ModeGRPC, Socket: socket, Timeout: 2 * time.Second})
 			if tc.wantErr {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tc.wantSubstr)
@@ -120,7 +120,7 @@ func TestRun_GRPC_SocketMissing(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 
-	err := Run(ctx, Config{Mode: ModeGRPC, Socket: socket, Timeout: 500 * time.Millisecond})
+	err := Run(ctx, probeConfig{Mode: ModeGRPC, Socket: socket, Timeout: 500 * time.Millisecond})
 	require.Error(t, err)
 }
 
@@ -143,7 +143,7 @@ func TestRun_HTTP(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 
-			err := Run(ctx, Config{Mode: ModeHTTP, Socket: socket, HTTPPath: "/healthz", Timeout: 2 * time.Second})
+			err := Run(ctx, probeConfig{Mode: ModeHTTP, Socket: socket, HTTPPath: "/healthz", Timeout: 2 * time.Second})
 			if tc.wantErr {
 				require.Error(t, err)
 				return
@@ -158,6 +158,6 @@ func TestRun_HTTP_SocketMissing(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
 	defer cancel()
 
-	err := Run(ctx, Config{Mode: ModeHTTP, Socket: socket, HTTPPath: "/healthz", Timeout: 500 * time.Millisecond})
+	err := Run(ctx, probeConfig{Mode: ModeHTTP, Socket: socket, HTTPPath: "/healthz", Timeout: 500 * time.Millisecond})
 	require.Error(t, err)
 }

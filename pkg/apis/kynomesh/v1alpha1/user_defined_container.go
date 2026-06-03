@@ -39,9 +39,9 @@ type Container struct {
 	// +optional
 	ImagePullPolicy *corev1.PullPolicy `json:"imagePullPolicy,omitempty" protobuf:"bytes,9,opt,name=imagePullPolicy,casttype=PullPolicy"`
 	// +optional
-	ReadinessProbe *corev1.Probe `json:"readinessProbe,omitempty" protobuf:"bytes,10,opt,name=readinessProbe"`
+	ReadinessProbe *Probe `json:"readinessProbe,omitempty" protobuf:"bytes,10,opt,name=readinessProbe"`
 	// +optional
-	LivenessProbe *corev1.Probe `json:"livenessProbe,omitempty" protobuf:"bytes,11,opt,name=livenessProbe"`
+	LivenessProbe *Probe `json:"livenessProbe,omitempty" protobuf:"bytes,11,opt,name=livenessProbe"`
 	// +optional
 	// +patchMergeKey=containerPort
 	// +patchStrategy=merge

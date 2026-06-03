@@ -24213,7 +24213,7 @@
           "type": "string"
         },
         "livenessProbe": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Probe"
         },
         "ports": {
           "type": "array",
@@ -24229,7 +24229,7 @@
           "x-kubernetes-patch-strategy": "merge"
         },
         "readinessProbe": {
-          "$ref": "#/definitions/io.k8s.api.core.v1.Probe"
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Probe"
         },
         "resources": {
           "$ref": "#/definitions/io.k8s.api.core.v1.ResourceRequirements"
@@ -24307,6 +24307,37 @@
         "url": {
           "description": "URL is the full URL of the peer's broker. For Managed peers it is populated by the init container from cluster DNS; for External peers it must be supplied by the user.",
           "type": "string"
+        }
+      }
+    },
+    "sh.kyno.kynomesh.v1alpha1.Probe": {
+      "description": "Probe is used to customize the configuration for Readiness and Liveness probes.",
+      "type": "object",
+      "properties": {
+        "failureThreshold": {
+          "description": "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "initialDelaySeconds": {
+          "description": "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
+          "type": "integer",
+          "format": "int32"
+        },
+        "periodSeconds": {
+          "description": "How often (in seconds) to perform the probe.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "successThreshold": {
+          "description": "Minimum consecutive successes for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "timeoutSeconds": {
+          "description": "Number of seconds after which the probe times out. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
