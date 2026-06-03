@@ -521,9 +521,9 @@ func TestBuildPodSpec_BuiltinEnvWinsOnConflict(t *testing.T) {
 func TestBuildPodSpec_AgentProjectsContainerFields(t *testing.T) {
 	// The agent container is materialised from ad.Spec.Container — a
 	// full container spec the user supplies. Image, command, args,
-	// resources, probes, ports, etc. flow through; the controller only
-	// owns Name, RestartPolicy (sidecar=Always), and the augmentations
-	// (downward-API env, kynomesh-run mount).
+	// resources, ports, etc. flow through; the controller owns Name,
+	// RestartPolicy (sidecar=Always), the augmentations (downward-API
+	// env, kynomesh-run mount), and the readiness/liveness probes.
 	pullAlways := corev1.PullAlways
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Container = &kmv1.Container{
@@ -533,20 +533,12 @@ func TestBuildPodSpec_AgentProjectsContainerFields(t *testing.T) {
 		Env:             []corev1.EnvVar{{Name: "AGENT_FLAG", Value: "on"}},
 		EnvFrom:         []corev1.EnvFromSource{{ConfigMapRef: &corev1.ConfigMapEnvSource{LocalObjectReference: corev1.LocalObjectReference{Name: "agent-cfg"}}}},
 		ImagePullPolicy: &pullAlways,
-		ReadinessProbe:  &corev1.Probe{InitialDelaySeconds: 5},
-		LivenessProbe:   &corev1.Probe{InitialDelaySeconds: 10},
 		Ports:           []corev1.ContainerPort{{Name: "user", ContainerPort: 7000}},
 	}
 
 	ps := buildPodSpec(ad, testBrokerImage)
 
-	var agent corev1.Container
-	for _, c := range ps.InitContainers {
-		if c.Name == kmv1.ContainerNameAgent {
-			agent = c
-			break
-		}
-	}
+	agent := initContainerByName(ps, kmv1.ContainerNameAgent)
 	require.Equal(t, kmv1.ContainerNameAgent, agent.Name)
 	assert.Equal(t, "user/agent:v1", agent.Image)
 	assert.Equal(t, []string{"/bin/agent"}, agent.Command)
@@ -555,13 +547,70 @@ func TestBuildPodSpec_AgentProjectsContainerFields(t *testing.T) {
 	require.Len(t, agent.EnvFrom, 1)
 	assert.Equal(t, "agent-cfg", agent.EnvFrom[0].ConfigMapRef.Name)
 	assert.Equal(t, corev1.PullAlways, agent.ImagePullPolicy)
-	require.NotNil(t, agent.ReadinessProbe)
-	assert.Equal(t, int32(5), agent.ReadinessProbe.InitialDelaySeconds)
-	require.NotNil(t, agent.LivenessProbe)
-	assert.Equal(t, int32(10), agent.LivenessProbe.InitialDelaySeconds)
 	require.Len(t, agent.Ports, 1)
 	assert.Equal(t, "user", agent.Ports[0].Name)
 	assert.Equal(t, int32(7000), agent.Ports[0].ContainerPort)
+}
+
+func TestBuildPodSpec_AgentProbesAreControllerOwned(t *testing.T) {
+	wantCmd := []string{
+		kmv1.ProbeBinaryPath,
+		"--mode=grpc",
+		"--socket=" + kmv1.BrokerSocketPath,
+	}
+
+	t.Run("injected_when_spec_has_no_probes", func(t *testing.T) {
+		ad := newAgentDeploy("greeter", 1)
+		ad.Spec.Container = &kmv1.Container{Image: "user/agent:v1"}
+
+		agent := initContainerByName(buildPodSpec(ad, testBrokerImage), kmv1.ContainerNameAgent)
+
+		require.NotNil(t, agent.ReadinessProbe)
+		require.NotNil(t, agent.ReadinessProbe.Exec)
+		assert.Equal(t, wantCmd, agent.ReadinessProbe.Exec.Command)
+		assert.Equal(t, int32(5), agent.ReadinessProbe.PeriodSeconds)
+		assert.Equal(t, int32(2), agent.ReadinessProbe.TimeoutSeconds)
+		assert.Equal(t, int32(3), agent.ReadinessProbe.FailureThreshold)
+
+		require.NotNil(t, agent.LivenessProbe)
+		require.NotNil(t, agent.LivenessProbe.Exec)
+		assert.Equal(t, wantCmd, agent.LivenessProbe.Exec.Command)
+		assert.Equal(t, int32(10), agent.LivenessProbe.InitialDelaySeconds)
+		assert.Equal(t, int32(10), agent.LivenessProbe.PeriodSeconds)
+		assert.Equal(t, int32(3), agent.LivenessProbe.TimeoutSeconds)
+		assert.Equal(t, int32(6), agent.LivenessProbe.FailureThreshold)
+	})
+
+	t.Run("ignores_user_provided_probes", func(t *testing.T) {
+		ad := newAgentDeploy("greeter", 1)
+		ad.Spec.Container = &kmv1.Container{
+			Image:          "user/agent:v1",
+			ReadinessProbe: &corev1.Probe{InitialDelaySeconds: 99, ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{Path: "/user"}}},
+			LivenessProbe:  &corev1.Probe{InitialDelaySeconds: 99, ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{Path: "/user"}}},
+		}
+
+		agent := initContainerByName(buildPodSpec(ad, testBrokerImage), kmv1.ContainerNameAgent)
+
+		require.NotNil(t, agent.ReadinessProbe)
+		require.NotNil(t, agent.ReadinessProbe.Exec, "spec ReadinessProbe must be ignored in favor of controller-owned exec probe")
+		assert.Nil(t, agent.ReadinessProbe.HTTPGet)
+		assert.Equal(t, wantCmd, agent.ReadinessProbe.Exec.Command)
+		assert.NotEqual(t, int32(99), agent.ReadinessProbe.InitialDelaySeconds)
+
+		require.NotNil(t, agent.LivenessProbe)
+		require.NotNil(t, agent.LivenessProbe.Exec)
+		assert.Nil(t, agent.LivenessProbe.HTTPGet)
+		assert.Equal(t, wantCmd, agent.LivenessProbe.Exec.Command)
+	})
+}
+
+func initContainerByName(ps corev1.PodSpec, name string) corev1.Container {
+	for _, c := range ps.InitContainers {
+		if c.Name == name {
+			return c
+		}
+	}
+	return corev1.Container{}
 }
 
 func TestBuildPodSpec_BrokerTemplateAppliedAfterDefaults(t *testing.T) {

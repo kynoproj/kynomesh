@@ -14,6 +14,7 @@ endif
 
 DIST_DIR=${CURRENT_DIR}/dist
 BINARY_NAME:=kynomesh
+PROBE_BINARY_NAME:=kynoprobe
 DOCKERFILE:=Dockerfile
 DEV_BASE_IMAGE:=alpine:3.23
 RELEASE_BASE_IMAGE:=scratch
@@ -78,10 +79,17 @@ DOCKER:=$(shell command -v podman 2> /dev/null)
 endif
 
 .PHONY: build
-build: dist/$(BINARY_NAME)-linux-amd64.gz dist/$(BINARY_NAME)-linux-arm64.gz dist/$(BINARY_NAME)-linux-arm.gz dist/$(BINARY_NAME)-linux-ppc64le.gz dist/$(BINARY_NAME)-linux-s390x.gz
+build: build-probe-binary build-binary
+
+build-binary: dist/$(BINARY_NAME)-linux-amd64.gz dist/$(BINARY_NAME)-linux-arm64.gz dist/$(BINARY_NAME)-linux-arm.gz dist/$(BINARY_NAME)-linux-ppc64le.gz dist/$(BINARY_NAME)-linux-s390x.gz
+
+build-probe-binary: dist/$(PROBE_BINARY_NAME)-linux-amd64.gz dist/$(PROBE_BINARY_NAME)-linux-arm64.gz dist/$(PROBE_BINARY_NAME)-linux-arm.gz dist/$(PROBE_BINARY_NAME)-linux-ppc64le.gz dist/$(PROBE_BINARY_NAME)-linux-s390x.gz
 
 dist/$(BINARY_NAME)-%.gz: dist/$(BINARY_NAME)-%
 	@[[ -e dist/$(BINARY_NAME)-$*.gz ]] || gzip -k dist/$(BINARY_NAME)-$*
+
+dist/$(PROBE_BINARY_NAME)-%.gz: dist/$(PROBE_BINARY_NAME)-%
+	@[[ -e dist/$(PROBE_BINARY_NAME)-$*.gz ]] || gzip -k dist/$(PROBE_BINARY_NAME)-$*
 
 dist/$(BINARY_NAME): GOARGS = GOOS= GOARCH=
 dist/$(BINARY_NAME)-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
@@ -90,14 +98,24 @@ dist/$(BINARY_NAME)-linux-arm: GOARGS = GOOS=linux GOARCH=arm
 dist/$(BINARY_NAME)-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
 dist/$(BINARY_NAME)-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
 
+dist/$(PROBE_BINARY_NAME): GOARGS = GOOS= GOARCH=
+dist/$(PROBE_BINARY_NAME)-linux-amd64: GOARGS = GOOS=linux GOARCH=amd64
+dist/$(PROBE_BINARY_NAME)-linux-arm64: GOARGS = GOOS=linux GOARCH=arm64
+dist/$(PROBE_BINARY_NAME)-linux-arm: GOARGS = GOOS=linux GOARCH=arm
+dist/$(PROBE_BINARY_NAME)-linux-ppc64le: GOARGS = GOOS=linux GOARCH=ppc64le
+dist/$(PROBE_BINARY_NAME)-linux-s390x: GOARGS = GOOS=linux GOARCH=s390x
+
 dist/$(BINARY_NAME):
 	go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/$(BINARY_NAME) ./cmd
 
-dist/e2eapi:
-	CGO_ENABLED=0 GOOS=linux go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/e2eapi ./test/e2e-api
-
 dist/$(BINARY_NAME)-%:
 	CGO_ENABLED=0 $(GOARGS) go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/$(BINARY_NAME)-$* ./cmd
+
+dist/$(PROBE_BINARY_NAME):
+	go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/$(BINARY_NAME) ./cmd/probe
+
+dist/$(PROBE_BINARY_NAME)-%:
+	CGO_ENABLED=0 $(GOARGS) go build -v -trimpath -ldflags '-s -w' -o ${DIST_DIR}/$(PROBE_BINARY_NAME)-$* ./cmd/probe
 
 .PHONY: test
 test:
@@ -146,14 +164,14 @@ Test%:
 	$(MAKE) cleanup-e2e
 
 .PHONY: image
-image: clean dist/$(BINARY_NAME)-linux-$(HOST_ARCH)
+image: clean dist/$(BINARY_NAME)-linux-$(HOST_ARCH) dist/$(PROBE_BINARY_NAME)-linux-$(HOST_ARCH)
 	DOCKER_BUILDKIT=1 $(DOCKER) build --build-arg "BASE_IMAGE=$(DEV_BASE_IMAGE)" $(DOCKER_BUILD_ARGS) -t $(IMAGE_NAMESPACE)/$(BINARY_NAME):$(VERSION) --target $(BINARY_NAME) -f $(DOCKERFILE) .
 	@if [[ "$(DOCKER_PUSH)" = "true" ]]; then $(DOCKER) push $(IMAGE_NAMESPACE)/$(BINARY_NAME):$(VERSION); fi
 ifdef IMAGE_IMPORT_CMD
 	$(IMAGE_IMPORT_CMD) $(IMAGE_NAMESPACE)/$(BINARY_NAME):$(VERSION)
 endif
 
-image-multi: set-qemu dist/$(BINARY_NAME)-linux-arm64.gz dist/$(BINARY_NAME)-linux-amd64.gz
+image-multi: set-qemu dist/$(BINARY_NAME)-linux-arm64.gz dist/$(BINARY_NAME)-linux-amd64.gz dist/$(PROBE_BINARY_NAME)-linux-arm64 dist/$(PROBE_BINARY_NAME)-linux-amd64
 	$(DOCKER) buildx build --sbom=false --provenance=false --build-arg "BASE_IMAGE=$(RELEASE_BASE_IMAGE)" $(DOCKER_BUILD_ARGS) -t $(IMAGE_NAMESPACE)/$(BINARY_NAME):$(VERSION) --target $(BINARY_NAME) --platform linux/amd64,linux/arm64 --file $(DOCKERFILE) ${PUSH_OPTION} .
 
 set-qemu:
@@ -259,7 +277,7 @@ pre-push: codegen lint
 
 .PHONY: checksums
 checksums:
-	sha256sum ./dist/$(BINARY_NAME)-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/$(BINARY_NAME)-checksums.txt
+	sha256sum ./dist/$(BINARY_NAME)-*.gz ./dist/$(PROBE_BINARY_NAME)-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/$(BINARY_NAME)-checksums.txt
 
 # release - targets only available on release branch
 ifneq ($(findstring release,$(GIT_BRANCH)),)

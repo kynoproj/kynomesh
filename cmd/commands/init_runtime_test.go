@@ -126,3 +126,47 @@ func TestWriteTopology_ErrorsOnEmptyPayload(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "decode AgentDeploy")
 }
+
+func TestInstallProbeBinary_CopiesAndMarksExecutable(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "probe")
+	require.NoError(t, os.WriteFile(src, []byte("PROBE-BIN"), 0o644))
+
+	dst := filepath.Join(dir, "bin", "probe")
+	require.NoError(t, installProbeBinary(src, dst))
+
+	got, err := os.ReadFile(dst)
+	require.NoError(t, err)
+	assert.Equal(t, "PROBE-BIN", string(got))
+
+	info, err := os.Stat(dst)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o755), info.Mode().Perm())
+}
+
+func TestInstallProbeBinary_AtomicReplace(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "probe")
+	require.NoError(t, os.WriteFile(src, []byte("NEW"), 0o755))
+
+	dst := filepath.Join(dir, "out", "probe")
+	require.NoError(t, os.MkdirAll(filepath.Dir(dst), 0o755))
+	require.NoError(t, os.WriteFile(dst, []byte("OLD"), 0o755))
+
+	require.NoError(t, installProbeBinary(src, dst))
+
+	got, err := os.ReadFile(dst)
+	require.NoError(t, err)
+	assert.Equal(t, "NEW", string(got))
+
+	entries, err := os.ReadDir(filepath.Dir(dst))
+	require.NoError(t, err)
+	assert.Len(t, entries, 1, "atomic replace must not leave temp files behind")
+}
+
+func TestInstallProbeBinary_ErrorsWhenSrcMissing(t *testing.T) {
+	dir := t.TempDir()
+	err := installProbeBinary(filepath.Join(dir, "missing"), filepath.Join(dir, "out", "probe"))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "open probe binary")
+}
