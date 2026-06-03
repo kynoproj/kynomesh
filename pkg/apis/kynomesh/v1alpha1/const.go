@@ -70,3 +70,18 @@ const (
 	ProbeBinaryPath       = KynomeshRunPath + "/bin/kynoprobe" // Static probe binary copied by init-runtime; used by agent container probes
 	ProbeBinaryImagePath  = "/bin/kynoprobe"                   //probe binary lives inside the kynomesh image
 )
+
+// Agent container probe timing defaults.
+const (
+	DefaultAgentReadinessInitialDelaySec  int32 = 1
+	DefaultAgentReadinessPeriodSec        int32 = 10
+	DefaultAgentReadinessTimeoutSec       int32 = 2
+	DefaultAgentReadinessFailureThreshold int32 = 3
+	DefaultAgentReadinessSuccessThreshold int32 = 1
+
+	DefaultAgentLivenessInitialDelaySec  int32 = 30
+	DefaultAgentLivenessPeriodSec        int32 = 15
+	DefaultAgentLivenessTimeoutSec       int32 = 3
+	DefaultAgentLivenessFailureThreshold int32 = 6
+	DefaultAgentLivenessSuccessThreshold int32 = 1
+)

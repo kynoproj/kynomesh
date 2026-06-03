@@ -65,6 +65,8 @@ func (m *Metadata) Reset() { *m = Metadata{} }
 
 func (m *Peer) Reset() { *m = Peer{} }
 
+func (m *Probe) Reset() { *m = Probe{} }
+
 func (m *RollingUpdateStrategy) Reset() { *m = RollingUpdateStrategy{} }
 
 func (m *Scale) Reset() { *m = Scale{} }
@@ -1226,6 +1228,54 @@ func (m *Peer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *Probe) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Probe) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Probe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.FailureThreshold != nil {
+		i = encodeVarintGenerated(dAtA, i, uint64(*m.FailureThreshold))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.SuccessThreshold != nil {
+		i = encodeVarintGenerated(dAtA, i, uint64(*m.SuccessThreshold))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.PeriodSeconds != nil {
+		i = encodeVarintGenerated(dAtA, i, uint64(*m.PeriodSeconds))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.TimeoutSeconds != nil {
+		i = encodeVarintGenerated(dAtA, i, uint64(*m.TimeoutSeconds))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.InitialDelaySeconds != nil {
+		i = encodeVarintGenerated(dAtA, i, uint64(*m.InitialDelaySeconds))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *RollingUpdateStrategy) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1921,6 +1971,30 @@ func (m *Peer) Size() (n int) {
 	return n
 }
 
+func (m *Probe) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.InitialDelaySeconds != nil {
+		n += 1 + sovGenerated(uint64(*m.InitialDelaySeconds))
+	}
+	if m.TimeoutSeconds != nil {
+		n += 1 + sovGenerated(uint64(*m.TimeoutSeconds))
+	}
+	if m.PeriodSeconds != nil {
+		n += 1 + sovGenerated(uint64(*m.PeriodSeconds))
+	}
+	if m.SuccessThreshold != nil {
+		n += 1 + sovGenerated(uint64(*m.SuccessThreshold))
+	}
+	if m.FailureThreshold != nil {
+		n += 1 + sovGenerated(uint64(*m.FailureThreshold))
+	}
+	return n
+}
+
 func (m *RollingUpdateStrategy) Size() (n int) {
 	if m == nil {
 		return 0
@@ -2286,8 +2360,8 @@ func (this *Container) String() string {
 		`Resources:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Resources), "ResourceRequirements", "v1.ResourceRequirements", 1), `&`, ``, 1) + `,`,
 		`SecurityContext:` + strings.Replace(fmt.Sprintf("%v", this.SecurityContext), "SecurityContext", "v1.SecurityContext", 1) + `,`,
 		`ImagePullPolicy:` + valueToStringGenerated(this.ImagePullPolicy) + `,`,
-		`ReadinessProbe:` + strings.Replace(fmt.Sprintf("%v", this.ReadinessProbe), "Probe", "v1.Probe", 1) + `,`,
-		`LivenessProbe:` + strings.Replace(fmt.Sprintf("%v", this.LivenessProbe), "Probe", "v1.Probe", 1) + `,`,
+		`ReadinessProbe:` + strings.Replace(this.ReadinessProbe.String(), "Probe", "Probe", 1) + `,`,
+		`LivenessProbe:` + strings.Replace(this.LivenessProbe.String(), "Probe", "Probe", 1) + `,`,
 		`Ports:` + repeatedStringForPorts + `,`,
 		`}`,
 	}, "")
@@ -2356,6 +2430,20 @@ func (this *Peer) String() string {
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`Kind:` + fmt.Sprintf("%v", this.Kind) + `,`,
 		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Probe) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Probe{`,
+		`InitialDelaySeconds:` + valueToStringGenerated(this.InitialDelaySeconds) + `,`,
+		`TimeoutSeconds:` + valueToStringGenerated(this.TimeoutSeconds) + `,`,
+		`PeriodSeconds:` + valueToStringGenerated(this.PeriodSeconds) + `,`,
+		`SuccessThreshold:` + valueToStringGenerated(this.SuccessThreshold) + `,`,
+		`FailureThreshold:` + valueToStringGenerated(this.FailureThreshold) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5400,7 +5488,7 @@ func (m *Container) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.ReadinessProbe == nil {
-				m.ReadinessProbe = &v1.Probe{}
+				m.ReadinessProbe = &Probe{}
 			}
 			if err := m.ReadinessProbe.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -5436,7 +5524,7 @@ func (m *Container) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.LivenessProbe == nil {
-				m.LivenessProbe = &v1.Probe{}
+				m.LivenessProbe = &Probe{}
 			}
 			if err := m.LivenessProbe.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -6145,6 +6233,156 @@ func (m *Peer) Unmarshal(dAtA []byte) error {
 			}
 			m.URL = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Probe) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Probe: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Probe: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InitialDelaySeconds", wireType)
+			}
+			var v int32
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.InitialDelaySeconds = &v
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeoutSeconds", wireType)
+			}
+			var v int32
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.TimeoutSeconds = &v
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PeriodSeconds", wireType)
+			}
+			var v int32
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.PeriodSeconds = &v
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SuccessThreshold", wireType)
+			}
+			var v int32
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.SuccessThreshold = &v
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FailureThreshold", wireType)
+			}
+			var v int32
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.FailureThreshold = &v
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])

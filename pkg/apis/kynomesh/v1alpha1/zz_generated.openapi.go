@@ -42,6 +42,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate":     schema_pkg_apis_kynomesh_v1alpha1_ContainerTemplate(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata":              schema_pkg_apis_kynomesh_v1alpha1_Metadata(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Peer":                  schema_pkg_apis_kynomesh_v1alpha1_Peer(ref),
+		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Probe":                 schema_pkg_apis_kynomesh_v1alpha1_Probe(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.RollingUpdateStrategy": schema_pkg_apis_kynomesh_v1alpha1_RollingUpdateStrategy(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale":                 schema_pkg_apis_kynomesh_v1alpha1_Scale(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Status":                schema_pkg_apis_kynomesh_v1alpha1_Status(ref),
@@ -1382,12 +1383,12 @@ func schema_pkg_apis_kynomesh_v1alpha1_Container(ref common.ReferenceCallback) c
 					},
 					"readinessProbe": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.Probe"),
+							Ref: ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Probe"),
 						},
 					},
 					"livenessProbe": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/api/core/v1.Probe"),
+							Ref: ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Probe"),
 						},
 					},
 					"ports": {
@@ -1418,7 +1419,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_Container(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.EnvFromSource", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.Probe", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext", "k8s.io/api/core/v1.VolumeMount"},
+			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Probe", "k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.EnvFromSource", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext", "k8s.io/api/core/v1.VolumeMount"},
 	}
 }
 
@@ -1553,6 +1554,54 @@ func schema_pkg_apis_kynomesh_v1alpha1_Peer(ref common.ReferenceCallback) common
 					},
 				},
 				Required: []string{"name"},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_kynomesh_v1alpha1_Probe(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "Probe is used to customize the configuration for Readiness and Liveness probes.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"initialDelaySeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Number of seconds after the container has started before liveness probes are initiated. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"timeoutSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Number of seconds after which the probe times out. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"periodSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "How often (in seconds) to perform the probe.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"successThreshold": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Minimum consecutive successes for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness and startup. Minimum value is 1.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"failureThreshold": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+				},
 			},
 		},
 	}

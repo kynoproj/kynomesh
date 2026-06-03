@@ -517,14 +517,14 @@ func TestBuildPodSpec_AgentProjectsContainerFields(t *testing.T) {
 	assert.Equal(t, int32(7000), agent.Ports[0].ContainerPort)
 }
 
-func TestBuildPodSpec_AgentProbesAreControllerOwned(t *testing.T) {
+func TestBuildPodSpec_AgentProbes(t *testing.T) {
 	wantCmd := []string{
 		kmv1.ProbeBinaryPath,
 		"--mode=grpc",
 		"--socket=" + kmv1.BrokerSocketPath,
 	}
 
-	t.Run("injected_when_spec_has_no_probes", func(t *testing.T) {
+	t.Run("defaults_when_spec_has_no_probes", func(t *testing.T) {
 		ad := newAgentDeploy("greeter", 1)
 		ad.Spec.Container = &kmv1.Container{Image: "user/agent:v1"}
 
@@ -533,39 +533,58 @@ func TestBuildPodSpec_AgentProbesAreControllerOwned(t *testing.T) {
 		require.NotNil(t, agent.ReadinessProbe)
 		require.NotNil(t, agent.ReadinessProbe.Exec)
 		assert.Equal(t, wantCmd, agent.ReadinessProbe.Exec.Command)
-		assert.Equal(t, int32(5), agent.ReadinessProbe.PeriodSeconds)
-		assert.Equal(t, int32(2), agent.ReadinessProbe.TimeoutSeconds)
-		assert.Equal(t, int32(3), agent.ReadinessProbe.FailureThreshold)
+		assert.Equal(t, kmv1.DefaultAgentReadinessInitialDelaySec, agent.ReadinessProbe.InitialDelaySeconds)
+		assert.Equal(t, kmv1.DefaultAgentReadinessPeriodSec, agent.ReadinessProbe.PeriodSeconds)
+		assert.Equal(t, kmv1.DefaultAgentReadinessTimeoutSec, agent.ReadinessProbe.TimeoutSeconds)
+		assert.Equal(t, kmv1.DefaultAgentReadinessFailureThreshold, agent.ReadinessProbe.FailureThreshold)
+		assert.Equal(t, kmv1.DefaultAgentReadinessSuccessThreshold, agent.ReadinessProbe.SuccessThreshold)
 
 		require.NotNil(t, agent.LivenessProbe)
 		require.NotNil(t, agent.LivenessProbe.Exec)
 		assert.Equal(t, wantCmd, agent.LivenessProbe.Exec.Command)
-		assert.Equal(t, int32(10), agent.LivenessProbe.InitialDelaySeconds)
-		assert.Equal(t, int32(10), agent.LivenessProbe.PeriodSeconds)
-		assert.Equal(t, int32(3), agent.LivenessProbe.TimeoutSeconds)
-		assert.Equal(t, int32(6), agent.LivenessProbe.FailureThreshold)
+		assert.Equal(t, kmv1.DefaultAgentLivenessInitialDelaySec, agent.LivenessProbe.InitialDelaySeconds)
+		assert.Equal(t, kmv1.DefaultAgentLivenessPeriodSec, agent.LivenessProbe.PeriodSeconds)
+		assert.Equal(t, kmv1.DefaultAgentLivenessTimeoutSec, agent.LivenessProbe.TimeoutSeconds)
+		assert.Equal(t, kmv1.DefaultAgentLivenessFailureThreshold, agent.LivenessProbe.FailureThreshold)
+		assert.Equal(t, kmv1.DefaultAgentLivenessSuccessThreshold, agent.LivenessProbe.SuccessThreshold)
 	})
 
-	t.Run("ignores_user_provided_probes", func(t *testing.T) {
+	t.Run("honors_spec_timing_overrides_per_field", func(t *testing.T) {
+		// User overrides a subset of fields on each probe; unset fields
+		// must fall through to controller defaults, and the exec handler
+		// stays controller-owned regardless.
 		ad := newAgentDeploy("greeter", 1)
 		ad.Spec.Container = &kmv1.Container{
-			Image:          "user/agent:v1",
-			ReadinessProbe: &corev1.Probe{InitialDelaySeconds: 99, ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{Path: "/user"}}},
-			LivenessProbe:  &corev1.Probe{InitialDelaySeconds: 99, ProbeHandler: corev1.ProbeHandler{HTTPGet: &corev1.HTTPGetAction{Path: "/user"}}},
+			Image: "user/agent:v1",
+			ReadinessProbe: &kmv1.Probe{
+				PeriodSeconds:    ptr.To(int32(15)),
+				FailureThreshold: ptr.To(int32(7)),
+			},
+			LivenessProbe: &kmv1.Probe{
+				InitialDelaySeconds: ptr.To(int32(45)),
+				TimeoutSeconds:      ptr.To(int32(8)),
+			},
 		}
 
 		agent := initContainerByName(buildPodSpec(ad, testBrokerImage), kmv1.ContainerNameAgent)
 
 		require.NotNil(t, agent.ReadinessProbe)
-		require.NotNil(t, agent.ReadinessProbe.Exec, "spec ReadinessProbe must be ignored in favor of controller-owned exec probe")
-		assert.Nil(t, agent.ReadinessProbe.HTTPGet)
-		assert.Equal(t, wantCmd, agent.ReadinessProbe.Exec.Command)
-		assert.NotEqual(t, int32(99), agent.ReadinessProbe.InitialDelaySeconds)
+		require.NotNil(t, agent.ReadinessProbe.Exec)
+		assert.Equal(t, wantCmd, agent.ReadinessProbe.Exec.Command, "exec handler stays controller-owned")
+		assert.Equal(t, int32(15), agent.ReadinessProbe.PeriodSeconds, "user override wins")
+		assert.Equal(t, int32(7), agent.ReadinessProbe.FailureThreshold, "user override wins")
+		assert.Equal(t, int32(2), agent.ReadinessProbe.TimeoutSeconds, "unset fields fall back to default")
+		assert.Equal(t, kmv1.DefaultAgentReadinessInitialDelaySec, agent.ReadinessProbe.InitialDelaySeconds, "unset fields fall back to default")
+		assert.Equal(t, int32(1), agent.ReadinessProbe.SuccessThreshold, "unset fields fall back to default")
 
 		require.NotNil(t, agent.LivenessProbe)
 		require.NotNil(t, agent.LivenessProbe.Exec)
-		assert.Nil(t, agent.LivenessProbe.HTTPGet)
-		assert.Equal(t, wantCmd, agent.LivenessProbe.Exec.Command)
+		assert.Equal(t, wantCmd, agent.LivenessProbe.Exec.Command, "exec handler stays controller-owned")
+		assert.Equal(t, int32(45), agent.LivenessProbe.InitialDelaySeconds, "user override wins")
+		assert.Equal(t, int32(8), agent.LivenessProbe.TimeoutSeconds, "user override wins")
+		assert.Equal(t, kmv1.DefaultAgentLivenessPeriodSec, agent.LivenessProbe.PeriodSeconds, "unset fields fall back to default")
+		assert.Equal(t, int32(6), agent.LivenessProbe.FailureThreshold, "unset fields fall back to default")
+		assert.Equal(t, int32(1), agent.LivenessProbe.SuccessThreshold, "unset fields fall back to default")
 	})
 }
 

@@ -28,7 +28,7 @@ import (
 )
 
 func main() {
-	cfg := Config{}
+	cfg := probeConfig{}
 	flag.StringVar(&cfg.Mode, "mode", "grpc", "Health protocol: grpc or http")
 	flag.StringVar(&cfg.Socket, "socket", "", "Path to the unix domain socket to probe (required)")
 	flag.StringVar(&cfg.Service, "service", "", "gRPC service name to check (grpc mode only; empty means overall server)")

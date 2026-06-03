@@ -33,8 +33,8 @@ const (
 	ModeHTTP = "http"
 )
 
-// Config captures every input the probe needs.
-type Config struct {
+// probeConfig captures every input the probe needs.
+type probeConfig struct {
 	Mode     string
 	Socket   string
 	Service  string
@@ -43,7 +43,7 @@ type Config struct {
 }
 
 // Run dispatches to the configured probe mode.
-func Run(ctx context.Context, cfg Config) error {
+func Run(ctx context.Context, cfg probeConfig) error {
 	if cfg.Socket == "" {
 		return fmt.Errorf("--socket is required")
 	}

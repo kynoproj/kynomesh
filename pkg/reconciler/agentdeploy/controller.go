@@ -525,10 +525,14 @@ func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
 }
 
 // newAgentContainer builds the user's agent container as a K8s-native
-// sidecar.
+// sidecar. The probe handler is controller-owned (exec → bundled probe
+// binary over the agent UDS); the timing knobs on the spec's
+// ReadinessProbe/LivenessProbe are honored when set, with controller
+// defaults filling in the rest.
 func newAgentContainer(ad *kmv1.AgentDeploy) corev1.Container {
 	src := ad.Spec.Container
 	c := corev1.Container{Name: kmv1.ContainerNameAgent}
+	var readinessSpec, livenessSpec *kmv1.Probe
 	if src != nil {
 		c.Image = src.Image
 		c.Command = src.Command
@@ -542,11 +546,13 @@ func newAgentContainer(ad *kmv1.AgentDeploy) corev1.Container {
 			c.ImagePullPolicy = *src.ImagePullPolicy
 		}
 		c.Ports = src.Ports
+		readinessSpec = src.ReadinessProbe
+		livenessSpec = src.LivenessProbe
 	}
 	c.Env = mergeEnv(c.Env, commonEnv(ad))
 	c.VolumeMounts = appendMountIfAbsent(c.VolumeMounts, kynomeshRunMount())
-	c.ReadinessProbe = agentReadinessProbe()
-	c.LivenessProbe = agentLivenessProbe()
+	c.ReadinessProbe = agentReadinessProbe(readinessSpec)
+	c.LivenessProbe = agentLivenessProbe(livenessSpec)
 	always := corev1.ContainerRestartPolicyAlways
 	c.RestartPolicy = &always
 	return c
@@ -563,24 +569,25 @@ func agentProbeExec() []string {
 	}
 }
 
-func agentReadinessProbe() *corev1.Probe {
+func agentReadinessProbe(spec *kmv1.Probe) *corev1.Probe {
 	return &corev1.Probe{
-		ProbeHandler:     corev1.ProbeHandler{Exec: &corev1.ExecAction{Command: agentProbeExec()}},
-		PeriodSeconds:    5,
-		TimeoutSeconds:   2,
-		FailureThreshold: 3,
-		SuccessThreshold: 1,
+		ProbeHandler:        corev1.ProbeHandler{Exec: &corev1.ExecAction{Command: agentProbeExec()}},
+		InitialDelaySeconds: kmv1.GetProbeInitialDelaySecondsOr(spec, kmv1.DefaultAgentReadinessInitialDelaySec),
+		PeriodSeconds:       kmv1.GetProbePeriodSecondsOr(spec, kmv1.DefaultAgentReadinessPeriodSec),
+		TimeoutSeconds:      kmv1.GetProbeTimeoutSecondsOr(spec, kmv1.DefaultAgentReadinessTimeoutSec),
+		FailureThreshold:    kmv1.GetProbeFailureThresholdOr(spec, kmv1.DefaultAgentReadinessFailureThreshold),
+		SuccessThreshold:    kmv1.GetProbeSuccessThresholdOr(spec, kmv1.DefaultAgentReadinessSuccessThreshold),
 	}
 }
 
-func agentLivenessProbe() *corev1.Probe {
+func agentLivenessProbe(spec *kmv1.Probe) *corev1.Probe {
 	return &corev1.Probe{
 		ProbeHandler:        corev1.ProbeHandler{Exec: &corev1.ExecAction{Command: agentProbeExec()}},
-		InitialDelaySeconds: 10,
-		PeriodSeconds:       10,
-		TimeoutSeconds:      3,
-		FailureThreshold:    6,
-		SuccessThreshold:    1,
+		InitialDelaySeconds: kmv1.GetProbeInitialDelaySecondsOr(spec, kmv1.DefaultAgentLivenessInitialDelaySec),
+		PeriodSeconds:       kmv1.GetProbePeriodSecondsOr(spec, kmv1.DefaultAgentLivenessPeriodSec),
+		TimeoutSeconds:      kmv1.GetProbeTimeoutSecondsOr(spec, kmv1.DefaultAgentLivenessTimeoutSec),
+		FailureThreshold:    kmv1.GetProbeFailureThresholdOr(spec, kmv1.DefaultAgentLivenessFailureThreshold),
+		SuccessThreshold:    kmv1.GetProbeSuccessThresholdOr(spec, kmv1.DefaultAgentLivenessSuccessThreshold),
 	}
 }
 
