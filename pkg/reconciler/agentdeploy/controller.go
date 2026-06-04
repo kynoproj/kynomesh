@@ -696,7 +696,6 @@ func newBrokerContainer(image, encodedAgentDeploy string, tmpl *kmv1.ContainerTe
 }
 
 // newInitRuntimeContainer builds the init container that prepares /var/run/kynomesh.
-// commonEnv and the kynomesh-run mount are layered on by buildPodSpec.
 func newInitRuntimeContainer(image, encodedAgentDeploy string) corev1.Container {
 	return corev1.Container{
 		Name:  kmv1.ContainerNameInitRuntime,
