@@ -15,20 +15,7 @@ limitations under the License.
 */
 
 // Package agentdeploy implements the controller that reconciles AgentDeploy
-// resources into their owned Pods and the headless Service that gives each
-// replica a stable DNS name.
-//
-//   - One pod per replica index `[0, replicas)`, named
-//     "<deploy>-<replicaIdx>-<rand5>" — the index is stable across
-//     rollouts; the random suffix is throwaway so delete-and-recreate
-//     doesn't hit name-already-exists.
-//   - The replica index is carried in the `KeyReplica` annotation AND in
-//     `pod.Spec.Hostname` so callers can address a specific replica via
-//     "<deploy>-<idx>.<deploy>-headless.<ns>.svc.cluster.local".
-//   - A spec hash is stamped on each pod as the `KeyHash` annotation.
-//     Drift triggers a delete-and-recreate (k8s forbids most pod-spec
-//     mutations after creation).
-//   - A single headless Service per AgentDeploy gives the pods their DNS.
+// resources.
 package agentdeploy
 
 import (
@@ -515,13 +502,24 @@ func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
 	}
 	ad.Spec.ApplyToPodSpec(&ps)
 
-	builtinEnvs := commonEnv(ad)
-	mount := kynomeshRunMount()
-	for i := range ps.Containers {
-		ps.Containers[i].Env = mergeEnv(ps.Containers[i].Env, builtinEnvs)
-		ps.Containers[i].VolumeMounts = appendMountIfAbsent(ps.Containers[i].VolumeMounts, mount)
-	}
+	// Only apply to built-in containers
+	const controllerOwnedContainerCount = 1 // broker
+	const controllerOwnedInitCount = 2      // init-runtime, agent
+	applyRuntimeBuiltins(ad, ps.Containers[:controllerOwnedContainerCount])
+	applyRuntimeBuiltins(ad, ps.InitContainers[:controllerOwnedInitCount])
 	return ps
+}
+
+// applyRuntimeBuiltins injects the kynomesh built-in env and the kynomesh-run
+// mount onto every container in cs. Built-in env wins over user-supplied
+// entries with the same name (see mergeEnv).
+func applyRuntimeBuiltins(ad *kmv1.AgentDeploy, cs []corev1.Container) {
+	env := commonEnv(ad)
+	mount := kynomeshRunMount()
+	for i := range cs {
+		cs[i].Env = mergeEnv(cs[i].Env, env)
+		cs[i].VolumeMounts = appendMountIfAbsent(cs[i].VolumeMounts, mount)
+	}
 }
 
 // newAgentContainer builds the user's agent container as a K8s-native
@@ -546,8 +544,6 @@ func newAgentContainer(ad *kmv1.AgentDeploy) corev1.Container {
 		readinessSpec = src.ReadinessProbe
 		livenessSpec = src.LivenessProbe
 	}
-	c.Env = mergeEnv(c.Env, commonEnv(ad))
-	c.VolumeMounts = appendMountIfAbsent(c.VolumeMounts, kynomeshRunMount())
 	c.ReadinessProbe = agentReadinessProbe(readinessSpec)
 	c.LivenessProbe = agentLivenessProbe(livenessSpec)
 	always := corev1.ContainerRestartPolicyAlways
@@ -700,6 +696,7 @@ func newBrokerContainer(image, encodedAgentDeploy string, tmpl *kmv1.ContainerTe
 }
 
 // newInitRuntimeContainer builds the init container that prepares /var/run/kynomesh.
+// commonEnv and the kynomesh-run mount are layered on by buildPodSpec.
 func newInitRuntimeContainer(image, encodedAgentDeploy string) corev1.Container {
 	return corev1.Container{
 		Name:  kmv1.ContainerNameInitRuntime,
@@ -708,7 +705,6 @@ func newInitRuntimeContainer(image, encodedAgentDeploy string) corev1.Container 
 		Env: []corev1.EnvVar{
 			{Name: kmv1.EnvAgentDeployObject, Value: encodedAgentDeploy},
 		},
-		VolumeMounts: []corev1.VolumeMount{kynomeshRunMount()},
 	}
 }
 

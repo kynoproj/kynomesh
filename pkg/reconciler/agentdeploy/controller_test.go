@@ -247,8 +247,9 @@ func TestBuildPodSpec_InjectsKynomeshRunVolume(t *testing.T) {
 		"emptyDir must use tmpfs so the UDS socket doesn't touch disk")
 }
 
-func TestBuildPodSpec_MountsKynomeshRunOnRuntimeContainersOnly(t *testing.T) {
-	// kynomesh-run mounts on broker, user sidecars, init-runtime, and the agent sidecar; user init containers don't get it.
+func TestBuildPodSpec_MountsKynomeshRunOnControllerOwnedContainersOnly(t *testing.T) {
+	// kynomesh-run mounts on broker, init-runtime, and the agent sidecar only;
+	// user sidecars and user init containers don't get it.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
 	ad.Spec.InitContainers = []corev1.Container{{Name: "init-1", Image: "busybox"}}
@@ -267,11 +268,18 @@ func TestBuildPodSpec_MountsKynomeshRunOnRuntimeContainersOnly(t *testing.T) {
 		}
 		assert.Equal(t, 1, matches, "%s must have exactly one kynomesh-run mount", owner)
 	}
+	checkNoMount := func(t *testing.T, mounts []corev1.VolumeMount, owner string) {
+		t.Helper()
+		for _, m := range mounts {
+			assert.NotEqual(t, kmv1.VolumeNameKynomeshRun, m.Name,
+				"%s must not carry the kynomesh-run mount", owner)
+		}
+	}
 
 	// Main containers: broker + user-sidecar.
 	require.Len(t, ps.Containers, 2)
 	checkMount(t, ps.Containers[0].VolumeMounts, kmv1.ContainerNameAgentBroker)
-	checkMount(t, ps.Containers[1].VolumeMounts, "user-sidecar")
+	checkNoMount(t, ps.Containers[1].VolumeMounts, "user-sidecar")
 
 	// Init containers: [init-runtime, agent (sidecar), init-1].
 	require.Len(t, ps.InitContainers, 3)
@@ -282,10 +290,7 @@ func TestBuildPodSpec_MountsKynomeshRunOnRuntimeContainersOnly(t *testing.T) {
 	checkMount(t, ps.InitContainers[1].VolumeMounts, kmv1.ContainerNameAgent)
 
 	assert.Equal(t, "init-1", ps.InitContainers[2].Name)
-	for _, m := range ps.InitContainers[2].VolumeMounts {
-		assert.NotEqual(t, kmv1.VolumeNameKynomeshRun, m.Name,
-			"user-supplied init containers must not carry the kynomesh-run mount")
-	}
+	checkNoMount(t, ps.InitContainers[2].VolumeMounts, "user-init")
 }
 
 func TestBuildPodSpec_InitContainerOrder(t *testing.T) {
@@ -438,13 +443,22 @@ func TestBuildPodSpec_InjectsDownwardAPIEnv(t *testing.T) {
 		assert.Equal(t, "metadata.name", pn.ValueFrom.FieldRef.FieldPath)
 	}
 
-	// Main containers.
+	// Controller-owned containers only: broker, init-runtime, agent sidecar.
+	// User-supplied sidecars and init containers must not receive the built-in env.
 	for _, c := range ps.Containers {
-		t.Run(c.Name, func(t *testing.T) { check(t, c) })
+		if c.Name == kmv1.ContainerNameAgentBroker {
+			t.Run(c.Name, func(t *testing.T) { check(t, c) })
+		} else {
+			t.Run(c.Name+"/no-builtin", func(t *testing.T) {
+				assert.Nil(t, findEnv(c.Env, kmv1.EnvNamespace),
+					"user sidecar %s must not receive built-in NAMESPACE env", c.Name)
+				assert.Nil(t, findEnv(c.Env, kmv1.EnvPodName),
+					"user sidecar %s must not receive built-in POD_NAME env", c.Name)
+			})
+		}
 	}
-	// Agent sidecar in init containers.
 	for _, c := range ps.InitContainers {
-		if c.Name == kmv1.ContainerNameAgent {
+		if c.Name == kmv1.ContainerNameAgent || c.Name == kmv1.ContainerNameInitRuntime {
 			t.Run("init/"+c.Name, func(t *testing.T) { check(t, c) })
 		}
 	}

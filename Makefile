@@ -79,7 +79,7 @@ DOCKER:=$(shell command -v podman 2> /dev/null)
 endif
 
 .PHONY: build
-build: build-probe-binary build-binary
+build: clean build-probe-binary build-binary
 
 build-binary: dist/$(BINARY_NAME)-linux-amd64.gz dist/$(BINARY_NAME)-linux-arm64.gz dist/$(BINARY_NAME)-linux-arm.gz dist/$(BINARY_NAME)-linux-ppc64le.gz dist/$(BINARY_NAME)-linux-s390x.gz
 
@@ -112,10 +112,10 @@ dist/$(BINARY_NAME)-%:
 	CGO_ENABLED=0 $(GOARGS) go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/$(BINARY_NAME)-$* ./cmd
 
 dist/$(PROBE_BINARY_NAME):
-	go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/$(BINARY_NAME) ./cmd/probe
+	go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/$(BINARY_NAME) ./probe
 
 dist/$(PROBE_BINARY_NAME)-%:
-	CGO_ENABLED=0 $(GOARGS) go build -v -trimpath -ldflags '-s -w' -o ${DIST_DIR}/$(PROBE_BINARY_NAME)-$* ./cmd/probe
+	CGO_ENABLED=0 $(GOARGS) go build -v -trimpath -ldflags '-s -w' -o ${DIST_DIR}/$(PROBE_BINARY_NAME)-$* ./probe
 
 .PHONY: test
 test:
