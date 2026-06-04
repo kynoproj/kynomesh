@@ -55,19 +55,15 @@ const (
 // Reconciler implements controller-runtime's reconcile.Reconciler.
 type Reconciler struct {
 	client.Client
-	scheme      *runtime.Scheme
-	logger      *zap.SugaredLogger
-	recorder    events.EventRecorder
-	brokerImage string
+	scheme          *runtime.Scheme
+	logger          *zap.SugaredLogger
+	recorder        events.EventRecorder
+	image           string
+	imagePullPolicy corev1.PullPolicy
 }
 
 // NewReconciler returns a Reconciler bound to the supplied client and scheme.
-//
-// brokerImage is the container image used for the A2A broker sidecar that the
-// controller injects into every AgentDeploy pod. It is captured once at
-// startup (discovered from the controller's own pod) so reconciliation does
-// not need to call the API server to find it.
-func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredLogger, recorder events.EventRecorder, brokerImage string) *Reconciler {
+func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredLogger, recorder events.EventRecorder, image string, imagePullPolicy corev1.PullPolicy) *Reconciler {
 	if logger == nil {
 		logger = logging.NewLogger().Named(kmv1.ControllerAgentDeploy)
 	}
@@ -75,11 +71,12 @@ func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredL
 		recorder = noopRecorder{}
 	}
 	return &Reconciler{
-		Client:      c,
-		scheme:      scheme,
-		logger:      logger,
-		recorder:    recorder,
-		brokerImage: brokerImage,
+		Client:          c,
+		scheme:          scheme,
+		logger:          logger,
+		recorder:        recorder,
+		image:           image,
+		imagePullPolicy: imagePullPolicy,
 	}
 }
 
@@ -177,7 +174,7 @@ func (r *Reconciler) reconcilePods(ctx context.Context, ad *kmv1.AgentDeploy) er
 	desired := desiredReplicas(ad)
 	ad.Status.DesiredReplicas = uint32(desired)
 
-	desiredPodSpec := buildPodSpec(ad, r.brokerImage)
+	desiredPodSpec := buildPodSpec(ad, r.image, r.imagePullPolicy)
 	desiredHash := sharedutil.MustHash(desiredPodSpec)
 
 	// Detect a spec change: reset the rollout cursor so a mid-rollout
@@ -483,13 +480,13 @@ func desiredReplicas(ad *kmv1.AgentDeploy) int {
 }
 
 // buildPodSpec composes the corev1.PodSpec from the AgentDeploy spec.
-func buildPodSpec(ad *kmv1.AgentDeploy, brokerImage string) corev1.PodSpec {
+func buildPodSpec(ad *kmv1.AgentDeploy, image string, imagePullPolicy corev1.PullPolicy) corev1.PodSpec {
 	encodedAgentDeploy := kmv1.EncodeAgentDeploy(ad)
-	containers := []corev1.Container{newBrokerContainer(brokerImage, encodedAgentDeploy, ad.Spec.BrokerTemplate)}
+	containers := []corev1.Container{newBrokerContainer(image, imagePullPolicy, encodedAgentDeploy, ad.Spec.BrokerTemplate)}
 	containers = append(containers, ad.Spec.Sidecars...)
 
 	initContainers := []corev1.Container{
-		newInitRuntimeContainer(brokerImage, encodedAgentDeploy),
+		newInitRuntimeContainer(image, imagePullPolicy, encodedAgentDeploy),
 		newAgentContainer(ad),
 	}
 	initContainers = append(initContainers, ad.Spec.InitContainers...)
@@ -668,11 +665,12 @@ func mergeEnv(existing, overrides []corev1.EnvVar) []corev1.EnvVar {
 }
 
 // newBrokerContainer builds the broker sidecar.
-func newBrokerContainer(image, encodedAgentDeploy string, tmpl *kmv1.ContainerTemplate) corev1.Container {
+func newBrokerContainer(image string, pullPolicy corev1.PullPolicy, encodedAgentDeploy string, tmpl *kmv1.ContainerTemplate) corev1.Container {
 	c := corev1.Container{
-		Name:  kmv1.ContainerNameAgentBroker,
-		Image: image,
-		Args:  []string{"broker"},
+		Name:            kmv1.ContainerNameAgentBroker,
+		Image:           image,
+		ImagePullPolicy: pullPolicy,
+		Args:            []string{"broker"},
 		Env: []corev1.EnvVar{
 			{Name: kmv1.EnvAgentDeployObject, Value: encodedAgentDeploy},
 		},
@@ -696,11 +694,12 @@ func newBrokerContainer(image, encodedAgentDeploy string, tmpl *kmv1.ContainerTe
 }
 
 // newInitRuntimeContainer builds the init container that prepares /var/run/kynomesh.
-func newInitRuntimeContainer(image, encodedAgentDeploy string) corev1.Container {
+func newInitRuntimeContainer(image string, pullPolicy corev1.PullPolicy, encodedAgentDeploy string) corev1.Container {
 	return corev1.Container{
-		Name:  kmv1.ContainerNameInitRuntime,
-		Image: image,
-		Args:  []string{"init-runtime"},
+		Name:            kmv1.ContainerNameInitRuntime,
+		Image:           image,
+		ImagePullPolicy: pullPolicy,
+		Args:            []string{"init-runtime"},
 		Env: []corev1.EnvVar{
 			{Name: kmv1.EnvAgentDeployObject, Value: encodedAgentDeploy},
 		},

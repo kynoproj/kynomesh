@@ -3,7 +3,7 @@ ARG ARCH=$TARGETARCH
 ####################################################################################################
 # base
 ####################################################################################################
-FROM alpine:3.17 AS base
+FROM alpine:3.23 AS base
 ARG ARCH
 RUN apk update && apk upgrade && \
     apk add ca-certificates && \
