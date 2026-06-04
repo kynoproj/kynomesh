@@ -40,6 +40,7 @@ const (
 	EnvLeaderElectionLeaseDuration = "KYNOMESH_LEADER_ELECTION_LEASE_DURATION"
 	EnvLeaderElectionRenewDeadline = "KYNOMESH_LEADER_ELECTION_RENEW_DEADLINE"
 	EnvLeaderElectionRetryPeriod   = "KYNOMESH_LEADER_ELECTION_RETRY_PERIOD"
+	EnvImagePullPolicy             = "KYNOMESH_IMAGE_PULL_POLICY"
 
 	// Container names
 	ContainerNameAgent       = "agent"

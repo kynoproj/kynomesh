@@ -306,3 +306,33 @@ func TestControllerImageFromPod(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveBrokerPullPolicy(t *testing.T) {
+	tests := []struct {
+		name      string
+		env       string
+		want      corev1.PullPolicy
+		wantErr   bool
+		errSubstr string
+	}{
+		{name: "unset returns empty", env: "", want: ""},
+		{name: "Always", env: "Always", want: corev1.PullAlways},
+		{name: "Never", env: "Never", want: corev1.PullNever},
+		{name: "IfNotPresent", env: "IfNotPresent", want: corev1.PullIfNotPresent},
+		{name: "lowercase rejected", env: "always", wantErr: true, errSubstr: "must be one of"},
+		{name: "garbage rejected", env: "Sometimes", wantErr: true, errSubstr: "Sometimes"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv(kmv1.EnvImagePullPolicy, tc.env)
+			got, err := resolveBrokerPullPolicy()
+			if tc.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errSubstr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}

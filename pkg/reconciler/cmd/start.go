@@ -126,6 +126,14 @@ func Start(namespaced bool, managedNamespace string) {
 	}
 	logger.Infow("discovered broker sidecar image", "image", brokerImage)
 
+	brokerPullPolicy, err := resolveBrokerPullPolicy()
+	if err != nil {
+		logger.Fatalw("invalid broker image pull policy", "env", kmv1.EnvImagePullPolicy, "err", err)
+	}
+	if brokerPullPolicy != "" {
+		logger.Infow("Resolved image pull policy", "imagePullPolicy", string(brokerPullPolicy))
+	}
+
 	mgr, err := ctrl.NewManager(cfg, opts)
 	if err != nil {
 		logger.Fatalw("failed to create controller manager", "err", err)
@@ -141,7 +149,7 @@ func Start(namespaced bool, managedNamespace string) {
 	if err := registerAgentSetController(mgr, logger); err != nil {
 		logger.Fatalw("failed to register AgentSet controller", "err", err)
 	}
-	if err := registerAgentDeployController(mgr, logger, brokerImage); err != nil {
+	if err := registerAgentDeployController(mgr, logger, brokerImage, brokerPullPolicy); err != nil {
 		logger.Fatalw("failed to register AgentDeploy controller", "err", err)
 	}
 
@@ -194,6 +202,22 @@ func resolveLeaderElectionTimings() (lease, renew, retry time.Duration, err erro
 		)
 	}
 	return lease, renew, retry, nil
+}
+
+// resolveBrokerPullPolicy returns the PullPolicy stamped onto the broker
+// sidecar and the init-runtime container.
+func resolveBrokerPullPolicy() (corev1.PullPolicy, error) {
+	raw := os.Getenv(kmv1.EnvImagePullPolicy)
+	if raw == "" {
+		return "", nil
+	}
+	switch corev1.PullPolicy(raw) {
+	case corev1.PullAlways, corev1.PullNever, corev1.PullIfNotPresent:
+		return corev1.PullPolicy(raw), nil
+	default:
+		return "", fmt.Errorf("must be one of %q, %q, %q (got %q)",
+			corev1.PullAlways, corev1.PullNever, corev1.PullIfNotPresent, raw)
+	}
 }
 
 // registerAgentSetController wires the AgentSet reconciler into the manager.
@@ -269,13 +293,14 @@ func registerAgentSetController(mgr manager.Manager, logger *zap.SugaredLogger) 
 //
 //   - Service (owned): enqueue the controlling AgentDeploy if the headless
 //     service is mutated or deleted out from under us.
-func registerAgentDeployController(mgr manager.Manager, logger *zap.SugaredLogger, brokerImage string) error {
+func registerAgentDeployController(mgr manager.Manager, logger *zap.SugaredLogger, brokerImage string, brokerPullPolicy corev1.PullPolicy) error {
 	r := agentdeploy.NewReconciler(
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		logger.Named(kmv1.ControllerAgentDeploy),
 		mgr.GetEventRecorder(kmv1.ControllerAgentDeploy),
 		brokerImage,
+		brokerPullPolicy,
 	)
 
 	c, err := controller.New(kmv1.ControllerAgentDeploy, mgr, controller.Options{
