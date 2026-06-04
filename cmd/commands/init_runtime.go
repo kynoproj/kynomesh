@@ -24,8 +24,10 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
+	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 )
 
 // NewInitRuntimeCommand returns the "init-runtime" subcommand.
@@ -35,10 +37,19 @@ func NewInitRuntimeCommand() *cobra.Command {
 		Use:   "init-runtime",
 		Short: "Prepare the per-agent runtime directory (topology, probe binary)",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			if err := writeTopology(topologyPath, os.Getenv(kmv1.EnvAgentDeployObject)); err != nil {
-				return err
+			logger := logging.WithAgentLabels(logging.NewLogger().Named("init-runtime"))
+			logger.Infow("Starting init-runtime",
+				zap.String("topologyPath", topologyPath),
+				zap.String("probeSrc", probeSrc),
+				zap.String("probeDst", probeDst))
+			if err := writeTopology(logger, topologyPath, os.Getenv(kmv1.EnvAgentDeployObject)); err != nil {
+				return fmt.Errorf("failed to write topology: %w", err)
 			}
-			return installProbeBinary(probeSrc, probeDst)
+			if err := installProbeBinary(logger, probeSrc, probeDst); err != nil {
+				return fmt.Errorf("failed to install probe binary: %w", err)
+			}
+			logger.Infow("Init-runtime completed successfully")
+			return nil
 		},
 	}
 	command.Flags().StringVar(&topologyPath, "topology-path", kmv1.TopologyFilePath,
@@ -51,12 +62,16 @@ func NewInitRuntimeCommand() *cobra.Command {
 }
 
 // writeTopology decodes the AgentDeploy payload and atomically writes its Topology as JSON to path.
-func writeTopology(path, encodedAgentDeploy string) error {
+func writeTopology(logger *zap.SugaredLogger, path, encodedAgentDeploy string) error {
+	logger.Infow("Decoding AgentDeploy payload from environment")
 	ad, err := kmv1.DecodeAgentDeploy(encodedAgentDeploy)
 	if err != nil {
 		return fmt.Errorf("decode AgentDeploy for topology: %w", err)
 	}
 	topology := resolvePeerURLs(ad)
+	logger.Infow("Resolved topology peers",
+		zap.String("pattern", string(topology.Pattern)),
+		zap.Int("peerCount", len(topology.Peers)))
 	payload, err := json.Marshal(topology)
 	if err != nil {
 		return fmt.Errorf("marshal topology: %w", err)
@@ -83,6 +98,9 @@ func writeTopology(path, encodedAgentDeploy string) error {
 		_ = os.Remove(tmpName)
 		return fmt.Errorf("rename topology to %q: %w", path, err)
 	}
+	logger.Infow("Wrote topology",
+		zap.String("path", path),
+		zap.Int("bytes", len(payload)))
 	return nil
 }
 
@@ -108,7 +126,10 @@ func managedPeerURL(setName, peerName, namespace string) string {
 // installProbeBinary atomically copies src into dst with mode 0755 so the
 // agent container can exec it as a readiness/liveness probe. The destination
 // lives on the shared kynomesh-run tmpfs.
-func installProbeBinary(src, dst string) error {
+func installProbeBinary(logger *zap.SugaredLogger, src, dst string) error {
+	logger.Infow("Installing probe binary",
+		zap.String("src", src),
+		zap.String("dst", dst))
 	in, err := os.Open(src)
 	if err != nil {
 		return fmt.Errorf("open probe binary %q: %w", src, err)
@@ -123,7 +144,8 @@ func installProbeBinary(src, dst string) error {
 		return fmt.Errorf("create temp probe binary: %w", err)
 	}
 	tmpName := tmp.Name()
-	if _, err := io.Copy(tmp, in); err != nil {
+	n, err := io.Copy(tmp, in)
+	if err != nil {
 		_ = tmp.Close()
 		_ = os.Remove(tmpName)
 		return fmt.Errorf("copy probe binary to %q: %w", tmpName, err)
@@ -141,5 +163,8 @@ func installProbeBinary(src, dst string) error {
 		_ = os.Remove(tmpName)
 		return fmt.Errorf("rename probe binary to %q: %w", dst, err)
 	}
+	logger.Infow("Installed probe binary",
+		zap.String("dst", dst),
+		zap.Int64("bytes", n))
 	return nil
 }

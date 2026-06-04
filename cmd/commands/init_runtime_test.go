@@ -24,10 +24,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
+
+func testLogger() *zap.SugaredLogger { return zap.NewNop().Sugar() }
 
 func TestWriteTopology_PopulatesManagedURLs(t *testing.T) {
 	ad := &kmv1.AgentDeploy{
@@ -48,7 +51,7 @@ func TestWriteTopology_PopulatesManagedURLs(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "topology.json")
-	require.NoError(t, writeTopology(path, kmv1.EncodeAgentDeploy(ad)))
+	require.NoError(t, writeTopology(testLogger(), path, kmv1.EncodeAgentDeploy(ad)))
 
 	raw, err := os.ReadFile(path)
 	require.NoError(t, err)
@@ -80,7 +83,7 @@ func TestWriteTopology_PreservesExternalURLs(t *testing.T) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "topology.json")
-	require.NoError(t, writeTopology(path, kmv1.EncodeAgentDeploy(ad)))
+	require.NoError(t, writeTopology(testLogger(), path, kmv1.EncodeAgentDeploy(ad)))
 
 	raw, err := os.ReadFile(path)
 	require.NoError(t, err)
@@ -105,7 +108,7 @@ func TestWriteTopology_AtomicReplace(t *testing.T) {
 			Topology:            kmv1.Topology{Pattern: kmv1.AgentPatternHandoff},
 		},
 	}
-	require.NoError(t, writeTopology(path, kmv1.EncodeAgentDeploy(ad)))
+	require.NoError(t, writeTopology(testLogger(), path, kmv1.EncodeAgentDeploy(ad)))
 
 	raw, err := os.ReadFile(path)
 	require.NoError(t, err)
@@ -122,7 +125,7 @@ func TestWriteTopology_ErrorsOnEmptyPayload(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "topology.json")
 
-	err := writeTopology(path, "")
+	err := writeTopology(testLogger(), path, "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "decode AgentDeploy")
 }
@@ -133,7 +136,7 @@ func TestInstallProbeBinary_CopiesAndMarksExecutable(t *testing.T) {
 	require.NoError(t, os.WriteFile(src, []byte("PROBE-BIN"), 0o644))
 
 	dst := filepath.Join(dir, "bin", "probe")
-	require.NoError(t, installProbeBinary(src, dst))
+	require.NoError(t, installProbeBinary(testLogger(), src, dst))
 
 	got, err := os.ReadFile(dst)
 	require.NoError(t, err)
@@ -153,7 +156,7 @@ func TestInstallProbeBinary_AtomicReplace(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Dir(dst), 0o755))
 	require.NoError(t, os.WriteFile(dst, []byte("OLD"), 0o755))
 
-	require.NoError(t, installProbeBinary(src, dst))
+	require.NoError(t, installProbeBinary(testLogger(), src, dst))
 
 	got, err := os.ReadFile(dst)
 	require.NoError(t, err)
@@ -166,7 +169,7 @@ func TestInstallProbeBinary_AtomicReplace(t *testing.T) {
 
 func TestInstallProbeBinary_ErrorsWhenSrcMissing(t *testing.T) {
 	dir := t.TempDir()
-	err := installProbeBinary(filepath.Join(dir, "missing"), filepath.Join(dir, "out", "probe"))
+	err := installProbeBinary(testLogger(), filepath.Join(dir, "missing"), filepath.Join(dir, "out", "probe"))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "open probe binary")
 }

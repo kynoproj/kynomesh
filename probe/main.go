@@ -14,9 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Command probe is a tiny static health-check binary copied onto the
-// shared kynomesh-run tmpfs by the init-runtime container and invoked
-// from the agent container's readiness/liveness exec probes.
+// Static health-check binary used for agent container's readiness/liveness
+// exec probes.
 package main
 
 import (

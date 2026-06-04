@@ -20,8 +20,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
+
+	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
 func TestNewLogger(t *testing.T) {
@@ -60,6 +65,60 @@ func TestFromContext_InvalidValueInContext(t *testing.T) {
 	if got == nil {
 		t.Fatal("FromContext() with wrong type in context should return a new logger, not nil")
 	}
+}
+
+func TestWithAgentLabels_StampsAllPresentEnv(t *testing.T) {
+	t.Setenv(kmv1.EnvNamespace, "ns-1")
+	t.Setenv(kmv1.EnvAgentSetName, "set-1")
+	t.Setenv(kmv1.EnvAgentDeployName, "deploy-1")
+
+	core, recorded := observer.New(zapcore.InfoLevel)
+	logger := WithAgentLabels(zap.New(core).Sugar())
+	logger.Infow("hello")
+
+	require.Equal(t, 1, recorded.Len())
+	got := recorded.All()[0].ContextMap()
+	assert.Equal(t, "ns-1", got["namespace"])
+	assert.Equal(t, "set-1", got["agentSet"])
+	assert.Equal(t, "deploy-1", got["agentDeploy"])
+}
+
+func TestWithAgentLabels_SkipsUnsetEnv(t *testing.T) {
+	t.Setenv(kmv1.EnvNamespace, "ns-1")
+	t.Setenv(kmv1.EnvAgentSetName, "")
+	t.Setenv(kmv1.EnvAgentDeployName, "")
+
+	core, recorded := observer.New(zapcore.InfoLevel)
+	logger := WithAgentLabels(zap.New(core).Sugar())
+	logger.Infow("hello")
+
+	require.Equal(t, 1, recorded.Len())
+	got := recorded.All()[0].ContextMap()
+	assert.Equal(t, "ns-1", got["namespace"])
+	_, hasSet := got["agentSet"]
+	_, hasDeploy := got["agentDeploy"]
+	assert.False(t, hasSet, "agentSet must not be stamped when env is empty")
+	assert.False(t, hasDeploy, "agentDeploy must not be stamped when env is empty")
+}
+
+func TestWithAgentLabels_NoEnvReturnsSameLogger(t *testing.T) {
+	t.Setenv(kmv1.EnvNamespace, "")
+	t.Setenv(kmv1.EnvAgentSetName, "")
+	t.Setenv(kmv1.EnvAgentDeployName, "")
+
+	base := zap.NewNop().Sugar()
+	got := WithAgentLabels(base)
+	assert.Same(t, base, got, "no env labels — must return the input logger unchanged")
+}
+
+// TestWithAgentLabels_EnvNamesMatchAPIPackage guards against drift between
+// the private env-name consts in this package and the canonical ones in
+// pkg/apis/kynomesh/v1alpha1. Logging deliberately doesn't import v1alpha1,
+// so the test catches a rename of either side.
+func TestWithAgentLabels_EnvNamesMatchAPIPackage(t *testing.T) {
+	assert.Equal(t, kmv1.EnvNamespace, envNamespace)
+	assert.Equal(t, kmv1.EnvAgentSetName, envAgentSetName)
+	assert.Equal(t, kmv1.EnvAgentDeployName, envAgentDeployName)
 }
 
 func TestConfigureLogLevelLogger(t *testing.T) {

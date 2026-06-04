@@ -103,19 +103,21 @@ func publishAgentServerInfo(logger *zap.SugaredLogger, registry prometheus.Regis
 	}
 	info, err := serverinfo.Load(serverInfoFilePath)
 	if err != nil {
-		logger.Warnw("Failed to read agent server-info; skipping", "path", serverInfoFilePath, "err", err)
+		logger.Warnw("Failed to read agent server-info; skipping",
+			zap.String("path", serverInfoFilePath),
+			zap.Error(err))
 		return
 	}
 	if info == nil {
-		logger.Infow("Agent server-info not present; skipping", "path", serverInfoFilePath)
+		logger.Infow("Agent server-info not present; skipping",
+			zap.String("path", serverInfoFilePath))
 		return
 	}
 	logger.Infow("Agent server-info loaded",
-		"protocol", info.Protocol,
-		"language", info.Language,
-		"version", info.Version,
-		"metadata", info.Metadata,
-	)
+		zap.String("protocol", string(info.Protocol)),
+		zap.String("language", string(info.Language)),
+		zap.String("version", info.Version),
+		zap.Any("metadata", info.Metadata))
 	serverinfo.RegisterMetric(registry, *info)
 }
 
@@ -156,11 +158,12 @@ func resolveAdvertiseHost(logger *zap.SugaredLogger, ad *kmv1.AgentDeploy, dial 
 			return "", fmt.Errorf("in-cluster broker requires %s; refusing to start", kmv1.EnvAgentDeployObject)
 		}
 		logger.Infow("Derived broker advertise host from injected AgentDeploy",
-			"advertiseHost", host)
+			zap.String("advertiseHost", host))
 		return host, nil
 	}
 	logger.Infow("Local-dev mode: using default broker advertise host",
-		"advertiseHost", AdvertiseHostDefault, "agent", dial.tcpAddr)
+		zap.String("advertiseHost", AdvertiseHostDefault),
+		zap.String("agent", dial.tcpAddr))
 	return AdvertiseHostDefault, nil
 }
 
@@ -225,10 +228,11 @@ func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int) (*br
 	}
 	if agentCard == nil {
 		logger.Infow("Agent reachable but exposes no AgentCard — running passthrough-only",
-			"agent", dial.target())
+			zap.String("agent", dial.target()))
 	} else {
 		logger.Infow("Agent reachable",
-			"agent", dial.target(), "agentName", agentCard.Name)
+			zap.String("agent", dial.target()),
+			zap.String("agentName", agentCard.Name))
 	}
 
 	metricsRegistry := prometheus.NewRegistry()
@@ -266,28 +270,27 @@ func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int) (*br
 
 // Start boots the broker.
 func Start(port, introspectionPort int) {
-	logger := logging.NewLogger().Named("broker")
+	logger := logging.WithAgentLabels(logging.NewLogger().Named("broker"))
 
 	v := version.GetVersion()
 	logger.Infow("Starting kynomesh broker",
-		"version", v.Version,
-		"buildDate", v.BuildDate,
-		"gitCommit", v.GitCommit,
-		"gitTreeState", v.GitTreeState,
-		"goVersion", v.GoVersion,
-		"platform", v.Platform,
-	)
+		zap.String("version", v.Version),
+		zap.String("buildDate", v.BuildDate),
+		zap.String("gitCommit", v.GitCommit),
+		zap.String("gitTreeState", v.GitTreeState),
+		zap.String("goVersion", v.GoVersion),
+		zap.String("platform", v.Platform))
 
 	stack, err := assembleBroker(logger, port, introspectionPort)
 	if err != nil {
-		logger.Fatalw("Failed to assemble broker — refusing to start", "err", err)
+		logger.Fatalw("Failed to assemble broker — refusing to start", zap.Error(err))
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	if err := runServeLoop(ctx, logger, stack, port, introspectionPort); err != nil {
-		logger.Fatalw("Broker exited with error", "err", err)
+		logger.Fatalw("Broker exited with error", zap.Error(err))
 	}
 	logger.Infow("Broker stopped cleanly")
 }
@@ -304,10 +307,9 @@ func runServeLoop(ctx context.Context, logger *zap.SugaredLogger, stack *brokerS
 	mainServeErr := make(chan error, 1)
 	go func() {
 		logger.Infow("Starting broker on shared port",
-			"port", port,
-			"enabledTransports", enabledTransportNames(rt.enabled),
-			"tls", true,
-		)
+			zap.Int("port", port),
+			zap.Strings("enabledTransports", enabledTransportNames(rt.enabled)),
+			zap.Bool("tls", true))
 		if err := proxySrv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			mainServeErr <- fmt.Errorf("broker server: %w", err)
 			return
@@ -318,7 +320,8 @@ func runServeLoop(ctx context.Context, logger *zap.SugaredLogger, stack *brokerS
 	introspectionServeErr := make(chan error, 1)
 	go func() {
 		logger.Infow("Starting broker introspection listener",
-			"port", introspectionPort, "tls", true)
+			zap.Int("port", introspectionPort),
+			zap.Bool("tls", true))
 		if err := introspectionSrv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			introspectionServeErr <- fmt.Errorf("broker introspection server: %w", err)
 			return
@@ -340,10 +343,10 @@ func runServeLoop(ctx context.Context, logger *zap.SugaredLogger, stack *brokerS
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 	if err := proxySrv.Shutdown(shutdownCtx); err != nil {
-		logger.Warnw("Broker server shutdown error", "err", err)
+		logger.Warnw("Broker server shutdown error", zap.Error(err))
 	}
 	if err := introspectionSrv.Shutdown(shutdownCtx); err != nil {
-		logger.Warnw("Broker introspection shutdown error", "err", err)
+		logger.Warnw("Broker introspection shutdown error", zap.Error(err))
 	}
 	if rt.grpcServer != nil {
 		rt.grpcServer.GracefulStop()
@@ -404,8 +407,9 @@ func buildRuntime(logger *zap.SugaredLogger, registry *prometheus.Registry, agen
 			rt.grpcServer = grpc.NewServer(broker.GRPCPassthroughOptions(conn, rt.counters)...)
 			rt.enabled[iface.ProtocolBinding] = true
 		default:
-			logger.Warnw("ignoring AgentCard interface with unsupported ProtocolBinding",
-				"protocolBinding", iface.ProtocolBinding, "url", iface.URL)
+			logger.Warnw("Ignoring AgentCard interface with unsupported ProtocolBinding",
+				zap.String("protocolBinding", string(iface.ProtocolBinding)),
+				zap.String("url", iface.URL))
 		}
 	}
 	return rt, nil
