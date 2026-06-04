@@ -25,7 +25,6 @@ import (
 	"github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/kynoproj/kynomesh/pkg/broker"
 	sharedtls "github.com/kynoproj/kynomesh/pkg/shared/tls"
@@ -68,7 +67,7 @@ func TestRunServeLoop_CleanShutdownOnContextCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	go func() {
-		done <- runServeLoop(ctx, zap.NewNop().Sugar(), stack, 0, 0)
+		done <- runServeLoop(ctx, stack, 0, 0)
 	}()
 
 	// Give the goroutines a beat to actually call ListenAndServeTLS so
@@ -98,7 +97,7 @@ func TestRunServeLoop_MainListenerError(t *testing.T) {
 
 	done := make(chan error, 1)
 	go func() {
-		done <- runServeLoop(ctx, zap.NewNop().Sugar(), stack, 0, 0)
+		done <- runServeLoop(ctx, stack, 0, 0)
 	}()
 
 	select {
@@ -123,7 +122,7 @@ func TestRunServeLoop_IntrospectionListenerError(t *testing.T) {
 
 	done := make(chan error, 1)
 	go func() {
-		done <- runServeLoop(ctx, zap.NewNop().Sugar(), stack, 0, 0)
+		done <- runServeLoop(ctx, stack, 0, 0)
 	}()
 
 	select {
@@ -144,7 +143,7 @@ func TestRunServeLoop_NilGRPCConnNoOps(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	go func() {
-		done <- runServeLoop(ctx, zap.NewNop().Sugar(), stack, 0, 0)
+		done <- runServeLoop(ctx, stack, 0, 0)
 	}()
 
 	time.Sleep(150 * time.Millisecond)

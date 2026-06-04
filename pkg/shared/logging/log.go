@@ -19,6 +19,7 @@ package logging
 import (
 	"context"
 	"os"
+	"strings"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -42,7 +43,7 @@ const (
 // NewLogger returns a new zap.SugaredLogger
 func NewLogger() *zap.SugaredLogger {
 	logLevel, _ := os.LookupEnv("LOG_LEVEL")
-	config := configureLogLevelLogger(logLevel)
+	config := configureLogLevelLogger(strings.ToLower(logLevel))
 	config.EncoderConfig.EncodeTime = zapcore.RFC3339NanoTimeEncoder
 	config.OutputPaths = []string{"stdout"}
 	logger, err := config.Build()
@@ -71,9 +72,7 @@ func FromContext(ctx context.Context) *zap.SugaredLogger {
 }
 
 // WithAgentLabels binds NAMESPACE, AGENTSET_NAME, and AGENTDEPLOY_NAME from
-// the pod environment as persistent log fields so every log line emitted by
-// the returned logger carries them. Missing env vars are skipped; if none are
-// set, the input logger is returned unchanged.
+// the pod environment as persistent log fields.
 func WithAgentLabels(logger *zap.SugaredLogger) *zap.SugaredLogger {
 	labels := []any{}
 	for _, kv := range []struct{ key, env string }{

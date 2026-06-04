@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"os"
@@ -27,7 +28,6 @@ import (
 	"github.com/a2aproject/a2a-go/v2/a2asrv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
@@ -134,7 +134,7 @@ func TestAssembleBroker_WithAgentCard(t *testing.T) {
 	withAgentSocket(t, sock)
 	withInjectedAgentDeploy(t, "demo-ns", "demo-ad")
 
-	stack, err := assembleBroker(zap.NewNop().Sugar(), 18080, 18081)
+	stack, err := assembleBroker(context.TODO(), 18080, 18081)
 	require.NoError(t, err)
 	require.NotNil(t, stack)
 	require.NotNil(t, stack.rt)
@@ -153,7 +153,7 @@ func TestAssembleBroker_NoAgentCard(t *testing.T) {
 	withAgentSocket(t, sock)
 	withInjectedAgentDeploy(t, "demo-ns", "demo-ad")
 
-	stack, err := assembleBroker(zap.NewNop().Sugar(), 18082, 18083)
+	stack, err := assembleBroker(context.TODO(), 18082, 18083)
 	require.NoError(t, err)
 	require.NotNil(t, stack)
 	assert.Empty(t, stack.rt.enabled, "no card means no A2A transports advertised")
@@ -164,7 +164,7 @@ func TestAssembleBroker_AgentUnreachable(t *testing.T) {
 	withAgentSocket(t, filepath.Join(t.TempDir(), "missing.sock"))
 	withInjectedAgentDeploy(t, "demo-ns", "demo-ad")
 
-	stack, err := assembleBroker(zap.NewNop().Sugar(), 18084, 18085)
+	stack, err := assembleBroker(context.TODO(), 18084, 18085)
 	require.Error(t, err)
 	assert.Nil(t, stack)
 	assert.Contains(t, err.Error(), "fetch AgentCard from agent")
@@ -174,7 +174,7 @@ func TestAssembleBroker_InClusterRequiresAgentDeploy(t *testing.T) {
 	withAgentSocket(t, filepath.Join(t.TempDir(), "missing.sock"))
 	t.Setenv(kmv1.EnvAgentDeployObject, "")
 
-	stack, err := assembleBroker(zap.NewNop().Sugar(), 18088, 18089)
+	stack, err := assembleBroker(context.TODO(), 18088, 18089)
 	require.Error(t, err)
 	assert.Nil(t, stack)
 	assert.Contains(t, err.Error(), kmv1.EnvAgentDeployObject)
@@ -184,7 +184,7 @@ func TestAssembleBroker_MalformedAgentDeploy(t *testing.T) {
 	withAgentSocket(t, filepath.Join(t.TempDir(), "missing.sock"))
 	t.Setenv(kmv1.EnvAgentDeployObject, "not-valid-base64!!!")
 
-	stack, err := assembleBroker(zap.NewNop().Sugar(), 18090, 18091)
+	stack, err := assembleBroker(context.TODO(), 18090, 18091)
 	require.Error(t, err)
 	assert.Nil(t, stack)
 	assert.Contains(t, err.Error(), "decode "+kmv1.EnvAgentDeployObject)
@@ -195,7 +195,7 @@ func TestAssembleBroker_LocalDevTCP(t *testing.T) {
 	withAgentTCPAddr(t, ts)
 	t.Setenv(kmv1.EnvAgentDeployObject, "")
 
-	stack, err := assembleBroker(zap.NewNop().Sugar(), 18092, 18093)
+	stack, err := assembleBroker(context.TODO(), 18092, 18093)
 	require.NoError(t, err)
 	require.NotNil(t, stack)
 	assert.Nil(t, stack.rt.agentDeploy, "local-dev runs have no injected AgentDeploy")

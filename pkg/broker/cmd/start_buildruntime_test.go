@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"net/http"
@@ -28,7 +29,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -104,7 +104,7 @@ func TestBuildRuntime_CardBranches(t *testing.T) {
 				return grpc.NewClient("passthrough:///stub", grpc.WithTransportCredentials(insecure.NewCredentials()))
 			})
 
-			rt, err := buildRuntime(zap.NewNop().Sugar(), prometheus.NewRegistry(), &http.Transport{}, tc.card, nil, agentDial{udsPath: "/tmp/stub"})
+			rt, err := buildRuntime(context.TODO(), prometheus.NewRegistry(), &http.Transport{}, tc.card, nil, agentDial{udsPath: "/tmp/stub"})
 			require.NoError(t, err)
 			require.NotNil(t, rt)
 
@@ -142,7 +142,7 @@ func TestBuildRuntime_StashesAgentDeploy(t *testing.T) {
 	want.Namespace = "demo-ns"
 	want.Name = "demo-ad"
 
-	rt, err := buildRuntime(zap.NewNop().Sugar(), prometheus.NewRegistry(), &http.Transport{}, nil, want, agentDial{udsPath: "/tmp/stub"})
+	rt, err := buildRuntime(context.TODO(), prometheus.NewRegistry(), &http.Transport{}, nil, want, agentDial{udsPath: "/tmp/stub"})
 	require.NoError(t, err)
 	require.NotNil(t, rt)
 	assert.Same(t, want, rt.agentDeploy, "buildRuntime should stash the AgentDeploy pointer verbatim")
@@ -160,7 +160,7 @@ func TestBuildRuntime_GRPCDialError(t *testing.T) {
 	card := &a2a.AgentCard{SupportedInterfaces: []*a2a.AgentInterface{
 		{ProtocolBinding: a2a.TransportProtocolGRPC, URL: "x:50051"},
 	}}
-	rt, err := buildRuntime(zap.NewNop().Sugar(), prometheus.NewRegistry(), &http.Transport{}, card, nil, agentDial{udsPath: "/tmp/stub"})
+	rt, err := buildRuntime(context.TODO(), prometheus.NewRegistry(), &http.Transport{}, card, nil, agentDial{udsPath: "/tmp/stub"})
 	require.Error(t, err)
 	assert.Nil(t, rt)
 	assert.ErrorIs(t, err, sentinel)

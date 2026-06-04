@@ -17,6 +17,7 @@ limitations under the License.
 package broker
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -29,7 +30,7 @@ import (
 )
 
 func TestIntrospectionHandler_Healthz(t *testing.T) {
-	h := NewIntrospectionHandler(prometheus.NewRegistry(), func() error { return nil })
+	h := NewIntrospectionHandler(context.TODO(), prometheus.NewRegistry(), func() error { return nil })
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest("GET", "/healthz", nil))
 	assert.Equal(t, http.StatusOK, rec.Code)
@@ -38,7 +39,7 @@ func TestIntrospectionHandler_Healthz(t *testing.T) {
 
 func TestIntrospectionHandler_Readyz(t *testing.T) {
 	t.Run("ready returns nil → 200", func(t *testing.T) {
-		h := NewIntrospectionHandler(prometheus.NewRegistry(), func() error { return nil })
+		h := NewIntrospectionHandler(context.TODO(), prometheus.NewRegistry(), func() error { return nil })
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequest("GET", "/readyz", nil))
 		assert.Equal(t, http.StatusOK, rec.Code)
@@ -46,7 +47,7 @@ func TestIntrospectionHandler_Readyz(t *testing.T) {
 	})
 
 	t.Run("ready returns error → 503", func(t *testing.T) {
-		h := NewIntrospectionHandler(prometheus.NewRegistry(), func() error { return errors.New("agent unreachable") })
+		h := NewIntrospectionHandler(context.TODO(), prometheus.NewRegistry(), func() error { return errors.New("agent unreachable") })
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequest("GET", "/readyz", nil))
 		assert.Equal(t, http.StatusServiceUnavailable, rec.Code)
@@ -62,7 +63,7 @@ func TestIntrospectionHandler_MetricsExposesCounters(t *testing.T) {
 	counters.GRPC().Set(2)
 	counters.Passthrough().Set(11)
 
-	h := NewIntrospectionHandler(registry, func() error { return nil })
+	h := NewIntrospectionHandler(context.TODO(), registry, func() error { return nil })
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest("GET", "/metrics", nil))
 
@@ -83,7 +84,7 @@ func TestIntrospectionHandler_MetricsExposesCounters(t *testing.T) {
 }
 
 func TestIntrospectionHandler_UnknownPath404(t *testing.T) {
-	h := NewIntrospectionHandler(prometheus.NewRegistry(), func() error { return nil })
+	h := NewIntrospectionHandler(context.TODO(), prometheus.NewRegistry(), func() error { return nil })
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest("GET", "/random", nil))
 	assert.Equal(t, http.StatusNotFound, rec.Code)

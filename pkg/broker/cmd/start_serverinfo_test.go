@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -24,7 +25,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 const metricNameAgentServerInfo = "kynomesh_broker_agent_server_info"
@@ -56,7 +56,7 @@ func TestPublishAgentServerInfo_RegistersGaugeInCluster(t *testing.T) {
 	withInClusterMode(t, true)
 
 	registry := prometheus.NewRegistry()
-	publishAgentServerInfo(zap.NewNop().Sugar(), registry)
+	publishAgentServerInfo(context.TODO(), registry)
 
 	assert.True(t, hasMetric(t, registry, metricNameAgentServerInfo), "in-cluster + file present: gauge must be registered")
 }
@@ -69,7 +69,7 @@ func TestPublishAgentServerInfo_SkipsOutOfCluster(t *testing.T) {
 	withInClusterMode(t, false)
 
 	registry := prometheus.NewRegistry()
-	publishAgentServerInfo(zap.NewNop().Sugar(), registry)
+	publishAgentServerInfo(context.TODO(), registry)
 
 	assert.False(t, hasMetric(t, registry, metricNameAgentServerInfo), "out-of-cluster: must not touch the registry")
 }
@@ -79,7 +79,7 @@ func TestPublishAgentServerInfo_TolerantOfMissingFile(t *testing.T) {
 	withInClusterMode(t, true)
 
 	registry := prometheus.NewRegistry()
-	publishAgentServerInfo(zap.NewNop().Sugar(), registry)
+	publishAgentServerInfo(context.TODO(), registry)
 
 	assert.False(t, hasMetric(t, registry, metricNameAgentServerInfo), "missing server-info must not register a gauge")
 }

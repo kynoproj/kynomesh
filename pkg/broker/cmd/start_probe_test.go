@@ -27,7 +27,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	sharedtls "github.com/kynoproj/kynomesh/pkg/shared/tls"
 )
@@ -122,8 +121,7 @@ func TestProbeAgentCard_DialError(t *testing.T) {
 // A2A proxies. The broker boots and forwards everything to the agent's
 // own HTTP surface.
 func TestBuildRuntime_NilCard(t *testing.T) {
-	logger := zap.NewNop().Sugar()
-	rt, err := buildRuntime(logger, prometheus.NewRegistry(), &http.Transport{}, nil, nil, agentDial{udsPath: "/tmp/stub"})
+	rt, err := buildRuntime(context.TODO(), prometheus.NewRegistry(), &http.Transport{}, nil, nil, agentDial{udsPath: "/tmp/stub"})
 	require.NoError(t, err)
 	require.NotNil(t, rt)
 	assert.NotNil(t, rt.passthrough, "passthrough must be wired so non-A2A traffic still reaches the agent")
@@ -140,8 +138,7 @@ func TestBuildRuntime_NilCard(t *testing.T) {
 // A2A routes that are not enabled likewise fall through, since
 // per-transport proxy slots are empty.
 func TestMultiplexedServer_NoCardHandler(t *testing.T) {
-	logger := zap.NewNop().Sugar()
-	rt, err := buildRuntime(logger, prometheus.NewRegistry(), &http.Transport{}, nil, nil, agentDial{udsPath: "/tmp/stub"})
+	rt, err := buildRuntime(context.TODO(), prometheus.NewRegistry(), &http.Transport{}, nil, nil, agentDial{udsPath: "/tmp/stub"})
 	require.NoError(t, err)
 	// Swap the production passthrough (which would try to dial the UDS
 	// agent) for a stub so we can assert routing without an upstream.

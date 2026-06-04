@@ -97,10 +97,11 @@ var serverInfoFilePath = kmv1.ServerInfoFilePath
 // publishAgentServerInfo loads the agent server-info file (in-cluster only),
 // logs it, and registers it as a labeled gauge. Missing/unreadable files are
 // tolerated — the agent may not have written one yet.
-func publishAgentServerInfo(logger *zap.SugaredLogger, registry prometheus.Registerer) {
+func publishAgentServerInfo(ctx context.Context, registry prometheus.Registerer) {
 	if !inClusterFn() {
 		return
 	}
+	logger := logging.FromContext(ctx)
 	info, err := serverinfo.Load(serverInfoFilePath)
 	if err != nil {
 		logger.Warnw("Failed to read agent server-info; skipping",
@@ -151,7 +152,8 @@ func newAgentHTTPClient(d agentDial) *http.Client {
 
 // resolveAdvertiseHost returns the AgentCard host. In-cluster it must
 // come from the injected AgentDeploy; local-dev falls back to the default.
-func resolveAdvertiseHost(logger *zap.SugaredLogger, ad *kmv1.AgentDeploy, dial agentDial) (string, error) {
+func resolveAdvertiseHost(ctx context.Context, ad *kmv1.AgentDeploy, dial agentDial) (string, error) {
+	logger := logging.FromContext(ctx)
 	if dial.isUDS() {
 		host := advertiseHostFor(ad)
 		if host == "" {
@@ -205,14 +207,15 @@ type brokerStack struct {
 	introspectionSrv *http.Server
 }
 
-func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int) (*brokerStack, error) {
+func assembleBroker(ctx context.Context, port, introspectionPort int) (*brokerStack, error) {
+	logger := logging.FromContext(ctx)
 	injectedAD, err := loadInjectedAgentDeploy()
 	if err != nil {
 		return nil, fmt.Errorf("decode %s: %w", kmv1.EnvAgentDeployObject, err)
 	}
 
 	dial := resolveAgentDial()
-	advertiseHost, err := resolveAdvertiseHost(logger, injectedAD, dial)
+	advertiseHost, err := resolveAdvertiseHost(ctx, injectedAD, dial)
 	if err != nil {
 		return nil, err
 	}
@@ -236,8 +239,8 @@ func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int) (*br
 	}
 
 	metricsRegistry := prometheus.NewRegistry()
-	publishAgentServerInfo(logger, metricsRegistry)
-	rt, err := buildRuntime(logger, metricsRegistry, agentHTTPTransport, agentCard, injectedAD, dial)
+	publishAgentServerInfo(ctx, metricsRegistry)
+	rt, err := buildRuntime(ctx, metricsRegistry, agentHTTPTransport, agentCard, injectedAD, dial)
 	if err != nil {
 		return nil, fmt.Errorf("build broker runtime: %w", err)
 	}
@@ -258,7 +261,7 @@ func assembleBroker(logger *zap.SugaredLogger, port, introspectionPort int) (*br
 	}
 
 	ready := func() error { return nil }
-	introspectionHandler := broker.NewIntrospectionHandler(metricsRegistry, ready)
+	introspectionHandler := broker.NewIntrospectionHandler(ctx, metricsRegistry, ready)
 	introspectionSrv := newIntrospectionServer(introspectionPort, introspectionHandler, cert)
 
 	return &brokerStack{
@@ -281,22 +284,24 @@ func Start(port, introspectionPort int) {
 		zap.String("goVersion", v.GoVersion),
 		zap.String("platform", v.Platform))
 
-	stack, err := assembleBroker(logger, port, introspectionPort)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	ctx = logging.WithLogger(ctx, logger)
+	stack, err := assembleBroker(ctx, port, introspectionPort)
 	if err != nil {
 		logger.Fatalw("Failed to assemble broker — refusing to start", zap.Error(err))
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
-	if err := runServeLoop(ctx, logger, stack, port, introspectionPort); err != nil {
+	if err := runServeLoop(ctx, stack, port, introspectionPort); err != nil {
 		logger.Fatalw("Broker exited with error", zap.Error(err))
 	}
 	logger.Infow("Broker stopped cleanly")
 }
 
 // runServeLoop runs both TLS listeners until ctx is cancelled or one exits with an error.
-func runServeLoop(ctx context.Context, logger *zap.SugaredLogger, stack *brokerStack, port, introspectionPort int) error {
+func runServeLoop(ctx context.Context, stack *brokerStack, port, introspectionPort int) error {
+	logger := logging.FromContext(ctx)
 	rt, proxySrv, introspectionSrv := stack.rt, stack.proxySrv, stack.introspectionSrv
 	defer func() {
 		if rt.grpcConn != nil {
@@ -375,7 +380,8 @@ func newIntrospectionServer(port int, handler http.Handler, cert *tls.Certificat
 
 // buildRuntime wires per-transport proxies for the agent's advertised interfaces.
 // A nil card yields a passthrough-only runtime.
-func buildRuntime(logger *zap.SugaredLogger, registry *prometheus.Registry, agentTransport *http.Transport, card *a2a.AgentCard, agentDeploy *kmv1.AgentDeploy, dial agentDial) (*brokerRuntime, error) {
+func buildRuntime(ctx context.Context, registry *prometheus.Registry, agentTransport *http.Transport, card *a2a.AgentCard, agentDeploy *kmv1.AgentDeploy, dial agentDial) (*brokerRuntime, error) {
+	logger := logging.FromContext(ctx)
 	counters := broker.NewCounters(registry)
 	rt := &brokerRuntime{
 		logger:      logger,
