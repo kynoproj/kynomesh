@@ -42,8 +42,6 @@ import (
 )
 
 const (
-	// FinalizerName guards an AgentDeploy against deletion until the
-	// controller has cleaned up the owned pods and service.
 	FinalizerName = "kynomesh.kyno.sh/" + kmv1.ControllerAgentDeploy
 
 	// randomSuffixLength is the random tail on pod names — long enough to
@@ -82,15 +80,18 @@ func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredL
 
 // Reconcile is the controller-runtime entry point.
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.logger.With("namespace", req.Namespace, "name", req.Name)
-
 	var original kmv1.AgentDeploy
 	if err := r.Get(ctx, req.NamespacedName, &original); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
+		r.logger.Errorw("Unable to get AgentDeploy", zap.Any("request", req), zap.Error(err))
 		return ctrl.Result{}, fmt.Errorf("failed to get AgentDeploy: %w", err)
 	}
+
+	log := r.logger.With("namespace", req.Namespace).With("agentSet", original.Spec.AgentSetName).
+		With("agentDeploy", original.Name)
+	ctx = logging.WithLogger(ctx, log)
 
 	ad := original.DeepCopy()
 	reconcileErr := r.reconcile(ctx, ad)
@@ -99,9 +100,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if reconcileErr == nil {
 			return ctrl.Result{}, persistErr
 		}
-		log.Warnw("failed to persist AgentDeploy updates", "err", persistErr)
+		log.Warnw("Failed to persist AgentDeploy updates", zap.Error(persistErr))
 	}
 	if reconcileErr != nil {
+		log.Errorw("Failed to reconcile AgentSet", zap.Error(reconcileErr))
 		return ctrl.Result{}, reconcileErr
 	}
 	return ctrl.Result{}, nil
@@ -110,6 +112,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 // reconcile mutates the supplied deep copy. All API writes for children
 // happen here; the parent is persisted by Reconcile via persist().
 func (r *Reconciler) reconcile(ctx context.Context, ad *kmv1.AgentDeploy) error {
+	log := logging.FromContext(ctx)
 	ad.Status.InitializeConditions(
 		kmv1.AgentDeployConditionDeployed,
 		kmv1.AgentDeployConditionPodsHealthy,
@@ -130,6 +133,7 @@ func (r *Reconciler) reconcile(ctx context.Context, ad *kmv1.AgentDeploy) error 
 		ad.Status.Phase = kmv1.AgentDeployPhaseFailed
 		ad.Status.Reason = "ServiceFailed"
 		ad.Status.Message = err.Error()
+		log.Errorw("Failed to reconcile AgentDeploy service", zap.Error(err))
 		return err
 	}
 
@@ -138,6 +142,7 @@ func (r *Reconciler) reconcile(ctx context.Context, ad *kmv1.AgentDeploy) error 
 		ad.Status.Phase = kmv1.AgentDeployPhaseFailed
 		ad.Status.Reason = "PodsFailed"
 		ad.Status.Message = err.Error()
+		log.Errorw("Failed to reconcile AgentDeploy pods", zap.Error(err))
 		return err
 	}
 	ad.Status.MarkTrue(kmv1.AgentDeployConditionDeployed)
@@ -311,21 +316,27 @@ func resolveMaxUnavailable(ad *kmv1.AgentDeploy, desired int) int {
 }
 
 func (r *Reconciler) createPodForReplica(ctx context.Context, ad *kmv1.AgentDeploy, replica int, podSpec corev1.PodSpec, hash string) error {
+	log := logging.FromContext(ctx)
 	pod := newPod(ad, replica, podSpec, hash)
 	if err := r.Create(ctx, pod); err != nil && !apierrors.IsAlreadyExists(err) {
+		log.Errorw("Failed to create pod", zap.Int("replica", replica), zap.Error(err))
 		return fmt.Errorf("failed to create pod for replica %d: %w", replica, err)
 	}
+	log.Infow("Succeeded to create pod", zap.Int("replica", replica), zap.String("podName", pod.Name))
 	r.recorder.Eventf(ad, nil, corev1.EventTypeNormal, "CreatedPod", "CreatePod", "Created pod %s (replica %d)", pod.Name, replica)
 	return nil
 }
 
 func (r *Reconciler) deletePod(ctx context.Context, ad *kmv1.AgentDeploy, p *corev1.Pod, reason string) error {
+	log := logging.FromContext(ctx)
 	if !p.DeletionTimestamp.IsZero() {
 		return nil
 	}
 	if err := r.Delete(ctx, p); err != nil && !apierrors.IsNotFound(err) {
+		log.Errorw("Failed to delete pod", zap.String("podName", p.Name), zap.Error(err))
 		return fmt.Errorf("failed to delete pod %s: %w", p.Name, err)
 	}
+	log.Infow("Succeeded to delete pod", zap.String("podName", p.Name))
 	r.recorder.Eventf(ad, nil, corev1.EventTypeNormal, "DeletedPod", "DeletePod", "Deleted pod %s (%s)", p.Name, reason)
 	return nil
 }
@@ -334,6 +345,7 @@ func (r *Reconciler) deletePod(ctx context.Context, ad *kmv1.AgentDeploy, p *cor
 // expected spec. Drift triggers delete-and-recreate because some Service
 // spec fields are immutable.
 func (r *Reconciler) reconcileService(ctx context.Context, ad *kmv1.AgentDeploy) error {
+	log := logging.FromContext(ctx)
 	desired := newHeadlessService(ad)
 	desiredHash := sharedutil.MustHash(desired.Spec)
 	desired.Annotations[kmv1.KeyHash] = desiredHash
@@ -342,8 +354,10 @@ func (r *Reconciler) reconcileService(ctx context.Context, ad *kmv1.AgentDeploy)
 	err := r.Get(ctx, client.ObjectKey{Namespace: desired.Namespace, Name: desired.Name}, &existing)
 	if apierrors.IsNotFound(err) {
 		if createErr := r.Create(ctx, desired); createErr != nil && !apierrors.IsAlreadyExists(createErr) {
+			log.Errorw("Failed to create headless service", zap.String("serviceName", desired.Name), zap.Error(createErr))
 			return fmt.Errorf("failed to create headless service: %w", createErr)
 		}
+		log.Infow("Succeeded to create headless service", zap.String("serviceName", desired.Name))
 		r.recorder.Eventf(ad, nil, corev1.EventTypeNormal, "CreatedService", "CreateService", "Created headless service %s", desired.Name)
 		return nil
 	}
@@ -354,25 +368,32 @@ func (r *Reconciler) reconcileService(ctx context.Context, ad *kmv1.AgentDeploy)
 		return nil
 	}
 	if err := r.Delete(ctx, &existing); err != nil && !apierrors.IsNotFound(err) {
+		log.Errorw("Failed to delete stale headless service", zap.String("serviceName", desired.Name), zap.Error(err))
 		return fmt.Errorf("failed to delete stale headless service: %w", err)
 	}
+	log.Infow("Succeeded to delete stale headless service", zap.String("serviceName", desired.Name))
 	if err := r.Create(ctx, desired); err != nil && !apierrors.IsAlreadyExists(err) {
+		log.Errorw("Failed to recreate headless service", zap.String("serviceName", desired.Name), zap.Error(err))
 		return fmt.Errorf("failed to recreate headless service: %w", err)
 	}
+	log.Infow("Succeeded to recreate headless service", zap.String("serviceName", desired.Name))
 	r.recorder.Eventf(ad, nil, corev1.EventTypeNormal, "UpdatedService", "UpdateService", "Recreated headless service %s on spec drift", desired.Name)
 	return nil
 }
 
 // deleteOwned removes every Pod and Service this AgentDeploy controls.
 func (r *Reconciler) deleteOwned(ctx context.Context, ad *kmv1.AgentDeploy) error {
+	log := logging.FromContext(ctx)
 	pods, err := r.listOwnedPods(ctx, ad)
 	if err != nil {
 		return err
 	}
 	for _, p := range pods {
 		if err := r.Delete(ctx, p); err != nil && !apierrors.IsNotFound(err) {
+			log.Errorw("Failed to delete pod", zap.String("podName", p.Name), zap.Error(err))
 			return fmt.Errorf("failed to delete pod %s: %w", p.Name, err)
 		}
+		log.Infow("Succeeded to delete pod", zap.String("podName", p.Name))
 	}
 
 	var svc corev1.Service
@@ -384,8 +405,10 @@ func (r *Reconciler) deleteOwned(ctx context.Context, ad *kmv1.AgentDeploy) erro
 		return err
 	}
 	if err := r.Delete(ctx, &svc); err != nil && !apierrors.IsNotFound(err) {
+		log.Errorw("Failed to delete headless service", zap.String("serviceName", svc.Name), zap.Error(err))
 		return fmt.Errorf("failed to delete headless service: %w", err)
 	}
+	log.Infow("Succeeded to delete headless service", zap.String("serviceName", svc.Name))
 	return nil
 }
 

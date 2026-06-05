@@ -45,8 +45,6 @@ import (
 )
 
 const (
-	// FinalizerName guards an AgentSet against deletion until the controller
-	// has removed its child AgentDeploy objects.
 	FinalizerName = "kynomesh.kyno.sh/" + kmv1.ControllerAgentSet
 )
 
@@ -79,15 +77,17 @@ func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredL
 // by name, runs the inner reconcile on a deep copy, then persists status and
 // finalizer changes back to the API server.
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.logger.With("namespace", req.Namespace, "name", req.Name)
-
 	var original kmv1.AgentSet
 	if err := r.Get(ctx, req.NamespacedName, &original); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
+		r.logger.Errorw("Unable to get AgentSet", zap.Any("request", req), zap.Error(err))
 		return ctrl.Result{}, fmt.Errorf("failed to get AgentSet: %w", err)
 	}
+
+	log := r.logger.With("namespace", req.Namespace).With("agentSet", original.Name)
+	ctx = logging.WithLogger(ctx, log)
 
 	as := original.DeepCopy()
 	reconcileErr := r.reconcile(ctx, as)
@@ -96,18 +96,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if reconcileErr == nil {
 			return ctrl.Result{}, statusErr
 		}
-		log.Warnw("failed to persist AgentSet updates", "err", statusErr)
+		log.Warnw("Failed to persist AgentSet updates", zap.Error(statusErr))
 	}
 	if reconcileErr != nil {
+		log.Errorw("Failed to reconcile AgentSet", zap.Error(reconcileErr))
 		return ctrl.Result{}, reconcileErr
 	}
 	return ctrl.Result{}, nil
 }
 
 // reconcile is the inner reconciliation that mutates the provided AgentSet
-// copy. It handles finalizer add/remove, deletion cleanup, validation, child
-// diffing, and status condition transitions. All API writes happen here for
-// children; the parent itself is persisted by Reconcile via persist().
+// copy.
 func (r *Reconciler) reconcile(ctx context.Context, as *kmv1.AgentSet) error {
 	as.Status.InitializeConditions(
 		kmv1.AgentSetConditionConfigured,
@@ -172,12 +171,14 @@ func (r *Reconciler) applyDesiredState(
 	existing map[string]*kmv1.AgentDeploy,
 	desired map[string]*kmv1.AgentDeploy,
 ) error {
+	log := logging.FromContext(ctx)
 	for name, want := range desired {
 		got, ok := existing[name]
 		if !ok {
 			if err := r.Create(ctx, want); err != nil && !apierrors.IsAlreadyExists(err) {
 				return fmt.Errorf("failed to create AgentDeploy %s: %w", name, err)
 			}
+			log.Infow("Created an AgentDeploy", zap.String("agetDeploy", name))
 			r.recorder.Eventf(as, nil, corev1.EventTypeNormal, "CreatedAgentDeploy", "CreateAgentDeploy", "Created AgentDeploy %s", name)
 			continue
 		}
@@ -192,6 +193,7 @@ func (r *Reconciler) applyDesiredState(
 		if err := r.Update(ctx, updated); err != nil {
 			return fmt.Errorf("failed to update AgentDeploy %s: %w", name, err)
 		}
+		log.Infow("Updated an existing AgentDeploy", zap.String("agetDeploy", name))
 		r.recorder.Eventf(as, nil, corev1.EventTypeNormal, "UpdatedAgentDeploy", "UpdateAgentDeploy", "Updated AgentDeploy %s", name)
 	}
 
@@ -202,6 +204,7 @@ func (r *Reconciler) applyDesiredState(
 		if err := r.Delete(ctx, got); err != nil && !apierrors.IsNotFound(err) {
 			return fmt.Errorf("failed to delete orphan AgentDeploy %s: %w", name, err)
 		}
+		log.Infow("Deleted an orphan AgentDeploy", zap.String("agentDeploy", name))
 		r.recorder.Eventf(as, nil, corev1.EventTypeNormal, "DeletedAgentDeploy", "DeleteAgentDeploy", "Deleted orphan AgentDeploy %s", name)
 	}
 	return nil
@@ -210,6 +213,7 @@ func (r *Reconciler) applyDesiredState(
 // deleteChildren removes all AgentDeploys labelled as belonging to this
 // AgentSet. Called on the deletion path before the finalizer is dropped.
 func (r *Reconciler) deleteChildren(ctx context.Context, as *kmv1.AgentSet) error {
+	log := logging.FromContext(ctx)
 	existing, err := r.listOwnedAgentDeploys(ctx, as)
 	if err != nil {
 		return err
@@ -218,6 +222,7 @@ func (r *Reconciler) deleteChildren(ctx context.Context, as *kmv1.AgentSet) erro
 		if err := r.Delete(ctx, ad); err != nil && !apierrors.IsNotFound(err) {
 			return fmt.Errorf("failed to delete AgentDeploy %s during cleanup: %w", ad.Name, err)
 		}
+		log.Infow("Deleted an AgentDeploy", zap.String("agentDeploy", ad.Name))
 	}
 	return nil
 }
