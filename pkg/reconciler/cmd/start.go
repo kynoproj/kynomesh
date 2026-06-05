@@ -99,7 +99,7 @@ func Start(namespaced bool, managedNamespace string) {
 
 	leaseDuration, renewDeadline, retryPeriod, err := resolveLeaderElectionTimings()
 	if err != nil {
-		logger.Fatalw("invalid leader election timings", "err", err)
+		logger.Fatalw("Invalid leader election timings", "err", err)
 	}
 
 	opts := ctrl.Options{
@@ -120,37 +120,37 @@ func Start(namespaced bool, managedNamespace string) {
 
 	cfg := ctrl.GetConfigOrDie()
 
-	brokerImage, err := discoverControllerImage(cfg)
+	image, err := discoverControllerImage(cfg)
 	if err != nil {
-		logger.Fatalw("failed to discover controller image for broker sidecar", "err", err)
+		logger.Fatalw("Failed to discover controller image for broker sidecar", zap.Error(err))
 	}
-	logger.Infow("discovered broker sidecar image", "image", brokerImage)
+	logger.Infow("Discovered broker sidecar image", zap.String("image", image))
 
 	brokerPullPolicy, err := resolveBrokerPullPolicy()
 	if err != nil {
-		logger.Fatalw("invalid broker image pull policy", "env", kmv1.EnvImagePullPolicy, "err", err)
+		logger.Fatalw("Invalid broker image pull policy", zap.String("env", kmv1.EnvImagePullPolicy), zap.Error(err))
 	}
 	if brokerPullPolicy != "" {
-		logger.Infow("Resolved image pull policy", "imagePullPolicy", string(brokerPullPolicy))
+		logger.Infow("Resolved image pull policy", zap.String("imagePullPolicy", string(brokerPullPolicy)))
 	}
 
 	mgr, err := ctrl.NewManager(cfg, opts)
 	if err != nil {
-		logger.Fatalw("failed to create controller manager", "err", err)
+		logger.Fatalw("Failed to create controller manager", zap.Error(err))
 	}
 
 	if err := mgr.AddReadyzCheck("readiness", healthz.Ping); err != nil {
-		logger.Fatalw("failed to register readiness check", "err", err)
+		logger.Fatalw("Failed to register readiness check", zap.Error(err))
 	}
 	if err := mgr.AddHealthzCheck("liveness", healthz.Ping); err != nil {
-		logger.Fatalw("failed to register liveness check", "err", err)
+		logger.Fatalw("Failed to register liveness check", zap.Error(err))
 	}
 
 	if err := registerAgentSetController(mgr, logger); err != nil {
-		logger.Fatalw("failed to register AgentSet controller", "err", err)
+		logger.Fatalw("Failed to register AgentSet controller", "err", err)
 	}
-	if err := registerAgentDeployController(mgr, logger, brokerImage, brokerPullPolicy); err != nil {
-		logger.Fatalw("failed to register AgentDeploy controller", "err", err)
+	if err := registerAgentDeployController(mgr, logger, image, brokerPullPolicy); err != nil {
+		logger.Fatalw("Failed to register AgentDeploy controller", zap.Error(err))
 	}
 
 	logger.Infow("Starting controller-manager",
@@ -162,10 +162,10 @@ func Start(namespaced bool, managedNamespace string) {
 		"retryPeriod", retryPeriod,
 		"metricsBindAddress", opts.Metrics.BindAddress,
 		"healthProbeBindAddress", opts.HealthProbeBindAddress,
-		"brokerImage", brokerImage,
+		"image", image,
 	)
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		logger.Fatalw("controller manager exited with error", "err", err)
+		logger.Fatalw("Controller manager exited with error", zap.Error(err))
 	}
 }
 
@@ -359,10 +359,10 @@ func registerAgentDeployController(mgr manager.Manager, logger *zap.SugaredLogge
 func buildScheme(logger *zap.SugaredLogger) *runtime.Scheme {
 	s := runtime.NewScheme()
 	if err := clientgoscheme.AddToScheme(s); err != nil {
-		logger.Fatalw("failed to register kubernetes core types", "err", err)
+		logger.Fatalw("Failed to register kubernetes core types", "err", err)
 	}
 	if err := kmv1.AddToScheme(s); err != nil {
-		logger.Fatalw("failed to register kynomesh types", "err", err)
+		logger.Fatalw("Failed to register kynomesh types", "err", err)
 	}
 	return s
 }
