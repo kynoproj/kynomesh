@@ -8,7 +8,7 @@ require (
 	github.com/go-logr/zapr v1.3.0
 	github.com/go-swagger/go-swagger v0.34.1
 	github.com/gogo/protobuf v1.3.2
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
