@@ -247,7 +247,16 @@ func assembleBroker(ctx context.Context, port, introspectionPort int) (*brokerSt
 
 	var cardProxy http.Handler
 	if agentCard != nil {
-		cardProxy = broker.NewAgentCardProxy(agentHTTPClient, advertiseHost, port, rt.enabled)
+		publicBaseURL := ""
+		if injectedAD != nil {
+			publicBaseURL = injectedAD.Spec.PublicBaseURL
+		}
+		cardProxy = broker.NewAgentCardProxy(
+			agentHTTPClient, publicBaseURL, advertiseHost, port, rt.enabled)
+		if publicBaseURL != "" {
+			logger.Infow("AgentCard SupportedInterfaces will advertise PublicBaseURL",
+				zap.String("publicBaseURL", publicBaseURL))
+		}
 	}
 
 	cert, err := sharedtls.GenerateX509KeyPair()

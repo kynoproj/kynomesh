@@ -99,6 +99,11 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	i -= len(m.PublicBaseURL)
+	copy(dAtA[i:], m.PublicBaseURL)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.PublicBaseURL)))
+	i--
+	dAtA[i] = 0x52
 	{
 		size, err := m.UpdateStrategy.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
@@ -1595,6 +1600,8 @@ func (m *AbstractAgentDeploy) Size() (n int) {
 	}
 	l = m.UpdateStrategy.Size()
 	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.PublicBaseURL)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -2138,6 +2145,7 @@ func (this *AbstractAgentDeploy) String() string {
 		`InitContainers:` + repeatedStringForInitContainers + `,`,
 		`Sidecars:` + repeatedStringForSidecars + `,`,
 		`UpdateStrategy:` + strings.Replace(strings.Replace(this.UpdateStrategy.String(), "UpdateStrategy", "UpdateStrategy", 1), `&`, ``, 1) + `,`,
+		`PublicBaseURL:` + fmt.Sprintf("%v", this.PublicBaseURL) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2870,6 +2878,38 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 			if err := m.UpdateStrategy.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PublicBaseURL", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PublicBaseURL = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

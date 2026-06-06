@@ -1791,6 +1791,8 @@ spec:
                       type: integer
                     priorityClassName:
                       type: string
+                    publicBaseURL:
+                      type: string
                     resourceClaims:
                       items:
                         properties:

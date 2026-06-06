@@ -24,10 +24,15 @@ package broker
 
 import (
 	"fmt"
+	"net"
+	"net/url"
+	"strings"
+
+	"github.com/a2aproject/a2a-go/v2/a2a"
 )
 
-const JSONRPCEndpoint = "/a2a/rpc"
-const RESTEndpoint = "/a2a/api"
+const JSONRPCEndpoint = "/a2a/jsonrpc"
+const RESTEndpoint = "/a2a/rest"
 
 // JSONRPCAddr / RESTAddr / GRPCAddr format the URL each transport
 // advertises on its AgentInterface entry. The broker terminates TLS on
@@ -42,4 +47,55 @@ func RESTAddr(host string, port int) string {
 
 func GRPCAddr(host string, port int) string {
 	return fmt.Sprintf("%s:%d", host, port)
+}
+
+// AdvertisedURL returns the URL the broker should publish for transport
+// on its AgentCard. When publicBaseURL is non-empty it overrides the
+// in-cluster host:port — JSON-RPC and REST append the well-known
+// endpoint path, gRPC reduces it to a scheme-less host:port.
+func AdvertisedURL(publicBaseURL, host string, port int, transport a2a.TransportProtocol) string {
+	if publicBaseURL == "" {
+		switch transport {
+		case a2a.TransportProtocolJSONRPC:
+			return JSONRPCAddr(host, port)
+		case a2a.TransportProtocolHTTPJSON:
+			return RESTAddr(host, port)
+		case a2a.TransportProtocolGRPC:
+			return GRPCAddr(host, port)
+		}
+		return ""
+	}
+	trimmed := strings.TrimRight(publicBaseURL, "/")
+	switch transport {
+	case a2a.TransportProtocolJSONRPC:
+		return trimmed + JSONRPCEndpoint
+	case a2a.TransportProtocolHTTPJSON:
+		return trimmed + RESTEndpoint
+	case a2a.TransportProtocolGRPC:
+		return grpcAddrFromBaseURL(trimmed)
+	}
+	return ""
+}
+
+// grpcAddrFromBaseURL converts a public base URL into the host:port form
+// gRPC clients expect. Falls back to returning the input unchanged when
+// it can't be parsed.
+func grpcAddrFromBaseURL(baseURL string) string {
+	if !strings.Contains(baseURL, "://") {
+		return baseURL
+	}
+	u, err := url.Parse(baseURL)
+	if err != nil || u.Host == "" {
+		return baseURL
+	}
+	if _, _, splitErr := net.SplitHostPort(u.Host); splitErr == nil {
+		return u.Host
+	}
+	switch strings.ToLower(u.Scheme) {
+	case "https":
+		return u.Host + ":443"
+	case "http":
+		return u.Host + ":80"
+	}
+	return u.Host
 }

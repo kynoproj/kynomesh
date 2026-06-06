@@ -1798,6 +1798,8 @@ spec:
                 type: integer
               priorityClassName:
                 type: string
+              publicBaseURL:
+                type: string
               replicas:
                 default: 1
                 format: int32
@@ -5402,6 +5404,8 @@ spec:
                       format: int32
                       type: integer
                     priorityClassName:
+                      type: string
+                    publicBaseURL:
                       type: string
                     resourceClaims:
                       items:
