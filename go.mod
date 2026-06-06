@@ -16,7 +16,7 @@ require (
 	golang.org/x/net v0.55.0
 	golang.org/x/tools v0.45.0
 	google.golang.org/grpc v1.81.1
-	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.6.1
+	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.6.2
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
 	k8s.io/api v0.36.0
 	k8s.io/apimachinery v0.36.0
