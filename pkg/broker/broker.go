@@ -52,8 +52,7 @@ func GRPCAddr(host string, port int) string {
 // AdvertisedURL returns the URL the broker should publish for transport
 // on its AgentCard. When publicBaseURL is non-empty it overrides the
 // in-cluster host:port — JSON-RPC and REST append the well-known
-// endpoint path, gRPC reduces it to a scheme-less host:port. Otherwise
-// the JSONRPCAddr/RESTAddr/GRPCAddr helpers are used as before.
+// endpoint path, gRPC reduces it to a scheme-less host:port.
 func AdvertisedURL(publicBaseURL, host string, port int, transport a2a.TransportProtocol) string {
 	if publicBaseURL == "" {
 		switch transport {
@@ -80,7 +79,7 @@ func AdvertisedURL(publicBaseURL, host string, port int, transport a2a.Transport
 
 // grpcAddrFromBaseURL converts a public base URL into the host:port form
 // gRPC clients expect. Falls back to returning the input unchanged when
-// it can't be parsed — preserving operator intent over guessing.
+// it can't be parsed.
 func grpcAddrFromBaseURL(baseURL string) string {
 	if !strings.Contains(baseURL, "://") {
 		return baseURL
