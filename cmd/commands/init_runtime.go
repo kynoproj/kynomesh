@@ -90,6 +90,11 @@ func writeTopology(logger *zap.SugaredLogger, path, encodedAgentDeploy string) e
 		_ = os.Remove(tmpName)
 		return fmt.Errorf("write topology %q: %w", tmpName, err)
 	}
+	if err := tmp.Chmod(0o644); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmpName)
+		return fmt.Errorf("chmod topology %q: %w", tmpName, err)
+	}
 	if err := tmp.Close(); err != nil {
 		_ = os.Remove(tmpName)
 		return fmt.Errorf("close topology %q: %w", tmpName, err)

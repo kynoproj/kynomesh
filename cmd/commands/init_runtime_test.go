@@ -121,6 +121,25 @@ func TestWriteTopology_AtomicReplace(t *testing.T) {
 	assert.Len(t, entries, 1, "atomic replace must not leave temp files behind")
 }
 
+func TestWriteTopology_WorldReadable(t *testing.T) {
+	ad := &kmv1.AgentDeploy{
+		ObjectMeta: metav1.ObjectMeta{Name: "demo-worker", Namespace: "ns"},
+		Spec: kmv1.AgentDeploySpec{
+			AbstractAgentDeploy: kmv1.AbstractAgentDeploy{Name: "worker"},
+			AgentSetName:        "demo",
+			Topology:            kmv1.Topology{Pattern: kmv1.AgentPatternHandoff},
+		},
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "topology.json")
+	require.NoError(t, writeTopology(testLogger(), path, kmv1.EncodeAgentDeploy(ad)))
+
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o644), info.Mode().Perm())
+}
+
 func TestWriteTopology_ErrorsOnEmptyPayload(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "topology.json")
