@@ -147,6 +147,13 @@ type AbstractAgentDeploy struct {
 	// +kubebuilder:default={"type": "RollingUpdate", "rollingUpdate": {"maxUnavailable": "25%"}}
 	// +optional
 	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty" protobuf:"bytes,9,opt,name=updateStrategy"`
+	// PublicBaseURL is the externally reachable base URL of this agent's
+	// broker (e.g. https://agent.example.com). When set, the broker uses
+	// it to rewrite AgentCard SupportedInterfaces URLs so external clients
+	// can reach the agent through an ingress or gateway in front of the
+	// cluster. If empty, the broker advertises its in-cluster address.
+	// +optional
+	PublicBaseURL string `json:"publicBaseURL,omitempty" protobuf:"bytes,10,opt,name=publicBaseURL"`
 }
 
 type AgentDeployStatus struct {

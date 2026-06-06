@@ -65,6 +65,14 @@ message AbstractAgentDeploy {
   // +kubebuilder:default={"type": "RollingUpdate", "rollingUpdate": {"maxUnavailable": "25%"}}
   // +optional
   optional UpdateStrategy updateStrategy = 9;
+
+  // PublicBaseURL is the externally reachable base URL of this agent's
+  // broker (e.g. https://agent.example.com). When set, the broker uses
+  // it to rewrite AgentCard SupportedInterfaces URLs so external clients
+  // can reach the agent through an ingress or gateway in front of the
+  // cluster. If empty, the broker advertises its in-cluster address.
+  // +optional
+  optional string publicBaseURL = 10;
 }
 
 // AbstractPodTemplate provides a template for pod customization in vertices, daemon deployments and so on.
