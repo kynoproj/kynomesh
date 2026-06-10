@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - v*
+
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   generate_changelog:
     if: github.repository == 'kynoproj/kynomesh'
