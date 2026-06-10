@@ -313,7 +313,5 @@ update-manifests-version:
 	mv /tmp/tmp_kustomization.yaml config/base/kustomization.yaml
 	cat config/advanced-install/namespaced-controller/kustomization.yaml | sed 's/newTag: .*/newTag: $(VERSION)/' | sed 's@value: quay.io/kynoproj/kynomesh:.*@value: quay.io/kynoproj/kynomesh:$(VERSION)@' > /tmp/tmp_kustomization.yaml
 	mv /tmp/tmp_kustomization.yaml config/advanced-install/namespaced-controller/kustomization.yaml
-	cat config/extensions/webhook/kustomization.yaml | sed 's/newTag: .*/newTag: $(VERSION)/' | sed 's@value: quay.io/kynoproj/kynomesh:.*@value: quay.io/kynoproj/kynomesh:$(VERSION)@' > /tmp/tmp_kustomization.yaml
-	mv /tmp/tmp_kustomization.yaml config/extensions/webhook/kustomization.yaml
 	cat Makefile | sed 's/^VERSION?=.*/VERSION?=$(VERSION)/' | sed 's/^BASE_VERSION:=.*/BASE_VERSION:=$(VERSION)/' > /tmp/km_makefile
 	mv /tmp/km_makefile Makefile
