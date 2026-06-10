@@ -126,6 +126,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'kynoproj/kynomesh'
     needs: [build-push-linux-multi, bom]
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
