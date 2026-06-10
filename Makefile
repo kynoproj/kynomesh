@@ -277,7 +277,7 @@ pre-push: codegen lint
 
 .PHONY: checksums
 checksums:
-	sha256sum ./dist/$(BINARY_NAME)-*.gz ./dist/$(PROBE_BINARY_NAME)-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/$(BINARY_NAME)-checksums.txt
+	sha256sum ./dist/$(BINARY_NAME)-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/$(BINARY_NAME)-checksums.txt
 
 # release - targets only available on release branch
 ifneq ($(findstring release,$(GIT_BRANCH)),)
