@@ -205,6 +205,11 @@ func (ad *AgentDeploy) HeadlessServiceName() string {
 	return ad.Name + "-headless"
 }
 
+// ServiceName returns the name of the normal Service for each Agent Deploy
+func (ad *AgentDeploy) ServiceName() string {
+	return ad.Name
+}
+
 // SimpleCopy returns a slimmed-down copy of the AgentDeploy suitable for
 // embedding into a downstream consumer.
 func (ad *AgentDeploy) SimpleCopy() AgentDeploy {

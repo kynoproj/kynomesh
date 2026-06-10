@@ -128,12 +128,12 @@ func (r *Reconciler) reconcile(ctx context.Context, ad *kmv1.AgentDeploy) error 
 	}
 	addFinalizer(ad)
 
-	if err := r.reconcileService(ctx, ad); err != nil {
+	if err := r.reconcileServices(ctx, ad); err != nil {
 		ad.Status.MarkFalse(kmv1.AgentDeployConditionDeployed, "ServiceFailed", err.Error())
 		ad.Status.Phase = kmv1.AgentDeployPhaseFailed
 		ad.Status.Reason = "ServiceFailed"
 		ad.Status.Message = err.Error()
-		log.Errorw("Failed to reconcile AgentDeploy service", zap.Error(err))
+		log.Errorw("Failed to reconcile AgentDeploy services", zap.Error(err))
 		return err
 	}
 
@@ -341,12 +341,18 @@ func (r *Reconciler) deletePod(ctx context.Context, ad *kmv1.AgentDeploy, p *cor
 	return nil
 }
 
-// reconcileService ensures the per-deploy headless service exists with the
-// expected spec. Drift triggers delete-and-recreate because some Service
-// spec fields are immutable.
-func (r *Reconciler) reconcileService(ctx context.Context, ad *kmv1.AgentDeploy) error {
+// reconcileServices ensures both per-deploy services exist with the expected.
+func (r *Reconciler) reconcileServices(ctx context.Context, ad *kmv1.AgentDeploy) error {
+	if err := r.upsertService(ctx, ad, newHeadlessService(ad), "headless"); err != nil {
+		return err
+	}
+	return r.upsertService(ctx, ad, newClusterIPService(ad), "ClusterIP")
+}
+
+// upsertService creates desired if absent, no-ops if the existing spec hash
+// matches, otherwise delete-and-recreates.
+func (r *Reconciler) upsertService(ctx context.Context, ad *kmv1.AgentDeploy, desired *corev1.Service, kind string) error {
 	log := logging.FromContext(ctx)
-	desired := newHeadlessService(ad)
 	desiredHash := sharedutil.MustHash(desired.Spec)
 	desired.Annotations[kmv1.KeyHash] = desiredHash
 
@@ -354,30 +360,30 @@ func (r *Reconciler) reconcileService(ctx context.Context, ad *kmv1.AgentDeploy)
 	err := r.Get(ctx, client.ObjectKey{Namespace: desired.Namespace, Name: desired.Name}, &existing)
 	if apierrors.IsNotFound(err) {
 		if createErr := r.Create(ctx, desired); createErr != nil && !apierrors.IsAlreadyExists(createErr) {
-			log.Errorw("Failed to create headless service", zap.String("serviceName", desired.Name), zap.Error(createErr))
-			return fmt.Errorf("failed to create headless service: %w", createErr)
+			log.Errorw("Failed to create "+kind+" service", zap.String("serviceName", desired.Name), zap.Error(createErr))
+			return fmt.Errorf("failed to create %s service: %w", kind, createErr)
 		}
-		log.Infow("Succeeded to create headless service", zap.String("serviceName", desired.Name))
-		r.recorder.Eventf(ad, nil, corev1.EventTypeNormal, "CreatedService", "CreateService", "Created headless service %s", desired.Name)
+		log.Infow("Succeeded to create "+kind+" service", zap.String("serviceName", desired.Name))
+		r.recorder.Eventf(ad, nil, corev1.EventTypeNormal, "CreatedService", "CreateService", "Created %s service %s", kind, desired.Name)
 		return nil
 	}
 	if err != nil {
-		return fmt.Errorf("failed to get headless service: %w", err)
+		return fmt.Errorf("failed to get %s service: %w", kind, err)
 	}
 	if existing.Annotations[kmv1.KeyHash] == desiredHash {
 		return nil
 	}
 	if err := r.Delete(ctx, &existing); err != nil && !apierrors.IsNotFound(err) {
-		log.Errorw("Failed to delete stale headless service", zap.String("serviceName", desired.Name), zap.Error(err))
-		return fmt.Errorf("failed to delete stale headless service: %w", err)
+		log.Errorw("Failed to delete stale "+kind+" service", zap.String("serviceName", desired.Name), zap.Error(err))
+		return fmt.Errorf("failed to delete stale %s service: %w", kind, err)
 	}
-	log.Infow("Succeeded to delete stale headless service", zap.String("serviceName", desired.Name))
+	log.Infow("Succeeded to delete stale "+kind+" service", zap.String("serviceName", desired.Name))
 	if err := r.Create(ctx, desired); err != nil && !apierrors.IsAlreadyExists(err) {
-		log.Errorw("Failed to recreate headless service", zap.String("serviceName", desired.Name), zap.Error(err))
-		return fmt.Errorf("failed to recreate headless service: %w", err)
+		log.Errorw("Failed to recreate "+kind+" service", zap.String("serviceName", desired.Name), zap.Error(err))
+		return fmt.Errorf("failed to recreate %s service: %w", kind, err)
 	}
-	log.Infow("Succeeded to recreate headless service", zap.String("serviceName", desired.Name))
-	r.recorder.Eventf(ad, nil, corev1.EventTypeNormal, "UpdatedService", "UpdateService", "Recreated headless service %s on spec drift", desired.Name)
+	log.Infow("Succeeded to recreate "+kind+" service", zap.String("serviceName", desired.Name))
+	r.recorder.Eventf(ad, nil, corev1.EventTypeNormal, "UpdatedService", "UpdateService", "Recreated %s service %s on spec drift", kind, desired.Name)
 	return nil
 }
 
@@ -396,8 +402,16 @@ func (r *Reconciler) deleteOwned(ctx context.Context, ad *kmv1.AgentDeploy) erro
 		log.Infow("Succeeded to delete pod", zap.String("podName", p.Name))
 	}
 
+	if err := r.deleteServiceByName(ctx, ad.Namespace, ad.HeadlessServiceName(), "headless"); err != nil {
+		return err
+	}
+	return r.deleteServiceByName(ctx, ad.Namespace, ad.ServiceName(), "ClusterIP")
+}
+
+func (r *Reconciler) deleteServiceByName(ctx context.Context, namespace, name, kind string) error {
+	log := logging.FromContext(ctx)
 	var svc corev1.Service
-	err = r.Get(ctx, client.ObjectKey{Namespace: ad.Namespace, Name: ad.HeadlessServiceName()}, &svc)
+	err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, &svc)
 	if apierrors.IsNotFound(err) {
 		return nil
 	}
@@ -405,10 +419,10 @@ func (r *Reconciler) deleteOwned(ctx context.Context, ad *kmv1.AgentDeploy) erro
 		return err
 	}
 	if err := r.Delete(ctx, &svc); err != nil && !apierrors.IsNotFound(err) {
-		log.Errorw("Failed to delete headless service", zap.String("serviceName", svc.Name), zap.Error(err))
-		return fmt.Errorf("failed to delete headless service: %w", err)
+		log.Errorw("Failed to delete "+kind+" service", zap.String("serviceName", svc.Name), zap.Error(err))
+		return fmt.Errorf("failed to delete %s service: %w", kind, err)
 	}
-	log.Infow("Succeeded to delete headless service", zap.String("serviceName", svc.Name))
+	log.Infow("Succeeded to delete "+kind+" service", zap.String("serviceName", svc.Name))
 	return nil
 }
 
@@ -729,10 +743,7 @@ func newInitRuntimeContainer(image string, pullPolicy corev1.PullPolicy, encoded
 	}
 }
 
-// newPod renders a corev1.Pod for the given replica index. The random
-// suffix on the pod name lets a delete-and-recreate rollout proceed
-// without a name-already-exists race; the stable bits (replica index,
-// labels, annotation, hostname) are what consumers should rely on.
+// newPod renders a corev1.Pod for the given replica index.
 func newPod(ad *kmv1.AgentDeploy, replica int, podSpec corev1.PodSpec, hash string) *corev1.Pod {
 	name := fmt.Sprintf("%s-%d-%s", ad.Name, replica, sharedutil.RandomLowerCaseString(randomSuffixLength))
 	hostname := fmt.Sprintf("%s-%d", ad.Name, replica)
@@ -749,6 +760,7 @@ func newPod(ad *kmv1.AgentDeploy, replica int, podSpec corev1.PodSpec, hash stri
 				kmv1.KeyPartOf:          kmv1.Project,
 				kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
 				kmv1.KeyReplica:         strconv.Itoa(replica),
+				kmv1.KeyServing:         "true",
 			},
 			Annotations: map[string]string{
 				kmv1.KeyHash:             hash,
@@ -797,6 +809,43 @@ func newHeadlessService(ad *kmv1.AgentDeploy) *corev1.Service {
 			// address each other during bootstrap, before any of them
 			// passes a readiness probe.
 			PublishNotReadyAddresses: true,
+		},
+	}
+}
+
+// newClusterIPService builds the per-deploy normal ClusterIP service.
+func newClusterIPService(ad *kmv1.AgentDeploy) *corev1.Service {
+	return &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ad.Namespace,
+			Name:      ad.ServiceName(),
+			Labels: map[string]string{
+				kmv1.KeyAppName:         ad.Name,
+				kmv1.KeyAgentSetName:    ad.Spec.AgentSetName,
+				kmv1.KeyAgentDeployName: ad.Spec.Name,
+				kmv1.KeyComponent:       kmv1.ComponentAgent,
+				kmv1.KeyPartOf:          kmv1.Project,
+				kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
+			},
+			Annotations:     map[string]string{},
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ad, kmv1.AgentDeployGroupVersionKind)},
+		},
+		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeClusterIP,
+			Selector: map[string]string{
+				kmv1.KeyAgentSetName:    ad.Spec.AgentSetName,
+				kmv1.KeyAgentDeployName: ad.Spec.Name,
+				kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
+				kmv1.KeyServing:         "true",
+			},
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "broker",
+					Port:       kmv1.AgentBrokerPort,
+					TargetPort: intstr.FromString("broker"),
+					Protocol:   corev1.ProtocolTCP,
+				},
+			},
 		},
 	}
 }
