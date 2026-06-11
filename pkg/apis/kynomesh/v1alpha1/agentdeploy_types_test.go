@@ -136,3 +136,12 @@ func TestAgentDeploy_HeadlessServiceName(t *testing.T) {
 	empty := &AgentDeploy{}
 	assert.Equal(t, "-headless", empty.HeadlessServiceName())
 }
+
+func TestAgentDeploy_ServiceName(t *testing.T) {
+	ad := &AgentDeploy{}
+	ad.Name = "myagent"
+	assert.Equal(t, "myagent", ad.ServiceName())
+
+	empty := &AgentDeploy{}
+	assert.Equal(t, "", empty.ServiceName())
+}

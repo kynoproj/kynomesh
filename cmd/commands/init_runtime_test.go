@@ -60,9 +60,9 @@ func TestWriteTopology_PopulatesManagedURLs(t *testing.T) {
 
 	require.Len(t, got.Peers, 2)
 	assert.Equal(t, "worker1", got.Peers[0].Name)
-	assert.Equal(t, "https://demo-worker1-headless.ns.svc.cluster.local:8490", got.Peers[0].URL)
+	assert.Equal(t, "https://demo-worker1.ns.svc.cluster.local:8490", got.Peers[0].URL)
 	assert.Equal(t, "worker2", got.Peers[1].Name)
-	assert.Equal(t, "https://demo-worker2-headless.ns.svc.cluster.local:8490", got.Peers[1].URL)
+	assert.Equal(t, "https://demo-worker2.ns.svc.cluster.local:8490", got.Peers[1].URL)
 }
 
 func TestWriteTopology_PreservesExternalURLs(t *testing.T) {
@@ -91,7 +91,7 @@ func TestWriteTopology_PreservesExternalURLs(t *testing.T) {
 	require.NoError(t, json.Unmarshal(raw, &got))
 
 	require.Len(t, got.Peers, 2)
-	assert.Equal(t, "https://demo-inside-headless.ns.svc.cluster.local:8490", got.Peers[0].URL)
+	assert.Equal(t, "https://demo-inside.ns.svc.cluster.local:8490", got.Peers[0].URL)
 	assert.Equal(t, "https://example.com/agent", got.Peers[1].URL, "external peers must keep their user-supplied URL")
 }
 
