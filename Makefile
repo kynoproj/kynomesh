@@ -31,8 +31,8 @@ endif
 
 DOCKER_PUSH?=false
 IMAGE_NAMESPACE?=quay.io/kynoproj
-VERSION?=v0.5.0
-BASE_VERSION:=v0.5.0
+VERSION?=v0.5.1
+BASE_VERSION:=v0.5.1
 
 override LDFLAGS += \
   -X ${PACKAGE}.version=${VERSION} \
