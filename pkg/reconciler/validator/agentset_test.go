@@ -25,10 +25,7 @@ import (
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
-// agentSet builds a minimal AgentSet for validator tests. It defaults
-// to Supervisor with agents[0] as Entry — the most permissive shape, so
-// tests only override the fields they care about. The validator does
-// not look at metadata, so we leave that blank.
+// agentSet builds a minimal AgentSet for validator tests.
 func agentSet(agents ...string) *kmv1.AgentSet {
 	spec := kmv1.AgentSetSpec{
 		Pattern: kmv1.AgentPatternSupervisor,
@@ -52,6 +49,7 @@ func TestValidateAgentSet(t *testing.T) {
 		{name: "ok", agents: []string{"a", "b"}},
 		{name: "empty name", agents: []string{""}, wantErr: "non-empty"},
 		{name: "duplicate", agents: []string{"a", "a"}, wantErr: "duplicate"},
+		{name: "reserved name ingress", agents: []string{kmv1.EntryServiceSuffix}, wantErr: "reserved"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -67,9 +65,6 @@ func TestValidateAgentSet(t *testing.T) {
 }
 
 func TestValidateAgentSet_PatternAndEntry(t *testing.T) {
-	// Each case sets up the spec.Pattern + spec.Entry overrides
-	// post-construction (agentSet defaults to Supervisor with the first
-	// agent as entry).
 	tests := []struct {
 		name    string
 		mutate  func(as *kmv1.AgentSet)
@@ -124,8 +119,6 @@ func TestValidateAgentSet_PatternAndEntry(t *testing.T) {
 }
 
 func TestValidateAgentSet_HandoffAndSequentialMultiAgent(t *testing.T) {
-	// Multi-agent Handoff is valid; multi-agent Sequential is valid
-	// only when Entry == agents[0].
 	t.Run("Handoff with >=2 agents valid", func(t *testing.T) {
 		as := agentSet("a", "b", "c")
 		as.Spec.Pattern = kmv1.AgentPatternHandoff

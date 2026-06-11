@@ -15,3 +15,18 @@ limitations under the License.
 */
 
 package v1alpha1
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+func TestAgentSet_EntryServiceName(t *testing.T) {
+	as := &AgentSet{ObjectMeta: metav1.ObjectMeta{Name: "greeter"}}
+	assert.Equal(t, "greeter-ingress", as.EntryServiceName())
+
+	empty := &AgentSet{}
+	assert.Equal(t, "-ingress", empty.EntryServiceName())
+}
