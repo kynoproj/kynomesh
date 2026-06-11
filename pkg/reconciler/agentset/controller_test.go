@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -353,4 +354,97 @@ func TestAggregateChildHealth(t *testing.T) {
 
 	r.aggregateChildHealth(as, desired, map[string]*kmv1.AgentDeploy{})
 	assert.Equal(t, kmv1.AgentSetPhaseFailed, as.Status.Phase, "missing child should mark Failed")
+}
+
+func TestNewEntryService(t *testing.T) {
+	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{})
+	as := newAgentSet("greeter", "alpha", "beta")
+
+	svc, err := r.newEntryService(as)
+	require.NoError(t, err)
+
+	assert.Equal(t, "greeter-ingress", svc.Name)
+	assert.Equal(t, testNamespace, svc.Namespace)
+	assert.Equal(t, corev1.ServiceTypeClusterIP, svc.Spec.Type)
+
+	assert.Equal(t, map[string]string{
+		kmv1.KeyAgentSetName: "greeter",
+		kmv1.KeyManagedBy:    kmv1.ControllerAgentDeploy,
+		kmv1.KeyEntry:        "true",
+		kmv1.KeyServing:      "true",
+	}, svc.Spec.Selector)
+
+	require.Len(t, svc.Spec.Ports, 1)
+	assert.Equal(t, "broker", svc.Spec.Ports[0].Name)
+	assert.Equal(t, int32(kmv1.AgentBrokerPort), svc.Spec.Ports[0].Port)
+
+	require.Len(t, svc.OwnerReferences, 1, "controller reference must be set")
+	assert.Equal(t, "greeter", svc.OwnerReferences[0].Name)
+	assert.True(t, *svc.OwnerReferences[0].Controller)
+}
+
+func TestReconcileEntryService_Creates(t *testing.T) {
+	as := newAgentSet("greeter", "alpha")
+	r, c := newTestReconciler(t, as)
+
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	var svc corev1.Service
+	require.NoError(t, c.Get(context.Background(),
+		types.NamespacedName{Namespace: testNamespace, Name: "greeter-ingress"}, &svc))
+	assert.Equal(t, "true", svc.Spec.Selector[kmv1.KeyEntry])
+	assert.NotEmpty(t, svc.Annotations[kmv1.KeyHash])
+}
+
+func TestReconcileEntryService_RecreatesOnDrift(t *testing.T) {
+	as := newAgentSet("greeter", "alpha")
+	drifted := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:   testNamespace,
+			Name:        as.EntryServiceName(),
+			Annotations: map[string]string{kmv1.KeyHash: "stale"},
+		},
+		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeClusterIP,
+			Selector: map[string]string{
+				kmv1.KeyAgentSetName: "greeter",
+				kmv1.KeyEntry:        "wrong",
+			},
+			Ports: []corev1.ServicePort{{Name: "broker", Port: 1}},
+		},
+	}
+	r, c := newTestReconciler(t, as, drifted)
+
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	var svc corev1.Service
+	require.NoError(t, c.Get(context.Background(),
+		types.NamespacedName{Namespace: testNamespace, Name: "greeter-ingress"}, &svc))
+	assert.NotEqual(t, "stale", svc.Annotations[kmv1.KeyHash], "stale hash should be refreshed")
+	assert.Equal(t, "true", svc.Spec.Selector[kmv1.KeyEntry])
+}
+
+func TestReconcileEntryService_DeletedOnAgentSetDeletion(t *testing.T) {
+	now := metav1.NewTime(time.Now())
+	as := newAgentSet("greeter", "alpha")
+	as.DeletionTimestamp = &now
+	as.Finalizers = []string{FinalizerName}
+
+	entrySvc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNamespace,
+			Name:      as.EntryServiceName(),
+		},
+	}
+	r, c := newTestReconciler(t, as, entrySvc)
+
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	var svc corev1.Service
+	err = c.Get(context.Background(),
+		types.NamespacedName{Namespace: testNamespace, Name: as.EntryServiceName()}, &svc)
+	assert.True(t, apierrors.IsNotFound(err), "entry service should be deleted, got err=%v", err)
 }

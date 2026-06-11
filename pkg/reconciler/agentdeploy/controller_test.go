@@ -153,6 +153,21 @@ func TestNewPod_ProjectsAgentSetNameFromSpec(t *testing.T) {
 	assert.Equal(t, "greeter-set", pod.Labels[kmv1.KeyAgentSetName])
 }
 
+func TestNewPod_EntryLabelStampedWhenIsEntry(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.Topology.IsEntry = true
+	pod := newPod(ad, 0, corev1.PodSpec{}, "h")
+	assert.Equal(t, "true", pod.Labels[kmv1.KeyEntry])
+}
+
+func TestNewPod_EntryLabelAbsentWhenNotEntry(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.Topology.IsEntry = false
+	pod := newPod(ad, 0, corev1.PodSpec{}, "h")
+	_, ok := pod.Labels[kmv1.KeyEntry]
+	assert.False(t, ok, "non-entry pods must not carry the entry label")
+}
+
 func TestBuildPodSpec_BrokerIsFirstMainContainer(t *testing.T) {
 	// Main containers are [broker, ...user sidecars]. The agent lives
 	// in init containers as a K8s-native sidecar (restartPolicy=Always).
