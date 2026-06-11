@@ -748,20 +748,24 @@ func newPod(ad *kmv1.AgentDeploy, replica int, podSpec corev1.PodSpec, hash stri
 	name := fmt.Sprintf("%s-%d-%s", ad.Name, replica, sharedutil.RandomLowerCaseString(randomSuffixLength))
 	hostname := fmt.Sprintf("%s-%d", ad.Name, replica)
 
+	labels := map[string]string{
+		kmv1.KeyAppName:         ad.Name,
+		kmv1.KeyAgentSetName:    ad.Spec.AgentSetName,
+		kmv1.KeyAgentDeployName: ad.Spec.Name,
+		kmv1.KeyComponent:       kmv1.ComponentAgent,
+		kmv1.KeyPartOf:          kmv1.Project,
+		kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
+		kmv1.KeyReplica:         strconv.Itoa(replica),
+		kmv1.KeyServing:         "true",
+	}
+	if ad.Spec.Topology.IsEntry {
+		labels[kmv1.KeyEntry] = "true"
+	}
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ad.Namespace,
 			Name:      name,
-			Labels: map[string]string{
-				kmv1.KeyAppName:         ad.Name,
-				kmv1.KeyAgentSetName:    ad.Spec.AgentSetName,
-				kmv1.KeyAgentDeployName: ad.Spec.Name,
-				kmv1.KeyComponent:       kmv1.ComponentAgent,
-				kmv1.KeyPartOf:          kmv1.Project,
-				kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
-				kmv1.KeyReplica:         strconv.Itoa(replica),
-				kmv1.KeyServing:         "true",
-			},
+			Labels:    labels,
 			Annotations: map[string]string{
 				kmv1.KeyHash:             hash,
 				kmv1.KeyReplica:          strconv.Itoa(replica),

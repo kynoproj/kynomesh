@@ -32,6 +32,9 @@ func ValidateAgentSet(as *kmv1.AgentSet) error {
 		if a.Name == "" {
 			return errors.New("agent name must be non-empty")
 		}
+		if a.Name == kmv1.EntryServiceSuffix {
+			return fmt.Errorf("agent name %q is reserved; it collides with the AgentSet entry service", a.Name)
+		}
 		if _, dup := seen[a.Name]; dup {
 			return fmt.Errorf("duplicate agent name %q", a.Name)
 		}
