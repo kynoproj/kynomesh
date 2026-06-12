@@ -808,10 +808,15 @@ func newHeadlessService(ad *kmv1.AgentDeploy) *corev1.Service {
 				kmv1.KeyAgentDeployName: ad.Spec.Name,
 				kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
 			},
-			// Pods get a DNS A record the instant the kubelet posts an IP,
-			// without waiting for readiness. Agents typically need to
-			// address each other during bootstrap, before any of them
-			// passes a readiness probe.
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "introspect",
+					Port:       kmv1.AgentBrokerIntrospectionPort,
+					TargetPort: intstr.FromString("introspect"),
+					Protocol:   corev1.ProtocolTCP,
+				},
+			},
+			// Pods get a DNS A record without waiting for readiness.
 			PublishNotReadyAddresses: true,
 		},
 	}
