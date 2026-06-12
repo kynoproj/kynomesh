@@ -41,7 +41,7 @@ override LDFLAGS += \
   -X ${PACKAGE}.gitTreeState=${GIT_TREE_STATE}
 
 ifeq (${DOCKER_PUSH},true)
-PUSH_OPTION="--push"
+PUSH_OPTION=--push
 ifndef IMAGE_NAMESPACE
 $(error IMAGE_NAMESPACE must be set to push images (e.g. IMAGE_NAMESPACE=quay.io/kynoproj))
 endif
@@ -112,7 +112,7 @@ dist/$(BINARY_NAME)-%:
 	CGO_ENABLED=0 $(GOARGS) go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/$(BINARY_NAME)-$* ./cmd
 
 dist/$(PROBE_BINARY_NAME):
-	go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/$(BINARY_NAME) ./probe
+	go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/$(PROBE_BINARY_NAME) ./probe
 
 dist/$(PROBE_BINARY_NAME)-%:
 	CGO_ENABLED=0 $(GOARGS) go build -v -trimpath -ldflags '-s -w' -o ${DIST_DIR}/$(PROBE_BINARY_NAME)-$* ./probe
