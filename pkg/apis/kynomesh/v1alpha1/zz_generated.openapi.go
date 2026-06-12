@@ -274,6 +274,13 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy"),
 						},
 					},
+					"publicBaseURL": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PublicBaseURL is the externally reachable base URL of this agent's broker (e.g. https://agent.example.com). When set, the broker uses it to rewrite AgentCard SupportedInterfaces URLs so external clients can reach the agent through an ingress or gateway in front of the cluster. If empty, the broker advertises its in-cluster address.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"name", "container"},
 			},
@@ -749,6 +756,13 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 							Description: "The strategy to use to replace existing pods with new ones.",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy"),
+						},
+					},
+					"publicBaseURL": {
+						SchemaProps: spec.SchemaProps{
+							Description: "PublicBaseURL is the externally reachable base URL of this agent's broker (e.g. https://agent.example.com). When set, the broker uses it to rewrite AgentCard SupportedInterfaces URLs so external clients can reach the agent through an ingress or gateway in front of the cluster. If empty, the broker advertises its in-cluster address.",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"agentSetName": {

@@ -60,9 +60,9 @@ func TestWriteTopology_PopulatesManagedURLs(t *testing.T) {
 
 	require.Len(t, got.Peers, 2)
 	assert.Equal(t, "worker1", got.Peers[0].Name)
-	assert.Equal(t, "https://demo-worker1-headless.ns.svc.cluster.local:8490", got.Peers[0].URL)
+	assert.Equal(t, "https://demo-worker1.ns.svc.cluster.local:8490", got.Peers[0].URL)
 	assert.Equal(t, "worker2", got.Peers[1].Name)
-	assert.Equal(t, "https://demo-worker2-headless.ns.svc.cluster.local:8490", got.Peers[1].URL)
+	assert.Equal(t, "https://demo-worker2.ns.svc.cluster.local:8490", got.Peers[1].URL)
 }
 
 func TestWriteTopology_PreservesExternalURLs(t *testing.T) {
@@ -91,7 +91,7 @@ func TestWriteTopology_PreservesExternalURLs(t *testing.T) {
 	require.NoError(t, json.Unmarshal(raw, &got))
 
 	require.Len(t, got.Peers, 2)
-	assert.Equal(t, "https://demo-inside-headless.ns.svc.cluster.local:8490", got.Peers[0].URL)
+	assert.Equal(t, "https://demo-inside.ns.svc.cluster.local:8490", got.Peers[0].URL)
 	assert.Equal(t, "https://example.com/agent", got.Peers[1].URL, "external peers must keep their user-supplied URL")
 }
 
@@ -119,6 +119,25 @@ func TestWriteTopology_AtomicReplace(t *testing.T) {
 	entries, err := os.ReadDir(dir)
 	require.NoError(t, err)
 	assert.Len(t, entries, 1, "atomic replace must not leave temp files behind")
+}
+
+func TestWriteTopology_WorldReadable(t *testing.T) {
+	ad := &kmv1.AgentDeploy{
+		ObjectMeta: metav1.ObjectMeta{Name: "demo-worker", Namespace: "ns"},
+		Spec: kmv1.AgentDeploySpec{
+			AbstractAgentDeploy: kmv1.AbstractAgentDeploy{Name: "worker"},
+			AgentSetName:        "demo",
+			Topology:            kmv1.Topology{Pattern: kmv1.AgentPatternHandoff},
+		},
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "topology.json")
+	require.NoError(t, writeTopology(testLogger(), path, kmv1.EncodeAgentDeploy(ad)))
+
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o644), info.Mode().Perm())
 }
 
 func TestWriteTopology_ErrorsOnEmptyPayload(t *testing.T) {

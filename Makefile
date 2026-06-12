@@ -41,7 +41,7 @@ override LDFLAGS += \
   -X ${PACKAGE}.gitTreeState=${GIT_TREE_STATE}
 
 ifeq (${DOCKER_PUSH},true)
-PUSH_OPTION="--push"
+PUSH_OPTION=--push
 ifndef IMAGE_NAMESPACE
 $(error IMAGE_NAMESPACE must be set to push images (e.g. IMAGE_NAMESPACE=quay.io/kynoproj))
 endif
@@ -112,7 +112,7 @@ dist/$(BINARY_NAME)-%:
 	CGO_ENABLED=0 $(GOARGS) go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/$(BINARY_NAME)-$* ./cmd
 
 dist/$(PROBE_BINARY_NAME):
-	go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/$(BINARY_NAME) ./probe
+	go build -v -ldflags '${LDFLAGS}' -o ${DIST_DIR}/$(PROBE_BINARY_NAME) ./probe
 
 dist/$(PROBE_BINARY_NAME)-%:
 	CGO_ENABLED=0 $(GOARGS) go build -v -trimpath -ldflags '-s -w' -o ${DIST_DIR}/$(PROBE_BINARY_NAME)-$* ./probe
@@ -225,6 +225,7 @@ start: image
 	kubectl apply -f test/manifests/kynomesh-ns.yaml
 	kubectl -n kynomesh-system delete cm kynomesh-cmd-params-config --ignore-not-found=true
 	kubectl kustomize test/manifests | sed 's@quay.io/kynoproj/@$(IMAGE_NAMESPACE)/@' | sed 's/:$(BASE_VERSION)/:$(VERSION)/' | kubectl -n kynomesh-system apply -l app.kubernetes.io/part-of=kynomesh --prune=false --force -f -
+	kubectl -n kynomesh-system rollout status deploy -lapp.kubernetes.io/part-of=kynomesh --timeout=60s
 	kubectl -n kynomesh-system wait -lapp.kubernetes.io/part-of=kynomesh --for=condition=Ready --timeout 60s pod --all
 
 .PHONY: e2eapi-image
@@ -277,7 +278,7 @@ pre-push: codegen lint
 
 .PHONY: checksums
 checksums:
-	sha256sum ./dist/$(BINARY_NAME)-*.gz ./dist/$(PROBE_BINARY_NAME)-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/$(BINARY_NAME)-checksums.txt
+	sha256sum ./dist/$(BINARY_NAME)-*.gz | awk -F './dist/' '{print $$1 $$2}' > ./dist/$(BINARY_NAME)-checksums.txt
 
 # release - targets only available on release branch
 ifneq ($(findstring release,$(GIT_BRANCH)),)
@@ -313,7 +314,5 @@ update-manifests-version:
 	mv /tmp/tmp_kustomization.yaml config/base/kustomization.yaml
 	cat config/advanced-install/namespaced-controller/kustomization.yaml | sed 's/newTag: .*/newTag: $(VERSION)/' | sed 's@value: quay.io/kynoproj/kynomesh:.*@value: quay.io/kynoproj/kynomesh:$(VERSION)@' > /tmp/tmp_kustomization.yaml
 	mv /tmp/tmp_kustomization.yaml config/advanced-install/namespaced-controller/kustomization.yaml
-	cat config/extensions/webhook/kustomization.yaml | sed 's/newTag: .*/newTag: $(VERSION)/' | sed 's@value: quay.io/kynoproj/kynomesh:.*@value: quay.io/kynoproj/kynomesh:$(VERSION)@' > /tmp/tmp_kustomization.yaml
-	mv /tmp/tmp_kustomization.yaml config/extensions/webhook/kustomization.yaml
 	cat Makefile | sed 's/^VERSION?=.*/VERSION?=$(VERSION)/' | sed 's/^BASE_VERSION:=.*/BASE_VERSION:=$(VERSION)/' > /tmp/km_makefile
 	mv /tmp/km_makefile Makefile

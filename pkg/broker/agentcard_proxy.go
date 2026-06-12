@@ -25,11 +25,15 @@ import (
 )
 
 // NewAgentCardProxy serves the agent's AgentCard with SupportedInterfaces
-// filtered to enabled transports and URLs rewritten to advertiseHost:port.
-func NewAgentCardProxy(agentClient *http.Client, advertiseHost string, port int, enabled map[a2a.TransportProtocol]bool) http.Handler {
+// filtered to enabled transports and URLs rewritten for external clients.
+// When publicBaseURL is non-empty it overrides advertiseHost:port so the
+// AgentCard advertises an ingress/gateway address rather than the
+// in-cluster headless one; pass "" to advertise the in-cluster address.
+func NewAgentCardProxy(agentClient *http.Client, publicBaseURL, advertiseHost string, port int, enabled map[a2a.TransportProtocol]bool) http.Handler {
 	resolver := agentcard.NewResolver(agentClient)
 	agentBaseURL := "http://" + AgentBackendHost
 	return &agentCardProxy{
+		publicBaseURL: publicBaseURL,
 		advertiseHost: advertiseHost,
 		port:          port,
 		enabled:       enabled,
@@ -40,6 +44,7 @@ func NewAgentCardProxy(agentClient *http.Client, advertiseHost string, port int,
 }
 
 type agentCardProxy struct {
+	publicBaseURL string
 	advertiseHost string
 	port          int
 	enabled       map[a2a.TransportProtocol]bool
@@ -53,7 +58,7 @@ func (p *agentCardProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to fetch agent card: "+err.Error(), http.StatusBadGateway)
 		return
 	}
-	card.SupportedInterfaces = rewriteAgentCardInterfaces(card.SupportedInterfaces, p.advertiseHost, p.port, p.enabled)
+	card.SupportedInterfaces = rewriteAgentCardInterfaces(card.SupportedInterfaces, p.publicBaseURL, p.advertiseHost, p.port, p.enabled)
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(card); err != nil {
 		// Header is already on the wire if Encode flushed; nothing to do.
@@ -63,21 +68,14 @@ func (p *agentCardProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // rewriteAgentCardInterfaces keeps only enabled interfaces and rewrites
 // each URL to the broker's endpoint. Order is preserved.
-func rewriteAgentCardInterfaces(in []*a2a.AgentInterface, advertiseHost string, port int, enabled map[a2a.TransportProtocol]bool) []*a2a.AgentInterface {
+func rewriteAgentCardInterfaces(in []*a2a.AgentInterface, publicBaseURL, advertiseHost string, port int, enabled map[a2a.TransportProtocol]bool) []*a2a.AgentInterface {
 	out := make([]*a2a.AgentInterface, 0, len(in))
 	for _, iface := range in {
 		if !enabled[iface.ProtocolBinding] {
 			continue
 		}
 		rewritten := *iface
-		switch iface.ProtocolBinding {
-		case a2a.TransportProtocolJSONRPC:
-			rewritten.URL = JSONRPCAddr(advertiseHost, port)
-		case a2a.TransportProtocolHTTPJSON:
-			rewritten.URL = RESTAddr(advertiseHost, port)
-		case a2a.TransportProtocolGRPC:
-			rewritten.URL = GRPCAddr(advertiseHost, port)
-		}
+		rewritten.URL = AdvertisedURL(publicBaseURL, advertiseHost, port, iface.ProtocolBinding)
 		out = append(out, &rewritten)
 	}
 	return out

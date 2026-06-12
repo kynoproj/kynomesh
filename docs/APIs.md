@@ -239,6 +239,31 @@ The strategy to use to replace existing pods with new ones.
 
 </tr>
 
+<tr>
+
+<td>
+
+<code>publicBaseURL</code></br> <em> string </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+PublicBaseURL is the externally reachable base URL of this agent’s
+broker
+(e.g. <a href="https://agent.example.com">https://agent.example.com</a>).
+When set, the broker uses it to rewrite AgentCard SupportedInterfaces
+URLs so external clients can reach the agent through an ingress or
+gateway in front of the cluster. If empty, the broker advertises its
+in-cluster address.
+</p>
+
+</td>
+
+</tr>
+
 </tbody>
 
 </table>

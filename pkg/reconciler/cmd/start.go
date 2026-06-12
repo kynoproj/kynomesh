@@ -234,6 +234,9 @@ func resolveBrokerPullPolicy() (corev1.PullPolicy, error) {
 //   - AgentDeploy (owned): enqueue the controlling AgentSet on any meaningful
 //     change to a child. ResourceVersionChangedPredicate is the default for
 //     owned resources because we care about status flips, not just spec.
+//
+//   - Service (owned): enqueue the controlling AgentSet if the entry service
+//     is mutated or deleted out from under us.
 func registerAgentSetController(mgr manager.Manager, logger *zap.SugaredLogger) error {
 	r := agentset.NewReconciler(
 		mgr.GetClient(),
@@ -272,6 +275,20 @@ func registerAgentSetController(mgr manager.Manager, logger *zap.SugaredLogger) 
 			handler.OnlyControllerOwner(),
 		),
 		predicate.TypedResourceVersionChangedPredicate[*kmv1.AgentDeploy]{},
+	)); err != nil {
+		return err
+	}
+
+	if err := c.Watch(source.Kind(
+		mgr.GetCache(),
+		&corev1.Service{},
+		handler.TypedEnqueueRequestForOwner[*corev1.Service](
+			mgr.GetScheme(),
+			mgr.GetRESTMapper(),
+			&kmv1.AgentSet{},
+			handler.OnlyControllerOwner(),
+		),
+		predicate.TypedResourceVersionChangedPredicate[*corev1.Service]{},
 	)); err != nil {
 		return err
 	}

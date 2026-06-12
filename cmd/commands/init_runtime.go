@@ -90,6 +90,11 @@ func writeTopology(logger *zap.SugaredLogger, path, encodedAgentDeploy string) e
 		_ = os.Remove(tmpName)
 		return fmt.Errorf("write topology %q: %w", tmpName, err)
 	}
+	if err := tmp.Chmod(0o644); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmpName)
+		return fmt.Errorf("chmod topology %q: %w", tmpName, err)
+	}
 	if err := tmp.Close(); err != nil {
 		_ = os.Remove(tmpName)
 		return fmt.Errorf("close topology %q: %w", tmpName, err)
@@ -118,8 +123,9 @@ func resolvePeerURLs(ad *kmv1.AgentDeploy) kmv1.Topology {
 	return out
 }
 
+// managedPeerURL returns the in-cluster URL for a managed peer.
 func managedPeerURL(setName, peerName, namespace string) string {
-	host := fmt.Sprintf("%s-%s-headless.%s.svc.cluster.local", setName, peerName, namespace)
+	host := fmt.Sprintf("%s-%s.%s.svc.cluster.local", setName, peerName, namespace)
 	return fmt.Sprintf("https://%s:%d", host, kmv1.AgentBrokerPort)
 }
 

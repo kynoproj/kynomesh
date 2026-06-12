@@ -33,6 +33,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,9 +50,7 @@ const (
 )
 
 // Reconciler implements sigs.k8s.io/controller-runtime/pkg/reconcile.Reconciler
-// for AgentSet. It diffs the desired AgentDeploy set (derived from the
-// parent's spec) against the live children (located via ownerReferences and
-// the agentset-name label) and creates / updates / deletes as needed.
+// for AgentSet.
 type Reconciler struct {
 	client.Client
 	scheme   *runtime.Scheme
@@ -73,9 +72,7 @@ func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredL
 	}
 }
 
-// Reconcile is the controller-runtime entry point. It fetches the AgentSet
-// by name, runs the inner reconcile on a deep copy, then persists status and
-// finalizer changes back to the API server.
+// Reconcile is the controller-runtime entry point.
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	var original kmv1.AgentSet
 	if err := r.Get(ctx, req.NamespacedName, &original); err != nil {
@@ -120,6 +117,9 @@ func (r *Reconciler) reconcile(ctx context.Context, as *kmv1.AgentSet) error {
 		if err := r.deleteChildren(ctx, as); err != nil {
 			return fmt.Errorf("failed to delete child AgentDeploys: %w", err)
 		}
+		if err := r.deleteEntryService(ctx, as); err != nil {
+			return fmt.Errorf("failed to delete entry service: %w", err)
+		}
 		removeFinalizer(as)
 		return nil
 	}
@@ -149,6 +149,12 @@ func (r *Reconciler) reconcile(ctx context.Context, as *kmv1.AgentSet) error {
 
 	if err := r.applyDesiredState(ctx, as, existing, desired); err != nil {
 		as.Status.MarkFalse(kmv1.AgentSetConditionDeployed, "DeployFailed", err.Error())
+		as.Status.Phase = kmv1.AgentSetPhaseFailed
+		as.Status.Message = err.Error()
+		return err
+	}
+	if err := r.reconcileEntryService(ctx, as); err != nil {
+		as.Status.MarkFalse(kmv1.AgentSetConditionDeployed, "EntryServiceFailed", err.Error())
 		as.Status.Phase = kmv1.AgentSetPhaseFailed
 		as.Status.Message = err.Error()
 		return err
@@ -211,7 +217,7 @@ func (r *Reconciler) applyDesiredState(
 }
 
 // deleteChildren removes all AgentDeploys labelled as belonging to this
-// AgentSet. Called on the deletion path before the finalizer is dropped.
+// AgentSet.
 func (r *Reconciler) deleteChildren(ctx context.Context, as *kmv1.AgentSet) error {
 	log := logging.FromContext(ctx)
 	existing, err := r.listOwnedAgentDeploys(ctx, as)
@@ -244,8 +250,6 @@ func (r *Reconciler) listOwnedAgentDeploys(ctx context.Context, as *kmv1.AgentSe
 }
 
 // aggregateChildHealth folds child phases into the parent's Phase/Conditions.
-// A set is Running iff every desired child exists and is in AgentDeployPhase
-// Running; otherwise it stays Unknown (no desired children) or Failed.
 func (r *Reconciler) aggregateChildHealth(
 	as *kmv1.AgentSet,
 	desired map[string]*kmv1.AgentDeploy,
@@ -280,9 +284,6 @@ func (r *Reconciler) aggregateChildHealth(
 }
 
 // persist writes finalizer and status changes back to the API server.
-// Finalizers are written first (via a metadata patch) so that on the
-// deletion path the parent is not garbage-collected before the status
-// update lands. Each operation only fires if something actually changed.
 func (r *Reconciler) persist(ctx context.Context, original, updated *kmv1.AgentSet) error {
 	finalizersChanged := !reflect.DeepEqual(original.Finalizers, updated.Finalizers)
 	statusChanged := !reflect.DeepEqual(original.Status, updated.Status)
@@ -427,8 +428,7 @@ func nextAgent(agents []kmv1.AbstractAgentDeploy, self string) (string, bool) {
 }
 
 // needsUpdate compares two AgentDeploy objects to decide whether an Update
-// API call is needed. The spec hash is the cheap path; ownerReferences and
-// labels are also compared so misconfigured children get healed.
+// API call is needed.
 func needsUpdate(existing, desired *kmv1.AgentDeploy) bool {
 	if existing.Annotations[kmv1.KeyHash] != desired.Annotations[kmv1.KeyHash] {
 		return true
@@ -469,6 +469,111 @@ func removeFinalizer(as *kmv1.AgentSet) {
 		}
 	}
 	as.Finalizers = out
+}
+
+// reconcileEntryService ensures the per-AgentSet entry ClusterIP service
+// exists with the expected spec.
+func (r *Reconciler) reconcileEntryService(ctx context.Context, as *kmv1.AgentSet) error {
+	log := logging.FromContext(ctx)
+	desired, err := r.newEntryService(as)
+	if err != nil {
+		return fmt.Errorf("failed to build entry service: %w", err)
+	}
+	desiredHash := sharedutil.MustHash(desired.Spec)
+	desired.Annotations[kmv1.KeyHash] = desiredHash
+
+	var existing corev1.Service
+	getErr := r.Get(ctx, client.ObjectKey{Namespace: desired.Namespace, Name: desired.Name}, &existing)
+	if apierrors.IsNotFound(getErr) {
+		if createErr := r.Create(ctx, desired); createErr != nil && !apierrors.IsAlreadyExists(createErr) {
+			log.Errorw("Failed to create entry service", zap.String("serviceName", desired.Name), zap.Error(createErr))
+			return fmt.Errorf("failed to create entry service: %w", createErr)
+		}
+		log.Infow("Succeeded to create entry service", zap.String("serviceName", desired.Name))
+		r.recorder.Eventf(as, nil, corev1.EventTypeNormal, "CreatedEntryService", "CreateEntryService", "Created entry service %s", desired.Name)
+		return nil
+	}
+	if getErr != nil {
+		return fmt.Errorf("failed to get entry service: %w", getErr)
+	}
+	if existing.Annotations[kmv1.KeyHash] == desiredHash {
+		return nil
+	}
+	if err := r.Delete(ctx, &existing); err != nil && !apierrors.IsNotFound(err) {
+		log.Errorw("Failed to delete stale entry service", zap.String("serviceName", desired.Name), zap.Error(err))
+		return fmt.Errorf("failed to delete stale entry service: %w", err)
+	}
+	log.Infow("Succeeded to delete stale entry service", zap.String("serviceName", desired.Name))
+	if err := r.Create(ctx, desired); err != nil && !apierrors.IsAlreadyExists(err) {
+		log.Errorw("Failed to recreate entry service", zap.String("serviceName", desired.Name), zap.Error(err))
+		return fmt.Errorf("failed to recreate entry service: %w", err)
+	}
+	log.Infow("Succeeded to recreate entry service", zap.String("serviceName", desired.Name))
+	r.recorder.Eventf(as, nil, corev1.EventTypeNormal, "UpdatedEntryService", "UpdateEntryService", "Recreated entry service %s on spec drift", desired.Name)
+	return nil
+}
+
+// deleteEntryService removes the entry service if present.
+func (r *Reconciler) deleteEntryService(ctx context.Context, as *kmv1.AgentSet) error {
+	log := logging.FromContext(ctx)
+	var svc corev1.Service
+	err := r.Get(ctx, client.ObjectKey{Namespace: as.Namespace, Name: as.EntryServiceName()}, &svc)
+	if apierrors.IsNotFound(err) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to get entry service: %w", err)
+	}
+	if err := r.Delete(ctx, &svc); err != nil && !apierrors.IsNotFound(err) {
+		log.Errorw("Failed to delete entry service", zap.String("serviceName", svc.Name), zap.Error(err))
+		return fmt.Errorf("failed to delete entry service: %w", err)
+	}
+	log.Infow("Succeeded to delete entry service", zap.String("serviceName", svc.Name))
+	return nil
+}
+
+// newEntryService builds the desired ClusterIP service for the AgentSet's
+// entry pods.
+func (r *Reconciler) newEntryService(as *kmv1.AgentSet) (*corev1.Service, error) {
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: as.Namespace,
+			Name:      as.EntryServiceName(),
+			Labels: map[string]string{
+				kmv1.KeyAppName:      as.Name,
+				kmv1.KeyAgentSetName: as.Name,
+				kmv1.KeyComponent:    kmv1.ComponentAgent,
+				kmv1.KeyPartOf:       kmv1.Project,
+				kmv1.KeyManagedBy:    kmv1.ControllerAgentSet,
+			},
+			Annotations: map[string]string{},
+		},
+		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeClusterIP,
+			Selector: map[string]string{
+				kmv1.KeyAgentSetName: as.Name,
+				kmv1.KeyManagedBy:    kmv1.ControllerAgentDeploy,
+				kmv1.KeyEntry:        "true",
+				kmv1.KeyServing:      "true",
+			},
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "broker",
+					Port:       kmv1.AgentBrokerPort,
+					TargetPort: intstr.FromString("broker"),
+					Protocol:   corev1.ProtocolTCP,
+				},
+			},
+		},
+	}
+	if r.scheme != nil {
+		if err := ctrl.SetControllerReference(as, svc, r.scheme); err != nil {
+			return nil, fmt.Errorf("failed to set controller reference: %w", err)
+		}
+	} else {
+		svc.OwnerReferences = []metav1.OwnerReference{*metav1.NewControllerRef(as, kmv1.AgentSetGroupVersionKind)}
+	}
+	return svc, nil
 }
 
 // Reference assertion to surface signature errors at compile time rather

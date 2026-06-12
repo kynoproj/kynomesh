@@ -153,6 +153,21 @@ func TestNewPod_ProjectsAgentSetNameFromSpec(t *testing.T) {
 	assert.Equal(t, "greeter-set", pod.Labels[kmv1.KeyAgentSetName])
 }
 
+func TestNewPod_EntryLabelStampedWhenIsEntry(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.Topology.IsEntry = true
+	pod := newPod(ad, 0, corev1.PodSpec{}, "h")
+	assert.Equal(t, "true", pod.Labels[kmv1.KeyEntry])
+}
+
+func TestNewPod_EntryLabelAbsentWhenNotEntry(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.Topology.IsEntry = false
+	pod := newPod(ad, 0, corev1.PodSpec{}, "h")
+	_, ok := pod.Labels[kmv1.KeyEntry]
+	assert.False(t, ok, "non-entry pods must not carry the entry label")
+}
+
 func TestBuildPodSpec_BrokerIsFirstMainContainer(t *testing.T) {
 	// Main containers are [broker, ...user sidecars]. The agent lives
 	// in init containers as a K8s-native sidecar (restartPolicy=Always).
@@ -664,6 +679,45 @@ func TestNewHeadlessService(t *testing.T) {
 	require.Len(t, svc.OwnerReferences, 1)
 }
 
+func TestNewClusterIPService(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	svc := newClusterIPService(ad)
+	assert.Equal(t, "greeter", svc.Name)
+	assert.Equal(t, corev1.ServiceTypeClusterIP, svc.Spec.Type)
+	assert.NotEqual(t, corev1.ClusterIPNone, svc.Spec.ClusterIP, "must not be headless")
+	assert.False(t, svc.Spec.PublishNotReadyAddresses, "only Ready pods receive client traffic")
+	// Selector matches the pod labels stamped by newPod, so kube-proxy
+	// load-balances across the deploy's replicas.
+	assert.Equal(t, "greeter", svc.Spec.Selector[kmv1.KeyAgentDeployName])
+	assert.Equal(t, ad.Spec.AgentSetName, svc.Spec.Selector[kmv1.KeyAgentSetName])
+	assert.Equal(t, kmv1.ControllerAgentDeploy, svc.Spec.Selector[kmv1.KeyManagedBy])
+	// Serving label gates pods into rotation; flipping it drains a pod.
+	assert.Equal(t, "true", svc.Spec.Selector[kmv1.KeyServing])
+	// Exposes the broker port; introspect stays internal.
+	require.Len(t, svc.Spec.Ports, 1)
+	assert.Equal(t, "broker", svc.Spec.Ports[0].Name)
+	assert.Equal(t, int32(kmv1.AgentBrokerPort), svc.Spec.Ports[0].Port)
+	assert.Equal(t, corev1.ProtocolTCP, svc.Spec.Ports[0].Protocol)
+	require.Len(t, svc.OwnerReferences, 1)
+}
+
+func TestNewHeadlessService_DoesNotGateOnServing(t *testing.T) {
+	// Headless service serves per-pod DNS for every replica — including
+	// drained pods — so its selector must NOT include KeyServing.
+	ad := newAgentDeploy("greeter", 1)
+	svc := newHeadlessService(ad)
+	_, has := svc.Spec.Selector[kmv1.KeyServing]
+	assert.False(t, has, "headless selector must not depend on the serving label")
+}
+
+func TestNewPod_StampsServingLabel(t *testing.T) {
+	// Pods join the ClusterIP rotation by default. Operators flip this to
+	// "false" (or remove it) to drain a pod without deleting it.
+	ad := newAgentDeploy("greeter", 1)
+	pod := newPod(ad, 0, corev1.PodSpec{}, "h")
+	assert.Equal(t, "true", pod.Labels[kmv1.KeyServing])
+}
+
 func TestDesiredReplicas(t *testing.T) {
 	zero, neg := int32(0), int32(-3)
 	cases := []struct {
@@ -726,6 +780,12 @@ func TestReconcile_CreatesPodsAndService(t *testing.T) {
 	var svc corev1.Service
 	require.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter-headless"}, &svc))
 	assert.Equal(t, corev1.ClusterIPNone, svc.Spec.ClusterIP)
+
+	var clusterIP corev1.Service
+	require.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter"}, &clusterIP))
+	assert.Equal(t, corev1.ServiceTypeClusterIP, clusterIP.Spec.Type)
+	require.Len(t, clusterIP.Spec.Ports, 1)
+	assert.Equal(t, int32(kmv1.AgentBrokerPort), clusterIP.Spec.Ports[0].Port)
 }
 
 func TestReconcile_ScaleUp(t *testing.T) {
@@ -865,8 +925,10 @@ func TestReconcile_DeletionCleansEverything(t *testing.T) {
 	}
 	svc := newHeadlessService(ad)
 	svc.Annotations[kmv1.KeyHash] = "x"
+	clusterIP := newClusterIPService(ad)
+	clusterIP.Annotations[kmv1.KeyHash] = "x"
 
-	r, c := newTestReconciler(t, ad, pod, svc)
+	r, c := newTestReconciler(t, ad, pod, svc, clusterIP)
 
 	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
 	require.NoError(t, err)
@@ -875,6 +937,8 @@ func TestReconcile_DeletionCleansEverything(t *testing.T) {
 	var lookup corev1.Service
 	err = c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter-headless"}, &lookup)
 	assert.Error(t, err, "headless service removed on deletion")
+	err = c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter"}, &lookup)
+	assert.Error(t, err, "ClusterIP service removed on deletion")
 }
 
 func TestReconcile_StatusReadyCount(t *testing.T) {

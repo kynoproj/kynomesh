@@ -74,7 +74,7 @@ func TestAgentCardProxy_RewritesInterfaceURLs(t *testing.T) {
 	}
 	socketPath := fakeUDSAgent(t, originalCard)
 
-	proxy := NewAgentCardProxy(NewUDSHTTPClient(socketPath), "broker.example.com", 9100, allTransportsEnabled())
+	proxy := NewAgentCardProxy(NewUDSHTTPClient(socketPath), "", "broker.example.com", 9100, allTransportsEnabled())
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", a2asrv.WellKnownAgentCardPath, nil)
 	proxy.ServeHTTP(rec, req)
@@ -105,6 +105,46 @@ func TestAgentCardProxy_RewritesInterfaceURLs(t *testing.T) {
 	}
 }
 
+func TestAgentCardProxy_HonorsPublicBaseURL(t *testing.T) {
+	originalCard := &a2a.AgentCard{
+		Name: "user-agent",
+		SupportedInterfaces: []*a2a.AgentInterface{
+			{URL: "http://localhost:8000/rpc", ProtocolBinding: a2a.TransportProtocolJSONRPC},
+			{URL: "http://localhost:8000/api", ProtocolBinding: a2a.TransportProtocolHTTPJSON},
+			{URL: "localhost:8000", ProtocolBinding: a2a.TransportProtocolGRPC},
+		},
+	}
+	socketPath := fakeUDSAgent(t, originalCard)
+
+	proxy := NewAgentCardProxy(
+		NewUDSHTTPClient(socketPath),
+		"https://agent.example.com",
+		"broker.local",
+		9100,
+		allTransportsEnabled(),
+	)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", a2asrv.WellKnownAgentCardPath, nil)
+	proxy.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	var got a2a.AgentCard
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &got))
+
+	require.Len(t, got.SupportedInterfaces, 3)
+	for _, iface := range got.SupportedInterfaces {
+		switch iface.ProtocolBinding {
+		case a2a.TransportProtocolJSONRPC:
+			assert.Equal(t, "https://agent.example.com"+JSONRPCEndpoint, iface.URL)
+		case a2a.TransportProtocolHTTPJSON:
+			assert.Equal(t, "https://agent.example.com"+RESTEndpoint, iface.URL)
+		case a2a.TransportProtocolGRPC:
+			assert.Equal(t, "agent.example.com:443", iface.URL)
+		}
+	}
+}
+
 func TestAgentCardProxy_StripsDisabledTransports(t *testing.T) {
 	originalCard := &a2a.AgentCard{
 		Name: "user-agent",
@@ -118,7 +158,7 @@ func TestAgentCardProxy_StripsDisabledTransports(t *testing.T) {
 	socketPath := fakeUDSAgent(t, originalCard)
 
 	enabled := map[a2a.TransportProtocol]bool{a2a.TransportProtocolJSONRPC: true}
-	proxy := NewAgentCardProxy(NewUDSHTTPClient(socketPath), "broker.example.com", 9100, enabled)
+	proxy := NewAgentCardProxy(NewUDSHTTPClient(socketPath), "", "broker.example.com", 9100, enabled)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", a2asrv.WellKnownAgentCardPath, nil)
 	proxy.ServeHTTP(rec, req)
@@ -133,7 +173,7 @@ func TestAgentCardProxy_AgentUnreachableReturns502(t *testing.T) {
 	// Dial a UDS path that doesn't exist — every fetch must surface a
 	// 502 rather than fall back to anything cached.
 	deadSocket := filepath.Join(shortSocketDir(t), "x.sock")
-	proxy := NewAgentCardProxy(NewUDSHTTPClient(deadSocket), "broker.example.com", 9100, allTransportsEnabled())
+	proxy := NewAgentCardProxy(NewUDSHTTPClient(deadSocket), "", "broker.example.com", 9100, allTransportsEnabled())
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", a2asrv.WellKnownAgentCardPath, nil)
 	proxy.ServeHTTP(rec, req)
@@ -146,7 +186,7 @@ func TestAgentCardProxy_FetchesFreshOnEachRequest(t *testing.T) {
 	currentCard := &a2a.AgentCard{Name: "v1"}
 	socketPath := fakeUDSAgent(t, currentCard)
 
-	proxy := NewAgentCardProxy(NewUDSHTTPClient(socketPath), "broker.example.com", 9100, allTransportsEnabled())
+	proxy := NewAgentCardProxy(NewUDSHTTPClient(socketPath), "", "broker.example.com", 9100, allTransportsEnabled())
 
 	rec1 := httptest.NewRecorder()
 	proxy.ServeHTTP(rec1, httptest.NewRequest("GET", a2asrv.WellKnownAgentCardPath, nil))

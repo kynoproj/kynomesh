@@ -1799,6 +1799,8 @@ spec:
                 type: integer
               priorityClassName:
                 type: string
+              publicBaseURL:
+                type: string
               replicas:
                 default: 1
                 format: int32

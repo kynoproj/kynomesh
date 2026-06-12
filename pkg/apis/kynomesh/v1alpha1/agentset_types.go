@@ -124,3 +124,13 @@ type AgentSetList struct {
 	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 	Items           []AgentSet `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
+
+// EntryServiceSuffix is appended to the AgentSet name to form the entry
+// service's name.
+const EntryServiceSuffix = "ingress"
+
+// EntryServiceName returns the name of the ClusterIP Service that routes
+// to pods of the entry AgentDeploy of this AgentSet.
+func (as *AgentSet) EntryServiceName() string {
+	return as.Name + "-" + EntryServiceSuffix
+}
