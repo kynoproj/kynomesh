@@ -225,6 +225,7 @@ start: image
 	kubectl apply -f test/manifests/kynomesh-ns.yaml
 	kubectl -n kynomesh-system delete cm kynomesh-cmd-params-config --ignore-not-found=true
 	kubectl kustomize test/manifests | sed 's@quay.io/kynoproj/@$(IMAGE_NAMESPACE)/@' | sed 's/:$(BASE_VERSION)/:$(VERSION)/' | kubectl -n kynomesh-system apply -l app.kubernetes.io/part-of=kynomesh --prune=false --force -f -
+	kubectl -n kynomesh-system rollout status deploy -lapp.kubernetes.io/part-of=kynomesh --timeout=60s
 	kubectl -n kynomesh-system wait -lapp.kubernetes.io/part-of=kynomesh --for=condition=Ready --timeout 60s pod --all
 
 .PHONY: e2eapi-image
