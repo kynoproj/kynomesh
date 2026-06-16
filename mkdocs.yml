@@ -1,0 +1,68 @@
+site_name:
+  Kynomesh - Distributed multi-agent orchestration platform on Kubernetes
+repo_url: https://github.com/kynoproj/kynomesh
+edit_uri: edit/main/docs/
+strict: true
+theme:
+  name: material
+  favicon: assets/kyno04.svg
+  font:
+    text: Roboto
+    code: Roboto Mono
+  logo: assets/kyno04-white.svg
+  palette:
+    - scheme: default
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      primary: black
+      accent: white
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - content.tabs.link
+extra:
+  analytics:
+    provider: google
+    property: G-WD91ZWL6XY
+extra_css:
+  - assets/extra.css
+markdown_extensions:
+  - codehilite
+  - admonition
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.details
+  - toc:
+      permalink: true
+  - pymdownx.tabbed:
+      alternate_style: true
+nav:
+  - Home: README.md
+  - Getting Started:
+      - quick-start.md
+  - User Guide:
+      - Core Concepts:
+          - Overview: "core-concepts/overview.md"
+          - core-concepts/agentset.md
+          - core-concepts/agentdeploy.md
+      - Reference:
+          - APIs.md
+  - Operator Manual:
+      - Releases ⧉: "operations/releases.md"
+      - operations/installation.md
+  - Contributor Guide:
+      - development/development.md
+      - Specifications:
+          - development/specifications/agent-discovery.md
+      - development/static-code-analysis.md
