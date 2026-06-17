@@ -1,0 +1,32 @@
+name: docs
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  docs:
+    if: github.repository == 'kynoproj/kynomesh'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.9
+      - name: build
+        run: make docs
+      - name: deploy
+        uses: peaceiris/actions-gh-pages@v4
+        if:
+          github.repository == 'kynoproj/kynomesh' && github.ref ==
+          'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
