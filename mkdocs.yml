@@ -29,6 +29,9 @@ theme:
     - navigation.top
     - content.tabs.link
 extra:
+  version:
+    provider: mike
+    default: stable
   analytics:
     provider: google
     property: G-WD91ZWL6XY
