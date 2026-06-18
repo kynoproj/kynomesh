@@ -36,9 +36,9 @@ jobs:
       - name: Build (PR — no deploy)
         if: github.event_name == 'pull_request'
         run: python -m mkdocs build
-      - name: Deploy main as 'latest'
+      - name: Deploy main as 'dev'
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: mike deploy --push --update-aliases latest
+        run: mike deploy --push --update-aliases dev
       - name: Deploy 'stable' tag
         if: github.ref == 'refs/tags/stable'
         run: |
@@ -49,4 +49,4 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           MINOR=${VERSION%.*}
-          mike deploy --push "$MINOR"
+          mike deploy --push "v$MINOR"
