@@ -12,7 +12,7 @@ on:
       - main
 
 jobs:
-  docs:
+  Docs:
     if: github.repository == 'kynoproj/kynomesh'
     runs-on: ubuntu-latest
     permissions:
