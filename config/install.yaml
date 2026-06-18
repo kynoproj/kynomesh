@@ -8295,7 +8295,7 @@ spec:
               key: controller.leader.election.lease.renew.period
               name: kynomesh-cmd-params-config
               optional: true
-        image: quay.io/kynoproj/kynomesh:v0.5.1
+        image: quay.io/kynoproj/kynomesh:v0.5.2
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
