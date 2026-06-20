@@ -54,7 +54,9 @@ gen-protoc(){
       -I ${GOPATH}/src \
       --go_out=paths=source_relative:. \
       --go-grpc_out=paths=source_relative:. \
-      --grpc-gateway_out=logtostderr=true:${GOPATH}/src \
+      --grpc-gateway_out=logtostderr=true,paths=source_relative:. \
       $@
 }
+
+gen-protoc pkg/apis/proto/daemon/daemon.proto
 

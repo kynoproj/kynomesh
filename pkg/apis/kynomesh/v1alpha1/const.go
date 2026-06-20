@@ -44,16 +44,19 @@ const (
 	EnvLeaderElectionRetryPeriod   = "KYNOMESH_LEADER_ELECTION_RETRY_PERIOD"
 	EnvImagePullPolicy             = "KYNOMESH_IMAGE_PULL_POLICY"
 	EnvPPROFEnabled                = "KYNOMESH_PPROF_ENABLED"
+	EnvAgentSetAgentDeploys        = "KYNOMESH_AGENTSET_AGENTDEPLOYS"
 
 	// Container names
 	ContainerNameAgent       = "agent"
 	ContainerNameAgentBroker = "broker"
 	ContainerNameController  = "controller-manager"
+	ContainerNameDaemon      = "daemon"
 	ContainerNameInitRuntime = "init-runtime"
 
 	// Component label values (for KeyComponent)
 	ComponentAgent             = "agent"
 	ComponentControllerManager = "controller-manager"
+	ComponentDaemon            = "daemon"
 
 	// Controller names
 	ControllerAgentDeploy = "agentdeploy-controller"
@@ -65,6 +68,12 @@ const (
 	// AgentBrokerIntrospectionPort is a separate port the broker listens on
 	// for observability and probes (/metrics, /healthz, /readyz).
 	AgentBrokerIntrospectionPort = 8491
+	// DaemonAPIPort is the port the per-AgentSet daemon listens on for
+	// gRPC + REST API traffic, multiplexed on a single TLS listener.
+	DaemonAPIPort = 9432
+	// DaemonMetricsPort is the port the daemon listens on for its own
+	// /metrics endpoint.
+	DaemonMetricsPort = 9433
 
 	VolumeNameKynomeshRun = "kynomesh-run"                     // Volume name of /var/run/kynomesh
 	KynomeshRunPath       = "/var/run/kynomesh"                // Volume mount path
