@@ -21,7 +21,7 @@ jobs:
     name: Build binaries
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -48,7 +48,7 @@ jobs:
     if: github.repository == 'kynoproj/kynomesh'
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
