@@ -58,7 +58,5 @@ gen-protoc(){
       $@
 }
 
-# Hand-written gRPC service definitions (one per file). Each generates
-# .pb.go, _grpc.pb.go, and .pb.gw.go alongside the source .proto.
 gen-protoc pkg/apis/proto/daemon/daemon.proto
 
