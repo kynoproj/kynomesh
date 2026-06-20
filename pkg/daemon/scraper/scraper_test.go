@@ -1,0 +1,217 @@
+/*
+Copyright 2026 The Kynoproj Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package scraper
+
+import (
+	"context"
+	"crypto/tls"
+	"fmt"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// newTLSServer wraps an httptest TLS server and returns the host and
+// port a Scraper would target (httptest binds 127.0.0.1 by default).
+func newTLSServer(t *testing.T, body string, status int) (host string, port int, close func()) {
+	t.Helper()
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/metrics" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(body))
+	}))
+	srv.TLS = &tls.Config{MinVersion: tls.VersionTLS12}
+	srv.StartTLS()
+
+	u, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+	h, p, err := net.SplitHostPort(u.Host)
+	require.NoError(t, err)
+	pi, err := strconv.Atoi(p)
+	require.NoError(t, err)
+	return h, pi, srv.Close
+}
+
+// newScraperPointingAt replaces the introspection port the Scraper
+// uses so tests can drive httptest's random port.
+func newScraperPointingAt(port int) *Scraper {
+	s := New(2 * time.Second)
+	s.port = port
+	return s
+}
+
+const sampleMetrics = `# HELP kynomesh_broker_inflight_requests Number of in-flight requests
+# TYPE kynomesh_broker_inflight_requests gauge
+kynomesh_broker_inflight_requests{transport="jsonrpc"} 2
+kynomesh_broker_inflight_requests{transport="rest"} 5
+kynomesh_broker_inflight_requests{transport="grpc"} 1
+kynomesh_broker_inflight_requests{transport="passthrough"} 0
+# HELP kynomesh_broker_messages_processed_total Messages processed
+# TYPE kynomesh_broker_messages_processed_total counter
+kynomesh_broker_messages_processed_total{transport="jsonrpc"} 100
+kynomesh_broker_messages_processed_total{transport="rest"} 250
+kynomesh_broker_messages_processed_total{transport="grpc"} 50
+kynomesh_broker_messages_processed_total{transport="passthrough"} 0
+`
+
+func TestScrape_HappyPath(t *testing.T) {
+	host, port, closeSrv := newTLSServer(t, sampleMetrics, http.StatusOK)
+	defer closeSrv()
+	s := newScraperPointingAt(port)
+
+	sample, err := s.Scrape(context.Background(), host)
+	require.NoError(t, err)
+	assert.Equal(t, float64(2), sample.GaugeByTransport["jsonrpc"])
+	assert.Equal(t, float64(5), sample.GaugeByTransport["rest"])
+	assert.Equal(t, float64(1), sample.GaugeByTransport["grpc"])
+	assert.Equal(t, float64(0), sample.GaugeByTransport["passthrough"])
+	assert.Equal(t, float64(100), sample.CounterByTransport["jsonrpc"])
+	assert.Equal(t, float64(250), sample.CounterByTransport["rest"])
+	assert.Equal(t, float64(50), sample.CounterByTransport["grpc"])
+	assert.Equal(t, float64(0), sample.CounterByTransport["passthrough"])
+}
+
+func TestScrape_LabelAgnostic_UnknownTransport(t *testing.T) {
+	body := `# HELP kynomesh_broker_inflight_requests x
+# TYPE kynomesh_broker_inflight_requests gauge
+kynomesh_broker_inflight_requests{transport="someNewProtocol"} 9
+`
+	host, port, closeSrv := newTLSServer(t, body, http.StatusOK)
+	defer closeSrv()
+	s := newScraperPointingAt(port)
+
+	sample, err := s.Scrape(context.Background(), host)
+	require.NoError(t, err)
+	assert.Equal(t, float64(9), sample.GaugeByTransport["someNewProtocol"])
+}
+
+func TestScrape_MetricsWithoutTransportLabelSkipped(t *testing.T) {
+	body := `# HELP kynomesh_broker_inflight_requests x
+# TYPE kynomesh_broker_inflight_requests gauge
+kynomesh_broker_inflight_requests 99
+`
+	host, port, closeSrv := newTLSServer(t, body, http.StatusOK)
+	defer closeSrv()
+	s := newScraperPointingAt(port)
+
+	sample, err := s.Scrape(context.Background(), host)
+	require.NoError(t, err)
+	assert.Empty(t, sample.GaugeByTransport)
+}
+
+func TestScrape_MissingMetricsYieldsEmptySample(t *testing.T) {
+	// An empty /metrics body is valid Prometheus output.
+	host, port, closeSrv := newTLSServer(t, "", http.StatusOK)
+	defer closeSrv()
+	s := newScraperPointingAt(port)
+
+	sample, err := s.Scrape(context.Background(), host)
+	require.NoError(t, err)
+	assert.NotNil(t, sample)
+	assert.Empty(t, sample.GaugeByTransport)
+	assert.Empty(t, sample.CounterByTransport)
+}
+
+func TestScrape_OnlyCounterPresent(t *testing.T) {
+	// Simulates broker exposing the counter before adding the gauge
+	// (or, more realistically, the future state where the broker
+	// only has one of the two metrics during a rollout window).
+	body := `# HELP kynomesh_broker_messages_processed_total x
+# TYPE kynomesh_broker_messages_processed_total counter
+kynomesh_broker_messages_processed_total{transport="rest"} 42
+`
+	host, port, closeSrv := newTLSServer(t, body, http.StatusOK)
+	defer closeSrv()
+	s := newScraperPointingAt(port)
+
+	sample, err := s.Scrape(context.Background(), host)
+	require.NoError(t, err)
+	assert.Equal(t, float64(42), sample.CounterByTransport["rest"])
+	assert.Empty(t, sample.GaugeByTransport)
+}
+
+func TestScrape_Non200Errors(t *testing.T) {
+	host, port, closeSrv := newTLSServer(t, "", http.StatusServiceUnavailable)
+	defer closeSrv()
+	s := newScraperPointingAt(port)
+
+	_, err := s.Scrape(context.Background(), host)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "503")
+}
+
+func TestScrape_DialFailureErrors(t *testing.T) {
+	s := newScraperPointingAt(1) // port 1 is unbound; dial will fail fast
+	_, err := s.Scrape(context.Background(), "127.0.0.1")
+	require.Error(t, err)
+}
+
+func TestScrape_ContextCancellationHonored(t *testing.T) {
+	// Slow server: blocks until ctx is canceled.
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-r.Context().Done()
+	}))
+	srv.TLS = &tls.Config{MinVersion: tls.VersionTLS12}
+	srv.StartTLS()
+	defer srv.Close()
+	u, _ := url.Parse(srv.URL)
+	host, p, _ := net.SplitHostPort(u.Host)
+	port, _ := strconv.Atoi(p)
+	s := newScraperPointingAt(port)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	start := time.Now()
+	_, err := s.Scrape(ctx, host)
+	require.Error(t, err)
+	assert.Less(t, time.Since(start), 500*time.Millisecond, "should not wait for full client timeout")
+	// Just sanity-check the error mentions one of context-related strings.
+	msg := err.Error()
+	assert.True(t,
+		strings.Contains(msg, "context") ||
+			strings.Contains(msg, "deadline") ||
+			strings.Contains(msg, "canceled"),
+		"unexpected error: %v", err)
+}
+
+// Sanity-test the metric-name constants haven't been accidentally
+// changed, since they're part of the broker contract.
+func TestMetricNamesAreStable(t *testing.T) {
+	assert.Equal(t, "kynomesh_broker_inflight_requests", MetricInflightName)
+	assert.Equal(t, "kynomesh_broker_messages_processed_total", MetricProcessedName)
+	assert.Equal(t, "transport", TransportLabelName)
+}
+
+// Ensure the introspection port we target matches the API constant.
+func TestDefaultPortMatchesAPIConst(t *testing.T) {
+	s := New(time.Second)
+	assert.Equal(t, 8491, s.port)
+	assert.Equal(t, fmt.Sprint(s.port), "8491")
+}
