@@ -26,6 +26,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	sharedqueue "github.com/kynoproj/kynomesh/pkg/shared/queue"
 )
 
 // stubScraper returns canned samples per host. Sequential calls to
@@ -262,7 +264,7 @@ func TestScrapeOneAgentDeploy_ScrapeFailureKeepsPreviousValue(t *testing.T) {
 }
 
 func TestObservedTransports_Deduplicates(t *testing.T) {
-	q := NewOverflowQueue[*TimestampedCounts](10)
+	q := sharedqueue.New[*TimestampedCounts](10)
 	UpdateBucket(q, 100, "p", &PodSample{CounterByTransport: map[string]float64{"rest": 1, "grpc": 2}})
 	UpdateBucket(q, 110, "p", &PodSample{GaugeByTransport: map[string]float64{"jsonrpc": 1, "rest": 0}})
 	got := observedTransports(q)
@@ -270,7 +272,7 @@ func TestObservedTransports_Deduplicates(t *testing.T) {
 }
 
 func TestAveragePodsObserved(t *testing.T) {
-	q := NewOverflowQueue[*TimestampedCounts](10)
+	q := sharedqueue.New[*TimestampedCounts](10)
 	UpdateBucket(q, 100, "p1", &PodSample{})
 	UpdateBucket(q, 100, "p2", &PodSample{})
 	UpdateBucket(q, 110, "p1", &PodSample{})

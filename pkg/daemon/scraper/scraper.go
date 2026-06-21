@@ -40,40 +40,28 @@ import (
 // part of the broker contract and must not be configurable from the
 // daemon side.
 const (
-	// MetricInflightName is the in-flight gauge (currently present in
-	// pkg/broker/counters.go).
-	MetricInflightName = "kynomesh_broker_inflight_requests"
+	// MetricInflightName is the in-flight gauge.
+	MetricInflightName = "broker_inflight_requests"
 
-	// MetricProcessedName is the processed-messages counter. The
-	// broker does not emit this yet; until it does, the scraper will
-	// simply observe no counter samples and rate calculations return
-	// zero. The daemon does not need a config change when the broker
-	// starts emitting this metric.
-	MetricProcessedName = "kynomesh_broker_messages_processed_total"
+	// MetricProcessedName is the processed-messages counter.
+	MetricProcessedName = "broker_messages_processed_total"
 
 	// TransportLabelName is the label the broker uses to distinguish
 	// JSONRPC, REST, gRPC, and passthrough buckets on both metrics.
 	TransportLabelName = "transport"
 )
 
-// Scraper fetches one pod's /metrics endpoint and parses it. Concrete
-// instances are cheap to construct; share one across the daemon.
+// Scraper fetches one pod's /metrics endpoint and parses it.
 type Scraper struct {
 	client *http.Client
 	port   int
 }
 
-// New returns a Scraper. timeout caps the total HTTP fetch (default
-// behavior matches numaflow's 1s). port is the broker introspection
-// port to hit on each pod.
+// New returns a Scraper.
 func New(timeout time.Duration) *Scraper {
 	return &Scraper{
 		client: &http.Client{
 			Transport: &http.Transport{
-				// The broker terminates TLS with a self-signed cert,
-				// generated at broker startup. No CA distribution
-				// exists yet; cluster-internal access is the trust
-				// boundary.
 				TLSClientConfig: &tls.Config{
 					InsecureSkipVerify: true, //nolint:gosec
 					MinVersion:         tls.VersionTLS12,
@@ -87,13 +75,7 @@ func New(timeout time.Duration) *Scraper {
 }
 
 // Scrape fetches https://<host>:<port>/metrics and returns the parsed
-// PodSample. Returns (nil, err) on scrape failure — the rater treats
-// this as "keep the previous bucket value" per numaflow's pattern.
-//
-// A pod that's reachable but exposes neither configured metric (e.g.
-// broker without the counter yet) yields an empty PodSample, not nil,
-// so the rater records a zero-value observation rather than holding
-// stale data forever.
+// PodSample.
 func (s *Scraper) Scrape(ctx context.Context, host string) (*rater.PodSample, error) {
 	url := fmt.Sprintf("https://%s:%d/metrics", host, s.port)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)

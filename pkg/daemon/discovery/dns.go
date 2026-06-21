@@ -28,9 +28,6 @@ import (
 )
 
 // HeadlessSuffix matches v1alpha1.AgentDeploy.HeadlessServiceName().
-// Duplicated here because the daemon package must not import the
-// reconciler-side AgentDeploy methods (those pull in K8s client
-// dependencies the daemon doesn't need).
 const HeadlessSuffix = "-headless"
 
 // Resolver is a small interface that net.DefaultResolver satisfies;
@@ -45,33 +42,20 @@ func HeadlessHost(agentDeploy, namespace string) string {
 	return fmt.Sprintf("%s%s.%s.svc.cluster.local", agentDeploy, HeadlessSuffix, namespace)
 }
 
-// PodHost returns the DNS name of the i-th replica's pod. The
-// AgentDeploy reconciler sets Pod.Spec.Hostname = "<deploy>-<i>" and
-// Pod.Spec.Subdomain = "<deploy>-headless", which K8s combines into
-// this per-pod DNS name.
+// PodHost returns the DNS name of the i-th replica's pod.
 func PodHost(agentDeploy, namespace string, replica int) string {
 	return fmt.Sprintf("%s-%d.%s%s.%s.svc.cluster.local", agentDeploy, replica, agentDeploy, HeadlessSuffix, namespace)
 }
 
 // Discover returns the list of pod DNS names to scrape for the given
-// AgentDeploy. It first queries the headless Service to count ready
-// pods (N), then constructs the per-pod hostnames "<deploy>-0..N-1".
-//
-// AgentDeploy guarantees contiguous replica indices [0, desired) at
-// steady state. During rolling restarts, the gap (e.g. replica 2
-// terminating) may briefly drop N below the desired count; the daemon
-// scrapes whatever DNS reports and tolerates per-pod scrape failures.
-//
-// Returns an empty slice (not an error) when the headless Service has
-// no ready endpoints — common during AgentDeploy initial bring-up.
+// AgentDeploy.
 func Discover(ctx context.Context, r Resolver, agentDeploy, namespace string) ([]string, error) {
 	host := HeadlessHost(agentDeploy, namespace)
 	ips, err := r.LookupHost(ctx, host)
 	if err != nil {
 		// NXDOMAIN means the headless Service exists but no pods are
 		// ready yet. Treat as "zero replicas," same as the scaled-to-
-		// zero case — controllers downstream see "rate unavailable"
-		// rather than a hard scrape error.
+		// zero case.
 		if isNotFound(err) {
 			return nil, nil
 		}

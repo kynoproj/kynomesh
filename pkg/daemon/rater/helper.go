@@ -16,6 +16,10 @@ limitations under the License.
 
 package rater
 
+import (
+	sharedqueue "github.com/kynoproj/kynomesh/pkg/shared/queue"
+)
+
 // TransportTotal is the synthetic transport key used to represent the
 // sum across all observed transports. It is not emitted by the broker;
 // the rater computes it from real transport buckets.
@@ -32,7 +36,7 @@ func AlignBucket(unixSeconds int64) int64 {
 // UpdateBucket finds (or appends) the bucket whose timestamp matches
 // ts and records the pod sample into it. Caller is responsible for
 // passing an already-bucket-aligned ts (use AlignBucket).
-func UpdateBucket(q *OverflowQueue[*TimestampedCounts], ts int64, pod string, sample *PodSample) {
+func UpdateBucket(q *sharedqueue.OverflowQueue[*TimestampedCounts], ts int64, pod string, sample *PodSample) {
 	for _, b := range q.Items() {
 		if b.Timestamp() == ts {
 			b.Update(pod, sample)
@@ -82,7 +86,7 @@ func findStartIndex(buckets []*TimestampedCounts, nowAligned, lookbackSeconds in
 // The returned rate is (sum of pod deltas across the window) divided
 // by (timestamp diff in seconds). Returns 0 when no rate can be
 // computed (fewer than 2 buckets, or no buckets in window).
-func CalculateRate(q *OverflowQueue[*TimestampedCounts], nowAligned, lookbackSeconds int64, transport string) float64 {
+func CalculateRate(q *sharedqueue.OverflowQueue[*TimestampedCounts], nowAligned, lookbackSeconds int64, transport string) float64 {
 	buckets := q.Items()
 	startIdx := findStartIndex(buckets, nowAligned, lookbackSeconds)
 	if startIdx < 0 {
@@ -162,7 +166,7 @@ func sumGauges(s *PodSample) float64 {
 // In-flight is a gauge so no delta math is needed — a single bucket
 // is enough. The most recent bucket is still excluded for consistency
 // with rate calc (it may be filling).
-func CalculateInflightAvg(q *OverflowQueue[*TimestampedCounts], nowAligned, lookbackSeconds int64, transport string) float64 {
+func CalculateInflightAvg(q *sharedqueue.OverflowQueue[*TimestampedCounts], nowAligned, lookbackSeconds int64, transport string) float64 {
 	buckets := q.Items()
 	startIdx := findStartIndex(buckets, nowAligned, lookbackSeconds)
 	if startIdx < 0 {
@@ -199,6 +203,6 @@ func CalculateInflightAvg(q *OverflowQueue[*TimestampedCounts], nowAligned, look
 // HasUsableHistory reports whether the queue holds enough buckets to
 // compute a non-trivial rate for any window. The rater uses this to
 // decide between returning data and returning Unavailable.
-func HasUsableHistory(q *OverflowQueue[*TimestampedCounts]) bool {
+func HasUsableHistory(q *sharedqueue.OverflowQueue[*TimestampedCounts]) bool {
 	return q.Length() >= 2
 }

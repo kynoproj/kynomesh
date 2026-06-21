@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	sharedqueue "github.com/kynoproj/kynomesh/pkg/shared/queue"
 )
 
 func TestAlignBucket(t *testing.T) {
@@ -40,7 +42,7 @@ func TestAlignBucket(t *testing.T) {
 }
 
 func TestUpdateBucket_NewAndExisting(t *testing.T) {
-	q := NewOverflowQueue[*TimestampedCounts](10)
+	q := sharedqueue.New[*TimestampedCounts](10)
 	UpdateBucket(q, 100, "pod-0", &PodSample{CounterByTransport: map[string]float64{"rest": 1}})
 	UpdateBucket(q, 100, "pod-1", &PodSample{CounterByTransport: map[string]float64{"rest": 2}})
 	UpdateBucket(q, 110, "pod-0", &PodSample{CounterByTransport: map[string]float64{"rest": 5}})
@@ -56,9 +58,9 @@ func TestUpdateBucket_NewAndExisting(t *testing.T) {
 // twoPodSnapshot builds buckets at t0+0, t0+10, t0+20 with rest+grpc
 // counters and rest+grpc gauges per pod. Returns the queue, t0, and
 // the now-aligned timestamp (= t0+30, one bucket past the latest).
-func twoPodFixture(t *testing.T) (*OverflowQueue[*TimestampedCounts], int64, int64) {
+func twoPodFixture(t *testing.T) (*sharedqueue.OverflowQueue[*TimestampedCounts], int64, int64) {
 	t.Helper()
-	q := NewOverflowQueue[*TimestampedCounts](10)
+	q := sharedqueue.New[*TimestampedCounts](10)
 	const t0 int64 = 1_000_000
 	// bucket t0
 	UpdateBucket(q, t0, "pod-0", &PodSample{
@@ -112,7 +114,7 @@ func TestCalculateRate_Total(t *testing.T) {
 }
 
 func TestCalculateRate_CounterReset(t *testing.T) {
-	q := NewOverflowQueue[*TimestampedCounts](10)
+	q := sharedqueue.New[*TimestampedCounts](10)
 	UpdateBucket(q, 100, "pod-0", &PodSample{CounterByTransport: map[string]float64{"rest": 1000}})
 	UpdateBucket(q, 110, "pod-0", &PodSample{CounterByTransport: map[string]float64{"rest": 5}}) // restarted
 	UpdateBucket(q, 120, "pod-0", &PodSample{CounterByTransport: map[string]float64{"rest": 15}})
@@ -125,7 +127,7 @@ func TestCalculateRate_CounterReset(t *testing.T) {
 }
 
 func TestCalculateRate_InsufficientBuckets(t *testing.T) {
-	q := NewOverflowQueue[*TimestampedCounts](10)
+	q := sharedqueue.New[*TimestampedCounts](10)
 	UpdateBucket(q, 100, "pod-0", &PodSample{CounterByTransport: map[string]float64{"rest": 10}})
 	assert.Equal(t, 0.0, CalculateRate(q, 110, 60, "rest"))
 }
@@ -157,7 +159,7 @@ func TestCalculateInflightAvg_Total(t *testing.T) {
 }
 
 func TestHasUsableHistory(t *testing.T) {
-	q := NewOverflowQueue[*TimestampedCounts](10)
+	q := sharedqueue.New[*TimestampedCounts](10)
 	assert.False(t, HasUsableHistory(q))
 	UpdateBucket(q, 100, "p", &PodSample{CounterByTransport: map[string]float64{"rest": 1}})
 	assert.False(t, HasUsableHistory(q))

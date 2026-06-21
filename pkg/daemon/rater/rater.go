@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	sharedqueue "github.com/kynoproj/kynomesh/pkg/shared/queue"
 )
 
 // Default scrape parameters. These are intentionally not exposed as
@@ -93,7 +95,7 @@ type Options struct {
 // scrapes. It is the only stateful component of the daemon.
 type Rater struct {
 	opts    Options
-	buffers map[string]*OverflowQueue[*TimestampedCounts]
+	buffers map[string]*sharedqueue.OverflowQueue[*TimestampedCounts]
 
 	// Self-observability counters; nil-safe checks let tests skip
 	// wiring metrics.
@@ -116,9 +118,9 @@ func NewRater(opts Options) *Rater {
 	if opts.Logger == nil {
 		opts.Logger = zap.NewNop().Sugar()
 	}
-	buffers := make(map[string]*OverflowQueue[*TimestampedCounts], len(opts.AgentDeploys))
+	buffers := make(map[string]*sharedqueue.OverflowQueue[*TimestampedCounts], len(opts.AgentDeploys))
 	for _, ad := range opts.AgentDeploys {
-		buffers[ad] = NewOverflowQueue[*TimestampedCounts](MaxBuckets)
+		buffers[ad] = sharedqueue.New[*TimestampedCounts](MaxBuckets)
 	}
 	return &Rater{opts: opts, buffers: buffers}
 }
@@ -329,7 +331,7 @@ func (r *Rater) GetMetrics(name string, lookbackSeconds int64) (*WindowedResult,
 // observedTransports walks the ring buffer to collect every distinct
 // transport label value seen on either counter or gauge metrics.
 // Returns a deduplicated slice (order not guaranteed).
-func observedTransports(q *OverflowQueue[*TimestampedCounts]) []string {
+func observedTransports(q *sharedqueue.OverflowQueue[*TimestampedCounts]) []string {
 	set := map[string]struct{}{}
 	for _, b := range q.Items() {
 		for _, sample := range b.Snapshot() {
@@ -354,7 +356,7 @@ func observedTransports(q *OverflowQueue[*TimestampedCounts]) []string {
 // averagePodsObserved returns the mean number of pods observed per
 // bucket across the retained history, rounded to int64. Zero when no
 // buckets exist.
-func averagePodsObserved(q *OverflowQueue[*TimestampedCounts]) int64 {
+func averagePodsObserved(q *sharedqueue.OverflowQueue[*TimestampedCounts]) int64 {
 	items := q.Items()
 	if len(items) == 0 {
 		return 0

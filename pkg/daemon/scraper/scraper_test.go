@@ -66,18 +66,18 @@ func newScraperPointingAt(port int) *Scraper {
 	return s
 }
 
-const sampleMetrics = `# HELP kynomesh_broker_inflight_requests Number of in-flight requests
-# TYPE kynomesh_broker_inflight_requests gauge
-kynomesh_broker_inflight_requests{transport="jsonrpc"} 2
-kynomesh_broker_inflight_requests{transport="rest"} 5
-kynomesh_broker_inflight_requests{transport="grpc"} 1
-kynomesh_broker_inflight_requests{transport="passthrough"} 0
-# HELP kynomesh_broker_messages_processed_total Messages processed
-# TYPE kynomesh_broker_messages_processed_total counter
-kynomesh_broker_messages_processed_total{transport="jsonrpc"} 100
-kynomesh_broker_messages_processed_total{transport="rest"} 250
-kynomesh_broker_messages_processed_total{transport="grpc"} 50
-kynomesh_broker_messages_processed_total{transport="passthrough"} 0
+const sampleMetrics = `# HELP broker_inflight_requests Number of in-flight requests
+# TYPE broker_inflight_requests gauge
+broker_inflight_requests{transport="jsonrpc"} 2
+broker_inflight_requests{transport="rest"} 5
+broker_inflight_requests{transport="grpc"} 1
+broker_inflight_requests{transport="passthrough"} 0
+# HELP broker_messages_processed_total Messages processed
+# TYPE broker_messages_processed_total counter
+broker_messages_processed_total{transport="jsonrpc"} 100
+broker_messages_processed_total{transport="rest"} 250
+broker_messages_processed_total{transport="grpc"} 50
+broker_messages_processed_total{transport="passthrough"} 0
 `
 
 func TestScrape_HappyPath(t *testing.T) {
@@ -98,9 +98,9 @@ func TestScrape_HappyPath(t *testing.T) {
 }
 
 func TestScrape_LabelAgnostic_UnknownTransport(t *testing.T) {
-	body := `# HELP kynomesh_broker_inflight_requests x
-# TYPE kynomesh_broker_inflight_requests gauge
-kynomesh_broker_inflight_requests{transport="someNewProtocol"} 9
+	body := `# HELP broker_inflight_requests x
+# TYPE broker_inflight_requests gauge
+broker_inflight_requests{transport="someNewProtocol"} 9
 `
 	host, port, closeSrv := newTLSServer(t, body, http.StatusOK)
 	defer closeSrv()
@@ -112,9 +112,9 @@ kynomesh_broker_inflight_requests{transport="someNewProtocol"} 9
 }
 
 func TestScrape_MetricsWithoutTransportLabelSkipped(t *testing.T) {
-	body := `# HELP kynomesh_broker_inflight_requests x
-# TYPE kynomesh_broker_inflight_requests gauge
-kynomesh_broker_inflight_requests 99
+	body := `# HELP broker_inflight_requests x
+# TYPE broker_inflight_requests gauge
+broker_inflight_requests 99
 `
 	host, port, closeSrv := newTLSServer(t, body, http.StatusOK)
 	defer closeSrv()
@@ -142,9 +142,9 @@ func TestScrape_OnlyCounterPresent(t *testing.T) {
 	// Simulates broker exposing the counter before adding the gauge
 	// (or, more realistically, the future state where the broker
 	// only has one of the two metrics during a rollout window).
-	body := `# HELP kynomesh_broker_messages_processed_total x
-# TYPE kynomesh_broker_messages_processed_total counter
-kynomesh_broker_messages_processed_total{transport="rest"} 42
+	body := `# HELP broker_messages_processed_total x
+# TYPE broker_messages_processed_total counter
+broker_messages_processed_total{transport="rest"} 42
 `
 	host, port, closeSrv := newTLSServer(t, body, http.StatusOK)
 	defer closeSrv()
@@ -204,8 +204,8 @@ func TestScrape_ContextCancellationHonored(t *testing.T) {
 // Sanity-test the metric-name constants haven't been accidentally
 // changed, since they're part of the broker contract.
 func TestMetricNamesAreStable(t *testing.T) {
-	assert.Equal(t, "kynomesh_broker_inflight_requests", MetricInflightName)
-	assert.Equal(t, "kynomesh_broker_messages_processed_total", MetricProcessedName)
+	assert.Equal(t, "broker_inflight_requests", MetricInflightName)
+	assert.Equal(t, "broker_messages_processed_total", MetricProcessedName)
 	assert.Equal(t, "transport", TransportLabelName)
 }
 
