@@ -17,7 +17,7 @@ limitations under the License.
 // Package server hosts the daemon's gRPC + REST API on a single TLS
 // port (ALPN-dispatch like the broker) and its own /metrics surface
 // on a separate TLS port.
-package server
+package service
 
 import (
 	"context"

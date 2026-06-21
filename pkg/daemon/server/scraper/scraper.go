@@ -33,7 +33,7 @@ import (
 	"github.com/prometheus/common/model"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
-	"github.com/kynoproj/kynomesh/pkg/daemon/rater"
+	"github.com/kynoproj/kynomesh/pkg/daemon/server/rater"
 )
 
 // Metric names emitted by the broker. Hardcoded per design: these are
