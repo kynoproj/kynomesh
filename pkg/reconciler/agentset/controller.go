@@ -16,13 +16,18 @@ limitations under the License.
 
 // Package agentset implements the controller that reconciles AgentSet
 // resources and orchestrates the corresponding child resources.
+//
+// Deletion: all children (AgentDeploys, entry Service, daemon
+// Deployment + Service) carry owner references to the AgentSet, so
+// Kubernetes' built-in cascading garbage collection cleans them up
+// when the AgentSet is removed. The reconciler does not register a
+// finalizer.
 package agentset
 
 import (
 	"context"
 	"fmt"
 	"reflect"
-	"slices"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -37,10 +42,6 @@ import (
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 	"github.com/kynoproj/kynomesh/pkg/reconciler/validator"
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
-)
-
-const (
-	FinalizerName = "kynomesh.kyno.sh/" + kmv1.ControllerAgentSet
 )
 
 // Reconciler implements sigs.k8s.io/controller-runtime/pkg/reconcile.Reconciler
@@ -82,6 +83,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("failed to get AgentSet: %w", err)
 	}
 
+	// Mid-deletion the API server keeps the object alive only briefly
+	// during cascading GC. Skip — there's nothing controller-side to
+	// do and any patches would race against deletion.
+	if !original.DeletionTimestamp.IsZero() {
+		return ctrl.Result{}, nil
+	}
+
 	log := r.logger.With("namespace", req.Namespace).With("agentSet", original.Name)
 	ctx = logging.WithLogger(ctx, log)
 
@@ -111,23 +119,6 @@ func (r *Reconciler) reconcile(ctx context.Context, as *kmv1.AgentSet) error {
 		kmv1.AgentSetConditionAgentsHealthy,
 	)
 	as.Status.ObservedGeneration = as.Generation
-
-	if !as.DeletionTimestamp.IsZero() {
-		as.Status.Phase = kmv1.AgentSetPhaseDeleting
-		if err := r.deleteChildren(ctx, as); err != nil {
-			return fmt.Errorf("failed to delete child AgentDeploys: %w", err)
-		}
-		if err := r.deleteEntryService(ctx, as); err != nil {
-			return fmt.Errorf("failed to delete entry service: %w", err)
-		}
-		if err := r.deleteDaemon(ctx, as); err != nil {
-			return fmt.Errorf("failed to delete daemon: %w", err)
-		}
-		removeFinalizer(as)
-		return nil
-	}
-
-	addFinalizer(as)
 
 	if err := validator.ValidateAgentSet(as); err != nil {
 		as.Status.MarkFalse(kmv1.AgentSetConditionConfigured, "InvalidSpec", err.Error())
@@ -177,49 +168,18 @@ func (r *Reconciler) reconcile(ctx context.Context, as *kmv1.AgentSet) error {
 	return nil
 }
 
-// persist writes finalizer and status changes back to the API server.
+// persist writes status changes back to the API server.
 func (r *Reconciler) persist(ctx context.Context, original, updated *kmv1.AgentSet) error {
-	finalizersChanged := !reflect.DeepEqual(original.Finalizers, updated.Finalizers)
-	statusChanged := !reflect.DeepEqual(original.Status, updated.Status)
-
-	if statusChanged {
-		statusPatch := client.MergeFrom(original.DeepCopy())
-		// Build the patch object: same identity as original, but with the
-		// updated status. Using a fresh copy avoids ResourceVersion drift
-		// caused by an in-flight finalizer patch below.
-		patchObj := original.DeepCopy()
-		patchObj.Status = updated.Status
-		if err := r.Status().Patch(ctx, patchObj, statusPatch); err != nil {
-			return fmt.Errorf("failed to patch status: %w", err)
-		}
+	if reflect.DeepEqual(original.Status, updated.Status) {
+		return nil
 	}
-
-	if finalizersChanged {
-		metaPatch := client.MergeFrom(original.DeepCopy())
-		patchObj := original.DeepCopy()
-		patchObj.Finalizers = updated.Finalizers
-		if err := r.Patch(ctx, patchObj, metaPatch); err != nil {
-			return fmt.Errorf("failed to patch finalizers: %w", err)
-		}
+	statusPatch := client.MergeFrom(original.DeepCopy())
+	patchObj := original.DeepCopy()
+	patchObj.Status = updated.Status
+	if err := r.Status().Patch(ctx, patchObj, statusPatch); err != nil {
+		return fmt.Errorf("failed to patch status: %w", err)
 	}
 	return nil
-}
-
-func addFinalizer(as *kmv1.AgentSet) {
-	if slices.Contains(as.Finalizers, FinalizerName) {
-		return
-	}
-	as.Finalizers = append(as.Finalizers, FinalizerName)
-}
-
-func removeFinalizer(as *kmv1.AgentSet) {
-	out := as.Finalizers[:0]
-	for _, f := range as.Finalizers {
-		if f != FinalizerName {
-			out = append(out, f)
-		}
-	}
-	as.Finalizers = out
 }
 
 // Reference assertion to surface signature errors at compile time rather

@@ -25,8 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
@@ -202,53 +200,9 @@ func TestReconcileDaemon_RecreatesOnAgentDeploysChange(t *testing.T) {
 		"new agent must appear in the AgentDeploys env after spec change")
 }
 
-func TestDeleteDaemon_RemovesBoth(t *testing.T) {
-	as := newAgentSet("hello", "alpha")
-	r, c := newTestReconciler(t, as)
-	require.NoError(t, r.reconcileDaemon(context.Background(), as))
-
-	require.NoError(t, r.deleteDaemon(context.Background(), as))
-
-	var dep appsv1.Deployment
-	err := c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "hello-daemon"}, &dep)
-	assert.True(t, apierrors.IsNotFound(err), "Deployment must be gone")
-
-	var svc corev1.Service
-	err = c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "hello-daemon"}, &svc)
-	assert.True(t, apierrors.IsNotFound(err), "Service must be gone")
-}
-
-func TestDeleteDaemon_IdempotentOnAbsent(t *testing.T) {
-	as := newAgentSet("hello", "alpha")
-	r, _ := newTestReconciler(t, as)
-	// Never reconciled; delete must succeed regardless.
-	require.NoError(t, r.deleteDaemon(context.Background(), as))
-}
-
 // Sanity-check that the daemon name helper matches the wiring used
 // throughout the reconciler.
 func TestAgentSet_DaemonName(t *testing.T) {
 	as := newAgentSet("my-set", "x")
 	assert.Equal(t, "my-set-daemon", as.DaemonName())
-}
-
-// Confirm the DeletionTimestamp branch removes the daemon as part of
-// the cleanup. Smoke test of the controller-level wiring.
-func TestReconcile_DeleteTriggersDaemonCleanup(t *testing.T) {
-	as := newAgentSet("hello", "alpha")
-	r, c := newTestReconciler(t, as)
-
-	// Create the daemon first via a normal reconcile path. We use
-	// the package-level helper because it exercises the actual flow.
-	require.NoError(t, r.reconcileDaemon(context.Background(), as))
-
-	// Now mark the AgentSet for deletion and re-reconcile.
-	now := metav1.Now()
-	as.DeletionTimestamp = &now
-	addFinalizer(as)
-	require.NoError(t, r.reconcile(context.Background(), as))
-
-	var dep appsv1.Deployment
-	err := c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "hello-daemon"}, &dep)
-	assert.True(t, apierrors.IsNotFound(err), "daemon Deployment must be removed during AgentSet deletion")
 }

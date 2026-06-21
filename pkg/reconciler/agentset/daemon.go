@@ -281,30 +281,3 @@ func (r *Reconciler) reconcileDaemonService(ctx context.Context, as *kmv1.AgentS
 	return nil
 }
 
-// deleteDaemon removes the daemon Deployment and Service if either
-// exists.
-func (r *Reconciler) deleteDaemon(ctx context.Context, as *kmv1.AgentSet) error {
-	log := logging.FromContext(ctx)
-	name := client.ObjectKey{Namespace: as.Namespace, Name: as.DaemonName()}
-
-	var dep appsv1.Deployment
-	if err := r.Get(ctx, name, &dep); err == nil {
-		if err := r.Delete(ctx, &dep); err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("delete daemon Deployment: %w", err)
-		}
-		log.Infow("Deleted daemon Deployment", zap.String("deploymentName", dep.Name))
-	} else if !apierrors.IsNotFound(err) {
-		return fmt.Errorf("get daemon Deployment: %w", err)
-	}
-
-	var svc corev1.Service
-	if err := r.Get(ctx, name, &svc); err == nil {
-		if err := r.Delete(ctx, &svc); err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("delete daemon Service: %w", err)
-		}
-		log.Infow("Deleted daemon Service", zap.String("serviceName", svc.Name))
-	} else if !apierrors.IsNotFound(err) {
-		return fmt.Errorf("get daemon Service: %w", err)
-	}
-	return nil
-}

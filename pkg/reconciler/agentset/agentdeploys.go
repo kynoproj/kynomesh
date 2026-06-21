@@ -81,23 +81,6 @@ func (r *Reconciler) applyDesiredState(
 	return nil
 }
 
-// deleteChildren removes all AgentDeploys labelled as belonging to this
-// AgentSet.
-func (r *Reconciler) deleteChildren(ctx context.Context, as *kmv1.AgentSet) error {
-	log := logging.FromContext(ctx)
-	existing, err := r.listOwnedAgentDeploys(ctx, as)
-	if err != nil {
-		return err
-	}
-	for _, ad := range existing {
-		if err := r.Delete(ctx, ad); err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to delete AgentDeploy %s during cleanup: %w", ad.Name, err)
-		}
-		log.Infow("Deleted an AgentDeploy", zap.String("agentDeploy", ad.Name))
-	}
-	return nil
-}
-
 func (r *Reconciler) listOwnedAgentDeploys(ctx context.Context, as *kmv1.AgentSet) (map[string]*kmv1.AgentDeploy, error) {
 	var list kmv1.AgentDeployList
 	if err := r.List(ctx, &list,
