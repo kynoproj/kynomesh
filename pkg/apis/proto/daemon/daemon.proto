@@ -26,30 +26,34 @@ import "google/protobuf/wrappers.proto";
 // TransportWindowedMetrics carries per-window aggregations for a single
 // transport bucket (e.g. "jsonrpc", "rest", "grpc", "passthrough").
 //
-// Keys for the inner maps follow the windowed-rate convention used by the
-// daemon: "1m", "5m", "15m" are always populated when sufficient samples
-// exist; "custom" is populated only when the caller requests a non-zero
-// lookback_seconds.
+// Keys for the inner maps are window labels: "1m", "5m", "15m" are
+// always populated when sufficient samples exist; "custom" is populated
+// only when the caller requests a non-zero lookback_seconds.
+//
+// processingRates values are messages-per-second over the window.
+// inflights values are time-weighted average in-flight requests over
+// the window.
 //
 // Absent keys in either map mean "no data available for this window."
 // Callers must check presence before reading a value.
 message TransportWindowedMetrics {
   map<string, google.protobuf.DoubleValue> processingRates = 1;
-  map<string, google.protobuf.DoubleValue> inflightAverages = 2;
+  map<string, google.protobuf.DoubleValue> inflights = 2;
 }
 
 // AgentDeployMetrics carries the aggregated, time-windowed metrics for a
 // single AgentDeploy that this daemon scrapes.
 //
-// Top-level processingRates and inflightAverages are the totals across all
+// Top-level processingRates and inflights are the totals across all
 // transports — the common case for autoscaling. byTransport carries the
 // per-transport breakdown for callers that need finer-grained signal.
 message AgentDeployMetrics {
   string agentdeploy = 1;
 
   // Totals across all transports. Keys: "1m", "5m", "15m", "custom".
+  // See TransportWindowedMetrics for the per-key value semantics.
   map<string, google.protobuf.DoubleValue> processingRates = 2;
-  map<string, google.protobuf.DoubleValue> inflightAverages = 3;
+  map<string, google.protobuf.DoubleValue> inflights = 3;
 
   // Per-transport breakdown. Keys are the transport label values emitted
   // by the broker (e.g. "jsonrpc", "rest", "grpc", "passthrough"). The
@@ -60,14 +64,6 @@ message AgentDeployMetrics {
   // daemon's retention. Unset when the caller did not request a custom
   // lookback.
   google.protobuf.Int64Value custom_window_effective_seconds = 5;
-
-  // Total number of timestamped samples currently in the daemon's ring
-  // buffer for this AgentDeploy. Useful for diagnosing thin signal.
-  google.protobuf.Int64Value samples_count = 6;
-
-  // Average number of pods observed per sample over the available
-  // history. Useful for diagnosing scrape coverage.
-  google.protobuf.Int64Value pods_observed = 7;
 }
 
 message GetAgentDeployMetricsRequest {

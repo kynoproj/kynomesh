@@ -37,5 +37,6 @@ func Execute() {
 func init() {
 	rootCmd.AddCommand(NewControllerCommand())
 	rootCmd.AddCommand(NewBrokerCommand())
+	rootCmd.AddCommand(NewDaemonCommand())
 	rootCmd.AddCommand(NewInitRuntimeCommand())
 }
