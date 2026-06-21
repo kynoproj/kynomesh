@@ -322,6 +322,7 @@ message AgentSetSpec {
 
   // +patchStrategy=merge
   // +patchMergeKey=name
+  // +kubebuilder:validation:MinItems=1
   repeated AbstractAgentDeploy agents = 3;
 
   // Templates are used to customize additional kubernetes resources required for the Pipeline

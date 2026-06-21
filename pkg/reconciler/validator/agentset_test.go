@@ -45,11 +45,12 @@ func TestValidateAgentSet(t *testing.T) {
 		agents  []string
 		wantErr string
 	}{
-		{name: "no agents", agents: nil},
+		{name: "no agents", agents: nil, wantErr: "at least one agent"},
 		{name: "ok", agents: []string{"a", "b"}},
 		{name: "empty name", agents: []string{""}, wantErr: "non-empty"},
 		{name: "duplicate", agents: []string{"a", "a"}, wantErr: "duplicate"},
 		{name: "reserved name ingress", agents: []string{kmv1.EntryServiceSuffix}, wantErr: "reserved"},
+		{name: "reserved name daemon", agents: []string{kmv1.DaemonSuffix}, wantErr: "reserved"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

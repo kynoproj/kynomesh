@@ -24151,7 +24151,8 @@
       },
       "required": [
         "pattern",
-        "entry"
+        "entry",
+        "agents"
       ],
       "type": "object"
     },

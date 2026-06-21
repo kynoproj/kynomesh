@@ -25,24 +25,32 @@ import (
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
+// reservedAgentNames maps agent-name strings to a human-readable
+// label of the controller-owned object they collide with. Adding a
+// name here rejects any AgentSet that uses it.
+var reservedAgentNames = map[string]string{
+	kmv1.EntryServiceSuffix: "AgentSet entry service",
+	kmv1.DaemonSuffix:       "AgentSet daemon service",
+}
+
 // ValidateAgentSet validates the spec.
 func ValidateAgentSet(as *kmv1.AgentSet) error {
+	if len(as.Spec.Agents) == 0 {
+		return errors.New("spec.agents must contain at least one agent")
+	}
+
 	seen := make(map[string]struct{}, len(as.Spec.Agents))
 	for _, a := range as.Spec.Agents {
 		if a.Name == "" {
 			return errors.New("agent name must be non-empty")
 		}
-		if a.Name == kmv1.EntryServiceSuffix {
-			return fmt.Errorf("agent name %q is reserved; it collides with the AgentSet entry service", a.Name)
+		if collidesWith, ok := reservedAgentNames[a.Name]; ok {
+			return fmt.Errorf("agent name %q is reserved; it collides with the %s", a.Name, collidesWith)
 		}
 		if _, dup := seen[a.Name]; dup {
 			return fmt.Errorf("duplicate agent name %q", a.Name)
 		}
 		seen[a.Name] = struct{}{}
-	}
-
-	if len(as.Spec.Agents) == 0 {
-		return nil
 	}
 
 	if _, ok := seen[as.Spec.Entry]; !ok {

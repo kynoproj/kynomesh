@@ -14,10 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package cmd boots the kynomesh controller-manager: it constructs a
-// controller-runtime manager, builds each reconciler as a standalone
-// controller, wires probes and metrics, and blocks until the process
-// is signalled to exit.
+// Package cmd boots the kynomesh controller-manager.
 package cmd
 
 import (
@@ -146,7 +143,7 @@ func Start(namespaced bool, managedNamespace string) {
 		logger.Fatalw("Failed to register liveness check", zap.Error(err))
 	}
 
-	if err := registerAgentSetController(mgr, logger); err != nil {
+	if err := registerAgentSetController(mgr, logger, image, brokerPullPolicy); err != nil {
 		logger.Fatalw("Failed to register AgentSet controller", "err", err)
 	}
 	if err := registerAgentDeployController(mgr, logger, image, brokerPullPolicy); err != nil {
@@ -237,12 +234,14 @@ func resolveBrokerPullPolicy() (corev1.PullPolicy, error) {
 //
 //   - Service (owned): enqueue the controlling AgentSet if the entry service
 //     is mutated or deleted out from under us.
-func registerAgentSetController(mgr manager.Manager, logger *zap.SugaredLogger) error {
+func registerAgentSetController(mgr manager.Manager, logger *zap.SugaredLogger, brokerImage string, brokerPullPolicy corev1.PullPolicy) error {
 	r := agentset.NewReconciler(
 		mgr.GetClient(),
 		mgr.GetScheme(),
 		logger.Named(kmv1.ControllerAgentSet),
 		mgr.GetEventRecorder(kmv1.ControllerAgentSet),
+		brokerImage,
+		brokerPullPolicy,
 	)
 
 	c, err := controller.New(kmv1.ControllerAgentSet, mgr, controller.Options{

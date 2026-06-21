@@ -53,22 +53,27 @@ const (
 // for AgentSet.
 type Reconciler struct {
 	client.Client
-	scheme   *runtime.Scheme
-	logger   *zap.SugaredLogger
-	recorder events.EventRecorder
+	scheme          *runtime.Scheme
+	logger          *zap.SugaredLogger
+	recorder        events.EventRecorder
+	image           string
+	imagePullPolicy corev1.PullPolicy
 }
 
 // NewReconciler returns a Reconciler bound to the supplied controller-runtime
-// client and scheme.
-func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredLogger, recorder events.EventRecorder) *Reconciler {
+// client and scheme. image and imagePullPolicy are used to provision the
+// per-AgentSet metrics daemon Deployment.
+func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredLogger, recorder events.EventRecorder, image string, imagePullPolicy corev1.PullPolicy) *Reconciler {
 	if logger == nil {
 		logger = logging.NewLogger().Named(kmv1.ControllerAgentSet)
 	}
 	return &Reconciler{
-		Client:   c,
-		scheme:   scheme,
-		logger:   logger,
-		recorder: recorder,
+		Client:          c,
+		scheme:          scheme,
+		logger:          logger,
+		recorder:        recorder,
+		image:           image,
+		imagePullPolicy: imagePullPolicy,
 	}
 }
 
@@ -120,6 +125,9 @@ func (r *Reconciler) reconcile(ctx context.Context, as *kmv1.AgentSet) error {
 		if err := r.deleteEntryService(ctx, as); err != nil {
 			return fmt.Errorf("failed to delete entry service: %w", err)
 		}
+		if err := r.deleteDaemon(ctx, as); err != nil {
+			return fmt.Errorf("failed to delete daemon: %w", err)
+		}
 		removeFinalizer(as)
 		return nil
 	}
@@ -155,6 +163,12 @@ func (r *Reconciler) reconcile(ctx context.Context, as *kmv1.AgentSet) error {
 	}
 	if err := r.reconcileEntryService(ctx, as); err != nil {
 		as.Status.MarkFalse(kmv1.AgentSetConditionDeployed, "EntryServiceFailed", err.Error())
+		as.Status.Phase = kmv1.AgentSetPhaseFailed
+		as.Status.Message = err.Error()
+		return err
+	}
+	if err := r.reconcileDaemon(ctx, as); err != nil {
+		as.Status.MarkFalse(kmv1.AgentSetConditionDeployed, "DaemonFailed", err.Error())
 		as.Status.Phase = kmv1.AgentSetPhaseFailed
 		as.Status.Message = err.Error()
 		return err

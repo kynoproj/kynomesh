@@ -78,7 +78,8 @@ type AgentSetSpec struct {
 	Entry string `json:"entry" protobuf:"bytes,2,opt,name=entry"`
 	// +patchStrategy=merge
 	// +patchMergeKey=name
-	Agents []AbstractAgentDeploy `json:"agents,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,3,rep,name=agents"`
+	// +kubebuilder:validation:MinItems=1
+	Agents []AbstractAgentDeploy `json:"agents" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,3,rep,name=agents"`
 	// Templates are used to customize additional kubernetes resources required for the Pipeline
 	// +optional
 	Templates *Templates `json:"templates,omitempty" protobuf:"bytes,4,opt,name=templates"`
@@ -133,4 +134,14 @@ const EntryServiceSuffix = "ingress"
 // to pods of the entry AgentDeploy of this AgentSet.
 func (as *AgentSet) EntryServiceName() string {
 	return as.Name + "-" + EntryServiceSuffix
+}
+
+// DaemonSuffix is appended to the AgentSet name to form the per-
+// AgentSet daemon Deployment and Service names.
+const DaemonSuffix = "daemon"
+
+// DaemonName returns the name shared by the per-AgentSet daemon's
+// Deployment and Service.
+func (as *AgentSet) DaemonName() string {
+	return as.Name + "-" + DaemonSuffix
 }

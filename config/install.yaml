@@ -7095,6 +7095,7 @@ spec:
                   - container
                   - name
                   type: object
+                minItems: 1
                 type: array
               entry:
                 type: string
@@ -7936,6 +7937,7 @@ spec:
                     type: object
                 type: object
             required:
+            - agents
             - entry
             - pattern
             type: object

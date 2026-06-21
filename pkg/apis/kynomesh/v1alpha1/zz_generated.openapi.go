@@ -1221,7 +1221,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetSpec(ref common.ReferenceCallback
 						},
 					},
 				},
-				Required: []string{"pattern", "entry"},
+				Required: []string{"pattern", "entry", "agents"},
 			},
 		},
 		Dependencies: []string{
