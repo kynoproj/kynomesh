@@ -45,7 +45,7 @@ func TestValidateAgentSet(t *testing.T) {
 		agents  []string
 		wantErr string
 	}{
-		{name: "no agents", agents: nil},
+		{name: "no agents", agents: nil, wantErr: "at least one agent"},
 		{name: "ok", agents: []string{"a", "b"}},
 		{name: "empty name", agents: []string{""}, wantErr: "non-empty"},
 		{name: "duplicate", agents: []string{"a", "a"}, wantErr: "duplicate"},

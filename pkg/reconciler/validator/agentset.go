@@ -27,6 +27,10 @@ import (
 
 // ValidateAgentSet validates the spec.
 func ValidateAgentSet(as *kmv1.AgentSet) error {
+	if len(as.Spec.Agents) == 0 {
+		return errors.New("spec.agents must contain at least one agent")
+	}
+
 	seen := make(map[string]struct{}, len(as.Spec.Agents))
 	for _, a := range as.Spec.Agents {
 		if a.Name == "" {
@@ -39,10 +43,6 @@ func ValidateAgentSet(as *kmv1.AgentSet) error {
 			return fmt.Errorf("duplicate agent name %q", a.Name)
 		}
 		seen[a.Name] = struct{}{}
-	}
-
-	if len(as.Spec.Agents) == 0 {
-		return nil
 	}
 
 	if _, ok := seen[as.Spec.Entry]; !ok {

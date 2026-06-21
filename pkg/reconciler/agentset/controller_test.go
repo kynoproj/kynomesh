@@ -83,7 +83,7 @@ func newTestReconciler(t *testing.T, objs ...client.Object) (*Reconciler, client
 		WithObjects(objs...).
 		WithStatusSubresource(&kmv1.AgentSet{}, &kmv1.AgentDeploy{}).
 		Build()
-	r := NewReconciler(c, scheme, nil, &events.FakeRecorder{})
+	r := NewReconciler(c, scheme, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	return r, c
 }
 
@@ -92,7 +92,7 @@ func reconcileRequest(name string) ctrl.Request {
 }
 
 func TestBuildAgentDeploys(t *testing.T) {
-	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{})
+	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	as := newAgentSet("greeter", "alpha", "beta")
 	out, err := r.buildDesired(as)
 	require.NoError(t, err)
@@ -114,7 +114,7 @@ func TestBuildAgentDeploys(t *testing.T) {
 }
 
 func TestBuildAgentDeploys_TemplateAppliedAsDefault(t *testing.T) {
-	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{})
+	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	tmplPull := corev1.PullPolicy("Always")
 	as := newAgentSet("greeter", "alpha")
 	as.Spec.Templates = &kmv1.Templates{
@@ -207,7 +207,7 @@ func TestComputeTopology(t *testing.T) {
 }
 
 func TestNeedsUpdate(t *testing.T) {
-	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{})
+	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	desired, err := r.buildDesired(newAgentSet("greeter", "alpha"))
 	require.NoError(t, err)
 	want := desired[childName("greeter", "alpha")]
@@ -273,7 +273,7 @@ func TestReconcile_DeletesOrphans(t *testing.T) {
 
 func TestReconcile_UpdatesDriftedChild(t *testing.T) {
 	as := newAgentSet("greeter", "alpha")
-	r0 := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{})
+	r0 := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	desired, err := r0.buildDesired(as)
 	require.NoError(t, err)
 	stale := desired[childName("greeter", "alpha")].DeepCopy()
@@ -295,7 +295,7 @@ func TestReconcile_DeletionCleansChildrenAndFinalizer(t *testing.T) {
 	as.DeletionTimestamp = &now
 	as.Finalizers = []string{FinalizerName}
 
-	r0 := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{})
+	r0 := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	desired, err := r0.buildDesired(as)
 	require.NoError(t, err)
 	child := desired[childName("greeter", "alpha")].DeepCopy()
@@ -341,7 +341,7 @@ func TestReconcile_NotFoundIsNoop(t *testing.T) {
 }
 
 func TestAggregateChildHealth(t *testing.T) {
-	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{})
+	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	as := newAgentSet("greeter", "alpha")
 	desired, err := r.buildDesired(as)
 	require.NoError(t, err)
@@ -357,7 +357,7 @@ func TestAggregateChildHealth(t *testing.T) {
 }
 
 func TestNewEntryService(t *testing.T) {
-	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{})
+	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	as := newAgentSet("greeter", "alpha", "beta")
 
 	svc, err := r.newEntryService(as)
