@@ -256,8 +256,8 @@ type WindowedResult struct {
 // is intentionally distinct from a map with zero values, so the gRPC
 // layer can encode "no data" vs "data, value zero" precisely.
 type PerWindowValues struct {
-	ProcessingRates  map[string]float64
-	Inflights map[string]float64
+	ProcessingRates map[string]float64
+	Inflights       map[string]float64
 }
 
 // GetMetrics computes all configured windows for the named
@@ -304,8 +304,8 @@ func (r *Rater) GetMetrics(name string, lookbackSeconds int64) (*WindowedResult,
 	}
 
 	total := PerWindowValues{
-		ProcessingRates:  make(map[string]float64, len(windows)),
-		Inflights: make(map[string]float64, len(windows)),
+		ProcessingRates: make(map[string]float64, len(windows)),
+		Inflights:       make(map[string]float64, len(windows)),
 	}
 	perTransport := make(map[string]PerWindowValues, len(transports))
 	for _, w := range windows {
@@ -314,8 +314,8 @@ func (r *Rater) GetMetrics(name string, lookbackSeconds int64) (*WindowedResult,
 	}
 	for _, t := range transports {
 		v := PerWindowValues{
-			ProcessingRates:  make(map[string]float64, len(windows)),
-			Inflights: make(map[string]float64, len(windows)),
+			ProcessingRates: make(map[string]float64, len(windows)),
+			Inflights:       make(map[string]float64, len(windows)),
 		}
 		for _, w := range windows {
 			v.ProcessingRates[w.key] = CalculateRate(buf, now, w.lookback, t)

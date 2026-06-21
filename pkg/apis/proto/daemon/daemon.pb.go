@@ -47,8 +47,7 @@ const (
 //
 // processingRates values are messages-per-second over the window.
 // inflights values are time-weighted average in-flight requests over
-// the window (instantaneous gauge reduced via time-weighting so uneven
-// sample spacing doesn't bias the result).
+// the window.
 //
 // Absent keys in either map mean "no data available for this window."
 // Callers must check presence before reading a value.

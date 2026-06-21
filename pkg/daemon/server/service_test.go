@@ -75,8 +75,8 @@ func TestGetAgentDeployMetrics_PopulatesAllWindows(t *testing.T) {
 		},
 		PerTransport: map[string]rater.PerWindowValues{
 			"rest": {
-				ProcessingRates:  map[string]float64{rater.WindowKey1m: 0.8},
-				Inflights: map[string]float64{rater.WindowKey1m: 5},
+				ProcessingRates: map[string]float64{rater.WindowKey1m: 0.8},
+				Inflights:       map[string]float64{rater.WindowKey1m: 5},
 			},
 		},
 	}
@@ -98,8 +98,8 @@ func TestGetAgentDeployMetrics_PopulatesAllWindows(t *testing.T) {
 func TestGetAgentDeployMetrics_CustomWindowEchoed(t *testing.T) {
 	res := &rater.WindowedResult{
 		Total: rater.PerWindowValues{
-			ProcessingRates:  map[string]float64{rater.WindowKey1m: 0, rater.WindowKeyCustom: 0.9},
-			Inflights: map[string]float64{rater.WindowKey1m: 0, rater.WindowKeyCustom: 4},
+			ProcessingRates: map[string]float64{rater.WindowKey1m: 0, rater.WindowKeyCustom: 0.9},
+			Inflights:       map[string]float64{rater.WindowKey1m: 0, rater.WindowKeyCustom: 4},
 		},
 		PerTransport:             map[string]rater.PerWindowValues{},
 		CustomWindowEffectiveSec: 120,

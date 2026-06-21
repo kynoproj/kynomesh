@@ -66,13 +66,13 @@ func TestServer_RoundTripGRPCAndREST(t *testing.T) {
 	registry := prometheus.NewRegistry()
 	res := &rater.WindowedResult{
 		Total: rater.PerWindowValues{
-			ProcessingRates:  map[string]float64{rater.WindowKey1m: 2.5},
-			Inflights: map[string]float64{rater.WindowKey1m: 4},
+			ProcessingRates: map[string]float64{rater.WindowKey1m: 2.5},
+			Inflights:       map[string]float64{rater.WindowKey1m: 4},
 		},
 		PerTransport: map[string]rater.PerWindowValues{
 			"rest": {
-				ProcessingRates:  map[string]float64{rater.WindowKey1m: 2.5},
-				Inflights: map[string]float64{rater.WindowKey1m: 4},
+				ProcessingRates: map[string]float64{rater.WindowKey1m: 2.5},
+				Inflights:       map[string]float64{rater.WindowKey1m: 4},
 			},
 		},
 	}
