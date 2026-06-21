@@ -235,16 +235,9 @@ func TestReconcile_ServiceDriftRecreates(t *testing.T) {
 }
 
 func TestReconcile_DeletionTimestampIsNoop(t *testing.T) {
-	// Children carry owner refs to the AgentDeploy, so Kubernetes'
-	// built-in cascading GC deletes them when the AgentDeploy is
-	// removed. The reconciler simply returns once it sees
-	// DeletionTimestamp set — it must not write to the API.
 	now := metav1.NewTime(time.Now())
 	ad := newAgentDeploy("greeter", 2)
 	ad.DeletionTimestamp = &now
-	// Real K8s requires a finalizer for DeletionTimestamp to persist.
-	// The fake client doesn't enforce that, but we still need a non-nil
-	// Finalizers field to keep the fake from immediately GC'ing the obj.
 	ad.Finalizers = []string{"placeholder"}
 
 	pod := &corev1.Pod{

@@ -16,11 +16,6 @@ limitations under the License.
 
 // Package agentdeploy implements the controller that reconciles AgentDeploy
 // resources.
-//
-// Deletion: all children (Pods, headless Service, ClusterIP Service)
-// carry owner references to the AgentDeploy, so Kubernetes' built-in
-// cascading garbage collection cleans them up when the AgentDeploy is
-// removed. The reconciler does not register a finalizer.
 package agentdeploy
 
 import (
@@ -80,9 +75,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("failed to get AgentDeploy: %w", err)
 	}
 
-	// Mid-deletion the API server keeps the object alive only briefly
-	// during cascading GC. Skip — there's nothing controller-side to
-	// do and any patches would race against deletion.
 	if !original.DeletionTimestamp.IsZero() {
 		return ctrl.Result{}, nil
 	}

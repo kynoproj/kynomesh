@@ -154,16 +154,9 @@ func TestReconcile_UpdatesDriftedChild(t *testing.T) {
 }
 
 func TestReconcile_DeletionTimestampIsNoop(t *testing.T) {
-	// Children carry owner refs to the AgentSet, so Kubernetes' built-in
-	// cascading GC deletes them when the AgentSet is removed. The
-	// reconciler simply returns once it sees DeletionTimestamp set — it
-	// must not write to the API or attempt cleanup on its own.
 	now := metav1.NewTime(time.Now())
 	as := newAgentSet("greeter", "alpha")
 	as.DeletionTimestamp = &now
-	// Real K8s requires a finalizer for DeletionTimestamp to persist.
-	// The fake client doesn't enforce that, but we still need a non-nil
-	// Finalizers field to keep the fake from immediately GC'ing the obj.
 	as.Finalizers = []string{"placeholder"}
 
 	r0 := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
@@ -175,9 +168,6 @@ func TestReconcile_DeletionTimestampIsNoop(t *testing.T) {
 	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))
 	require.NoError(t, err)
 
-	// The reconciler is expected to do nothing: the child stays put,
-	// and real-cluster GC will handle the cascade once the test isn't
-	// keeping it alive with the placeholder finalizer.
 	var list kmv1.AgentDeployList
 	require.NoError(t, c.List(context.Background(), &list, client.InNamespace(testNamespace)))
 	assert.Len(t, list.Items, 1, "reconciler must not delete children itself; GC handles it")

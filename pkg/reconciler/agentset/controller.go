@@ -16,12 +16,6 @@ limitations under the License.
 
 // Package agentset implements the controller that reconciles AgentSet
 // resources and orchestrates the corresponding child resources.
-//
-// Deletion: all children (AgentDeploys, entry Service, daemon
-// Deployment + Service) carry owner references to the AgentSet, so
-// Kubernetes' built-in cascading garbage collection cleans them up
-// when the AgentSet is removed. The reconciler does not register a
-// finalizer.
 package agentset
 
 import (
@@ -83,9 +77,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("failed to get AgentSet: %w", err)
 	}
 
-	// Mid-deletion the API server keeps the object alive only briefly
-	// during cascading GC. Skip — there's nothing controller-side to
-	// do and any patches would race against deletion.
 	if !original.DeletionTimestamp.IsZero() {
 		return ctrl.Result{}, nil
 	}
