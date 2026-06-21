@@ -78,24 +78,6 @@ func (r *Reconciler) upsertService(ctx context.Context, ad *kmv1.AgentDeploy, de
 	return nil
 }
 
-func (r *Reconciler) deleteServiceByName(ctx context.Context, namespace, name, kind string) error {
-	log := logging.FromContext(ctx)
-	var svc corev1.Service
-	err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, &svc)
-	if apierrors.IsNotFound(err) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	if err := r.Delete(ctx, &svc); err != nil && !apierrors.IsNotFound(err) {
-		log.Errorw("Failed to delete "+kind+" service", zap.String("serviceName", svc.Name), zap.Error(err))
-		return fmt.Errorf("failed to delete %s service: %w", kind, err)
-	}
-	log.Infow("Succeeded to delete "+kind+" service", zap.String("serviceName", svc.Name))
-	return nil
-}
-
 // newHeadlessService builds the per-deploy ClusterIP=None service. Each
 // pod with matching labels gets a DNS record at
 // "<deploy>-<idx>.<deploy>-headless.<ns>.svc.cluster.local".

@@ -75,25 +75,6 @@ func (r *Reconciler) reconcileEntryService(ctx context.Context, as *kmv1.AgentSe
 	return nil
 }
 
-// deleteEntryService removes the entry service if present.
-func (r *Reconciler) deleteEntryService(ctx context.Context, as *kmv1.AgentSet) error {
-	log := logging.FromContext(ctx)
-	var svc corev1.Service
-	err := r.Get(ctx, client.ObjectKey{Namespace: as.Namespace, Name: as.EntryServiceName()}, &svc)
-	if apierrors.IsNotFound(err) {
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("failed to get entry service: %w", err)
-	}
-	if err := r.Delete(ctx, &svc); err != nil && !apierrors.IsNotFound(err) {
-		log.Errorw("Failed to delete entry service", zap.String("serviceName", svc.Name), zap.Error(err))
-		return fmt.Errorf("failed to delete entry service: %w", err)
-	}
-	log.Infow("Succeeded to delete entry service", zap.String("serviceName", svc.Name))
-	return nil
-}
-
 // newEntryService builds the desired ClusterIP service for the AgentSet's
 // entry pods.
 func (r *Reconciler) newEntryService(as *kmv1.AgentSet) (*corev1.Service, error) {

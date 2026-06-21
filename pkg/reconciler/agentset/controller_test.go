@@ -93,15 +93,6 @@ func reconcileRequest(name string) ctrl.Request {
 	return ctrl.Request{NamespacedName: types.NamespacedName{Namespace: testNamespace, Name: name}}
 }
 
-func TestAddRemoveFinalizer(t *testing.T) {
-	as := newAgentSet("g")
-	addFinalizer(as)
-	addFinalizer(as) // idempotent
-	assert.Equal(t, []string{FinalizerName}, as.Finalizers)
-	removeFinalizer(as)
-	assert.Empty(t, as.Finalizers)
-}
-
 func TestReconcile_CreatesChildren(t *testing.T) {
 	as := newAgentSet("greeter", "alpha", "beta")
 	r, c := newTestReconciler(t, as)
@@ -116,7 +107,6 @@ func TestReconcile_CreatesChildren(t *testing.T) {
 
 	var got kmv1.AgentSet
 	require.NoError(t, c.Get(context.Background(), types.NamespacedName{Namespace: testNamespace, Name: "greeter"}, &got))
-	assert.Contains(t, got.Finalizers, FinalizerName)
 	cond := got.Status.GetCondition(kmv1.AgentSetConditionConfigured)
 	require.NotNil(t, cond)
 	assert.Equal(t, metav1.ConditionTrue, cond.Status)
@@ -163,11 +153,11 @@ func TestReconcile_UpdatesDriftedChild(t *testing.T) {
 	assert.NotEqual(t, "stale", got.Annotations[kmv1.KeyHash], "controller should refresh hash on drift")
 }
 
-func TestReconcile_DeletionCleansChildrenAndFinalizer(t *testing.T) {
+func TestReconcile_DeletionTimestampIsNoop(t *testing.T) {
 	now := metav1.NewTime(time.Now())
 	as := newAgentSet("greeter", "alpha")
 	as.DeletionTimestamp = &now
-	as.Finalizers = []string{FinalizerName}
+	as.Finalizers = []string{"placeholder"}
 
 	r0 := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	desired, err := r0.buildDesired(as)
@@ -180,16 +170,7 @@ func TestReconcile_DeletionCleansChildrenAndFinalizer(t *testing.T) {
 
 	var list kmv1.AgentDeployList
 	require.NoError(t, c.List(context.Background(), &list, client.InNamespace(testNamespace)))
-	assert.Empty(t, list.Items, "children should be deleted on AgentSet deletion")
-
-	// Removing the last finalizer while DeletionTimestamp is set lets the
-	// API server (and the fake client) complete deletion immediately, so
-	// either Get-not-found or finalizer-absent is acceptable.
-	var got kmv1.AgentSet
-	err = c.Get(context.Background(), types.NamespacedName{Namespace: testNamespace, Name: "greeter"}, &got)
-	if err == nil {
-		assert.NotContains(t, got.Finalizers, FinalizerName)
-	}
+	assert.Len(t, list.Items, 1, "reconciler must not delete children itself; GC handles it")
 }
 
 func TestReconcile_DuplicateAgentNameMarksFailed(t *testing.T) {

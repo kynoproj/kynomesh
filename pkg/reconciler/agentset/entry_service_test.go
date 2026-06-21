@@ -19,12 +19,10 @@ package agentset
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/events"
@@ -100,27 +98,4 @@ func TestReconcileEntryService_RecreatesOnDrift(t *testing.T) {
 		types.NamespacedName{Namespace: testNamespace, Name: "greeter-ingress"}, &svc))
 	assert.NotEqual(t, "stale", svc.Annotations[kmv1.KeyHash], "stale hash should be refreshed")
 	assert.Equal(t, "true", svc.Spec.Selector[kmv1.KeyEntry])
-}
-
-func TestReconcileEntryService_DeletedOnAgentSetDeletion(t *testing.T) {
-	now := metav1.NewTime(time.Now())
-	as := newAgentSet("greeter", "alpha")
-	as.DeletionTimestamp = &now
-	as.Finalizers = []string{FinalizerName}
-
-	entrySvc := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: testNamespace,
-			Name:      as.EntryServiceName(),
-		},
-	}
-	r, c := newTestReconciler(t, as, entrySvc)
-
-	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
-	require.NoError(t, err)
-
-	var svc corev1.Service
-	err = c.Get(context.Background(),
-		types.NamespacedName{Namespace: testNamespace, Name: as.EntryServiceName()}, &svc)
-	assert.True(t, apierrors.IsNotFound(err), "entry service should be deleted, got err=%v", err)
 }

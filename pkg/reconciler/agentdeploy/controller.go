@@ -22,7 +22,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"slices"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -35,10 +34,6 @@ import (
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
-)
-
-const (
-	FinalizerName = "kynomesh.kyno.sh/" + kmv1.ControllerAgentDeploy
 )
 
 // Reconciler implements controller-runtime's reconcile.Reconciler.
@@ -80,6 +75,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, fmt.Errorf("failed to get AgentDeploy: %w", err)
 	}
 
+	if !original.DeletionTimestamp.IsZero() {
+		return ctrl.Result{}, nil
+	}
+
 	log := r.logger.With("namespace", req.Namespace).With("agentSet", original.Spec.AgentSetName).
 		With("agentDeploy", original.Name)
 	ctx = logging.WithLogger(ctx, log)
@@ -110,15 +109,6 @@ func (r *Reconciler) reconcile(ctx context.Context, ad *kmv1.AgentDeploy) error 
 		kmv1.AgentDeployConditionPodsHealthy,
 	)
 	ad.Status.ObservedGeneration = ad.Generation
-
-	if !ad.DeletionTimestamp.IsZero() {
-		if err := r.deleteOwned(ctx, ad); err != nil {
-			return fmt.Errorf("failed to delete owned resources: %w", err)
-		}
-		removeFinalizer(ad)
-		return nil
-	}
-	addFinalizer(ad)
 
 	if err := r.reconcileServices(ctx, ad); err != nil {
 		ad.Status.MarkFalse(kmv1.AgentDeployConditionDeployed, "ServiceFailed", err.Error())
@@ -155,67 +145,18 @@ func (r *Reconciler) reconcile(ctx context.Context, ad *kmv1.AgentDeploy) error 
 	return nil
 }
 
-// deleteOwned removes every Pod and Service this AgentDeploy controls.
-// Called from the finalizer path; outside the finalizer, owner-ref-
-// based GC handles cleanup once the AgentDeploy object is gone.
-func (r *Reconciler) deleteOwned(ctx context.Context, ad *kmv1.AgentDeploy) error {
-	log := logging.FromContext(ctx)
-	pods, err := r.listOwnedPods(ctx, ad)
-	if err != nil {
-		return err
-	}
-	for _, p := range pods {
-		if err := r.Delete(ctx, p); err != nil && !apierrors.IsNotFound(err) {
-			log.Errorw("Failed to delete pod", zap.String("podName", p.Name), zap.Error(err))
-			return fmt.Errorf("failed to delete pod %s: %w", p.Name, err)
-		}
-		log.Infow("Succeeded to delete pod", zap.String("podName", p.Name))
-	}
-
-	if err := r.deleteServiceByName(ctx, ad.Namespace, ad.HeadlessServiceName(), "headless"); err != nil {
-		return err
-	}
-	return r.deleteServiceByName(ctx, ad.Namespace, ad.ServiceName(), "ClusterIP")
-}
-
-// persist writes finalizer and status changes back to the API server.
-// Status before finalizer so the parent isn't garbage-collected before the
-// status update lands on the deletion path.
+// persist writes status changes back to the API server.
 func (r *Reconciler) persist(ctx context.Context, original, updated *kmv1.AgentDeploy) error {
-	if !reflect.DeepEqual(original.Status, updated.Status) {
-		statusPatch := client.MergeFrom(original.DeepCopy())
-		patchObj := original.DeepCopy()
-		patchObj.Status = updated.Status
-		if err := r.Status().Patch(ctx, patchObj, statusPatch); err != nil {
-			return fmt.Errorf("failed to patch status: %w", err)
-		}
+	if reflect.DeepEqual(original.Status, updated.Status) {
+		return nil
 	}
-	if !reflect.DeepEqual(original.Finalizers, updated.Finalizers) {
-		metaPatch := client.MergeFrom(original.DeepCopy())
-		patchObj := original.DeepCopy()
-		patchObj.Finalizers = updated.Finalizers
-		if err := r.Patch(ctx, patchObj, metaPatch); err != nil {
-			return fmt.Errorf("failed to patch finalizers: %w", err)
-		}
+	statusPatch := client.MergeFrom(original.DeepCopy())
+	patchObj := original.DeepCopy()
+	patchObj.Status = updated.Status
+	if err := r.Status().Patch(ctx, patchObj, statusPatch); err != nil {
+		return fmt.Errorf("failed to patch status: %w", err)
 	}
 	return nil
-}
-
-func addFinalizer(ad *kmv1.AgentDeploy) {
-	if slices.Contains(ad.Finalizers, FinalizerName) {
-		return
-	}
-	ad.Finalizers = append(ad.Finalizers, FinalizerName)
-}
-
-func removeFinalizer(ad *kmv1.AgentDeploy) {
-	out := ad.Finalizers[:0]
-	for _, f := range ad.Finalizers {
-		if f != FinalizerName {
-			out = append(out, f)
-		}
-	}
-	ad.Finalizers = out
 }
 
 type noopRecorder struct{}

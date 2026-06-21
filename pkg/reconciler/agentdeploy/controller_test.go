@@ -94,15 +94,6 @@ func listPods(t *testing.T, c client.Client) []corev1.Pod {
 	return list.Items
 }
 
-func TestAddRemoveFinalizer(t *testing.T) {
-	ad := newAgentDeploy("greeter", 1)
-	addFinalizer(ad)
-	addFinalizer(ad) // idempotent
-	assert.Equal(t, []string{FinalizerName}, ad.Finalizers)
-	removeFinalizer(ad)
-	assert.Empty(t, ad.Finalizers)
-}
-
 func TestReconcile_CreatesPodsAndService(t *testing.T) {
 	ad := newAgentDeploy("greeter", 3)
 	r, c := newTestReconciler(t, ad)
@@ -243,11 +234,11 @@ func TestReconcile_ServiceDriftRecreates(t *testing.T) {
 	assert.NotEqual(t, "stale", got.Annotations[kmv1.KeyHash], "stale service should be replaced")
 }
 
-func TestReconcile_DeletionCleansEverything(t *testing.T) {
+func TestReconcile_DeletionTimestampIsNoop(t *testing.T) {
 	now := metav1.NewTime(time.Now())
 	ad := newAgentDeploy("greeter", 2)
 	ad.DeletionTimestamp = &now
-	ad.Finalizers = []string{FinalizerName}
+	ad.Finalizers = []string{"placeholder"}
 
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -263,22 +254,13 @@ func TestReconcile_DeletionCleansEverything(t *testing.T) {
 			Annotations: map[string]string{kmv1.KeyReplica: "0"},
 		},
 	}
-	svc := newHeadlessService(ad)
-	svc.Annotations[kmv1.KeyHash] = "x"
-	clusterIP := newClusterIPService(ad)
-	clusterIP.Annotations[kmv1.KeyHash] = "x"
-
-	r, c := newTestReconciler(t, ad, pod, svc, clusterIP)
+	r, c := newTestReconciler(t, ad, pod)
 
 	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
 	require.NoError(t, err)
 
-	assert.Empty(t, listPods(t, c), "pods removed on deletion")
-	var lookup corev1.Service
-	err = c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter-headless"}, &lookup)
-	assert.Error(t, err, "headless service removed on deletion")
-	err = c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter"}, &lookup)
-	assert.Error(t, err, "ClusterIP service removed on deletion")
+	// Reconciler must not have deleted the child — that's GC's job.
+	assert.Len(t, listPods(t, c), 1, "reconciler must not delete children itself; GC handles it")
 }
 
 func TestReconcile_StatusReadyCount(t *testing.T) {
