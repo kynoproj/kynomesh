@@ -87,14 +87,14 @@ func TestScrape_HappyPath(t *testing.T) {
 
 	sample, err := s.Scrape(context.Background(), host)
 	require.NoError(t, err)
-	assert.Equal(t, float64(2), sample.GaugeByTransport["jsonrpc"])
-	assert.Equal(t, float64(5), sample.GaugeByTransport["rest"])
-	assert.Equal(t, float64(1), sample.GaugeByTransport["grpc"])
-	assert.Equal(t, float64(0), sample.GaugeByTransport["passthrough"])
-	assert.Equal(t, float64(100), sample.CounterByTransport["jsonrpc"])
-	assert.Equal(t, float64(250), sample.CounterByTransport["rest"])
-	assert.Equal(t, float64(50), sample.CounterByTransport["grpc"])
-	assert.Equal(t, float64(0), sample.CounterByTransport["passthrough"])
+	assert.Equal(t, float64(2), sample.InflightByTransport["jsonrpc"])
+	assert.Equal(t, float64(5), sample.InflightByTransport["rest"])
+	assert.Equal(t, float64(1), sample.InflightByTransport["grpc"])
+	assert.Equal(t, float64(0), sample.InflightByTransport["passthrough"])
+	assert.Equal(t, float64(100), sample.ProcessedByTransport["jsonrpc"])
+	assert.Equal(t, float64(250), sample.ProcessedByTransport["rest"])
+	assert.Equal(t, float64(50), sample.ProcessedByTransport["grpc"])
+	assert.Equal(t, float64(0), sample.ProcessedByTransport["passthrough"])
 }
 
 func TestScrape_LabelAgnostic_UnknownTransport(t *testing.T) {
@@ -108,7 +108,7 @@ broker_inflight_requests{transport="someNewProtocol"} 9
 
 	sample, err := s.Scrape(context.Background(), host)
 	require.NoError(t, err)
-	assert.Equal(t, float64(9), sample.GaugeByTransport["someNewProtocol"])
+	assert.Equal(t, float64(9), sample.InflightByTransport["someNewProtocol"])
 }
 
 func TestScrape_MetricsWithoutTransportLabelSkipped(t *testing.T) {
@@ -122,7 +122,7 @@ broker_inflight_requests 99
 
 	sample, err := s.Scrape(context.Background(), host)
 	require.NoError(t, err)
-	assert.Empty(t, sample.GaugeByTransport)
+	assert.Empty(t, sample.InflightByTransport)
 }
 
 func TestScrape_MissingMetricsYieldsEmptySample(t *testing.T) {
@@ -134,8 +134,8 @@ func TestScrape_MissingMetricsYieldsEmptySample(t *testing.T) {
 	sample, err := s.Scrape(context.Background(), host)
 	require.NoError(t, err)
 	assert.NotNil(t, sample)
-	assert.Empty(t, sample.GaugeByTransport)
-	assert.Empty(t, sample.CounterByTransport)
+	assert.Empty(t, sample.InflightByTransport)
+	assert.Empty(t, sample.ProcessedByTransport)
 }
 
 func TestScrape_OnlyCounterPresent(t *testing.T) {
@@ -152,8 +152,8 @@ broker_messages_processed_total{transport="rest"} 42
 
 	sample, err := s.Scrape(context.Background(), host)
 	require.NoError(t, err)
-	assert.Equal(t, float64(42), sample.CounterByTransport["rest"])
-	assert.Empty(t, sample.GaugeByTransport)
+	assert.Equal(t, float64(42), sample.ProcessedByTransport["rest"])
+	assert.Empty(t, sample.InflightByTransport)
 }
 
 func TestScrape_Non200Errors(t *testing.T) {

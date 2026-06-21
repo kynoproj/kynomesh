@@ -26,9 +26,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	sharedqueue "github.com/kynoproj/kynomesh/pkg/shared/queue"
 )
+
+// scrapeStep is the wall-clock spacing driveScrapes uses between
+// successive synchronous scrape passes. Chosen smaller than the
+// shortest lookback (1m) so a handful of ticks already populates
+// every window with samples.
+const scrapeStep = 5 * time.Second
 
 // stubScraper returns canned samples per host. Sequential calls to
 // the same host advance through its sample list.
@@ -51,7 +55,14 @@ func (s *stubScraper) Scrape(_ context.Context, host string) (*PodSample, error)
 		i = len(list) - 1 // hold last
 	}
 	s.idx[host] = i + 1
-	return list[i], nil
+	// Return a copy so the rater can safely stamp Timestamp without
+	// mutating the test fixture.
+	src := list[i]
+	cp := &PodSample{
+		ProcessedByTransport: src.ProcessedByTransport,
+		InflightByTransport:   src.InflightByTransport,
+	}
+	return cp, nil
 }
 
 func stubDiscover(hosts map[string][]string) DiscoverFunc {
@@ -82,7 +93,7 @@ func TestGetMetrics_NoDataYet(t *testing.T) {
 	require.ErrorIs(t, err, ErrNoData)
 }
 
-// fakeClock advances by the user pushing through .Tick().
+// fakeClock advances by the user pushing through .Advance().
 type fakeClock struct {
 	mu sync.Mutex
 	t  time.Time
@@ -100,15 +111,15 @@ func (c *fakeClock) Advance(d time.Duration) {
 	c.t = c.t.Add(d)
 }
 
-// driveScrapes performs N synchronous scrape passes at clock-aligned
-// times spaced by CountWindow. It bypasses the Start() ticker so
-// tests can run deterministically without sleeping.
+// driveScrapes performs N synchronous scrape passes spaced scrapeStep
+// apart. It bypasses the Start() ticker so tests run deterministically
+// without sleeping.
 func driveScrapes(t *testing.T, r *Rater, fc *fakeClock, n int) {
 	t.Helper()
 	ctx := context.Background()
 	for range n {
 		r.scrapeAllOnce(ctx)
-		fc.Advance(CountWindow)
+		fc.Advance(scrapeStep)
 	}
 }
 
@@ -116,12 +127,12 @@ func TestGetMetrics_HappyPath_SingleTransport(t *testing.T) {
 	start := time.Unix(2_000_000, 0)
 	fc := newFakeClock(start)
 
-	// One pod that processes 10 messages every 10s; in-flight = 3.
+	// One pod that processes 10 messages every scrapeStep; in-flight = 3.
 	samples := []*PodSample{
-		{CounterByTransport: map[string]float64{"rest": 0}, GaugeByTransport: map[string]float64{"rest": 3}},
-		{CounterByTransport: map[string]float64{"rest": 10}, GaugeByTransport: map[string]float64{"rest": 3}},
-		{CounterByTransport: map[string]float64{"rest": 20}, GaugeByTransport: map[string]float64{"rest": 3}},
-		{CounterByTransport: map[string]float64{"rest": 30}, GaugeByTransport: map[string]float64{"rest": 3}},
+		{ProcessedByTransport: map[string]float64{"rest": 0}, InflightByTransport: map[string]float64{"rest": 3}},
+		{ProcessedByTransport: map[string]float64{"rest": 10}, InflightByTransport: map[string]float64{"rest": 3}},
+		{ProcessedByTransport: map[string]float64{"rest": 20}, InflightByTransport: map[string]float64{"rest": 3}},
+		{ProcessedByTransport: map[string]float64{"rest": 30}, InflightByTransport: map[string]float64{"rest": 3}},
 	}
 	r := NewRater(Options{
 		AgentSet:     "set",
@@ -132,16 +143,16 @@ func TestGetMetrics_HappyPath_SingleTransport(t *testing.T) {
 	})
 
 	driveScrapes(t, r, fc, 4)
+	// After 4 scrapes spaced 5s apart starting at t=start, samples
+	// landed at offsets 0, 5, 10, 15 from start.Unix(). Clock now at
+	// start+20s. With a 60s lookback every sample is in-window.
+	// Rate: (last 30 - first 0) / (15 - 0) = 2.0/s.
 	res, err := r.GetMetrics("greeter", 0)
 	require.NoError(t, err)
 
-	// rate = (delta across buckets) / (timeDiff). 4 buckets, endIdx=2,
-	// startIdx=0 → walk buckets 0→1, 1→2. Each delta is 10. timeDiff = 20.
-	// rate = 20/20 = 1.0.
-	assert.InDelta(t, 1.0, res.Total.ProcessingRates[WindowKey1m], 1e-9)
-	// per-transport must match total when only one transport exists.
-	assert.InDelta(t, 1.0, res.PerTransport["rest"].ProcessingRates[WindowKey1m], 1e-9)
-	// in-flight is constant 3.
+	assert.InDelta(t, 2.0, res.Total.ProcessingRates[WindowKey1m], 1e-9)
+	assert.InDelta(t, 2.0, res.PerTransport["rest"].ProcessingRates[WindowKey1m], 1e-9)
+	// In-flight gauge constant at 3 across all observed samples.
 	assert.InDelta(t, 3.0, res.Total.InflightAverages[WindowKey1m], 1e-9)
 	assert.InDelta(t, 3.0, res.PerTransport["rest"].InflightAverages[WindowKey1m], 1e-9)
 }
@@ -150,8 +161,8 @@ func TestGetMetrics_CustomWindowClampedToRetention(t *testing.T) {
 	start := time.Unix(2_000_000, 0)
 	fc := newFakeClock(start)
 	sample := &PodSample{
-		CounterByTransport: map[string]float64{"rest": 0},
-		GaugeByTransport:   map[string]float64{"rest": 1},
+		ProcessedByTransport: map[string]float64{"rest": 0},
+		InflightByTransport:   map[string]float64{"rest": 1},
 	}
 	r := NewRater(Options{
 		AgentDeploys: []string{"a"},
@@ -172,7 +183,7 @@ func TestGetMetrics_NoCustomWindowWhenLookbackZero(t *testing.T) {
 	start := time.Unix(2_000_000, 0)
 	fc := newFakeClock(start)
 	sample := &PodSample{
-		CounterByTransport: map[string]float64{"rest": 0},
+		ProcessedByTransport: map[string]float64{"rest": 0},
 	}
 	r := NewRater(Options{
 		AgentDeploys: []string{"a"},
@@ -192,13 +203,12 @@ func TestGetMetrics_NoCustomWindowWhenLookbackZero(t *testing.T) {
 func TestGetMetrics_MultipleTransports(t *testing.T) {
 	start := time.Unix(2_000_000, 0)
 	fc := newFakeClock(start)
-	// Two transports, separate rates: rest=10/10s=1, grpc=5/10s=0.5,
-	// total = 1.5.
+	// Two transports: rest grows by 10 per scrapeStep, grpc by 5.
 	samples := []*PodSample{
-		{CounterByTransport: map[string]float64{"rest": 0, "grpc": 0}, GaugeByTransport: map[string]float64{"rest": 1, "grpc": 2}},
-		{CounterByTransport: map[string]float64{"rest": 10, "grpc": 5}, GaugeByTransport: map[string]float64{"rest": 1, "grpc": 2}},
-		{CounterByTransport: map[string]float64{"rest": 20, "grpc": 10}, GaugeByTransport: map[string]float64{"rest": 1, "grpc": 2}},
-		{CounterByTransport: map[string]float64{"rest": 30, "grpc": 15}, GaugeByTransport: map[string]float64{"rest": 1, "grpc": 2}},
+		{ProcessedByTransport: map[string]float64{"rest": 0, "grpc": 0}, InflightByTransport: map[string]float64{"rest": 1, "grpc": 2}},
+		{ProcessedByTransport: map[string]float64{"rest": 10, "grpc": 5}, InflightByTransport: map[string]float64{"rest": 1, "grpc": 2}},
+		{ProcessedByTransport: map[string]float64{"rest": 20, "grpc": 10}, InflightByTransport: map[string]float64{"rest": 1, "grpc": 2}},
+		{ProcessedByTransport: map[string]float64{"rest": 30, "grpc": 15}, InflightByTransport: map[string]float64{"rest": 1, "grpc": 2}},
 	}
 	r := NewRater(Options{
 		AgentDeploys: []string{"a"},
@@ -208,11 +218,13 @@ func TestGetMetrics_MultipleTransports(t *testing.T) {
 	})
 	driveScrapes(t, r, fc, 4)
 
+	// First sample at offset 0, last at offset 15 → timeDiff = 15.
+	// REST: (30-0)/15 = 2.0/s. GRPC: (15-0)/15 = 1.0/s. Total = 3.0/s.
 	res, err := r.GetMetrics("a", 0)
 	require.NoError(t, err)
-	assert.InDelta(t, 1.0, res.PerTransport["rest"].ProcessingRates[WindowKey1m], 1e-9)
-	assert.InDelta(t, 0.5, res.PerTransport["grpc"].ProcessingRates[WindowKey1m], 1e-9)
-	assert.InDelta(t, 1.5, res.Total.ProcessingRates[WindowKey1m], 1e-9)
+	assert.InDelta(t, 2.0, res.PerTransport["rest"].ProcessingRates[WindowKey1m], 1e-9)
+	assert.InDelta(t, 1.0, res.PerTransport["grpc"].ProcessingRates[WindowKey1m], 1e-9)
+	assert.InDelta(t, 3.0, res.Total.ProcessingRates[WindowKey1m], 1e-9)
 }
 
 func TestScrapeAllOnce_DiscoveryFailureSkipsAD(t *testing.T) {
@@ -231,8 +243,8 @@ func TestScrapeAllOnce_DiscoveryFailureSkipsAD(t *testing.T) {
 	})
 	r.scrapeAllOnce(context.Background())
 	assert.Equal(t, int32(1), called.Load())
-	// Buffer must remain empty since discovery failed.
-	assert.Equal(t, 0, r.buffers["a"].Length())
+	// No pods appended when discovery failed.
+	assert.Equal(t, int64(0), r.buffers["a"].PodCount())
 }
 
 func TestScrapeOneAgentDeploy_ScrapeFailureKeepsPreviousValue(t *testing.T) {
@@ -240,7 +252,7 @@ func TestScrapeOneAgentDeploy_ScrapeFailureKeepsPreviousValue(t *testing.T) {
 	fc := newFakeClock(start)
 	scr := &stubScraper{
 		samples: map[string][]*PodSample{
-			"a-0": {{CounterByTransport: map[string]float64{"rest": 100}}},
+			"a-0": {{ProcessedByTransport: map[string]float64{"rest": 100}}},
 		},
 		idx: map[string]int{},
 	}
@@ -252,34 +264,81 @@ func TestScrapeOneAgentDeploy_ScrapeFailureKeepsPreviousValue(t *testing.T) {
 	})
 	// 1st pass: successful scrape stores 100.
 	r.scrapeAllOnce(context.Background())
-	// Mark failure.
+	// Mark failure for subsequent passes.
 	scr.failure = errors.New("dropped")
-	fc.Advance(CountWindow)
+	fc.Advance(scrapeStep)
 	r.scrapeAllOnce(context.Background())
 
-	items := r.buffers["a"].Items()
-	require.Len(t, items, 1, "failed scrape must not create a new bucket")
-	snap := items[0].Snapshot()
-	assert.Equal(t, float64(100), snap["a-0"].CounterByTransport["rest"])
+	// Pod still has exactly one sample — the failed scrape did not
+	// overwrite or duplicate the previous successful observation.
+	samples := r.buffers["a"].Samples("a-0")
+	require.Len(t, samples, 1, "failed scrape must not append a new sample")
+	assert.Equal(t, float64(100), samples[0].ProcessedByTransport["rest"])
 }
 
-func TestObservedTransports_Deduplicates(t *testing.T) {
-	q := sharedqueue.New[*TimestampedCounts](10)
-	UpdateBucket(q, 100, "p", &PodSample{CounterByTransport: map[string]float64{"rest": 1, "grpc": 2}})
-	UpdateBucket(q, 110, "p", &PodSample{GaugeByTransport: map[string]float64{"jsonrpc": 1, "rest": 0}})
-	got := observedTransports(q)
-	assert.ElementsMatch(t, []string{"rest", "grpc", "jsonrpc"}, got)
+// clockAdvancingScraper advances the fake clock when a specific host
+// is scraped. Lets tests prove each pod's sample is stamped at its
+// own scrape-completion time.
+type clockAdvancingScraper struct {
+	mu          sync.Mutex
+	clock       *fakeClock
+	perHostSkew map[string]time.Duration
+	sample      *PodSample
 }
 
-func TestAveragePodsObserved(t *testing.T) {
-	q := sharedqueue.New[*TimestampedCounts](10)
-	UpdateBucket(q, 100, "p1", &PodSample{})
-	UpdateBucket(q, 100, "p2", &PodSample{})
-	UpdateBucket(q, 110, "p1", &PodSample{})
-	UpdateBucket(q, 110, "p2", &PodSample{})
-	UpdateBucket(q, 110, "p3", &PodSample{})
-	// bucket 1: 2 pods, bucket 2: 3 pods → avg = 2.
-	assert.Equal(t, int64(2), averagePodsObserved(q))
+func (s *clockAdvancingScraper) Scrape(_ context.Context, host string) (*PodSample, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if d, ok := s.perHostSkew[host]; ok {
+		s.clock.Advance(d)
+	}
+	// Return a fresh copy so the rater's Timestamp stamp doesn't
+	// mutate the shared fixture.
+	src := s.sample
+	cp := &PodSample{
+		ProcessedByTransport: src.ProcessedByTransport,
+		InflightByTransport:   src.InflightByTransport,
+	}
+	return cp, nil
+}
+
+func TestScrape_PerPodTimestamping(t *testing.T) {
+	// Two pods, scraped in one tick. pod-1's scrape "takes" 12 wall-
+	// clock seconds. With per-pod timestamping, pod-1's sample must
+	// have a strictly later Timestamp than pod-0's.
+	start := time.Unix(2_000_000, 0)
+	fc := newFakeClock(start)
+
+	sample := &PodSample{
+		ProcessedByTransport: map[string]float64{"rest": 1},
+		InflightByTransport:   map[string]float64{"rest": 1},
+	}
+	scr := &clockAdvancingScraper{
+		clock: fc,
+		perHostSkew: map[string]time.Duration{
+			"pod-1": 12 * time.Second,
+		},
+		sample: sample,
+	}
+	r := NewRater(Options{
+		AgentDeploys: []string{"a"},
+		Discover:     stubDiscover(map[string][]string{"a": {"pod-0", "pod-1"}}),
+		Scraper:      scr,
+		Clock:        fc.Now,
+		// Serialize: pod-0 finishes before pod-1 starts, so pod-1's
+		// clock advance can't affect pod-0's timestamp.
+		ScrapeWorkers: 1,
+	})
+	r.scrapeAllOnce(context.Background())
+
+	pod0 := r.buffers["a"].Samples("pod-0")
+	pod1 := r.buffers["a"].Samples("pod-1")
+	require.Len(t, pod0, 1)
+	require.Len(t, pod1, 1)
+	assert.Equal(t, start.Unix(), pod0[0].Timestamp,
+		"pod-0 should be stamped at start time")
+	assert.Equal(t, start.Unix()+12, pod1[0].Timestamp,
+		"pod-1 should be stamped 12s later (its own completion time)")
 }
 
 func TestStart_ShutsDownOnContextCancel(t *testing.T) {

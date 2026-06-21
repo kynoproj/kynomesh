@@ -41,9 +41,6 @@ func (q *OverflowQueue[T]) Append(value T) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 	if len(q.elements) >= q.maxSize {
-		// Shift in place rather than reslicing — q.elements[1:]
-		// would keep the backing array growing every Append once the
-		// queue is full, leaking the head slot forever.
 		q.elements = append(q.elements[:0], q.elements[1:]...)
 	}
 	q.elements = append(q.elements, value)

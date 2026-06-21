@@ -23,8 +23,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-
-	sharedqueue "github.com/kynoproj/kynomesh/pkg/shared/queue"
 )
 
 // Default scrape parameters. These are intentionally not exposed as
@@ -91,18 +89,18 @@ type Options struct {
 	Clock          Clock         // default time.Now
 }
 
-// Rater maintains per-AgentDeploy ring buffers fed by periodic
-// scrapes. It is the only stateful component of the daemon.
+// Rater maintains per-AgentDeploy storage fed by periodic scrapes.
+// It is the only stateful component of the daemon.
 type Rater struct {
 	opts    Options
-	buffers map[string]*sharedqueue.OverflowQueue[*TimestampedCounts]
+	buffers map[string]*AgentDeployBuffers
 
 	// Self-observability counters; nil-safe checks let tests skip
 	// wiring metrics.
 	selfMetrics *SelfMetrics
 }
 
-// NewRater builds a Rater. Pre-allocates one ring buffer per
+// NewRater builds a Rater. Pre-allocates one AgentDeployBuffers per
 // configured AgentDeploy so reads never race with writes when the
 // caller hasn't seen the AgentDeploy yet.
 func NewRater(opts Options) *Rater {
@@ -118,9 +116,9 @@ func NewRater(opts Options) *Rater {
 	if opts.Logger == nil {
 		opts.Logger = zap.NewNop().Sugar()
 	}
-	buffers := make(map[string]*sharedqueue.OverflowQueue[*TimestampedCounts], len(opts.AgentDeploys))
+	buffers := make(map[string]*AgentDeployBuffers, len(opts.AgentDeploys))
 	for _, ad := range opts.AgentDeploys {
-		buffers[ad] = sharedqueue.New[*TimestampedCounts](MaxBuckets)
+		buffers[ad] = NewAgentDeployBuffers()
 	}
 	return &Rater{opts: opts, buffers: buffers}
 }
@@ -171,8 +169,14 @@ func (r *Rater) scrapeAllOnce(ctx context.Context) {
 	wg.Wait()
 }
 
-// scrapeOneAgentDeploy resolves the AgentDeploy's pods, scrapes them
-// in parallel, and updates the bucket at the current aligned ts.
+// scrapeOneAgentDeploy resolves the AgentDeploy's pods and scrapes
+// them in parallel. Each pod's observation is filed into the bucket
+// determined by its OWN completion time (AlignNextBucket), not a
+// tick-wide timestamp picked before the scrapes ran. This way a slow
+// scrape (or, in the future, a per-pod schedule or broker-pushed
+// sample) lands in the bucket aligned with when the value was
+// actually observed, rather than being mis-attributed to a bucket
+// the rater happened to be on when the tick started.
 func (r *Rater) scrapeOneAgentDeploy(ctx context.Context, ad string) {
 	log := r.opts.Logger.With(zap.String("agentDeploy", ad))
 	hosts, err := r.opts.Discover(ctx, ad)
@@ -196,15 +200,13 @@ func (r *Rater) scrapeOneAgentDeploy(ctx context.Context, ad string) {
 		r.selfMetrics.PodsObserved.WithLabelValues(ad).Set(float64(len(hosts)))
 	}
 
-	bucketTS := AlignBucket(r.opts.Clock().Unix())
-
 	sem := make(chan struct{}, r.opts.ScrapeWorkers)
 	var wg sync.WaitGroup
-	q, ok := r.buffers[ad]
+	buf, ok := r.buffers[ad]
 	if !ok {
 		// Defensive: should never happen given pre-allocation, but
 		// avoids nil-map panic on a misconfigured rater.
-		log.Errorw("No ring buffer for AgentDeploy")
+		log.Errorw("No buffer for AgentDeploy")
 		return
 	}
 
@@ -220,15 +222,20 @@ func (r *Rater) scrapeOneAgentDeploy(ctx context.Context, ad string) {
 				if r.selfMetrics != nil {
 					r.selfMetrics.ScrapeFailures.WithLabelValues(ad).Inc()
 				}
-				// Important: do NOT call UpdateBucket with nil. The
-				// existing pod entry stays untouched so the next
+				// Important: do NOT append a nil sample. The pod's
+				// previous observation stays in place so the next
 				// successful scrape produces a correct delta.
 				return
 			}
 			if r.selfMetrics != nil {
 				r.selfMetrics.ScrapeSuccess.WithLabelValues(ad).Inc()
 			}
-			UpdateBucket(q, bucketTS, host, sample)
+			// Stamp the sample with its own scrape-completion time.
+			// Pods scraped on different schedules (slow responders,
+			// future per-pod tickers, broker-pushed samples) land on
+			// their own timelines without any alignment math.
+			sample.Timestamp = r.opts.Clock().Unix()
+			buf.Append(host, sample)
 		}(host)
 	}
 	wg.Wait()
@@ -262,20 +269,20 @@ type PerWindowValues struct {
 // Returns:
 //   - ErrUnknownAgentDeploy if the name is not in the configured
 //     list.
-//   - ErrNoData if the ring buffer holds fewer than 2 buckets.
+//   - ErrNoData if no pod has ≥2 samples yet (rate is undefined).
 //   - A WindowedResult otherwise. Empty per-window maps mean "data
 //     exists but not enough to compute that specific window."
 func (r *Rater) GetMetrics(name string, lookbackSeconds int64) (*WindowedResult, error) {
-	q, ok := r.buffers[name]
+	buf, ok := r.buffers[name]
 	if !ok {
 		return nil, ErrUnknownAgentDeploy
 	}
-	if !HasUsableHistory(q) {
+	if !HasUsableHistory(buf) {
 		return nil, ErrNoData
 	}
 
-	now := AlignBucket(r.opts.Clock().Unix())
-	transports := observedTransports(q)
+	now := r.opts.Clock().Unix()
+	transports := ObservedTransports(buf)
 
 	// Decide which windows to compute and what their effective
 	// lookbacks are. "custom" is clamped to retention so the daemon
@@ -304,8 +311,8 @@ func (r *Rater) GetMetrics(name string, lookbackSeconds int64) (*WindowedResult,
 	}
 	perTransport := make(map[string]PerWindowValues, len(transports))
 	for _, w := range windows {
-		total.ProcessingRates[w.key] = CalculateRate(q, now, w.lookback, TransportTotal)
-		total.InflightAverages[w.key] = CalculateInflightAvg(q, now, w.lookback, TransportTotal)
+		total.ProcessingRates[w.key] = CalculateRate(buf, now, w.lookback, TransportTotal)
+		total.InflightAverages[w.key] = CalculateInflightAvg(buf, now, w.lookback, TransportTotal)
 	}
 	for _, t := range transports {
 		v := PerWindowValues{
@@ -313,8 +320,8 @@ func (r *Rater) GetMetrics(name string, lookbackSeconds int64) (*WindowedResult,
 			InflightAverages: make(map[string]float64, len(windows)),
 		}
 		for _, w := range windows {
-			v.ProcessingRates[w.key] = CalculateRate(q, now, w.lookback, t)
-			v.InflightAverages[w.key] = CalculateInflightAvg(q, now, w.lookback, t)
+			v.ProcessingRates[w.key] = CalculateRate(buf, now, w.lookback, t)
+			v.InflightAverages[w.key] = CalculateInflightAvg(buf, now, w.lookback, t)
 		}
 		perTransport[t] = v
 	}
@@ -322,48 +329,8 @@ func (r *Rater) GetMetrics(name string, lookbackSeconds int64) (*WindowedResult,
 	return &WindowedResult{
 		Total:                    total,
 		PerTransport:             perTransport,
-		SamplesCount:             int64(q.Length()),
-		PodsObservedAvg:          averagePodsObserved(q),
+		SamplesCount:             buf.TotalSamples(),
+		PodsObservedAvg:          buf.PodCount(),
 		CustomWindowEffectiveSec: effectiveCustom,
 	}, nil
-}
-
-// observedTransports walks the ring buffer to collect every distinct
-// transport label value seen on either counter or gauge metrics.
-// Returns a deduplicated slice (order not guaranteed).
-func observedTransports(q *sharedqueue.OverflowQueue[*TimestampedCounts]) []string {
-	set := map[string]struct{}{}
-	for _, b := range q.Items() {
-		for _, sample := range b.Snapshot() {
-			if sample == nil {
-				continue
-			}
-			for k := range sample.CounterByTransport {
-				set[k] = struct{}{}
-			}
-			for k := range sample.GaugeByTransport {
-				set[k] = struct{}{}
-			}
-		}
-	}
-	out := make([]string, 0, len(set))
-	for k := range set {
-		out = append(out, k)
-	}
-	return out
-}
-
-// averagePodsObserved returns the mean number of pods observed per
-// bucket across the retained history, rounded to int64. Zero when no
-// buckets exist.
-func averagePodsObserved(q *sharedqueue.OverflowQueue[*TimestampedCounts]) int64 {
-	items := q.Items()
-	if len(items) == 0 {
-		return 0
-	}
-	var total int
-	for _, b := range items {
-		total += len(b.Snapshot())
-	}
-	return int64(total / len(items))
 }

@@ -16,193 +16,201 @@ limitations under the License.
 
 package rater
 
-import (
-	sharedqueue "github.com/kynoproj/kynomesh/pkg/shared/queue"
-)
-
-// TransportTotal is the synthetic transport key used to represent the
-// sum across all observed transports. It is not emitted by the broker;
-// the rater computes it from real transport buckets.
+// TransportTotal is the synthetic transport key used to represent
+// the sum across all observed transports. It is not emitted by the
+// broker; the rater computes it on demand by summing real transport
+// values within each sample.
 const TransportTotal = "__total__"
 
-// AlignBucket rounds a unix-second timestamp down to the closest
-// CountWindow boundary. All samples observed within a single window
-// land in the same bucket.
-func AlignBucket(unixSeconds int64) int64 {
-	w := int64(CountWindow.Seconds())
-	return (unixSeconds / w) * w
-}
-
-// UpdateBucket finds (or appends) the bucket whose timestamp matches
-// ts and records the pod sample into it. Caller is responsible for
-// passing an already-bucket-aligned ts (use AlignBucket).
-func UpdateBucket(q *sharedqueue.OverflowQueue[*TimestampedCounts], ts int64, pod string, sample *PodSample) {
-	for _, b := range q.Items() {
-		if b.Timestamp() == ts {
-			b.Update(pod, sample)
-			return
+// samplesInWindow returns the subset of samples whose timestamps
+// fall within [nowUnix - lookbackSeconds, nowUnix]. Samples are
+// expected in append order (ascending timestamp); the function does
+// not re-sort.
+func samplesInWindow(samples []*PodSample, nowUnix, lookbackSeconds int64) []*PodSample {
+	if len(samples) == 0 {
+		return nil
+	}
+	cutoff := nowUnix - lookbackSeconds
+	// Find the first sample at or after cutoff. Linear walk is fine:
+	// MaxSamplesPerPod is in the hundreds and we touch this twice per
+	// transport per query.
+	for i, s := range samples {
+		if s.Timestamp >= cutoff {
+			return samples[i:]
 		}
 	}
-	bucket := NewTimestampedCounts(ts)
-	bucket.Update(pod, sample)
-	q.Append(bucket)
+	return nil
 }
 
-// findStartIndex returns the index of the earliest bucket whose
-// timestamp is still inside the lookback window ending at nowAligned.
-// The returned index is suitable for use with CalculateRate; -1 means
-// no usable buckets exist.
-//
-// The most recent bucket (n-1) is excluded from the search because it
-// may still be filling — CalculateRate uses n-2 as the right
-// boundary. If n < 2, no rate can be computed.
-func findStartIndex(buckets []*TimestampedCounts, nowAligned, lookbackSeconds int64) int {
-	n := len(buckets)
-	if n < 2 {
-		return -1
-	}
-	cutoff := nowAligned - lookbackSeconds
-	// Bucket n-2 is the most-recent complete boundary. If even that
-	// is older than cutoff, the window contains no buckets.
-	if buckets[n-2].Timestamp() < cutoff {
-		return -1
-	}
-	// Linear walk is fine for MaxBuckets = 180.
-	for i := range n - 1 {
-		if buckets[i].Timestamp() >= cutoff {
-			return i
+// processedValue returns the processed-messages value for the
+// given transport, or the sum across transports when transport ==
+// TransportTotal.
+func processedValue(s *PodSample, transport string) float64 {
+	if transport == TransportTotal {
+		var v float64
+		for _, c := range s.ProcessedByTransport {
+			v += c
 		}
+		return v
 	}
-	return -1
+	return s.ProcessedByTransport[transport]
 }
 
-// CalculateRate returns the per-second rate of the counter for the
-// given transport over the requested lookback. Walking consecutive
-// buckets, for each pod that appears in both, accumulate delta =
-// curr - prev. If curr < prev (counter reset, e.g. pod restart),
-// use curr as the delta — this matches Prometheus' rate() semantics
-// for counter resets.
+// inflightValue returns the in-flight value for the given transport,
+// or the sum across transports when transport == TransportTotal.
+func inflightValue(s *PodSample, transport string) float64 {
+	if transport == TransportTotal {
+		var v float64
+		for _, g := range s.InflightByTransport {
+			v += g
+		}
+		return v
+	}
+	return s.InflightByTransport[transport]
+}
+
+// podRate computes the per-second processing rate for one pod over
+// the requested window. Uses the first and last in-window samples
+// only — counter monotonicity makes intermediate samples redundant,
+// except when detecting a reset.
 //
-// The returned rate is (sum of pod deltas across the window) divided
-// by (timestamp diff in seconds). Returns 0 when no rate can be
-// computed (fewer than 2 buckets, or no buckets in window).
-func CalculateRate(q *sharedqueue.OverflowQueue[*TimestampedCounts], nowAligned, lookbackSeconds int64, transport string) float64 {
-	buckets := q.Items()
-	startIdx := findStartIndex(buckets, nowAligned, lookbackSeconds)
-	if startIdx < 0 {
-		return 0
+// A reset (counter went down between first and last) is interpreted
+// as a pod/broker restart: the delta is "last value, since we
+// don't know how much was lost." This matches Prometheus rate()
+// semantics for resets within a window.
+//
+// Returns (rate, true) when computable; (0, false) when the pod has
+// fewer than 2 samples in the window, in which case the caller
+// should treat this pod as contributing no signal to the aggregate.
+func podRate(samples []*PodSample, nowUnix, lookbackSeconds int64, transport string) (float64, bool) {
+	w := samplesInWindow(samples, nowUnix, lookbackSeconds)
+	if len(w) < 2 {
+		return 0, false
 	}
-	endIdx := len(buckets) - 2 // exclude most recent (possibly incomplete) bucket
-	if endIdx <= startIdx {
-		return 0
-	}
-	timeDiff := buckets[endIdx].Timestamp() - buckets[startIdx].Timestamp()
+	first, last := w[0], w[len(w)-1]
+	timeDiff := last.Timestamp - first.Timestamp
 	if timeDiff <= 0 {
-		return 0
+		return 0, false
 	}
+	currVal := processedValue(last, transport)
+	prevVal := processedValue(first, transport)
 	var delta float64
-	for i := startIdx; i < endIdx; i++ {
-		delta += bucketDelta(buckets[i], buckets[i+1], transport)
+	if currVal >= prevVal {
+		delta = currVal - prevVal
+	} else {
+		// Counter reset between first and last: best-effort attribute
+		// the post-reset value as the delta. Anything else either
+		// silently drops traffic (delta = 0) or reports negative
+		// throughput.
+		delta = currVal
 	}
-	return delta / float64(timeDiff)
+	return delta / float64(timeDiff), true
 }
 
-func bucketDelta(prev, curr *TimestampedCounts, transport string) float64 {
-	if prev == nil || curr == nil {
-		return 0
-	}
-	pSnap := prev.Snapshot()
-	cSnap := curr.Snapshot()
-	var sum float64
-	for pod, sample := range cSnap {
-		if sample == nil {
-			continue
-		}
-		var currVal, prevVal float64
-		if transport == TransportTotal {
-			currVal = sumCounters(sample)
-			if prev := pSnap[pod]; prev != nil {
-				prevVal = sumCounters(prev)
-			}
-		} else {
-			currVal = sample.CounterByTransport[transport]
-			if prev := pSnap[pod]; prev != nil {
-				prevVal = prev.CounterByTransport[transport]
-			}
-		}
-		// Counter reset: assume the pod was restarted and use curr as
-		// the delta. Anything else would either silently drop traffic
-		// (delta = 0) or report negative throughput.
-		if currVal >= prevVal {
-			sum += currVal - prevVal
-		} else {
-			sum += currVal
-		}
-	}
-	return sum
-}
-
-func sumCounters(s *PodSample) float64 {
+// CalculateRate sums per-pod rates across the AgentDeploy for the
+// given transport over the requested window. Pods with insufficient
+// in-window samples contribute zero; this is the equivalent of
+// numaflow's "skip pod with nil podReadCount" rule applied at the
+// pod-buffer level.
+func CalculateRate(b *AgentDeployBuffers, nowUnix, lookbackSeconds int64, transport string) float64 {
 	var total float64
-	for _, v := range s.CounterByTransport {
-		total += v
+	for _, pod := range b.Pods() {
+		samples := b.Samples(pod)
+		if r, ok := podRate(samples, nowUnix, lookbackSeconds, transport); ok {
+			total += r
+		}
 	}
 	return total
 }
 
-func sumGauges(s *PodSample) float64 {
-	var total float64
-	for _, v := range s.GaugeByTransport {
-		total += v
-	}
-	return total
-}
-
-// CalculateInflightAvg returns the average in-flight value for the
-// given transport over the lookback window. For each bucket in the
-// window we sum the per-pod gauge values, then average those per-
-// bucket sums.
+// podInflightAvg computes the time-weighted average gauge value for
+// one pod over the window.
 //
-// In-flight is a gauge so no delta math is needed — a single bucket
-// is enough. The most recent bucket is still excluded for consistency
-// with rate calc (it may be filling).
-func CalculateInflightAvg(q *sharedqueue.OverflowQueue[*TimestampedCounts], nowAligned, lookbackSeconds int64, transport string) float64 {
-	buckets := q.Items()
-	startIdx := findStartIndex(buckets, nowAligned, lookbackSeconds)
-	if startIdx < 0 {
-		return 0
+// A sample's value represents the gauge from its timestamp until
+// the NEXT sample's timestamp (step-function semantics). The last
+// in-window sample contributes no weight — we don't extrapolate
+// past the most recent observation. Likewise the window's leading
+// gap (before the first sample) gets no weight — we don't
+// extrapolate backwards.
+//
+// Edge cases:
+//   - Zero samples in window: (0, false) — pod contributes nothing.
+//   - One sample in window: (its value, true) — single observation
+//     IS our best estimate, no duration to weight by.
+//   - Multiple samples at the same timestamp (degenerate but
+//     possible if a future change adds sub-second timestamping):
+//     fall back to the last value rather than dividing by zero.
+func podInflightAvg(samples []*PodSample, nowUnix, lookbackSeconds int64, transport string) (float64, bool) {
+	w := samplesInWindow(samples, nowUnix, lookbackSeconds)
+	if len(w) == 0 {
+		return 0, false
 	}
-	endIdx := len(buckets) - 2
-	if endIdx < startIdx {
-		return 0
+	if len(w) == 1 {
+		return inflightValue(w[0], transport), true
 	}
-	var total float64
-	var n int
-	for i := startIdx; i <= endIdx; i++ {
-		snap := buckets[i].Snapshot()
-		var bucketSum float64
-		for _, sample := range snap {
-			if sample == nil {
-				continue
-			}
-			if transport == TransportTotal {
-				bucketSum += sumGauges(sample)
-			} else {
-				bucketSum += sample.GaugeByTransport[transport]
-			}
-		}
-		total += bucketSum
-		n++
+	var weightedSum float64
+	var totalWeight float64
+	for i := 0; i < len(w)-1; i++ {
+		width := float64(w[i+1].Timestamp - w[i].Timestamp)
+		weightedSum += inflightValue(w[i], transport) * width
+		totalWeight += width
 	}
-	if n == 0 {
-		return 0
+	if totalWeight == 0 {
+		return inflightValue(w[len(w)-1], transport), true
 	}
-	return total / float64(n)
+	return weightedSum / totalWeight, true
 }
 
-// HasUsableHistory reports whether the queue holds enough buckets to
-// compute a non-trivial rate for any window. The rater uses this to
-// decide between returning data and returning Unavailable.
-func HasUsableHistory(q *sharedqueue.OverflowQueue[*TimestampedCounts]) bool {
-	return q.Length() >= 2
+// CalculateInflightAvg sums per-pod time-weighted gauge averages
+// across the AgentDeploy. The result is "the average instantaneous
+// AgentDeploy-wide in-flight load over the window."
+func CalculateInflightAvg(b *AgentDeployBuffers, nowUnix, lookbackSeconds int64, transport string) float64 {
+	var total float64
+	for _, pod := range b.Pods() {
+		samples := b.Samples(pod)
+		if v, ok := podInflightAvg(samples, nowUnix, lookbackSeconds, transport); ok {
+			total += v
+		}
+	}
+	return total
+}
+
+// HasUsableHistory reports whether at least one pod has enough
+// samples (≥2) to compute a rate. Used by the rater to decide
+// between OK and Unavailable for the gRPC response.
+//
+// A pod with only one sample can still contribute to gauge avg
+// (single-sample best-effort), but rate math always needs two
+// points — so the "have we got rate-capable data at all?" check
+// gates the whole response.
+func HasUsableHistory(b *AgentDeployBuffers) bool {
+	for _, pod := range b.Pods() {
+		if len(b.Samples(pod)) >= 2 {
+			return true
+		}
+	}
+	return false
+}
+
+// ObservedTransports returns every distinct transport label value
+// seen in any sample for any pod. Used by the rater to populate
+// the per-transport breakdown in the gRPC response without hard-
+// coding the broker's transport set.
+func ObservedTransports(b *AgentDeployBuffers) []string {
+	set := map[string]struct{}{}
+	for _, pod := range b.Pods() {
+		for _, s := range b.Samples(pod) {
+			for k := range s.ProcessedByTransport {
+				set[k] = struct{}{}
+			}
+			for k := range s.InflightByTransport {
+				set[k] = struct{}{}
+			}
+		}
+	}
+	out := make([]string, 0, len(set))
+	for k := range set {
+		out = append(out, k)
+	}
+	return out
 }

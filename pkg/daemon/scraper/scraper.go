@@ -98,8 +98,8 @@ func (s *Scraper) Scrape(ctx context.Context, host string) (*rater.PodSample, er
 	}
 
 	sample := &rater.PodSample{
-		CounterByTransport: make(map[string]float64),
-		GaugeByTransport:   make(map[string]float64),
+		ProcessedByTransport: make(map[string]float64),
+		InflightByTransport:   make(map[string]float64),
 	}
 
 	if fam, ok := families[MetricInflightName]; ok {
@@ -109,7 +109,7 @@ func (s *Scraper) Scrape(ctx context.Context, host string) (*rater.PodSample, er
 				continue
 			}
 			if g := m.GetGauge(); g != nil {
-				sample.GaugeByTransport[transport] = g.GetValue()
+				sample.InflightByTransport[transport] = g.GetValue()
 			}
 		}
 	}
@@ -121,7 +121,7 @@ func (s *Scraper) Scrape(ctx context.Context, host string) (*rater.PodSample, er
 				continue
 			}
 			if c := m.GetCounter(); c != nil {
-				sample.CounterByTransport[transport] = c.GetValue()
+				sample.ProcessedByTransport[transport] = c.GetValue()
 			}
 		}
 	}
