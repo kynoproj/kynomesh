@@ -61,14 +61,14 @@ var ErrUnknownAgentDeploy = errors.New("unknown AgentDeploy")
 var ErrNoData = errors.New("not enough samples to compute metrics")
 
 // Scraper is the minimal surface the rater needs from a pod-metrics
-// scraper. Implemented by pkg/daemon/scraper.Scraper.
+// scraper. Implemented by pkg/daemon/server/scraper.Scraper.
 type Scraper interface {
 	Scrape(ctx context.Context, host string) (*PodSample, error)
 }
 
 // DiscoverFunc resolves the live pod DNS hostnames for an
-// AgentDeploy. Implemented by pkg/daemon/discovery.Discover bound to
-// a namespace and resolver.
+// AgentDeploy. Implemented by pkg/daemon/server/discovery.Discover
+// bound to a namespace and resolver.
 type DiscoverFunc func(ctx context.Context, agentDeploy string) ([]string, error)
 
 // Clock is a test seam. Production passes time.Now.

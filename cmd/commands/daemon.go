@@ -20,7 +20,7 @@ import (
 	"github.com/spf13/cobra"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
-	daemoncmd "github.com/kynoproj/kynomesh/pkg/daemon/cmd"
+	daemoncmd "github.com/kynoproj/kynomesh/pkg/daemon/server/cmd"
 	sharedutil "github.com/kynoproj/kynomesh/pkg/shared/util"
 )
 

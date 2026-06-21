@@ -33,10 +33,10 @@ import (
 	"go.uber.org/zap"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
-	"github.com/kynoproj/kynomesh/pkg/daemon/discovery"
-	"github.com/kynoproj/kynomesh/pkg/daemon/rater"
-	"github.com/kynoproj/kynomesh/pkg/daemon/scraper"
-	"github.com/kynoproj/kynomesh/pkg/daemon/server"
+	"github.com/kynoproj/kynomesh/pkg/daemon/server/discovery"
+	"github.com/kynoproj/kynomesh/pkg/daemon/server/rater"
+	"github.com/kynoproj/kynomesh/pkg/daemon/server/scraper"
+	"github.com/kynoproj/kynomesh/pkg/daemon/server/service"
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 	sharedtls "github.com/kynoproj/kynomesh/pkg/shared/tls"
 	"github.com/kynoproj/kynomesh/pkg/version"
@@ -142,8 +142,8 @@ func run(ctx context.Context, cfg *daemonConfig, logger *zap.SugaredLogger) erro
 		return fmt.Errorf("generate TLS certificate: %w", err)
 	}
 
-	svc := server.NewService(r)
-	srv, err := server.New(ctx, server.Config{
+	svc := service.NewService(r)
+	srv, err := service.New(ctx, service.Config{
 		APIPort:     cfg.APIPort,
 		MetricsPort: cfg.MetricsPort,
 		Cert:        cert,

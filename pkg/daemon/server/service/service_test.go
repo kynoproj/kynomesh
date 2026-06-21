@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package server
+package service
 
 import (
 	"context"
@@ -27,7 +27,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	pb "github.com/kynoproj/kynomesh/pkg/apis/proto/daemon"
-	"github.com/kynoproj/kynomesh/pkg/daemon/rater"
+	"github.com/kynoproj/kynomesh/pkg/daemon/server/rater"
 )
 
 type stubQuerier struct {
