@@ -70,14 +70,20 @@ func inflightValue(s *PodSample, transport string) float64 {
 }
 
 // podRate computes the per-second processing rate for one pod over
-// the requested window. Uses the first and last in-window samples
-// only — counter monotonicity makes intermediate samples redundant,
-// except when detecting a reset.
+// the requested window.
 //
-// A reset (counter went down between first and last) is interpreted
-// as a pod/broker restart: the delta is "last value, since we
-// don't know how much was lost." This matches Prometheus rate()
-// semantics for resets within a window.
+// The window may straddle zero or more counter resets (pod/broker
+// restarts). Each "run" between resets contributes its own delta:
+//
+//   - The first run's delta is (peak - first_in_window_value), where
+//     "peak" is the last sample of the run.
+//   - Subsequent runs start at 0 (post-reset), so their delta is
+//     just the peak (or, for the still-open final run, the last
+//     sample's value).
+//
+// Walking samples in order and committing a run's delta on each
+// detected reset gives the right answer in all cases — including
+// the no-reset case, where the algorithm reduces to (last - first).
 //
 // Returns (rate, true) when computable; (0, false) when the pod has
 // fewer than 2 samples in the window, in which case the caller
@@ -87,31 +93,35 @@ func podRate(samples []*PodSample, nowUnix, lookbackSeconds int64, transport str
 	if len(w) < 2 {
 		return 0, false
 	}
-	first, last := w[0], w[len(w)-1]
-	timeDiff := last.Timestamp - first.Timestamp
+	timeDiff := w[len(w)-1].Timestamp - w[0].Timestamp
 	if timeDiff <= 0 {
 		return 0, false
 	}
-	currVal := processedValue(last, transport)
-	prevVal := processedValue(first, transport)
+
 	var delta float64
-	if currVal >= prevVal {
-		delta = currVal - prevVal
-	} else {
-		// Counter reset between first and last: best-effort attribute
-		// the post-reset value as the delta. Anything else either
-		// silently drops traffic (delta = 0) or reports negative
-		// throughput.
-		delta = currVal
+	runStart := processedValue(w[0], transport)
+	prev := runStart
+	for i := 1; i < len(w); i++ {
+		curr := processedValue(w[i], transport)
+		if curr < prev {
+			// Reset: prev was the peak of the run that just ended.
+			delta += prev - runStart
+			// New run starts at 0 (the post-reset value at this
+			// sample point is curr; the run "starts" at 0 and has
+			// already reached curr by this sample).
+			runStart = 0
+		}
+		prev = curr
 	}
+	// Commit the final (still-open) run.
+	delta += prev - runStart
+
 	return delta / float64(timeDiff), true
 }
 
 // CalculateRate sums per-pod rates across the AgentDeploy for the
 // given transport over the requested window. Pods with insufficient
-// in-window samples contribute zero; this is the equivalent of
-// numaflow's "skip pod with nil podReadCount" rule applied at the
-// pod-buffer level.
+// in-window samples contribute zero.
 func CalculateRate(b *AgentDeployBuffers, nowUnix, lookbackSeconds int64, transport string) float64 {
 	var total float64
 	for _, pod := range b.Pods() {
@@ -179,10 +189,9 @@ func CalculateInflightAvg(b *AgentDeployBuffers, nowUnix, lookbackSeconds int64,
 // samples (≥2) to compute a rate. Used by the rater to decide
 // between OK and Unavailable for the gRPC response.
 //
-// A pod with only one sample can still contribute to gauge avg
+// A pod with only one sample can still contribute to in-flight avg
 // (single-sample best-effort), but rate math always needs two
-// points — so the "have we got rate-capable data at all?" check
-// gates the whole response.
+// points.
 func HasUsableHistory(b *AgentDeployBuffers) bool {
 	for _, pod := range b.Pods() {
 		if len(b.Samples(pod)) >= 2 {

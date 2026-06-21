@@ -32,7 +32,7 @@ const Retention = 30 * time.Minute
 // scrape interval over Retention fits without dropping samples; the
 // extra headroom absorbs catch-up scrapes after transient unreach-
 // ability without spilling.
-const MaxSamplesPerPod = int(Retention / (5 * time.Second)) * 2
+const MaxSamplesPerPod = int(Retention/(5*time.Second)) * 2
 
 // PodSample is one observation from one pod, taken at scrape-
 // completion time. Timestamps are raw unix seconds (no bucket
@@ -61,11 +61,7 @@ type PodSample struct {
 //
 // Pods that disappear (scaled-down, terminated) keep their buffer:
 // their samples naturally age out of every query window without any
-// cleanup code. If the same pod name is reused later, the math sees
-// a counter reset (curr < prev) and handles it as a restart, so
-// inherited buffers don't poison results — and the worst-case
-// memory cost is bounded by Retention × peak churn rate, well under
-// what's worth tracking.
+// cleanup code.
 type AgentDeployBuffers struct {
 	mu    sync.RWMutex
 	byPod map[string]*sharedqueue.OverflowQueue[*PodSample]

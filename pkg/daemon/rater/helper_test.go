@@ -94,28 +94,71 @@ func TestCalculateRate_Total(t *testing.T) {
 	assert.InDelta(t, 16.0, CalculateRate(b, now, 60, TransportTotal), 1e-9)
 }
 
-func TestCalculateRate_CounterReset(t *testing.T) {
-	// One pod, three samples. Middle sample is fine; last sample's
-	// counter went DOWN (broker restart). Rate math uses first and
-	// last only — when curr < prev across the window, we attribute
-	// the post-reset value as the delta.
+func TestCalculateRate_CounterReset_SingleRestart(t *testing.T) {
+	// One pod, four samples. A restart happens between samples 2
+	// and 3: counter goes 1000 → 1100 → 5 → 50. Total work done in
+	// the window is (1100 - 1000) before the restart, plus 50 after.
+	//   pre-restart run: 1000 → 1100 → delta 100
+	//   post-restart run: 0 → 50 → delta 50
+	//   total = 150 over 30s → 5/s.
 	b := NewAgentDeployBuffers()
-	b.Append("p", &PodSample{
-		Timestamp:          100,
-		ProcessedByTransport: map[string]float64{"rest": 1000},
-	})
-	b.Append("p", &PodSample{
-		Timestamp:          110,
-		ProcessedByTransport: map[string]float64{"rest": 1050},
-	})
-	b.Append("p", &PodSample{
-		Timestamp:          120,
-		ProcessedByTransport: map[string]float64{"rest": 5}, // reset
-	})
+	for _, x := range []struct {
+		ts  int64
+		val float64
+	}{
+		{100, 1000}, {110, 1050}, {120, 1100}, {130, 50},
+	} {
+		b.Append("p", &PodSample{
+			Timestamp:            x.ts,
+			ProcessedByTransport: map[string]float64{"rest": x.val},
+		})
+	}
+	// Walk: 1000 → 1050 (ok) → 1100 (ok) → 50 (reset, commit
+	// 1100-1000=100, runStart=0) → end (commit 50-0=50). total=150.
+	// timeDiff=30. rate=5.
+	assert.InDelta(t, 5.0, CalculateRate(b, 140, 60, "rest"), 1e-9)
+}
 
-	// First=1000, last=5, curr<prev → delta = 5. timeDiff = 20s.
-	// rate = 0.25/s.
-	assert.InDelta(t, 0.25, CalculateRate(b, 130, 60, "rest"), 1e-9)
+func TestCalculateRate_CounterReset_MultipleRestarts(t *testing.T) {
+	// Two restarts inside the window:
+	//   500 → 600 → 5 → 10 → 3 → 20
+	//
+	// Run 0: 500 → 600  (delta 100)
+	// Run 1: 0 → 10     (delta 10)
+	// Run 2 (open): 0 → 20  (delta 20)
+	// Total = 130 over 25s → 5.2/s.
+	b := NewAgentDeployBuffers()
+	for _, x := range []struct {
+		ts  int64
+		val float64
+	}{
+		{100, 500}, {105, 600}, {110, 5}, {115, 10}, {120, 3}, {125, 20},
+	} {
+		b.Append("p", &PodSample{
+			Timestamp:            x.ts,
+			ProcessedByTransport: map[string]float64{"rest": x.val},
+		})
+	}
+	assert.InDelta(t, 5.2, CalculateRate(b, 130, 60, "rest"), 1e-9)
+}
+
+func TestCalculateRate_NoResetMatchesSimpleDelta(t *testing.T) {
+	// Sanity: with no reset, the algorithm collapses to (last-first)
+	// regardless of intermediate samples.
+	b := NewAgentDeployBuffers()
+	for _, x := range []struct {
+		ts  int64
+		val float64
+	}{
+		{100, 1000}, {110, 1050}, {120, 1100},
+	} {
+		b.Append("p", &PodSample{
+			Timestamp:            x.ts,
+			ProcessedByTransport: map[string]float64{"rest": x.val},
+		})
+	}
+	// (1100 - 1000) / 20 = 5/s.
+	assert.InDelta(t, 5.0, CalculateRate(b, 130, 60, "rest"), 1e-9)
 }
 
 func TestCalculateRate_PodWithSingleSampleSkipped(t *testing.T) {
