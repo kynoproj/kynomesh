@@ -67,16 +67,14 @@ func TestServer_RoundTripGRPCAndREST(t *testing.T) {
 	res := &rater.WindowedResult{
 		Total: rater.PerWindowValues{
 			ProcessingRates:  map[string]float64{rater.WindowKey1m: 2.5},
-			InflightAverages: map[string]float64{rater.WindowKey1m: 4},
+			Inflights: map[string]float64{rater.WindowKey1m: 4},
 		},
 		PerTransport: map[string]rater.PerWindowValues{
 			"rest": {
 				ProcessingRates:  map[string]float64{rater.WindowKey1m: 2.5},
-				InflightAverages: map[string]float64{rater.WindowKey1m: 4},
+				Inflights: map[string]float64{rater.WindowKey1m: 4},
 			},
 		},
-		SamplesCount:    10,
-		PodsObservedAvg: 2,
 	}
 	svc := NewService(canned{r: res})
 
@@ -123,7 +121,6 @@ func TestServer_RoundTripGRPCAndREST(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, 2.5, resp.GetMetrics().GetProcessingRates()[rater.WindowKey1m].GetValue())
 		assert.Equal(t, "greeter", resp.GetMetrics().GetAgentdeploy())
-		assert.Equal(t, int64(10), resp.GetMetrics().GetSamplesCount().GetValue())
 	})
 
 	t.Run("rest", func(t *testing.T) {

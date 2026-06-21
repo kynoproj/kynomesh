@@ -115,25 +115,3 @@ func (b *AgentDeployBuffers) Samples(pod string) []*PodSample {
 	}
 	return q.Items()
 }
-
-// TotalSamples returns the sum of per-pod sample counts across all
-// tracked pods. Exposed via gRPC as samples_count for operator
-// debug.
-func (b *AgentDeployBuffers) TotalSamples() int64 {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-	var n int64
-	for _, q := range b.byPod {
-		n += int64(q.Length())
-	}
-	return n
-}
-
-// PodCount returns the number of pods with at least one observation
-// on file. Includes long-dead pods until/unless the operator
-// restarts the daemon.
-func (b *AgentDeployBuffers) PodCount() int64 {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-	return int64(len(b.byPod))
-}

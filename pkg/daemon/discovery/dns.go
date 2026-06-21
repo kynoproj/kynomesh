@@ -15,9 +15,7 @@ limitations under the License.
 */
 
 // Package discovery resolves the live pods of an AgentDeploy through
-// the headless Service that the AgentDeploy reconciler maintains. The
-// daemon never talks to the Kubernetes API; pod-set membership is
-// derived from DNS A-records (ready endpoints only).
+// the headless Service that the AgentDeploy reconciler maintains.
 package discovery
 
 import (
@@ -37,7 +35,7 @@ type Resolver interface {
 }
 
 // HeadlessHost returns the DNS name of the AgentDeploy's headless
-// Service. Resolving this name yields one A-record per ready pod.
+// Service.
 func HeadlessHost(agentDeploy, namespace string) string {
 	return fmt.Sprintf("%s%s.%s.svc.cluster.local", agentDeploy, HeadlessSuffix, namespace)
 }

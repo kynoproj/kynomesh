@@ -14,10 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package cmd boots the per-AgentSet metrics daemon. The daemon
-// scrapes every AgentDeploy belonging to its AgentSet via the
-// AgentDeploy's headless Service DNS (no Kubernetes API access) and
-// serves rolled-up rate + in-flight metrics on a gRPC + REST surface.
+// Package cmd boots the per-AgentSet metrics daemon.
 package cmd
 
 import (
@@ -58,9 +55,7 @@ type daemonConfig struct {
 	MetricsPort  int
 }
 
-// loadConfig reads env vars and validates them. Missing required
-// values yield an error so the daemon refuses to start in a
-// misconfigured pod rather than reporting empty metrics forever.
+// loadConfig reads env vars and validates them.
 func loadConfig(apiPort, metricsPort int) (*daemonConfig, error) {
 	namespace := os.Getenv(kmv1.EnvNamespace)
 	if namespace == "" {

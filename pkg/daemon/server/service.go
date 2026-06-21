@@ -66,7 +66,7 @@ func (s *Service) GetAgentDeployMetrics(_ context.Context, req *pb.GetAgentDeplo
 	for t, v := range res.PerTransport {
 		pbByTransport[t] = &pb.TransportWindowedMetrics{
 			ProcessingRates:  mapFloatToDV(v.ProcessingRates),
-			InflightAverages: mapFloatToDV(v.InflightAverages),
+			Inflights: mapFloatToDV(v.Inflights),
 		}
 	}
 
@@ -74,11 +74,9 @@ func (s *Service) GetAgentDeployMetrics(_ context.Context, req *pb.GetAgentDeplo
 		Metrics: &pb.AgentDeployMetrics{
 			Agentdeploy:                  req.GetName(),
 			ProcessingRates:              mapFloatToDV(res.Total.ProcessingRates),
-			InflightAverages:             mapFloatToDV(res.Total.InflightAverages),
+			Inflights:             mapFloatToDV(res.Total.Inflights),
 			ByTransport:                  pbByTransport,
 			CustomWindowEffectiveSeconds: optionalInt64(res.CustomWindowEffectiveSec),
-			SamplesCount:                 wrapperspb.Int64(res.SamplesCount),
-			PodsObserved:                 wrapperspb.Int64(res.PodsObservedAvg),
 		},
 	}, nil
 }

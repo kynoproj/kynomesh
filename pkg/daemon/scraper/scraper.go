@@ -99,7 +99,7 @@ func (s *Scraper) Scrape(ctx context.Context, host string) (*rater.PodSample, er
 
 	sample := &rater.PodSample{
 		ProcessedByTransport: make(map[string]float64),
-		InflightByTransport:   make(map[string]float64),
+		InflightByTransport:  make(map[string]float64),
 	}
 
 	if fam, ok := families[MetricInflightName]; ok {

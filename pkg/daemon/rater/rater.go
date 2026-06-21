@@ -248,8 +248,6 @@ func (r *Rater) scrapeOneAgentDeploy(ctx context.Context, ad string) {
 type WindowedResult struct {
 	Total                    PerWindowValues
 	PerTransport             map[string]PerWindowValues
-	SamplesCount             int64
-	PodsObservedAvg          int64
 	CustomWindowEffectiveSec int64
 }
 
@@ -259,7 +257,7 @@ type WindowedResult struct {
 // layer can encode "no data" vs "data, value zero" precisely.
 type PerWindowValues struct {
 	ProcessingRates  map[string]float64
-	InflightAverages map[string]float64
+	Inflights map[string]float64
 }
 
 // GetMetrics computes all configured windows for the named
@@ -307,21 +305,21 @@ func (r *Rater) GetMetrics(name string, lookbackSeconds int64) (*WindowedResult,
 
 	total := PerWindowValues{
 		ProcessingRates:  make(map[string]float64, len(windows)),
-		InflightAverages: make(map[string]float64, len(windows)),
+		Inflights: make(map[string]float64, len(windows)),
 	}
 	perTransport := make(map[string]PerWindowValues, len(transports))
 	for _, w := range windows {
 		total.ProcessingRates[w.key] = CalculateRate(buf, now, w.lookback, TransportTotal)
-		total.InflightAverages[w.key] = CalculateInflightAvg(buf, now, w.lookback, TransportTotal)
+		total.Inflights[w.key] = CalculateInflightAvg(buf, now, w.lookback, TransportTotal)
 	}
 	for _, t := range transports {
 		v := PerWindowValues{
 			ProcessingRates:  make(map[string]float64, len(windows)),
-			InflightAverages: make(map[string]float64, len(windows)),
+			Inflights: make(map[string]float64, len(windows)),
 		}
 		for _, w := range windows {
 			v.ProcessingRates[w.key] = CalculateRate(buf, now, w.lookback, t)
-			v.InflightAverages[w.key] = CalculateInflightAvg(buf, now, w.lookback, t)
+			v.Inflights[w.key] = CalculateInflightAvg(buf, now, w.lookback, t)
 		}
 		perTransport[t] = v
 	}
@@ -329,8 +327,6 @@ func (r *Rater) GetMetrics(name string, lookbackSeconds int64) (*WindowedResult,
 	return &WindowedResult{
 		Total:                    total,
 		PerTransport:             perTransport,
-		SamplesCount:             buf.TotalSamples(),
-		PodsObservedAvg:          buf.PodCount(),
 		CustomWindowEffectiveSec: effectiveCustom,
 	}, nil
 }

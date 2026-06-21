@@ -69,18 +69,16 @@ func TestGetAgentDeployMetrics_PopulatesAllWindows(t *testing.T) {
 			ProcessingRates: map[string]float64{
 				rater.WindowKey1m: 1.0, rater.WindowKey5m: 0.5, rater.WindowKey15m: 0.3,
 			},
-			InflightAverages: map[string]float64{
+			Inflights: map[string]float64{
 				rater.WindowKey1m: 7, rater.WindowKey5m: 6, rater.WindowKey15m: 5,
 			},
 		},
 		PerTransport: map[string]rater.PerWindowValues{
 			"rest": {
 				ProcessingRates:  map[string]float64{rater.WindowKey1m: 0.8},
-				InflightAverages: map[string]float64{rater.WindowKey1m: 5},
+				Inflights: map[string]float64{rater.WindowKey1m: 5},
 			},
 		},
-		SamplesCount:    42,
-		PodsObservedAvg: 3,
 	}
 	svc := NewService(stubQuerier{res: res})
 	resp, err := svc.GetAgentDeployMetrics(context.Background(), &pb.GetAgentDeployMetricsRequest{Name: "a"})
@@ -91,9 +89,7 @@ func TestGetAgentDeployMetrics_PopulatesAllWindows(t *testing.T) {
 	assert.Equal(t, 1.0, m.GetProcessingRates()[rater.WindowKey1m].GetValue())
 	assert.Equal(t, 0.5, m.GetProcessingRates()[rater.WindowKey5m].GetValue())
 	assert.Equal(t, 0.3, m.GetProcessingRates()[rater.WindowKey15m].GetValue())
-	assert.Equal(t, float64(7), m.GetInflightAverages()[rater.WindowKey1m].GetValue())
-	assert.Equal(t, int64(42), m.GetSamplesCount().GetValue())
-	assert.Equal(t, int64(3), m.GetPodsObserved().GetValue())
+	assert.Equal(t, float64(7), m.GetInflights()[rater.WindowKey1m].GetValue())
 	assert.Equal(t, 0.8, m.GetByTransport()["rest"].GetProcessingRates()[rater.WindowKey1m].GetValue())
 	// CustomWindowEffectiveSeconds is unset when caller didn't request one.
 	assert.Nil(t, m.GetCustomWindowEffectiveSeconds())
@@ -103,7 +99,7 @@ func TestGetAgentDeployMetrics_CustomWindowEchoed(t *testing.T) {
 	res := &rater.WindowedResult{
 		Total: rater.PerWindowValues{
 			ProcessingRates:  map[string]float64{rater.WindowKey1m: 0, rater.WindowKeyCustom: 0.9},
-			InflightAverages: map[string]float64{rater.WindowKey1m: 0, rater.WindowKeyCustom: 4},
+			Inflights: map[string]float64{rater.WindowKey1m: 0, rater.WindowKeyCustom: 4},
 		},
 		PerTransport:             map[string]rater.PerWindowValues{},
 		CustomWindowEffectiveSec: 120,

@@ -41,19 +41,23 @@ const (
 // TransportWindowedMetrics carries per-window aggregations for a single
 // transport bucket (e.g. "jsonrpc", "rest", "grpc", "passthrough").
 //
-// Keys for the inner maps follow the windowed-rate convention used by the
-// daemon: "1m", "5m", "15m" are always populated when sufficient samples
-// exist; "custom" is populated only when the caller requests a non-zero
-// lookback_seconds.
+// Keys for the inner maps are window labels: "1m", "5m", "15m" are
+// always populated when sufficient samples exist; "custom" is populated
+// only when the caller requests a non-zero lookback_seconds.
+//
+// processingRates values are messages-per-second over the window.
+// inflights values are time-weighted average in-flight requests over
+// the window (instantaneous gauge reduced via time-weighting so uneven
+// sample spacing doesn't bias the result).
 //
 // Absent keys in either map mean "no data available for this window."
 // Callers must check presence before reading a value.
 type TransportWindowedMetrics struct {
-	state            protoimpl.MessageState             `protogen:"open.v1"`
-	ProcessingRates  map[string]*wrapperspb.DoubleValue `protobuf:"bytes,1,rep,name=processingRates,proto3" json:"processingRates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	InflightAverages map[string]*wrapperspb.DoubleValue `protobuf:"bytes,2,rep,name=inflightAverages,proto3" json:"inflightAverages,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state           protoimpl.MessageState             `protogen:"open.v1"`
+	ProcessingRates map[string]*wrapperspb.DoubleValue `protobuf:"bytes,1,rep,name=processingRates,proto3" json:"processingRates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Inflights       map[string]*wrapperspb.DoubleValue `protobuf:"bytes,2,rep,name=inflights,proto3" json:"inflights,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *TransportWindowedMetrics) Reset() {
@@ -93,9 +97,9 @@ func (x *TransportWindowedMetrics) GetProcessingRates() map[string]*wrapperspb.D
 	return nil
 }
 
-func (x *TransportWindowedMetrics) GetInflightAverages() map[string]*wrapperspb.DoubleValue {
+func (x *TransportWindowedMetrics) GetInflights() map[string]*wrapperspb.DoubleValue {
 	if x != nil {
-		return x.InflightAverages
+		return x.Inflights
 	}
 	return nil
 }
@@ -103,15 +107,16 @@ func (x *TransportWindowedMetrics) GetInflightAverages() map[string]*wrapperspb.
 // AgentDeployMetrics carries the aggregated, time-windowed metrics for a
 // single AgentDeploy that this daemon scrapes.
 //
-// Top-level processingRates and inflightAverages are the totals across all
+// Top-level processingRates and inflights are the totals across all
 // transports — the common case for autoscaling. byTransport carries the
 // per-transport breakdown for callers that need finer-grained signal.
 type AgentDeployMetrics struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	Agentdeploy string                 `protobuf:"bytes,1,opt,name=agentdeploy,proto3" json:"agentdeploy,omitempty"`
 	// Totals across all transports. Keys: "1m", "5m", "15m", "custom".
-	ProcessingRates  map[string]*wrapperspb.DoubleValue `protobuf:"bytes,2,rep,name=processingRates,proto3" json:"processingRates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	InflightAverages map[string]*wrapperspb.DoubleValue `protobuf:"bytes,3,rep,name=inflightAverages,proto3" json:"inflightAverages,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// See TransportWindowedMetrics for the per-key value semantics.
+	ProcessingRates map[string]*wrapperspb.DoubleValue `protobuf:"bytes,2,rep,name=processingRates,proto3" json:"processingRates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Inflights       map[string]*wrapperspb.DoubleValue `protobuf:"bytes,3,rep,name=inflights,proto3" json:"inflights,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// Per-transport breakdown. Keys are the transport label values emitted
 	// by the broker (e.g. "jsonrpc", "rest", "grpc", "passthrough"). The
 	// daemon is label-agnostic and exposes whatever values it observes.
@@ -120,14 +125,8 @@ type AgentDeployMetrics struct {
 	// daemon's retention. Unset when the caller did not request a custom
 	// lookback.
 	CustomWindowEffectiveSeconds *wrapperspb.Int64Value `protobuf:"bytes,5,opt,name=custom_window_effective_seconds,json=customWindowEffectiveSeconds,proto3" json:"custom_window_effective_seconds,omitempty"`
-	// Total number of timestamped samples currently in the daemon's ring
-	// buffer for this AgentDeploy. Useful for diagnosing thin signal.
-	SamplesCount *wrapperspb.Int64Value `protobuf:"bytes,6,opt,name=samples_count,json=samplesCount,proto3" json:"samples_count,omitempty"`
-	// Average number of pods observed per sample over the available
-	// history. Useful for diagnosing scrape coverage.
-	PodsObserved  *wrapperspb.Int64Value `protobuf:"bytes,7,opt,name=pods_observed,json=podsObserved,proto3" json:"pods_observed,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *AgentDeployMetrics) Reset() {
@@ -174,9 +173,9 @@ func (x *AgentDeployMetrics) GetProcessingRates() map[string]*wrapperspb.DoubleV
 	return nil
 }
 
-func (x *AgentDeployMetrics) GetInflightAverages() map[string]*wrapperspb.DoubleValue {
+func (x *AgentDeployMetrics) GetInflights() map[string]*wrapperspb.DoubleValue {
 	if x != nil {
-		return x.InflightAverages
+		return x.Inflights
 	}
 	return nil
 }
@@ -191,20 +190,6 @@ func (x *AgentDeployMetrics) GetByTransport() map[string]*TransportWindowedMetri
 func (x *AgentDeployMetrics) GetCustomWindowEffectiveSeconds() *wrapperspb.Int64Value {
 	if x != nil {
 		return x.CustomWindowEffectiveSeconds
-	}
-	return nil
-}
-
-func (x *AgentDeployMetrics) GetSamplesCount() *wrapperspb.Int64Value {
-	if x != nil {
-		return x.SamplesCount
-	}
-	return nil
-}
-
-func (x *AgentDeployMetrics) GetPodsObserved() *wrapperspb.Int64Value {
-	if x != nil {
-		return x.PodsObserved
 	}
 	return nil
 }
@@ -315,28 +300,26 @@ var File_pkg_apis_proto_daemon_daemon_proto protoreflect.FileDescriptor
 
 const file_pkg_apis_proto_daemon_daemon_proto_rawDesc = "" +
 	"\n" +
-	"\"pkg/apis/proto/daemon/daemon.proto\x12\x12kynomesh.daemon.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xbc\x03\n" +
+	"\"pkg/apis/proto/daemon/daemon.proto\x12\x12kynomesh.daemon.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xa0\x03\n" +
 	"\x18TransportWindowedMetrics\x12k\n" +
-	"\x0fprocessingRates\x18\x01 \x03(\v2A.kynomesh.daemon.v1.TransportWindowedMetrics.ProcessingRatesEntryR\x0fprocessingRates\x12n\n" +
-	"\x10inflightAverages\x18\x02 \x03(\v2B.kynomesh.daemon.v1.TransportWindowedMetrics.InflightAveragesEntryR\x10inflightAverages\x1a`\n" +
+	"\x0fprocessingRates\x18\x01 \x03(\v2A.kynomesh.daemon.v1.TransportWindowedMetrics.ProcessingRatesEntryR\x0fprocessingRates\x12Y\n" +
+	"\tinflights\x18\x02 \x03(\v2;.kynomesh.daemon.v1.TransportWindowedMetrics.InflightsEntryR\tinflights\x1a`\n" +
 	"\x14ProcessingRatesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x122\n" +
-	"\x05value\x18\x02 \x01(\v2\x1c.google.protobuf.DoubleValueR\x05value:\x028\x01\x1aa\n" +
-	"\x15InflightAveragesEntry\x12\x10\n" +
+	"\x05value\x18\x02 \x01(\v2\x1c.google.protobuf.DoubleValueR\x05value:\x028\x01\x1aZ\n" +
+	"\x0eInflightsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x122\n" +
-	"\x05value\x18\x02 \x01(\v2\x1c.google.protobuf.DoubleValueR\x05value:\x028\x01\"\xfd\x06\n" +
+	"\x05value\x18\x02 \x01(\v2\x1c.google.protobuf.DoubleValueR\x05value:\x028\x01\"\xdd\x05\n" +
 	"\x12AgentDeployMetrics\x12 \n" +
 	"\vagentdeploy\x18\x01 \x01(\tR\vagentdeploy\x12e\n" +
-	"\x0fprocessingRates\x18\x02 \x03(\v2;.kynomesh.daemon.v1.AgentDeployMetrics.ProcessingRatesEntryR\x0fprocessingRates\x12h\n" +
-	"\x10inflightAverages\x18\x03 \x03(\v2<.kynomesh.daemon.v1.AgentDeployMetrics.InflightAveragesEntryR\x10inflightAverages\x12Y\n" +
+	"\x0fprocessingRates\x18\x02 \x03(\v2;.kynomesh.daemon.v1.AgentDeployMetrics.ProcessingRatesEntryR\x0fprocessingRates\x12S\n" +
+	"\tinflights\x18\x03 \x03(\v25.kynomesh.daemon.v1.AgentDeployMetrics.InflightsEntryR\tinflights\x12Y\n" +
 	"\vbyTransport\x18\x04 \x03(\v27.kynomesh.daemon.v1.AgentDeployMetrics.ByTransportEntryR\vbyTransport\x12b\n" +
-	"\x1fcustom_window_effective_seconds\x18\x05 \x01(\v2\x1b.google.protobuf.Int64ValueR\x1ccustomWindowEffectiveSeconds\x12@\n" +
-	"\rsamples_count\x18\x06 \x01(\v2\x1b.google.protobuf.Int64ValueR\fsamplesCount\x12@\n" +
-	"\rpods_observed\x18\a \x01(\v2\x1b.google.protobuf.Int64ValueR\fpodsObserved\x1a`\n" +
+	"\x1fcustom_window_effective_seconds\x18\x05 \x01(\v2\x1b.google.protobuf.Int64ValueR\x1ccustomWindowEffectiveSeconds\x1a`\n" +
 	"\x14ProcessingRatesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x122\n" +
-	"\x05value\x18\x02 \x01(\v2\x1c.google.protobuf.DoubleValueR\x05value:\x028\x01\x1aa\n" +
-	"\x15InflightAveragesEntry\x12\x10\n" +
+	"\x05value\x18\x02 \x01(\v2\x1c.google.protobuf.DoubleValueR\x05value:\x028\x01\x1aZ\n" +
+	"\x0eInflightsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x122\n" +
 	"\x05value\x18\x02 \x01(\v2\x1c.google.protobuf.DoubleValueR\x05value:\x028\x01\x1al\n" +
 	"\x10ByTransportEntry\x12\x10\n" +
@@ -369,35 +352,33 @@ var file_pkg_apis_proto_daemon_daemon_proto_goTypes = []any{
 	(*GetAgentDeployMetricsRequest)(nil),  // 2: kynomesh.daemon.v1.GetAgentDeployMetricsRequest
 	(*GetAgentDeployMetricsResponse)(nil), // 3: kynomesh.daemon.v1.GetAgentDeployMetricsResponse
 	nil,                                   // 4: kynomesh.daemon.v1.TransportWindowedMetrics.ProcessingRatesEntry
-	nil,                                   // 5: kynomesh.daemon.v1.TransportWindowedMetrics.InflightAveragesEntry
+	nil,                                   // 5: kynomesh.daemon.v1.TransportWindowedMetrics.InflightsEntry
 	nil,                                   // 6: kynomesh.daemon.v1.AgentDeployMetrics.ProcessingRatesEntry
-	nil,                                   // 7: kynomesh.daemon.v1.AgentDeployMetrics.InflightAveragesEntry
+	nil,                                   // 7: kynomesh.daemon.v1.AgentDeployMetrics.InflightsEntry
 	nil,                                   // 8: kynomesh.daemon.v1.AgentDeployMetrics.ByTransportEntry
 	(*wrapperspb.Int64Value)(nil),         // 9: google.protobuf.Int64Value
 	(*wrapperspb.DoubleValue)(nil),        // 10: google.protobuf.DoubleValue
 }
 var file_pkg_apis_proto_daemon_daemon_proto_depIdxs = []int32{
 	4,  // 0: kynomesh.daemon.v1.TransportWindowedMetrics.processingRates:type_name -> kynomesh.daemon.v1.TransportWindowedMetrics.ProcessingRatesEntry
-	5,  // 1: kynomesh.daemon.v1.TransportWindowedMetrics.inflightAverages:type_name -> kynomesh.daemon.v1.TransportWindowedMetrics.InflightAveragesEntry
+	5,  // 1: kynomesh.daemon.v1.TransportWindowedMetrics.inflights:type_name -> kynomesh.daemon.v1.TransportWindowedMetrics.InflightsEntry
 	6,  // 2: kynomesh.daemon.v1.AgentDeployMetrics.processingRates:type_name -> kynomesh.daemon.v1.AgentDeployMetrics.ProcessingRatesEntry
-	7,  // 3: kynomesh.daemon.v1.AgentDeployMetrics.inflightAverages:type_name -> kynomesh.daemon.v1.AgentDeployMetrics.InflightAveragesEntry
+	7,  // 3: kynomesh.daemon.v1.AgentDeployMetrics.inflights:type_name -> kynomesh.daemon.v1.AgentDeployMetrics.InflightsEntry
 	8,  // 4: kynomesh.daemon.v1.AgentDeployMetrics.byTransport:type_name -> kynomesh.daemon.v1.AgentDeployMetrics.ByTransportEntry
 	9,  // 5: kynomesh.daemon.v1.AgentDeployMetrics.custom_window_effective_seconds:type_name -> google.protobuf.Int64Value
-	9,  // 6: kynomesh.daemon.v1.AgentDeployMetrics.samples_count:type_name -> google.protobuf.Int64Value
-	9,  // 7: kynomesh.daemon.v1.AgentDeployMetrics.pods_observed:type_name -> google.protobuf.Int64Value
-	1,  // 8: kynomesh.daemon.v1.GetAgentDeployMetricsResponse.metrics:type_name -> kynomesh.daemon.v1.AgentDeployMetrics
-	10, // 9: kynomesh.daemon.v1.TransportWindowedMetrics.ProcessingRatesEntry.value:type_name -> google.protobuf.DoubleValue
-	10, // 10: kynomesh.daemon.v1.TransportWindowedMetrics.InflightAveragesEntry.value:type_name -> google.protobuf.DoubleValue
-	10, // 11: kynomesh.daemon.v1.AgentDeployMetrics.ProcessingRatesEntry.value:type_name -> google.protobuf.DoubleValue
-	10, // 12: kynomesh.daemon.v1.AgentDeployMetrics.InflightAveragesEntry.value:type_name -> google.protobuf.DoubleValue
-	0,  // 13: kynomesh.daemon.v1.AgentDeployMetrics.ByTransportEntry.value:type_name -> kynomesh.daemon.v1.TransportWindowedMetrics
-	2,  // 14: kynomesh.daemon.v1.DaemonService.GetAgentDeployMetrics:input_type -> kynomesh.daemon.v1.GetAgentDeployMetricsRequest
-	3,  // 15: kynomesh.daemon.v1.DaemonService.GetAgentDeployMetrics:output_type -> kynomesh.daemon.v1.GetAgentDeployMetricsResponse
-	15, // [15:16] is the sub-list for method output_type
-	14, // [14:15] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	1,  // 6: kynomesh.daemon.v1.GetAgentDeployMetricsResponse.metrics:type_name -> kynomesh.daemon.v1.AgentDeployMetrics
+	10, // 7: kynomesh.daemon.v1.TransportWindowedMetrics.ProcessingRatesEntry.value:type_name -> google.protobuf.DoubleValue
+	10, // 8: kynomesh.daemon.v1.TransportWindowedMetrics.InflightsEntry.value:type_name -> google.protobuf.DoubleValue
+	10, // 9: kynomesh.daemon.v1.AgentDeployMetrics.ProcessingRatesEntry.value:type_name -> google.protobuf.DoubleValue
+	10, // 10: kynomesh.daemon.v1.AgentDeployMetrics.InflightsEntry.value:type_name -> google.protobuf.DoubleValue
+	0,  // 11: kynomesh.daemon.v1.AgentDeployMetrics.ByTransportEntry.value:type_name -> kynomesh.daemon.v1.TransportWindowedMetrics
+	2,  // 12: kynomesh.daemon.v1.DaemonService.GetAgentDeployMetrics:input_type -> kynomesh.daemon.v1.GetAgentDeployMetricsRequest
+	3,  // 13: kynomesh.daemon.v1.DaemonService.GetAgentDeployMetrics:output_type -> kynomesh.daemon.v1.GetAgentDeployMetricsResponse
+	13, // [13:14] is the sub-list for method output_type
+	12, // [12:13] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_pkg_apis_proto_daemon_daemon_proto_init() }

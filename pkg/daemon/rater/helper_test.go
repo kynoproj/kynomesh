@@ -38,34 +38,34 @@ func twoPodFixture(t *testing.T) (*AgentDeployBuffers, int64, int64) {
 	b := NewAgentDeployBuffers()
 	const t0 int64 = 1_000_000
 	b.Append("pod-0", &PodSample{
-		Timestamp:          t0,
+		Timestamp:            t0,
 		ProcessedByTransport: map[string]float64{"rest": 100, "grpc": 50},
-		InflightByTransport:   map[string]float64{"rest": 2, "grpc": 1},
+		InflightByTransport:  map[string]float64{"rest": 2, "grpc": 1},
 	})
 	b.Append("pod-1", &PodSample{
-		Timestamp:          t0,
+		Timestamp:            t0,
 		ProcessedByTransport: map[string]float64{"rest": 200, "grpc": 80},
-		InflightByTransport:   map[string]float64{"rest": 3, "grpc": 1},
+		InflightByTransport:  map[string]float64{"rest": 3, "grpc": 1},
 	})
 	b.Append("pod-0", &PodSample{
-		Timestamp:          t0 + 10,
+		Timestamp:            t0 + 10,
 		ProcessedByTransport: map[string]float64{"rest": 150, "grpc": 80},
-		InflightByTransport:   map[string]float64{"rest": 4, "grpc": 2},
+		InflightByTransport:  map[string]float64{"rest": 4, "grpc": 2},
 	})
 	b.Append("pod-1", &PodSample{
-		Timestamp:          t0 + 10,
+		Timestamp:            t0 + 10,
 		ProcessedByTransport: map[string]float64{"rest": 250, "grpc": 110},
-		InflightByTransport:   map[string]float64{"rest": 5, "grpc": 2},
+		InflightByTransport:  map[string]float64{"rest": 5, "grpc": 2},
 	})
 	b.Append("pod-0", &PodSample{
-		Timestamp:          t0 + 20,
+		Timestamp:            t0 + 20,
 		ProcessedByTransport: map[string]float64{"rest": 200, "grpc": 110},
-		InflightByTransport:   map[string]float64{"rest": 6, "grpc": 3},
+		InflightByTransport:  map[string]float64{"rest": 6, "grpc": 3},
 	})
 	b.Append("pod-1", &PodSample{
-		Timestamp:          t0 + 20,
+		Timestamp:            t0 + 20,
 		ProcessedByTransport: map[string]float64{"rest": 300, "grpc": 140},
-		InflightByTransport:   map[string]float64{"rest": 7, "grpc": 3},
+		InflightByTransport:  map[string]float64{"rest": 7, "grpc": 3},
 	})
 	return b, t0, t0 + 30
 }
@@ -164,16 +164,16 @@ func TestCalculateRate_NoResetMatchesSimpleDelta(t *testing.T) {
 func TestCalculateRate_PodWithSingleSampleSkipped(t *testing.T) {
 	b := NewAgentDeployBuffers()
 	b.Append("p0", &PodSample{
-		Timestamp:          100,
+		Timestamp:            100,
 		ProcessedByTransport: map[string]float64{"rest": 100},
 	})
 	b.Append("p0", &PodSample{
-		Timestamp:          110,
+		Timestamp:            110,
 		ProcessedByTransport: map[string]float64{"rest": 200},
 	})
 	// p1 has only one sample — contributes no rate.
 	b.Append("p1", &PodSample{
-		Timestamp:          105,
+		Timestamp:            105,
 		ProcessedByTransport: map[string]float64{"rest": 999},
 	})
 	// p0 rate alone: delta=100 / 10s = 10/s.
@@ -205,7 +205,7 @@ func TestCalculateInflightAvg_TimeWeighted_SinglePod(t *testing.T) {
 		{1005, 3}, {1010, 3}, {1015, 10}, {1050, 10}, {1055, 2},
 	} {
 		b.Append("p", &PodSample{
-			Timestamp:        x.ts,
+			Timestamp:           x.ts,
 			InflightByTransport: map[string]float64{"rest": x.value},
 		})
 	}
@@ -216,7 +216,7 @@ func TestCalculateInflightAvg_TimeWeighted_SinglePod(t *testing.T) {
 func TestCalculateInflightAvg_SingleSampleReturnsValue(t *testing.T) {
 	b := NewAgentDeployBuffers()
 	b.Append("p", &PodSample{
-		Timestamp:        100,
+		Timestamp:           100,
 		InflightByTransport: map[string]float64{"rest": 42},
 	})
 	// One sample → return its value as best-effort.
@@ -267,11 +267,11 @@ func TestHasUsableHistory(t *testing.T) {
 func TestObservedTransports_Deduplicates(t *testing.T) {
 	b := NewAgentDeployBuffers()
 	b.Append("p", &PodSample{
-		Timestamp:          100,
+		Timestamp:            100,
 		ProcessedByTransport: map[string]float64{"rest": 1, "grpc": 2},
 	})
 	b.Append("p", &PodSample{
-		Timestamp:        110,
+		Timestamp:           110,
 		InflightByTransport: map[string]float64{"jsonrpc": 1, "rest": 0},
 	})
 	assert.ElementsMatch(t, []string{"rest", "grpc", "jsonrpc"}, ObservedTransports(b))

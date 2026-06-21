@@ -202,9 +202,7 @@ func HasUsableHistory(b *AgentDeployBuffers) bool {
 }
 
 // ObservedTransports returns every distinct transport label value
-// seen in any sample for any pod. Used by the rater to populate
-// the per-transport breakdown in the gRPC response without hard-
-// coding the broker's transport set.
+// seen in any sample for any pod.
 func ObservedTransports(b *AgentDeployBuffers) []string {
 	set := map[string]struct{}{}
 	for _, pod := range b.Pods() {

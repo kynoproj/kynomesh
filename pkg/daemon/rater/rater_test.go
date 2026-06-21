@@ -60,7 +60,7 @@ func (s *stubScraper) Scrape(_ context.Context, host string) (*PodSample, error)
 	src := list[i]
 	cp := &PodSample{
 		ProcessedByTransport: src.ProcessedByTransport,
-		InflightByTransport:   src.InflightByTransport,
+		InflightByTransport:  src.InflightByTransport,
 	}
 	return cp, nil
 }
@@ -153,8 +153,8 @@ func TestGetMetrics_HappyPath_SingleTransport(t *testing.T) {
 	assert.InDelta(t, 2.0, res.Total.ProcessingRates[WindowKey1m], 1e-9)
 	assert.InDelta(t, 2.0, res.PerTransport["rest"].ProcessingRates[WindowKey1m], 1e-9)
 	// In-flight gauge constant at 3 across all observed samples.
-	assert.InDelta(t, 3.0, res.Total.InflightAverages[WindowKey1m], 1e-9)
-	assert.InDelta(t, 3.0, res.PerTransport["rest"].InflightAverages[WindowKey1m], 1e-9)
+	assert.InDelta(t, 3.0, res.Total.Inflights[WindowKey1m], 1e-9)
+	assert.InDelta(t, 3.0, res.PerTransport["rest"].Inflights[WindowKey1m], 1e-9)
 }
 
 func TestGetMetrics_CustomWindowClampedToRetention(t *testing.T) {
@@ -162,7 +162,7 @@ func TestGetMetrics_CustomWindowClampedToRetention(t *testing.T) {
 	fc := newFakeClock(start)
 	sample := &PodSample{
 		ProcessedByTransport: map[string]float64{"rest": 0},
-		InflightByTransport:   map[string]float64{"rest": 1},
+		InflightByTransport:  map[string]float64{"rest": 1},
 	}
 	r := NewRater(Options{
 		AgentDeploys: []string{"a"},
@@ -244,7 +244,7 @@ func TestScrapeAllOnce_DiscoveryFailureSkipsAD(t *testing.T) {
 	r.scrapeAllOnce(context.Background())
 	assert.Equal(t, int32(1), called.Load())
 	// No pods appended when discovery failed.
-	assert.Equal(t, int64(0), r.buffers["a"].PodCount())
+	assert.Empty(t, r.buffers["a"].Pods())
 }
 
 func TestScrapeOneAgentDeploy_ScrapeFailureKeepsPreviousValue(t *testing.T) {
@@ -297,7 +297,7 @@ func (s *clockAdvancingScraper) Scrape(_ context.Context, host string) (*PodSamp
 	src := s.sample
 	cp := &PodSample{
 		ProcessedByTransport: src.ProcessedByTransport,
-		InflightByTransport:   src.InflightByTransport,
+		InflightByTransport:  src.InflightByTransport,
 	}
 	return cp, nil
 }
@@ -311,7 +311,7 @@ func TestScrape_PerPodTimestamping(t *testing.T) {
 
 	sample := &PodSample{
 		ProcessedByTransport: map[string]float64{"rest": 1},
-		InflightByTransport:   map[string]float64{"rest": 1},
+		InflightByTransport:  map[string]float64{"rest": 1},
 	}
 	scr := &clockAdvancingScraper{
 		clock: fc,
