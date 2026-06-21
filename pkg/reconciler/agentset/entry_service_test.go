@@ -99,4 +99,3 @@ func TestReconcileEntryService_RecreatesOnDrift(t *testing.T) {
 	assert.NotEqual(t, "stale", svc.Annotations[kmv1.KeyHash], "stale hash should be refreshed")
 	assert.Equal(t, "true", svc.Spec.Selector[kmv1.KeyEntry])
 }
-

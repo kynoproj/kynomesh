@@ -280,4 +280,3 @@ func (r *Reconciler) reconcileDaemonService(ctx context.Context, as *kmv1.AgentS
 	log.Infow("Recreated daemon Service", zap.String("serviceName", desired.Name))
 	return nil
 }
-
