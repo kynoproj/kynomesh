@@ -151,7 +151,7 @@ func (r *Reconciler) newAgentDeploy(as *kmv1.AgentSet, agent kmv1.AbstractAgentD
 	ad := &kmv1.AgentDeploy{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: as.Namespace,
-			Name:      childName(as.Name, agent.Name),
+			Name:      as.ChildAgentDeployName(agent.Name),
 			Labels: map[string]string{
 				kmv1.KeyAgentSetName: as.Name,
 				kmv1.KeyComponent:    kmv1.ComponentAgent,
@@ -195,10 +195,6 @@ func applyTemplate(agent *kmv1.AbstractAgentDeploy, tmpl *kmv1.AgentDeployTempla
 		ct := *tmpl.BrokerTemplate
 		agent.BrokerTemplate = &ct
 	}
-}
-
-func childName(setName, agentName string) string {
-	return setName + "-" + agentName
 }
 
 // computeTopology derives the per-agent topology view from the AgentSet pattern.

@@ -185,7 +185,7 @@ func daemonLabels(as *kmv1.AgentSet) map[string]string {
 func agentDeployNamesFromSpec(as *kmv1.AgentSet) []string {
 	out := make([]string, 0, len(as.Spec.Agents))
 	for _, a := range as.Spec.Agents {
-		out = append(out, childName(as.Name, a.Name))
+		out = append(out, as.ChildAgentDeployName(a.Name))
 	}
 	return out
 }

@@ -145,3 +145,9 @@ const DaemonSuffix = "daemon"
 func (as *AgentSet) DaemonName() string {
 	return as.Name + "-" + DaemonSuffix
 }
+
+// ChildAgentDeployName returns the metadata name the AgentSet
+// reconciler assigns to the AgentDeploy for the given agent.
+func (as *AgentSet) ChildAgentDeployName(agentName string) string {
+	return as.Name + "-" + agentName
+}
