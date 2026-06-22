@@ -190,7 +190,7 @@ func advertiseHostFor(ad *kmv1.AgentDeploy) string {
 // brokerRuntime holds process-lifetime broker state.
 type brokerRuntime struct {
 	logger      *zap.SugaredLogger
-	counters    *broker.Counters
+	counters    *broker.Metrics
 	agentDeploy *kmv1.AgentDeploy
 	enabled     map[a2a.TransportProtocol]bool
 	httpProxies map[a2a.TransportProtocol]http.Handler
@@ -391,7 +391,7 @@ func newIntrospectionServer(port int, handler http.Handler, cert *tls.Certificat
 // A nil card yields a passthrough-only runtime.
 func buildRuntime(ctx context.Context, registry *prometheus.Registry, agentTransport *http.Transport, card *a2a.AgentCard, agentDeploy *kmv1.AgentDeploy, dial agentDial) (*brokerRuntime, error) {
 	logger := logging.FromContext(ctx)
-	counters := broker.NewCounters(registry)
+	counters := broker.NewMetrics(registry)
 	rt := &brokerRuntime{
 		logger:      logger,
 		counters:    counters,

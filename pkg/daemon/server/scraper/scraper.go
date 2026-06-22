@@ -15,9 +15,15 @@ limitations under the License.
 */
 
 // Package scraper fetches Prometheus-format metrics from broker pods
-// and extracts the in-flight gauge and processed-messages counter,
-// grouped by the broker's "transport" label. The output feeds the
-// rater's per-bucket storage.
+// and extracts the in-flight gauge plus the two throughput counters
+// (requests_total + stream_messages_total), grouped by the broker's
+// "transport" label. The output feeds the rater's per-bucket
+// storage.
+//
+// Currently the two throughput counters are summed into a single
+// per-transport "processed" value because the daemon's gRPC response
+// surfaces one rate per transport. Will expose the two signals
+// separately.
 package scraper
 
 import (
@@ -36,18 +42,22 @@ import (
 	"github.com/kynoproj/kynomesh/pkg/daemon/server/rater"
 )
 
-// Metric names emitted by the broker. Hardcoded per design: these are
-// part of the broker contract and must not be configurable from the
-// daemon side.
+// Metric names emitted by the broker.
 const (
 	// MetricInflightName is the in-flight gauge.
 	MetricInflightName = "broker_inflight_requests"
 
-	// MetricProcessedName is the processed-messages counter.
-	MetricProcessedName = "broker_messages_processed_total"
+	// MetricRequestsName is the per-transport request counter,
+	// incremented on HTTP request completion or gRPC stream close.
+	MetricRequestsName = "broker_requests_total"
+
+	// MetricStreamMessagesName is the per-transport stream message
+	// counter — SSE events for REST/passthrough, server→client
+	// frames for gRPC. Zero for unary responses.
+	MetricStreamMessagesName = "broker_stream_messages_total"
 
 	// TransportLabelName is the label the broker uses to distinguish
-	// JSONRPC, REST, gRPC, and passthrough buckets on both metrics.
+	// JSONRPC, REST, gRPC, and passthrough buckets on every metric.
 	TransportLabelName = "transport"
 )
 
@@ -114,19 +124,29 @@ func (s *Scraper) Scrape(ctx context.Context, host string) (*rater.PodSample, er
 		}
 	}
 
-	if fam, ok := families[MetricProcessedName]; ok {
-		for _, m := range fam.GetMetric() {
-			transport := labelValue(m.GetLabel(), TransportLabelName)
-			if transport == "" {
-				continue
-			}
-			if c := m.GetCounter(); c != nil {
-				sample.ProcessedByTransport[transport] = c.GetValue()
-			}
-		}
-	}
+	addCounterByTransport(sample.ProcessedByTransport, families, MetricRequestsName)
+	addCounterByTransport(sample.ProcessedByTransport, families, MetricStreamMessagesName)
 
 	return sample, nil
+}
+
+// addCounterByTransport accumulates the counter values from the
+// named metric family into the provided per-transport sums. Missing
+// metric families are tolerated.
+func addCounterByTransport(sums map[string]float64, families map[string]*dto.MetricFamily, metric string) {
+	fam, ok := families[metric]
+	if !ok {
+		return
+	}
+	for _, m := range fam.GetMetric() {
+		transport := labelValue(m.GetLabel(), TransportLabelName)
+		if transport == "" {
+			continue
+		}
+		if c := m.GetCounter(); c != nil {
+			sums[transport] += c.GetValue()
+		}
+	}
 }
 
 func labelValue(labels []*dto.LabelPair, name string) string {
