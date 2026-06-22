@@ -42,18 +42,28 @@ func samplesInWindow(samples []*PodSample, nowUnix, lookbackSeconds int64) []*Po
 	return nil
 }
 
-// processedValue returns the processed-messages value for the
-// given transport, or the sum across transports when transport ==
-// TransportTotal.
-func processedValue(s *PodSample, transport string) float64 {
+// counterValueOf is a sample-to-map accessor. The rate math is the
+// same for any monotonic counter; the only thing that varies is which
+// per-transport map it reads from. Defined as a closure type so
+// callers can swap "requests" vs "stream messages" without
+// duplicating the rate-calculation code.
+type counterValueOf func(s *PodSample) map[string]float64
+
+func requestsOf(s *PodSample) map[string]float64       { return s.RequestsByTransport }
+func streamMessagesOf(s *PodSample) map[string]float64 { return s.StreamMessagesByTransport }
+
+// counterValue returns the counter value for the given transport,
+// or the sum across transports when transport == TransportTotal.
+func counterValue(s *PodSample, transport string, of counterValueOf) float64 {
+	m := of(s)
 	if transport == TransportTotal {
 		var v float64
-		for _, c := range s.ProcessedByTransport {
+		for _, c := range m {
 			v += c
 		}
 		return v
 	}
-	return s.ProcessedByTransport[transport]
+	return m[transport]
 }
 
 // inflightValue returns the in-flight value for the given transport,
@@ -69,8 +79,8 @@ func inflightValue(s *PodSample, transport string) float64 {
 	return s.InflightByTransport[transport]
 }
 
-// podRate computes the per-second processing rate for one pod over
-// the requested window.
+// podRate computes the per-second rate of the supplied counter for
+// one pod over the requested window.
 //
 // The window may straddle zero or more counter resets (pod/broker
 // restarts). Each "run" between resets contributes its own delta:
@@ -88,7 +98,7 @@ func inflightValue(s *PodSample, transport string) float64 {
 // Returns (rate, true) when computable; (0, false) when the pod has
 // fewer than 2 samples in the window, in which case the caller
 // should treat this pod as contributing no signal to the aggregate.
-func podRate(samples []*PodSample, nowUnix, lookbackSeconds int64, transport string) (float64, bool) {
+func podRate(samples []*PodSample, nowUnix, lookbackSeconds int64, transport string, of counterValueOf) (float64, bool) {
 	w := samplesInWindow(samples, nowUnix, lookbackSeconds)
 	if len(w) < 2 {
 		return 0, false
@@ -99,10 +109,10 @@ func podRate(samples []*PodSample, nowUnix, lookbackSeconds int64, transport str
 	}
 
 	var delta float64
-	runStart := processedValue(w[0], transport)
+	runStart := counterValue(w[0], transport, of)
 	prev := runStart
 	for i := 1; i < len(w); i++ {
-		curr := processedValue(w[i], transport)
+		curr := counterValue(w[i], transport, of)
 		if curr < prev {
 			// Reset: prev was the peak of the run that just ended.
 			delta += prev - runStart
@@ -119,14 +129,26 @@ func podRate(samples []*PodSample, nowUnix, lookbackSeconds int64, transport str
 	return delta / float64(timeDiff), true
 }
 
-// CalculateRate sums per-pod rates across the AgentDeploy for the
-// given transport over the requested window. Pods with insufficient
-// in-window samples contribute zero.
-func CalculateRate(b *AgentDeployBuffers, nowUnix, lookbackSeconds int64, transport string) float64 {
+// CalculateRequestRate sums per-pod request-completion rates across
+// the AgentDeploy for the given transport over the requested window.
+// Pods with insufficient in-window samples contribute zero.
+func CalculateRequestRate(b *AgentDeployBuffers, nowUnix, lookbackSeconds int64, transport string) float64 {
+	return calculateCounterRate(b, nowUnix, lookbackSeconds, transport, requestsOf)
+}
+
+// CalculateStreamMessageRate sums per-pod stream-message rates
+// (SSE events for REST/passthrough, server→client frames for gRPC)
+// across the AgentDeploy for the given transport over the requested
+// window. Pods with insufficient in-window samples contribute zero.
+func CalculateStreamMessageRate(b *AgentDeployBuffers, nowUnix, lookbackSeconds int64, transport string) float64 {
+	return calculateCounterRate(b, nowUnix, lookbackSeconds, transport, streamMessagesOf)
+}
+
+func calculateCounterRate(b *AgentDeployBuffers, nowUnix, lookbackSeconds int64, transport string, of counterValueOf) float64 {
 	var total float64
 	for _, pod := range b.Pods() {
 		samples := b.Samples(pod)
-		if r, ok := podRate(samples, nowUnix, lookbackSeconds, transport); ok {
+		if r, ok := podRate(samples, nowUnix, lookbackSeconds, transport, of); ok {
 			total += r
 		}
 	}
@@ -207,7 +229,10 @@ func ObservedTransports(b *AgentDeployBuffers) []string {
 	set := map[string]struct{}{}
 	for _, pod := range b.Pods() {
 		for _, s := range b.Samples(pod) {
-			for k := range s.ProcessedByTransport {
+			for k := range s.RequestsByTransport {
+				set[k] = struct{}{}
+			}
+			for k := range s.StreamMessagesByTransport {
 				set[k] = struct{}{}
 			}
 			for k := range s.InflightByTransport {

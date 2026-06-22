@@ -255,9 +255,16 @@ type WindowedResult struct {
 // the daemon's computed rate / average for that window. An empty map
 // is intentionally distinct from a map with zero values, so the gRPC
 // layer can encode "no data" vs "data, value zero" precisely.
+//
+// ProcessingRates and StreamMessageRates come from two separate
+// broker counters (broker_requests_total, broker_stream_messages_total)
+// kept distinct end-to-end so controllers can scale on whichever
+// signal matches the workload shape — requests for unary REST,
+// stream messages for SSE-heavy or streaming gRPC.
 type PerWindowValues struct {
-	ProcessingRates map[string]float64
-	Inflights       map[string]float64
+	ProcessingRates    map[string]float64
+	StreamMessageRates map[string]float64
+	Inflights          map[string]float64
 }
 
 // GetMetrics computes all configured windows for the named
@@ -303,22 +310,18 @@ func (r *Rater) GetMetrics(name string, lookbackSeconds int64) (*WindowedResult,
 		}{WindowKeyCustom, effectiveCustom})
 	}
 
-	total := PerWindowValues{
-		ProcessingRates: make(map[string]float64, len(windows)),
-		Inflights:       make(map[string]float64, len(windows)),
-	}
+	total := newPerWindowValues(len(windows))
 	perTransport := make(map[string]PerWindowValues, len(transports))
 	for _, w := range windows {
-		total.ProcessingRates[w.key] = CalculateRate(buf, now, w.lookback, TransportTotal)
+		total.ProcessingRates[w.key] = CalculateRequestRate(buf, now, w.lookback, TransportTotal)
+		total.StreamMessageRates[w.key] = CalculateStreamMessageRate(buf, now, w.lookback, TransportTotal)
 		total.Inflights[w.key] = CalculateInflightAvg(buf, now, w.lookback, TransportTotal)
 	}
 	for _, t := range transports {
-		v := PerWindowValues{
-			ProcessingRates: make(map[string]float64, len(windows)),
-			Inflights:       make(map[string]float64, len(windows)),
-		}
+		v := newPerWindowValues(len(windows))
 		for _, w := range windows {
-			v.ProcessingRates[w.key] = CalculateRate(buf, now, w.lookback, t)
+			v.ProcessingRates[w.key] = CalculateRequestRate(buf, now, w.lookback, t)
+			v.StreamMessageRates[w.key] = CalculateStreamMessageRate(buf, now, w.lookback, t)
 			v.Inflights[w.key] = CalculateInflightAvg(buf, now, w.lookback, t)
 		}
 		perTransport[t] = v
@@ -329,4 +332,12 @@ func (r *Rater) GetMetrics(name string, lookbackSeconds int64) (*WindowedResult,
 		PerTransport:             perTransport,
 		CustomWindowEffectiveSec: effectiveCustom,
 	}, nil
+}
+
+func newPerWindowValues(n int) PerWindowValues {
+	return PerWindowValues{
+		ProcessingRates:    make(map[string]float64, n),
+		StreamMessageRates: make(map[string]float64, n),
+		Inflights:          make(map[string]float64, n),
+	}
 }

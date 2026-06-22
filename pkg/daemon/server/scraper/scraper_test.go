@@ -95,11 +95,19 @@ func TestScrape_HappyPath(t *testing.T) {
 	assert.Equal(t, float64(5), sample.InflightByTransport["rest"])
 	assert.Equal(t, float64(1), sample.InflightByTransport["grpc"])
 	assert.Equal(t, float64(0), sample.InflightByTransport["passthrough"])
-	// ProcessedByTransport sums requests_total + stream_messages_total.
-	assert.Equal(t, float64(100), sample.ProcessedByTransport["jsonrpc"], "jsonrpc has no stream messages")
-	assert.Equal(t, float64(267), sample.ProcessedByTransport["rest"], "rest = 250 requests + 17 SSE events")
-	assert.Equal(t, float64(59), sample.ProcessedByTransport["grpc"], "grpc = 50 streams + 9 server frames")
-	assert.Equal(t, float64(0), sample.ProcessedByTransport["passthrough"])
+
+	assert.Equal(t, float64(100), sample.RequestsByTransport["jsonrpc"])
+	assert.Equal(t, float64(250), sample.RequestsByTransport["rest"])
+	assert.Equal(t, float64(50), sample.RequestsByTransport["grpc"])
+	assert.Equal(t, float64(0), sample.RequestsByTransport["passthrough"])
+
+	// Stream-message counter is sparse: only transports that actually
+	// emit stream messages are present. jsonrpc/passthrough are absent
+	// here on purpose to verify "no key" stays distinct from "key=0".
+	assert.Equal(t, float64(17), sample.StreamMessagesByTransport["rest"])
+	assert.Equal(t, float64(9), sample.StreamMessagesByTransport["grpc"])
+	_, hasJSONRPC := sample.StreamMessagesByTransport["jsonrpc"]
+	assert.False(t, hasJSONRPC, "jsonrpc emits no stream messages so the broker doesn't write the series")
 }
 
 func TestScrape_LabelAgnostic_UnknownTransport(t *testing.T) {
@@ -140,13 +148,14 @@ func TestScrape_MissingMetricsYieldsEmptySample(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, sample)
 	assert.Empty(t, sample.InflightByTransport)
-	assert.Empty(t, sample.ProcessedByTransport)
+	assert.Empty(t, sample.RequestsByTransport)
+	assert.Empty(t, sample.StreamMessagesByTransport)
 }
 
 func TestScrape_OnlyRequestsCounterPresent(t *testing.T) {
 	// Mid-upgrade scenario: broker emits requests_total but
-	// stream_messages_total hasn't rolled out yet. Sum still works,
-	// stream side just contributes 0.
+	// stream_messages_total hasn't rolled out yet. The two maps are
+	// independent so the stream side stays empty without breaking.
 	body := `# HELP broker_requests_total x
 # TYPE broker_requests_total counter
 broker_requests_total{transport="rest"} 42
@@ -157,13 +166,14 @@ broker_requests_total{transport="rest"} 42
 
 	sample, err := s.Scrape(context.Background(), host)
 	require.NoError(t, err)
-	assert.Equal(t, float64(42), sample.ProcessedByTransport["rest"])
+	assert.Equal(t, float64(42), sample.RequestsByTransport["rest"])
+	assert.Empty(t, sample.StreamMessagesByTransport)
 	assert.Empty(t, sample.InflightByTransport)
 }
 
 func TestScrape_OnlyStreamMessagesCounterPresent(t *testing.T) {
-	// Defensive: counter-name-agnostic summing should also handle
-	// the inverse case.
+	// Defensive: each counter populates its own map; either family
+	// missing must not break the other.
 	body := `# HELP broker_stream_messages_total x
 # TYPE broker_stream_messages_total counter
 broker_stream_messages_total{transport="grpc"} 13
@@ -174,7 +184,8 @@ broker_stream_messages_total{transport="grpc"} 13
 
 	sample, err := s.Scrape(context.Background(), host)
 	require.NoError(t, err)
-	assert.Equal(t, float64(13), sample.ProcessedByTransport["grpc"])
+	assert.Equal(t, float64(13), sample.StreamMessagesByTransport["grpc"])
+	assert.Empty(t, sample.RequestsByTransport)
 }
 
 func TestScrape_Non200Errors(t *testing.T) {
