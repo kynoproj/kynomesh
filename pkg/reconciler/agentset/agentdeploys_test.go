@@ -35,7 +35,7 @@ func TestBuildAgentDeploys(t *testing.T) {
 	require.Len(t, out, 2)
 
 	for _, agent := range []string{"alpha", "beta"} {
-		ad, ok := out[childName("greeter", agent)]
+		ad, ok := out["greeter-"+agent]
 		require.True(t, ok, "missing child for %s", agent)
 		assert.Equal(t, testNamespace, ad.Namespace)
 		assert.Equal(t, agent, ad.Spec.Name)
@@ -60,7 +60,7 @@ func TestBuildAgentDeploys_TemplateAppliedAsDefault(t *testing.T) {
 	}
 	out, err := r.buildDesired(as)
 	require.NoError(t, err)
-	ad := out[childName("greeter", "alpha")]
+	ad := out["greeter-alpha"]
 	require.NotNil(t, ad.Spec.BrokerTemplate)
 	assert.Equal(t, tmplPull, ad.Spec.BrokerTemplate.ImagePullPolicy)
 
@@ -69,7 +69,7 @@ func TestBuildAgentDeploys_TemplateAppliedAsDefault(t *testing.T) {
 	as.Spec.Agents[0].BrokerTemplate = &kmv1.ContainerTemplate{ImagePullPolicy: perAgent}
 	out, err = r.buildDesired(as)
 	require.NoError(t, err)
-	ad = out[childName("greeter", "alpha")]
+	ad = out["greeter-alpha"]
 	require.NotNil(t, ad.Spec.BrokerTemplate)
 	assert.Equal(t, perAgent, ad.Spec.BrokerTemplate.ImagePullPolicy,
 		"per-agent value should beat the template default")
@@ -146,7 +146,7 @@ func TestNeedsUpdate(t *testing.T) {
 	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	desired, err := r.buildDesired(newAgentSet("greeter", "alpha"))
 	require.NoError(t, err)
-	want := desired[childName("greeter", "alpha")]
+	want := desired["greeter-alpha"]
 	existing := want.DeepCopy()
 	assert.False(t, needsUpdate(existing, want), "identical children should not trigger update")
 
@@ -161,7 +161,7 @@ func TestAggregateChildHealth(t *testing.T) {
 	desired, err := r.buildDesired(as)
 	require.NoError(t, err)
 
-	running := desired[childName("greeter", "alpha")].DeepCopy()
+	running := desired["greeter-alpha"].DeepCopy()
 	running.Status.Phase = kmv1.AgentDeployPhaseRunning
 
 	r.aggregateChildHealth(as, desired, map[string]*kmv1.AgentDeploy{running.Name: running})

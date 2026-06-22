@@ -50,10 +50,6 @@ func mustScheme(t *testing.T) *runtime.Scheme {
 }
 
 func newAgentSet(name string, agents ...string) *kmv1.AgentSet {
-	// Default the new pattern + entry fields so existing tests keep
-	// passing. Supervisor is the most permissive pattern (allows single
-	// agent, no second-agent constraint); tests that exercise other
-	// patterns can override after construction.
 	spec := kmv1.AgentSetSpec{
 		Pattern: kmv1.AgentPatternSupervisor,
 	}
@@ -140,7 +136,7 @@ func TestReconcile_UpdatesDriftedChild(t *testing.T) {
 	r0 := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	desired, err := r0.buildDesired(as)
 	require.NoError(t, err)
-	stale := desired[childName("greeter", "alpha")].DeepCopy()
+	stale := desired["greeter-alpha"].DeepCopy()
 	stale.Annotations[kmv1.KeyHash] = "stale"
 	stale.Spec.Replicas = nil
 
@@ -162,7 +158,7 @@ func TestReconcile_DeletionTimestampIsNoop(t *testing.T) {
 	r0 := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	desired, err := r0.buildDesired(as)
 	require.NoError(t, err)
-	child := desired[childName("greeter", "alpha")].DeepCopy()
+	child := desired["greeter-alpha"].DeepCopy()
 
 	r, c := newTestReconciler(t, as, child)
 	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))

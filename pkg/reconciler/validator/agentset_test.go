@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
@@ -36,7 +37,10 @@ func agentSet(agents ...string) *kmv1.AgentSet {
 	if len(agents) > 0 {
 		spec.Entry = agents[0]
 	}
-	return &kmv1.AgentSet{Spec: spec}
+	return &kmv1.AgentSet{
+		ObjectMeta: metav1.ObjectMeta{Name: "greeter"},
+		Spec:       spec,
+	}
 }
 
 func TestValidateAgentSet(t *testing.T) {
@@ -51,6 +55,9 @@ func TestValidateAgentSet(t *testing.T) {
 		{name: "duplicate", agents: []string{"a", "a"}, wantErr: "duplicate"},
 		{name: "reserved name ingress", agents: []string{kmv1.EntryServiceSuffix}, wantErr: "reserved"},
 		{name: "reserved name daemon", agents: []string{kmv1.DaemonSuffix}, wantErr: "reserved"},
+		{name: "agent name with uppercase", agents: []string{"Alpha"}, wantErr: "DNS-1035"},
+		{name: "agent name with underscore", agents: []string{"alpha_one"}, wantErr: "DNS-1035"},
+		{name: "agent name starts with digit", agents: []string{"1alpha"}, wantErr: "DNS-1035"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -63,6 +70,50 @@ func TestValidateAgentSet(t *testing.T) {
 			assert.Contains(t, err.Error(), tc.wantErr)
 		})
 	}
+}
+
+func TestValidateAgentSet_InvalidAgentSetName(t *testing.T) {
+	tests := []struct {
+		name    string
+		setName string
+		wantErr string
+	}{
+		{name: "starts with digit", setName: "1set", wantErr: "DNS-1035"},
+		{name: "has uppercase", setName: "MySet", wantErr: "DNS-1035"},
+		{name: "has underscore", setName: "my_set", wantErr: "DNS-1035"},
+		{name: "empty", setName: "", wantErr: "DNS-1035"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			as := agentSet("alpha")
+			as.Name = tc.setName
+			err := ValidateAgentSet(as)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.wantErr)
+		})
+	}
+}
+
+func TestValidateAgentSet_CombinedNameLength(t *testing.T) {
+	// MaxChildAgentDeployNameLen is 50: "<set>-<agent>" must fit.
+	// Pick lengths so the sum + 1 (dash) just crosses the boundary.
+	t.Run("at limit", func(t *testing.T) {
+		as := agentSet("alpha")                            // override below
+		as.Name = "abcdefghijklmnopqrstuvwxyz"             // 26 chars
+		as.Spec.Agents[0].Name = "abcdefghijklmnopqrstuvw" // 23 chars → 26+1+23 = 50
+		as.Spec.Entry = as.Spec.Agents[0].Name
+		assert.NoError(t, ValidateAgentSet(as))
+	})
+	t.Run("just over limit", func(t *testing.T) {
+		as := agentSet("alpha")
+		as.Name = "abcdefghijklmnopqrstuvwxyz"              // 26 chars
+		as.Spec.Agents[0].Name = "abcdefghijklmnopqrstuvwx" // 24 chars → 26+1+24 = 51
+		as.Spec.Entry = as.Spec.Agents[0].Name
+		err := ValidateAgentSet(as)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "exceeds")
+		assert.Contains(t, err.Error(), "50")
+	})
 }
 
 func TestValidateAgentSet_PatternAndEntry(t *testing.T) {

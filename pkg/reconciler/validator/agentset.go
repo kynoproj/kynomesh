@@ -21,6 +21,9 @@ package validator
 import (
 	"errors"
 	"fmt"
+	"strings"
+
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
@@ -33,8 +36,20 @@ var reservedAgentNames = map[string]string{
 	kmv1.DaemonSuffix:       "AgentSet daemon service",
 }
 
+// MaxChildAgentDeployNameLen caps the AgentSet+agent combined name
+// length so the derived pod object names ("<set>-<agent>-<replica>-
+// <rand5>") stay under Kubernetes' 63-char DNS label limit even for
+// six-digit replica counts. 63 − 1 (dash) − 1 (dash) − 6 (replica) −
+// 5 (random suffix) = 50.
+const MaxChildAgentDeployNameLen = 50
+
 // ValidateAgentSet validates the spec.
 func ValidateAgentSet(as *kmv1.AgentSet) error {
+	if errs := validation.IsDNS1035Label(as.Name); len(errs) > 0 {
+		return fmt.Errorf("invalid AgentSet name %q (must satisfy DNS-1035 for Service-name compatibility): %s",
+			as.Name, strings.Join(errs, "; "))
+	}
+
 	if len(as.Spec.Agents) == 0 {
 		return errors.New("spec.agents must contain at least one agent")
 	}
@@ -44,6 +59,10 @@ func ValidateAgentSet(as *kmv1.AgentSet) error {
 		if a.Name == "" {
 			return errors.New("agent name must be non-empty")
 		}
+		if errs := validation.IsDNS1035Label(a.Name); len(errs) > 0 {
+			return fmt.Errorf("invalid agent name %q (must satisfy DNS-1035 for Service-name compatibility): %s",
+				a.Name, strings.Join(errs, "; "))
+		}
 		if collidesWith, ok := reservedAgentNames[a.Name]; ok {
 			return fmt.Errorf("agent name %q is reserved; it collides with the %s", a.Name, collidesWith)
 		}
@@ -51,6 +70,12 @@ func ValidateAgentSet(as *kmv1.AgentSet) error {
 			return fmt.Errorf("duplicate agent name %q", a.Name)
 		}
 		seen[a.Name] = struct{}{}
+		if name := as.ChildAgentDeployName(a.Name); len(name) > MaxChildAgentDeployNameLen {
+			return fmt.Errorf(
+				"combined AgentSet+agent name %q (%d chars) exceeds the %d-char limit; "+
+					"shorten the AgentSet name or the agent name",
+				name, len(name), MaxChildAgentDeployNameLen)
+		}
 	}
 
 	if _, ok := seen[as.Spec.Entry]; !ok {

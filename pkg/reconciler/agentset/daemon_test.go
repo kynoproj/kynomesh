@@ -94,7 +94,7 @@ func TestNewDaemonDeployment_AgentDeploysEnvVar(t *testing.T) {
 	// AgentSet name passed verbatim.
 	assert.Equal(t, "hello", env[kmv1.EnvAgentSetName].value)
 	// AgentDeploys list is JSON, with names matching what AgentDeploy
-	// reconciler will create (childName: "<set>-<agent>").
+	// reconciler will create (ChildAgentDeployName: "<set>-<agent>").
 	var names []string
 	require.NoError(t, json.Unmarshal([]byte(env[kmv1.EnvAgentSetAgentDeploys].value), &names))
 	assert.Equal(t, []string{"hello-alpha", "hello-beta"}, names)
