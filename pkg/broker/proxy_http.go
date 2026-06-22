@@ -43,5 +43,8 @@ func newAgentReverseProxy(agentTransport *http.Transport, set transportSet) http
 	target := &url.URL{Scheme: "http", Host: AgentBackendHost}
 	rp := httputil.NewSingleHostReverseProxy(target)
 	rp.Transport = agentTransport
+	// FlushInterval = -1 disables proxy-side buffering so server-sent
+	// events reach the client byte-for-byte as the agent emits them.
+	rp.FlushInterval = -1
 	return wrapHTTP(set, rp)
 }

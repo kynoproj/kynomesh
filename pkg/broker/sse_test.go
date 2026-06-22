@@ -17,14 +17,20 @@ limitations under the License.
 package broker
 
 import (
+	"bufio"
+	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestWrapHTTP_SSEEvents covers the SSE event-counting hook. The
@@ -102,6 +108,75 @@ func TestWrapHTTP_SSEContentTypeWithParameters(t *testing.T) {
 	wrapped.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/sse", nil))
 
 	assert.Equal(t, float64(1), testutil.ToFloat64(set.streamMessages))
+}
+
+func TestReverseProxy_SSEFlushesImmediately(t *testing.T) {
+	release := make(chan struct{})
+
+	agent := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		flusher, ok := w.(http.Flusher)
+		require.True(t, ok, "test server response writer must support Flush")
+		_, _ = w.Write([]byte("event: one\ndata: 1\n\n"))
+		flusher.Flush()
+		<-release
+		_, _ = w.Write([]byte("event: two\ndata: 2\n\n"))
+		flusher.Flush()
+	}))
+	t.Cleanup(agent.Close)
+	t.Cleanup(func() { close(release) })
+
+	transport := transportToAddress(strings.TrimPrefix(agent.URL, "http://"))
+	proxy := newAgentReverseProxy(transport, NewMetrics(prometheus.NewRegistry()).PassthroughSet())
+	frontend := httptest.NewServer(proxy)
+	t.Cleanup(frontend.Close)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, frontend.URL+"/sse", nil)
+	require.NoError(t, err)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = resp.Body.Close() })
+
+	// If FlushInterval is not -1, this Read blocks until the agent
+	// closes the connection — which only happens after event #2 is
+	// written, which only happens after `release` is closed. So this
+	// read succeeding before we release the channel is the
+	// regression assertion.
+	reader := bufio.NewReader(resp.Body)
+	firstChunk, err := readUntilDoubleNewline(reader)
+	require.NoError(t, err, "first SSE event must reach the client before the agent emits the second")
+	assert.Contains(t, firstChunk, "event: one")
+	assert.Contains(t, firstChunk, "data: 1")
+}
+
+func transportToAddress(addr string) *http.Transport {
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	dialer := &net.Dialer{Timeout: 2 * time.Second}
+	t.DialContext = func(ctx context.Context, network, _ string) (net.Conn, error) {
+		return dialer.DialContext(ctx, network, addr)
+	}
+	return t
+}
+
+// readUntilDoubleNewline reads from r until it has consumed a complete
+// SSE event terminator ("\n\n"). Returns the consumed bytes as a
+// string. Bounded by the caller's context deadline.
+func readUntilDoubleNewline(r *bufio.Reader) (string, error) {
+	var sb strings.Builder
+	for {
+		line, err := r.ReadString('\n')
+		sb.WriteString(line)
+		if err != nil {
+			return sb.String(), err
+		}
+		if line == "\n" || line == "\r\n" {
+			return sb.String(), nil
+		}
+	}
 }
 
 func TestSplitSSEEvents(t *testing.T) {
