@@ -58,16 +58,8 @@ func (rawCodec) Unmarshal(data []byte, v any) error {
 // GRPCPassthroughOptions turns a fresh *grpc.Server into a transparent
 // proxy to backendConn. Both options must be applied; no other services
 // should be registered on the server.
-//
-// Metrics: each stream increments the in-flight gauge for its
-// lifetime, observes its wall-clock duration on close, counts as one
-// request_total on close, and contributes one stream_messages_total
-// per server→client frame (counted inside the response-direction
-// copyMessages goroutine). Client→server frames are intentionally
-// not counted; the "work the agent did" framing matches HTTP unary
-// semantics where a single agent-side response = 1.
-func GRPCPassthroughOptions(backendConn *grpc.ClientConn, counters *Metrics) []grpc.ServerOption {
-	set := counters.GRPCSet()
+func GRPCPassthroughOptions(backendConn *grpc.ClientConn, metrics *Metrics) []grpc.ServerOption {
+	set := metrics.GRPCSet()
 	return []grpc.ServerOption{
 		grpc.ForceServerCodec(rawCodec{}),
 		grpc.UnknownServiceHandler(func(_ any, ss grpc.ServerStream) error {
