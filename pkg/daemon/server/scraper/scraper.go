@@ -14,16 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package scraper fetches Prometheus-format metrics from broker pods
-// and extracts the in-flight gauge plus the two throughput counters
-// (requests_total + stream_messages_total), grouped by the broker's
-// "transport" label. The output feeds the rater's per-bucket
-// storage.
-//
-// Currently the two throughput counters are summed into a single
-// per-transport "processed" value because the daemon's gRPC response
-// surfaces one rate per transport. Will expose the two signals
-// separately.
+// Package scraper fetches Prometheus-format metrics.
 package scraper
 
 import (
@@ -108,8 +99,9 @@ func (s *Scraper) Scrape(ctx context.Context, host string) (*rater.PodSample, er
 	}
 
 	sample := &rater.PodSample{
-		ProcessedByTransport: make(map[string]float64),
-		InflightByTransport:  make(map[string]float64),
+		RequestsByTransport:       make(map[string]float64),
+		StreamMessagesByTransport: make(map[string]float64),
+		InflightByTransport:       make(map[string]float64),
 	}
 
 	if fam, ok := families[MetricInflightName]; ok {
@@ -124,16 +116,16 @@ func (s *Scraper) Scrape(ctx context.Context, host string) (*rater.PodSample, er
 		}
 	}
 
-	addCounterByTransport(sample.ProcessedByTransport, families, MetricRequestsName)
-	addCounterByTransport(sample.ProcessedByTransport, families, MetricStreamMessagesName)
+	collectCounterByTransport(sample.RequestsByTransport, families, MetricRequestsName)
+	collectCounterByTransport(sample.StreamMessagesByTransport, families, MetricStreamMessagesName)
 
 	return sample, nil
 }
 
-// addCounterByTransport accumulates the counter values from the
-// named metric family into the provided per-transport sums. Missing
-// metric families are tolerated.
-func addCounterByTransport(sums map[string]float64, families map[string]*dto.MetricFamily, metric string) {
+// collectCounterByTransport copies the counter values from the named
+// metric family into dst, keyed by transport label. Missing metric
+// families are tolerated (dst is left untouched).
+func collectCounterByTransport(dst map[string]float64, families map[string]*dto.MetricFamily, metric string) {
 	fam, ok := families[metric]
 	if !ok {
 		return
@@ -144,7 +136,7 @@ func addCounterByTransport(sums map[string]float64, families map[string]*dto.Met
 			continue
 		}
 		if c := m.GetCounter(); c != nil {
-			sums[transport] += c.GetValue()
+			dst[transport] = c.GetValue()
 		}
 	}
 }

@@ -38,39 +38,39 @@ func twoPodFixture(t *testing.T) (*AgentDeployBuffers, int64, int64) {
 	b := NewAgentDeployBuffers()
 	const t0 int64 = 1_000_000
 	b.Append("pod-0", &PodSample{
-		Timestamp:            t0,
-		ProcessedByTransport: map[string]float64{"rest": 100, "grpc": 50},
-		InflightByTransport:  map[string]float64{"rest": 2, "grpc": 1},
+		Timestamp:           t0,
+		RequestsByTransport: map[string]float64{"rest": 100, "grpc": 50},
+		InflightByTransport: map[string]float64{"rest": 2, "grpc": 1},
 	})
 	b.Append("pod-1", &PodSample{
-		Timestamp:            t0,
-		ProcessedByTransport: map[string]float64{"rest": 200, "grpc": 80},
-		InflightByTransport:  map[string]float64{"rest": 3, "grpc": 1},
+		Timestamp:           t0,
+		RequestsByTransport: map[string]float64{"rest": 200, "grpc": 80},
+		InflightByTransport: map[string]float64{"rest": 3, "grpc": 1},
 	})
 	b.Append("pod-0", &PodSample{
-		Timestamp:            t0 + 10,
-		ProcessedByTransport: map[string]float64{"rest": 150, "grpc": 80},
-		InflightByTransport:  map[string]float64{"rest": 4, "grpc": 2},
+		Timestamp:           t0 + 10,
+		RequestsByTransport: map[string]float64{"rest": 150, "grpc": 80},
+		InflightByTransport: map[string]float64{"rest": 4, "grpc": 2},
 	})
 	b.Append("pod-1", &PodSample{
-		Timestamp:            t0 + 10,
-		ProcessedByTransport: map[string]float64{"rest": 250, "grpc": 110},
-		InflightByTransport:  map[string]float64{"rest": 5, "grpc": 2},
+		Timestamp:           t0 + 10,
+		RequestsByTransport: map[string]float64{"rest": 250, "grpc": 110},
+		InflightByTransport: map[string]float64{"rest": 5, "grpc": 2},
 	})
 	b.Append("pod-0", &PodSample{
-		Timestamp:            t0 + 20,
-		ProcessedByTransport: map[string]float64{"rest": 200, "grpc": 110},
-		InflightByTransport:  map[string]float64{"rest": 6, "grpc": 3},
+		Timestamp:           t0 + 20,
+		RequestsByTransport: map[string]float64{"rest": 200, "grpc": 110},
+		InflightByTransport: map[string]float64{"rest": 6, "grpc": 3},
 	})
 	b.Append("pod-1", &PodSample{
-		Timestamp:            t0 + 20,
-		ProcessedByTransport: map[string]float64{"rest": 300, "grpc": 140},
-		InflightByTransport:  map[string]float64{"rest": 7, "grpc": 3},
+		Timestamp:           t0 + 20,
+		RequestsByTransport: map[string]float64{"rest": 300, "grpc": 140},
+		InflightByTransport: map[string]float64{"rest": 7, "grpc": 3},
 	})
 	return b, t0, t0 + 30
 }
 
-func TestCalculateRate_PerTransport(t *testing.T) {
+func TestCalculateRequestRate_PerTransport(t *testing.T) {
 	b, _, now := twoPodFixture(t)
 
 	// REST rate per pod over 60s window:
@@ -79,22 +79,22 @@ func TestCalculateRate_PerTransport(t *testing.T) {
 	//   pod-1: first sample (200), last sample (300). delta = 100,
 	//          timeDiff = 20s → 5/s.
 	//   total = 10/s.
-	assert.InDelta(t, 10.0, CalculateRate(b, now, 60, "rest"), 1e-9)
+	assert.InDelta(t, 10.0, CalculateRequestRate(b, now, 60, "rest"), 1e-9)
 
 	// GRPC rate: pod-0 (50→110)/20 = 3/s, pod-1 (80→140)/20 = 3/s → 6/s.
-	assert.InDelta(t, 6.0, CalculateRate(b, now, 60, "grpc"), 1e-9)
+	assert.InDelta(t, 6.0, CalculateRequestRate(b, now, 60, "grpc"), 1e-9)
 }
 
-func TestCalculateRate_Total(t *testing.T) {
+func TestCalculateRequestRate_Total(t *testing.T) {
 	b, _, now := twoPodFixture(t)
 	// Total per pod = sum of transport counters at first/last.
 	//   pod-0: first (100+50)=150, last (200+110)=310. delta=160, /20s = 8/s.
 	//   pod-1: first (200+80)=280, last (300+140)=440. delta=160, /20s = 8/s.
 	//   total = 16/s.
-	assert.InDelta(t, 16.0, CalculateRate(b, now, 60, TransportTotal), 1e-9)
+	assert.InDelta(t, 16.0, CalculateRequestRate(b, now, 60, TransportTotal), 1e-9)
 }
 
-func TestCalculateRate_CounterReset_SingleRestart(t *testing.T) {
+func TestCalculateRequestRate_CounterReset_SingleRestart(t *testing.T) {
 	// One pod, four samples. A restart happens between samples 2
 	// and 3: counter goes 1000 → 1100 → 5 → 50. Total work done in
 	// the window is (1100 - 1000) before the restart, plus 50 after.
@@ -109,17 +109,17 @@ func TestCalculateRate_CounterReset_SingleRestart(t *testing.T) {
 		{100, 1000}, {110, 1050}, {120, 1100}, {130, 50},
 	} {
 		b.Append("p", &PodSample{
-			Timestamp:            x.ts,
-			ProcessedByTransport: map[string]float64{"rest": x.val},
+			Timestamp:           x.ts,
+			RequestsByTransport: map[string]float64{"rest": x.val},
 		})
 	}
 	// Walk: 1000 → 1050 (ok) → 1100 (ok) → 50 (reset, commit
 	// 1100-1000=100, runStart=0) → end (commit 50-0=50). total=150.
 	// timeDiff=30. rate=5.
-	assert.InDelta(t, 5.0, CalculateRate(b, 140, 60, "rest"), 1e-9)
+	assert.InDelta(t, 5.0, CalculateRequestRate(b, 140, 60, "rest"), 1e-9)
 }
 
-func TestCalculateRate_CounterReset_MultipleRestarts(t *testing.T) {
+func TestCalculateRequestRate_CounterReset_MultipleRestarts(t *testing.T) {
 	// Two restarts inside the window:
 	//   500 → 600 → 5 → 10 → 3 → 20
 	//
@@ -135,14 +135,14 @@ func TestCalculateRate_CounterReset_MultipleRestarts(t *testing.T) {
 		{100, 500}, {105, 600}, {110, 5}, {115, 10}, {120, 3}, {125, 20},
 	} {
 		b.Append("p", &PodSample{
-			Timestamp:            x.ts,
-			ProcessedByTransport: map[string]float64{"rest": x.val},
+			Timestamp:           x.ts,
+			RequestsByTransport: map[string]float64{"rest": x.val},
 		})
 	}
-	assert.InDelta(t, 5.2, CalculateRate(b, 130, 60, "rest"), 1e-9)
+	assert.InDelta(t, 5.2, CalculateRequestRate(b, 130, 60, "rest"), 1e-9)
 }
 
-func TestCalculateRate_NoResetMatchesSimpleDelta(t *testing.T) {
+func TestCalculateRequestRate_NoResetMatchesSimpleDelta(t *testing.T) {
 	// Sanity: with no reset, the algorithm collapses to (last-first)
 	// regardless of intermediate samples.
 	b := NewAgentDeployBuffers()
@@ -153,38 +153,87 @@ func TestCalculateRate_NoResetMatchesSimpleDelta(t *testing.T) {
 		{100, 1000}, {110, 1050}, {120, 1100},
 	} {
 		b.Append("p", &PodSample{
-			Timestamp:            x.ts,
-			ProcessedByTransport: map[string]float64{"rest": x.val},
+			Timestamp:           x.ts,
+			RequestsByTransport: map[string]float64{"rest": x.val},
 		})
 	}
 	// (1100 - 1000) / 20 = 5/s.
-	assert.InDelta(t, 5.0, CalculateRate(b, 130, 60, "rest"), 1e-9)
+	assert.InDelta(t, 5.0, CalculateRequestRate(b, 130, 60, "rest"), 1e-9)
 }
 
-func TestCalculateRate_PodWithSingleSampleSkipped(t *testing.T) {
+func TestCalculateRequestRate_PodWithSingleSampleSkipped(t *testing.T) {
 	b := NewAgentDeployBuffers()
 	b.Append("p0", &PodSample{
-		Timestamp:            100,
-		ProcessedByTransport: map[string]float64{"rest": 100},
+		Timestamp:           100,
+		RequestsByTransport: map[string]float64{"rest": 100},
 	})
 	b.Append("p0", &PodSample{
-		Timestamp:            110,
-		ProcessedByTransport: map[string]float64{"rest": 200},
+		Timestamp:           110,
+		RequestsByTransport: map[string]float64{"rest": 200},
 	})
 	// p1 has only one sample — contributes no rate.
 	b.Append("p1", &PodSample{
-		Timestamp:            105,
-		ProcessedByTransport: map[string]float64{"rest": 999},
+		Timestamp:           105,
+		RequestsByTransport: map[string]float64{"rest": 999},
 	})
 	// p0 rate alone: delta=100 / 10s = 10/s.
-	assert.InDelta(t, 10.0, CalculateRate(b, 120, 60, "rest"), 1e-9)
+	assert.InDelta(t, 10.0, CalculateRequestRate(b, 120, 60, "rest"), 1e-9)
 }
 
-func TestCalculateRate_LookbackOutsideHistory(t *testing.T) {
+func TestCalculateRequestRate_LookbackOutsideHistory(t *testing.T) {
 	b, t0, _ := twoPodFixture(t)
 	farFuture := t0 + 100_000
 	// Lookback too short to include any sample.
-	assert.Equal(t, 0.0, CalculateRate(b, farFuture, 1, "rest"))
+	assert.Equal(t, 0.0, CalculateRequestRate(b, farFuture, 1, "rest"))
+}
+
+// TestCalculateStreamMessageRate verifies the per-second rate of the
+// stream-message counter uses the SAME math as CalculateRequestRate
+// (so we trust the shared podRate code path) but draws from
+// StreamMessagesByTransport instead. One pod, three evenly-spaced
+// samples, no reset → (last - first) / timeDiff.
+func TestCalculateStreamMessageRate(t *testing.T) {
+	b := NewAgentDeployBuffers()
+	for _, x := range []struct {
+		ts  int64
+		req float64
+		sm  float64
+	}{
+		{100, 10, 0},
+		{110, 20, 50}, // 50 stream messages in 10s
+		{120, 30, 100},
+	} {
+		b.Append("p", &PodSample{
+			Timestamp:                 x.ts,
+			RequestsByTransport:       map[string]float64{"rest": x.req},
+			StreamMessagesByTransport: map[string]float64{"rest": x.sm},
+		})
+	}
+	// Requests: (30-10)/20 = 1/s. Stream messages: (100-0)/20 = 5/s.
+	// The two signals must be independent — verifying both proves the
+	// scraper-side split flows through correctly.
+	assert.InDelta(t, 1.0, CalculateRequestRate(b, 130, 60, "rest"), 1e-9)
+	assert.InDelta(t, 5.0, CalculateStreamMessageRate(b, 130, 60, "rest"), 1e-9)
+}
+
+// TestCalculateStreamMessageRate_AbsentFieldIsZero proves that pods
+// emitting only request counts (no stream-message field populated)
+// report 0/s on the stream-message side rather than producing nonsense.
+func TestCalculateStreamMessageRate_AbsentFieldIsZero(t *testing.T) {
+	b := NewAgentDeployBuffers()
+	for _, x := range []struct {
+		ts  int64
+		req float64
+	}{
+		{100, 10}, {110, 20}, {120, 30},
+	} {
+		b.Append("p", &PodSample{
+			Timestamp:           x.ts,
+			RequestsByTransport: map[string]float64{"rest": x.req},
+			// StreamMessagesByTransport intentionally nil/absent.
+		})
+	}
+	assert.Equal(t, 0.0, CalculateStreamMessageRate(b, 130, 60, "rest"))
 }
 
 func TestCalculateInflightAvg_TimeWeighted_SinglePod(t *testing.T) {
@@ -258,17 +307,17 @@ func TestCalculateInflightAvg_Total(t *testing.T) {
 func TestHasUsableHistory(t *testing.T) {
 	b := NewAgentDeployBuffers()
 	assert.False(t, HasUsableHistory(b))
-	b.Append("p", &PodSample{Timestamp: 100, ProcessedByTransport: map[string]float64{"rest": 1}})
+	b.Append("p", &PodSample{Timestamp: 100, RequestsByTransport: map[string]float64{"rest": 1}})
 	assert.False(t, HasUsableHistory(b), "one sample is not enough")
-	b.Append("p", &PodSample{Timestamp: 110, ProcessedByTransport: map[string]float64{"rest": 2}})
+	b.Append("p", &PodSample{Timestamp: 110, RequestsByTransport: map[string]float64{"rest": 2}})
 	assert.True(t, HasUsableHistory(b))
 }
 
 func TestObservedTransports_Deduplicates(t *testing.T) {
 	b := NewAgentDeployBuffers()
 	b.Append("p", &PodSample{
-		Timestamp:            100,
-		ProcessedByTransport: map[string]float64{"rest": 1, "grpc": 2},
+		Timestamp:           100,
+		RequestsByTransport: map[string]float64{"rest": 1, "grpc": 2},
 	})
 	b.Append("p", &PodSample{
 		Timestamp:           110,

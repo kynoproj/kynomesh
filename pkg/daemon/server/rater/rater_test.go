@@ -59,8 +59,8 @@ func (s *stubScraper) Scrape(_ context.Context, host string) (*PodSample, error)
 	// mutating the test fixture.
 	src := list[i]
 	cp := &PodSample{
-		ProcessedByTransport: src.ProcessedByTransport,
-		InflightByTransport:  src.InflightByTransport,
+		RequestsByTransport: src.RequestsByTransport,
+		InflightByTransport: src.InflightByTransport,
 	}
 	return cp, nil
 }
@@ -129,10 +129,10 @@ func TestGetMetrics_HappyPath_SingleTransport(t *testing.T) {
 
 	// One pod that processes 10 messages every scrapeStep; in-flight = 3.
 	samples := []*PodSample{
-		{ProcessedByTransport: map[string]float64{"rest": 0}, InflightByTransport: map[string]float64{"rest": 3}},
-		{ProcessedByTransport: map[string]float64{"rest": 10}, InflightByTransport: map[string]float64{"rest": 3}},
-		{ProcessedByTransport: map[string]float64{"rest": 20}, InflightByTransport: map[string]float64{"rest": 3}},
-		{ProcessedByTransport: map[string]float64{"rest": 30}, InflightByTransport: map[string]float64{"rest": 3}},
+		{RequestsByTransport: map[string]float64{"rest": 0}, InflightByTransport: map[string]float64{"rest": 3}},
+		{RequestsByTransport: map[string]float64{"rest": 10}, InflightByTransport: map[string]float64{"rest": 3}},
+		{RequestsByTransport: map[string]float64{"rest": 20}, InflightByTransport: map[string]float64{"rest": 3}},
+		{RequestsByTransport: map[string]float64{"rest": 30}, InflightByTransport: map[string]float64{"rest": 3}},
 	}
 	r := NewRater(Options{
 		AgentSet:     "set",
@@ -161,8 +161,8 @@ func TestGetMetrics_CustomWindowClampedToRetention(t *testing.T) {
 	start := time.Unix(2_000_000, 0)
 	fc := newFakeClock(start)
 	sample := &PodSample{
-		ProcessedByTransport: map[string]float64{"rest": 0},
-		InflightByTransport:  map[string]float64{"rest": 1},
+		RequestsByTransport: map[string]float64{"rest": 0},
+		InflightByTransport: map[string]float64{"rest": 1},
 	}
 	r := NewRater(Options{
 		AgentDeploys: []string{"a"},
@@ -183,7 +183,7 @@ func TestGetMetrics_NoCustomWindowWhenLookbackZero(t *testing.T) {
 	start := time.Unix(2_000_000, 0)
 	fc := newFakeClock(start)
 	sample := &PodSample{
-		ProcessedByTransport: map[string]float64{"rest": 0},
+		RequestsByTransport: map[string]float64{"rest": 0},
 	}
 	r := NewRater(Options{
 		AgentDeploys: []string{"a"},
@@ -205,10 +205,10 @@ func TestGetMetrics_MultipleTransports(t *testing.T) {
 	fc := newFakeClock(start)
 	// Two transports: rest grows by 10 per scrapeStep, grpc by 5.
 	samples := []*PodSample{
-		{ProcessedByTransport: map[string]float64{"rest": 0, "grpc": 0}, InflightByTransport: map[string]float64{"rest": 1, "grpc": 2}},
-		{ProcessedByTransport: map[string]float64{"rest": 10, "grpc": 5}, InflightByTransport: map[string]float64{"rest": 1, "grpc": 2}},
-		{ProcessedByTransport: map[string]float64{"rest": 20, "grpc": 10}, InflightByTransport: map[string]float64{"rest": 1, "grpc": 2}},
-		{ProcessedByTransport: map[string]float64{"rest": 30, "grpc": 15}, InflightByTransport: map[string]float64{"rest": 1, "grpc": 2}},
+		{RequestsByTransport: map[string]float64{"rest": 0, "grpc": 0}, InflightByTransport: map[string]float64{"rest": 1, "grpc": 2}},
+		{RequestsByTransport: map[string]float64{"rest": 10, "grpc": 5}, InflightByTransport: map[string]float64{"rest": 1, "grpc": 2}},
+		{RequestsByTransport: map[string]float64{"rest": 20, "grpc": 10}, InflightByTransport: map[string]float64{"rest": 1, "grpc": 2}},
+		{RequestsByTransport: map[string]float64{"rest": 30, "grpc": 15}, InflightByTransport: map[string]float64{"rest": 1, "grpc": 2}},
 	}
 	r := NewRater(Options{
 		AgentDeploys: []string{"a"},
@@ -252,7 +252,7 @@ func TestScrapeOneAgentDeploy_ScrapeFailureKeepsPreviousValue(t *testing.T) {
 	fc := newFakeClock(start)
 	scr := &stubScraper{
 		samples: map[string][]*PodSample{
-			"a-0": {{ProcessedByTransport: map[string]float64{"rest": 100}}},
+			"a-0": {{RequestsByTransport: map[string]float64{"rest": 100}}},
 		},
 		idx: map[string]int{},
 	}
@@ -273,7 +273,7 @@ func TestScrapeOneAgentDeploy_ScrapeFailureKeepsPreviousValue(t *testing.T) {
 	// overwrite or duplicate the previous successful observation.
 	samples := r.buffers["a"].Samples("a-0")
 	require.Len(t, samples, 1, "failed scrape must not append a new sample")
-	assert.Equal(t, float64(100), samples[0].ProcessedByTransport["rest"])
+	assert.Equal(t, float64(100), samples[0].RequestsByTransport["rest"])
 }
 
 // clockAdvancingScraper advances the fake clock when a specific host
@@ -296,8 +296,8 @@ func (s *clockAdvancingScraper) Scrape(_ context.Context, host string) (*PodSamp
 	// mutate the shared fixture.
 	src := s.sample
 	cp := &PodSample{
-		ProcessedByTransport: src.ProcessedByTransport,
-		InflightByTransport:  src.InflightByTransport,
+		RequestsByTransport: src.RequestsByTransport,
+		InflightByTransport: src.InflightByTransport,
 	}
 	return cp, nil
 }
@@ -310,8 +310,8 @@ func TestScrape_PerPodTimestamping(t *testing.T) {
 	fc := newFakeClock(start)
 
 	sample := &PodSample{
-		ProcessedByTransport: map[string]float64{"rest": 1},
-		InflightByTransport:  map[string]float64{"rest": 1},
+		RequestsByTransport: map[string]float64{"rest": 1},
+		InflightByTransport: map[string]float64{"rest": 1},
 	}
 	scr := &clockAdvancingScraper{
 		clock: fc,

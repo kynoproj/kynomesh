@@ -36,24 +36,23 @@ const MaxSamplesPerPod = int(Retention/(5*time.Second)) * 2
 
 // PodSample is one observation from one pod, taken at scrape-
 // completion time. Timestamps are raw unix seconds (no bucket
-// alignment) — slow scrapes, future per-pod schedules, and broker-
-// pushed samples all just record the wall clock at which they
-// arrived.
+// alignment).
 //
-// ProcessedByTransport is the per-transport cumulative count of
-// messages the broker has processed since pod start. Monotonic
-// across consecutive observations of the same pod; processing rate
-// comes from the delta between in-window samples, with counter-
-// reset handling for pod/broker restarts.
+// RequestsByTransport is the per-transport cumulative count of
+// requests the broker has handled since pod start (one increment per
+// HTTP request completion or gRPC stream close).
+//
+// StreamMessagesByTransport is the per-transport cumulative count of
+// stream messages observed on the wire (SSE events for REST/
+// passthrough, server→client frames for gRPC).
 //
 // InflightByTransport is the per-transport count of requests
-// currently in flight at scrape time. Instantaneous; averaged
-// across a window using time-weighting so uneven sample spacing
-// doesn't bias the result.
+// currently in flight at scrape time.
 type PodSample struct {
-	Timestamp            int64
-	ProcessedByTransport map[string]float64
-	InflightByTransport  map[string]float64
+	Timestamp                 int64
+	RequestsByTransport       map[string]float64
+	StreamMessagesByTransport map[string]float64
+	InflightByTransport       map[string]float64
 }
 
 // AgentDeployBuffers owns one ring buffer per pod for a single

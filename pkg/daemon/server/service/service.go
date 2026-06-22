@@ -65,8 +65,9 @@ func (s *Service) GetAgentDeployMetrics(_ context.Context, req *pb.GetAgentDeplo
 	pbByTransport := make(map[string]*pb.TransportWindowedMetrics, len(res.PerTransport))
 	for t, v := range res.PerTransport {
 		pbByTransport[t] = &pb.TransportWindowedMetrics{
-			ProcessingRates: mapFloatToDV(v.ProcessingRates),
-			Inflights:       mapFloatToDV(v.Inflights),
+			ProcessingRates:    mapFloatToDV(v.ProcessingRates),
+			StreamMessageRates: mapFloatToDV(v.StreamMessageRates),
+			Inflights:          mapFloatToDV(v.Inflights),
 		}
 	}
 
@@ -74,6 +75,7 @@ func (s *Service) GetAgentDeployMetrics(_ context.Context, req *pb.GetAgentDeplo
 		Metrics: &pb.AgentDeployMetrics{
 			Agentdeploy:                  req.GetName(),
 			ProcessingRates:              mapFloatToDV(res.Total.ProcessingRates),
+			StreamMessageRates:           mapFloatToDV(res.Total.StreamMessageRates),
 			Inflights:                    mapFloatToDV(res.Total.Inflights),
 			ByTransport:                  pbByTransport,
 			CustomWindowEffectiveSeconds: optionalInt64(res.CustomWindowEffectiveSec),

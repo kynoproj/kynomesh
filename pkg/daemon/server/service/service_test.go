@@ -69,14 +69,18 @@ func TestGetAgentDeployMetrics_PopulatesAllWindows(t *testing.T) {
 			ProcessingRates: map[string]float64{
 				rater.WindowKey1m: 1.0, rater.WindowKey5m: 0.5, rater.WindowKey15m: 0.3,
 			},
+			StreamMessageRates: map[string]float64{
+				rater.WindowKey1m: 12, rater.WindowKey5m: 8, rater.WindowKey15m: 4,
+			},
 			Inflights: map[string]float64{
 				rater.WindowKey1m: 7, rater.WindowKey5m: 6, rater.WindowKey15m: 5,
 			},
 		},
 		PerTransport: map[string]rater.PerWindowValues{
 			"rest": {
-				ProcessingRates: map[string]float64{rater.WindowKey1m: 0.8},
-				Inflights:       map[string]float64{rater.WindowKey1m: 5},
+				ProcessingRates:    map[string]float64{rater.WindowKey1m: 0.8},
+				StreamMessageRates: map[string]float64{rater.WindowKey1m: 11},
+				Inflights:          map[string]float64{rater.WindowKey1m: 5},
 			},
 		},
 	}
@@ -90,7 +94,12 @@ func TestGetAgentDeployMetrics_PopulatesAllWindows(t *testing.T) {
 	assert.Equal(t, 0.5, m.GetProcessingRates()[rater.WindowKey5m].GetValue())
 	assert.Equal(t, 0.3, m.GetProcessingRates()[rater.WindowKey15m].GetValue())
 	assert.Equal(t, float64(7), m.GetInflights()[rater.WindowKey1m].GetValue())
+	// Stream message rates flow through the response separately from
+	// processing rates — the two are independent signals end-to-end.
+	assert.Equal(t, float64(12), m.GetStreamMessageRates()[rater.WindowKey1m].GetValue())
+	assert.Equal(t, float64(8), m.GetStreamMessageRates()[rater.WindowKey5m].GetValue())
 	assert.Equal(t, 0.8, m.GetByTransport()["rest"].GetProcessingRates()[rater.WindowKey1m].GetValue())
+	assert.Equal(t, float64(11), m.GetByTransport()["rest"].GetStreamMessageRates()[rater.WindowKey1m].GetValue())
 	// CustomWindowEffectiveSeconds is unset when caller didn't request one.
 	assert.Nil(t, m.GetCustomWindowEffectiveSeconds())
 }
