@@ -65,9 +65,9 @@ func TestRegisterMetric_SetsLabelsAndValue(t *testing.T) {
 	RegisterMetric(registry, ServerInfo{Protocol: UDS, Language: Go, Version: "0.4.2"})
 
 	expected := `
-# HELP kynomesh_broker_agent_server_info Static info about the agent server colocated with this broker. Always 1; labels carry the values.
-# TYPE kynomesh_broker_agent_server_info gauge
-kynomesh_broker_agent_server_info{language="go",protocol="uds",version="0.4.2"} 1
+# HELP broker_agent_server_info Static info about the agent server colocated with this broker. Always 1; labels carry the values.
+# TYPE broker_agent_server_info gauge
+broker_agent_server_info{language="go",protocol="uds",version="0.4.2"} 1
 `
-	require.NoError(t, testutil.GatherAndCompare(registry, strings.NewReader(expected), "kynomesh_broker_agent_server_info"))
+	require.NoError(t, testutil.GatherAndCompare(registry, strings.NewReader(expected), "broker_agent_server_info"))
 }

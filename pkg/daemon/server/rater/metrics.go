@@ -37,28 +37,28 @@ func NewSelfMetrics(registry prometheus.Registerer) *SelfMetrics {
 	return &SelfMetrics{
 		ScrapeSuccess: promauto.With(registry).NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "kynomesh_daemon_scrape_success_total",
+				Name: "daemon_scrape_success_total",
 				Help: "Pod /metrics scrapes that completed without error, by AgentDeploy.",
 			},
 			[]string{"agentdeploy"},
 		),
 		ScrapeFailures: promauto.With(registry).NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "kynomesh_daemon_scrape_failures_total",
+				Name: "daemon_scrape_failures_total",
 				Help: "Pod /metrics scrapes that failed (HTTP error, timeout, parse error), by AgentDeploy.",
 			},
 			[]string{"agentdeploy"},
 		),
 		DiscoveryFailures: promauto.With(registry).NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "kynomesh_daemon_discovery_failures_total",
+				Name: "daemon_discovery_failures_total",
 				Help: "Headless-DNS lookup failures, by AgentDeploy.",
 			},
 			[]string{"agentdeploy"},
 		),
 		PodsObserved: promauto.With(registry).NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "kynomesh_daemon_pods_observed",
+				Name: "daemon_pods_observed",
 				Help: "Number of ready pods discovered for an AgentDeploy on the last scrape tick.",
 			},
 			[]string{"agentdeploy"},

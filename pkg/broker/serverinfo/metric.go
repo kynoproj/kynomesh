@@ -26,7 +26,7 @@ import (
 func RegisterMetric(registry prometheus.Registerer, info ServerInfo) {
 	gauge := promauto.With(registry).NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "kynomesh_broker_agent_server_info",
+			Name: "broker_agent_server_info",
 			Help: "Static info about the agent server colocated with this broker. Always 1; labels carry the values.",
 		},
 		[]string{"protocol", "language", "version"},
