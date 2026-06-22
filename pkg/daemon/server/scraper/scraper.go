@@ -14,15 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package scraper fetches Prometheus-format metrics from broker pods
-// and extracts the in-flight gauge plus the two throughput counters
-// (requests_total + stream_messages_total), grouped by the broker's
-// "transport" label. The output feeds the rater's per-pod storage.
-//
-// The two counters are kept separate end-to-end so controllers can
-// scale on whichever signal matches the workload shape — requests
-// for unary REST, stream messages for SSE-heavy or streaming gRPC,
-// or both for mixed workloads.
+// Package scraper fetches Prometheus-format metrics.
 package scraper
 
 import (

@@ -119,11 +119,6 @@ func (x *TransportWindowedMetrics) GetStreamMessageRates() map[string]*wrappersp
 
 // AgentDeployMetrics carries the aggregated, time-windowed metrics for a
 // single AgentDeploy that this daemon scrapes.
-//
-// Top-level processingRates, streamMessageRates, and inflights are the
-// totals across all transports — the common case for autoscaling.
-// byTransport carries the per-transport breakdown for callers that need
-// finer-grained signal.
 type AgentDeployMetrics struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	Agentdeploy string                 `protobuf:"bytes,1,opt,name=agentdeploy,proto3" json:"agentdeploy,omitempty"`

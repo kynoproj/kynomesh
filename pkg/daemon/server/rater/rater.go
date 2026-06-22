@@ -251,16 +251,8 @@ type WindowedResult struct {
 	CustomWindowEffectiveSec int64
 }
 
-// PerWindowValues holds the four configured windows. Each value is
-// the daemon's computed rate / average for that window. An empty map
-// is intentionally distinct from a map with zero values, so the gRPC
-// layer can encode "no data" vs "data, value zero" precisely.
-//
-// ProcessingRates and StreamMessageRates come from two separate
-// broker counters (broker_requests_total, broker_stream_messages_total)
-// kept distinct end-to-end so controllers can scale on whichever
-// signal matches the workload shape — requests for unary REST,
-// stream messages for SSE-heavy or streaming gRPC.
+// PerWindowValues holds the configured windows. Each value is
+// the daemon's computed rate / average for that window.
 type PerWindowValues struct {
 	ProcessingRates    map[string]float64
 	StreamMessageRates map[string]float64
