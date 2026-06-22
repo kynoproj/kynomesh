@@ -77,7 +77,7 @@ func newUDSEchoBackend(t *testing.T, response string) (string, *echoBackend) {
 func TestJSONRPCReverseProxy_ForwardsRequestVerbatim(t *testing.T) {
 	socketPath, rec := newUDSEchoBackend(t, "backend-reply")
 
-	counters := NewCounters(prometheus.NewRegistry())
+	counters := NewMetrics(prometheus.NewRegistry())
 	proxy := NewJSONRPCReverseProxy(NewUDSHTTPTransport(socketPath), counters)
 
 	req := httptest.NewRequest("POST", "/rpc", stringReader("hello"))
@@ -92,7 +92,7 @@ func TestJSONRPCReverseProxy_ForwardsRequestVerbatim(t *testing.T) {
 }
 
 func TestJSONRPCReverseProxy_IncrementsJSONRPCCounter(t *testing.T) {
-	counters := NewCounters(prometheus.NewRegistry())
+	counters := NewMetrics(prometheus.NewRegistry())
 	var midCallJSONRPC, midCallREST, midCallGRPC float64
 
 	socketPath := filepath.Join(shortSocketDir(t), "a.sock")
@@ -121,7 +121,7 @@ func TestJSONRPCReverseProxy_IncrementsJSONRPCCounter(t *testing.T) {
 
 func TestRESTReverseProxy_IncrementsRESTCounter(t *testing.T) {
 	// Symmetric to the JSON-RPC variant.
-	counters := NewCounters(prometheus.NewRegistry())
+	counters := NewMetrics(prometheus.NewRegistry())
 	var midCallREST, midCallJSONRPC float64
 
 	socketPath := filepath.Join(shortSocketDir(t), "a.sock")
@@ -148,7 +148,7 @@ func TestRESTReverseProxy_IncrementsRESTCounter(t *testing.T) {
 func TestPassthroughReverseProxy_ForwardsArbitraryPath(t *testing.T) {
 	socketPath, rec := newUDSEchoBackend(t, "ui-html")
 
-	counters := NewCounters(prometheus.NewRegistry())
+	counters := NewMetrics(prometheus.NewRegistry())
 	proxy := NewPassthroughReverseProxy(NewUDSHTTPTransport(socketPath), counters)
 
 	req := httptest.NewRequest("GET", "/my-app/v1/sessions", nil)
@@ -163,7 +163,7 @@ func TestPassthroughReverseProxy_ForwardsArbitraryPath(t *testing.T) {
 }
 
 func TestPassthroughReverseProxy_OnlyIncrementsPassthroughCounter(t *testing.T) {
-	counters := NewCounters(prometheus.NewRegistry())
+	counters := NewMetrics(prometheus.NewRegistry())
 	var midPassthrough, midJSONRPC, midREST, midGRPC float64
 
 	socketPath := filepath.Join(shortSocketDir(t), "p.sock")

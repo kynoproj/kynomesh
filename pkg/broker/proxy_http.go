@@ -20,30 +20,28 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-
-	"github.com/prometheus/client_golang/prometheus"
 )
 
-func NewJSONRPCReverseProxy(agentTransport *http.Transport, counters *Counters) http.Handler {
-	return newAgentReverseProxy(agentTransport, counters.JSONRPC())
+func NewJSONRPCReverseProxy(agentTransport *http.Transport, counters *Metrics) http.Handler {
+	return newAgentReverseProxy(agentTransport, counters.JSONRPCSet())
 }
 
-func NewRESTReverseProxy(agentTransport *http.Transport, counters *Counters) http.Handler {
-	return newAgentReverseProxy(agentTransport, counters.REST())
+func NewRESTReverseProxy(agentTransport *http.Transport, counters *Metrics) http.Handler {
+	return newAgentReverseProxy(agentTransport, counters.RESTSet())
 }
 
 // NewPassthroughReverseProxy is the catch-all for non-A2A routes (custom
 // REST, UIs, WebSocket upgrades) so they remain observable separately.
-func NewPassthroughReverseProxy(agentTransport *http.Transport, counters *Counters) http.Handler {
-	return newAgentReverseProxy(agentTransport, counters.Passthrough())
+func NewPassthroughReverseProxy(agentTransport *http.Transport, counters *Metrics) http.Handler {
+	return newAgentReverseProxy(agentTransport, counters.PassthroughSet())
 }
 
 // newAgentReverseProxy builds a reverse proxy whose Director plants a
 // synthetic AgentBackendHost target; the supplied transport handles the
 // real dial (UDS or TCP).
-func newAgentReverseProxy(agentTransport *http.Transport, gauge prometheus.Gauge) http.Handler {
+func newAgentReverseProxy(agentTransport *http.Transport, set transportSet) http.Handler {
 	target := &url.URL{Scheme: "http", Host: AgentBackendHost}
 	rp := httputil.NewSingleHostReverseProxy(target)
 	rp.Transport = agentTransport
-	return wrapHTTP(gauge, rp)
+	return wrapHTTP(set, rp)
 }

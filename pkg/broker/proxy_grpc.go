@@ -20,7 +20,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -56,22 +58,30 @@ func (rawCodec) Unmarshal(data []byte, v any) error {
 // GRPCPassthroughOptions turns a fresh *grpc.Server into a transparent
 // proxy to backendConn. Both options must be applied; no other services
 // should be registered on the server.
-func GRPCPassthroughOptions(backendConn *grpc.ClientConn, counters *Counters) []grpc.ServerOption {
-	gauge := counters.GRPC()
+func GRPCPassthroughOptions(backendConn *grpc.ClientConn, metrics *Metrics) []grpc.ServerOption {
+	set := metrics.GRPCSet()
 	return []grpc.ServerOption{
 		grpc.ForceServerCodec(rawCodec{}),
 		grpc.UnknownServiceHandler(func(_ any, ss grpc.ServerStream) error {
-			gauge.Inc()
-			defer gauge.Dec()
-			return forwardGRPCStream(backendConn, ss)
+			set.inflight.Inc()
+			start := time.Now()
+			defer func() {
+				set.inflight.Dec()
+				set.requests.Inc()
+				set.duration.Observe(time.Since(start).Seconds())
+			}()
+			return forwardGRPCStream(backendConn, ss, set.streamMessages)
 		}),
 	}
 }
 
 // forwardGRPCStream proxies one bidi gRPC stream end-to-end: copies
 // metadata, pumps frames in both directions, propagates backend
-// header/trailer/status to the caller.
-func forwardGRPCStream(backendConn *grpc.ClientConn, ss grpc.ServerStream) error {
+// header/trailer/status to the caller. serverMessages is incremented
+// per backend→client frame so the broker reports server-produced
+// message volume; nil disables the counting (used by tests that
+// don't care about metrics).
+func forwardGRPCStream(backendConn *grpc.ClientConn, ss grpc.ServerStream, serverMessages prometheus.Counter) error {
 	ctx := ss.Context()
 
 	method, ok := grpc.Method(ctx)
@@ -96,7 +106,9 @@ func forwardGRPCStream(backendConn *grpc.ClientConn, ss grpc.ServerStream) error
 
 	clientToBackendErr := make(chan error, 1)
 	go func() {
-		clientToBackendErr <- copyMessages(ss, clientStream, false)
+		// Client→server frames: not counted by metrics — "work" is
+		// what the agent produced, not what the caller sent.
+		clientToBackendErr <- copyMessages(ss, clientStream, nil)
 		// Half-close: tell the backend the client is done sending.
 		_ = clientStream.CloseSend()
 	}()
@@ -109,7 +121,8 @@ func forwardGRPCStream(backendConn *grpc.ClientConn, ss grpc.ServerStream) error
 		if herr == nil {
 			_ = ss.SetHeader(header)
 		}
-		backendToClientErr <- copyMessages(clientStream, ss, true)
+		// Server→client frames are the metric signal.
+		backendToClientErr <- copyMessages(clientStream, ss, serverMessages)
 	}()
 
 	backendErr := <-backendToClientErr
@@ -141,9 +154,9 @@ type msgSend interface {
 }
 
 // copyMessages pumps opaque frames from src to dst until src returns
-// io.EOF or any error. The bool is reserved for future divergent
-// handling between client→backend and backend→client.
-func copyMessages(src msgRecv, dst msgSend, _ bool) error {
+// io.EOF or any error. counter, if non-nil, is incremented once per
+// successfully-forwarded frame.
+func copyMessages(src msgRecv, dst msgSend, counter prometheus.Counter) error {
 	for {
 		var frame []byte
 		if err := src.RecvMsg(&frame); err != nil {
@@ -151,6 +164,9 @@ func copyMessages(src msgRecv, dst msgSend, _ bool) error {
 		}
 		if err := dst.SendMsg(&frame); err != nil {
 			return err
+		}
+		if counter != nil {
+			counter.Inc()
 		}
 	}
 }

@@ -41,7 +41,7 @@ import (
 type grpcPair struct {
 	backendAddr string
 	brokerAddr  string
-	counters    *Counters
+	counters    *Metrics
 }
 
 func startGRPCPair(t *testing.T) *grpcPair {
@@ -61,7 +61,7 @@ func startGRPCPair(t *testing.T) *grpcPair {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = backendConn.Close() })
 
-	counters := NewCounters(prometheus.NewRegistry())
+	counters := NewMetrics(prometheus.NewRegistry())
 	brokerLn, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	brokerSrv := grpc.NewServer(GRPCPassthroughOptions(backendConn, counters)...)

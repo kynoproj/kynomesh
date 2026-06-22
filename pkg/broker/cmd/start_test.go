@@ -97,7 +97,7 @@ func stubOKHandler(body string) http.Handler {
 func testRuntime(t *testing.T) *brokerRuntime {
 	t.Helper()
 	return &brokerRuntime{
-		counters: &broker.Counters{},
+		counters: &broker.Metrics{},
 		enabled: map[a2a.TransportProtocol]bool{
 			a2a.TransportProtocolJSONRPC:  true,
 			a2a.TransportProtocolHTTPJSON: true,

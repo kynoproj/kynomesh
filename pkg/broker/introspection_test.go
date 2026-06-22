@@ -57,7 +57,7 @@ func TestIntrospectionHandler_Readyz(t *testing.T) {
 
 func TestIntrospectionHandler_MetricsExposesCounters(t *testing.T) {
 	registry := prometheus.NewRegistry()
-	counters := NewCounters(registry)
+	counters := NewMetrics(registry)
 	counters.JSONRPC().Set(3)
 	counters.REST().Set(7)
 	counters.GRPC().Set(2)
@@ -73,14 +73,14 @@ func TestIntrospectionHandler_MetricsExposesCounters(t *testing.T) {
 	s := string(body)
 
 	// Help + type lines emit the metric name with the standard help text.
-	assert.Contains(t, s, "# HELP kynomesh_broker_inflight_requests")
-	assert.Contains(t, s, "# TYPE kynomesh_broker_inflight_requests gauge")
+	assert.Contains(t, s, "# HELP broker_inflight_requests")
+	assert.Contains(t, s, "# TYPE broker_inflight_requests gauge")
 
 	// One line per transport label with the current gauge value.
-	assert.Contains(t, s, `kynomesh_broker_inflight_requests{transport="jsonrpc"} 3`)
-	assert.Contains(t, s, `kynomesh_broker_inflight_requests{transport="rest"} 7`)
-	assert.Contains(t, s, `kynomesh_broker_inflight_requests{transport="grpc"} 2`)
-	assert.Contains(t, s, `kynomesh_broker_inflight_requests{transport="passthrough"} 11`)
+	assert.Contains(t, s, `broker_inflight_requests{transport="jsonrpc"} 3`)
+	assert.Contains(t, s, `broker_inflight_requests{transport="rest"} 7`)
+	assert.Contains(t, s, `broker_inflight_requests{transport="grpc"} 2`)
+	assert.Contains(t, s, `broker_inflight_requests{transport="passthrough"} 11`)
 }
 
 func TestIntrospectionHandler_UnknownPath404(t *testing.T) {

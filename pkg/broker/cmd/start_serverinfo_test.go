@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const metricNameAgentServerInfo = "kynomesh_broker_agent_server_info"
+const metricNameAgentServerInfo = "broker_agent_server_info"
 
 func withServerInfoFile(t *testing.T, path string) {
 	t.Helper()

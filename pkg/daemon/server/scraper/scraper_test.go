@@ -72,12 +72,16 @@ broker_inflight_requests{transport="jsonrpc"} 2
 broker_inflight_requests{transport="rest"} 5
 broker_inflight_requests{transport="grpc"} 1
 broker_inflight_requests{transport="passthrough"} 0
-# HELP broker_messages_processed_total Messages processed
-# TYPE broker_messages_processed_total counter
-broker_messages_processed_total{transport="jsonrpc"} 100
-broker_messages_processed_total{transport="rest"} 250
-broker_messages_processed_total{transport="grpc"} 50
-broker_messages_processed_total{transport="passthrough"} 0
+# HELP broker_requests_total Total requests
+# TYPE broker_requests_total counter
+broker_requests_total{transport="jsonrpc"} 100
+broker_requests_total{transport="rest"} 250
+broker_requests_total{transport="grpc"} 50
+broker_requests_total{transport="passthrough"} 0
+# HELP broker_stream_messages_total Total stream messages
+# TYPE broker_stream_messages_total counter
+broker_stream_messages_total{transport="rest"} 17
+broker_stream_messages_total{transport="grpc"} 9
 `
 
 func TestScrape_HappyPath(t *testing.T) {
@@ -91,9 +95,10 @@ func TestScrape_HappyPath(t *testing.T) {
 	assert.Equal(t, float64(5), sample.InflightByTransport["rest"])
 	assert.Equal(t, float64(1), sample.InflightByTransport["grpc"])
 	assert.Equal(t, float64(0), sample.InflightByTransport["passthrough"])
-	assert.Equal(t, float64(100), sample.ProcessedByTransport["jsonrpc"])
-	assert.Equal(t, float64(250), sample.ProcessedByTransport["rest"])
-	assert.Equal(t, float64(50), sample.ProcessedByTransport["grpc"])
+	// ProcessedByTransport sums requests_total + stream_messages_total.
+	assert.Equal(t, float64(100), sample.ProcessedByTransport["jsonrpc"], "jsonrpc has no stream messages")
+	assert.Equal(t, float64(267), sample.ProcessedByTransport["rest"], "rest = 250 requests + 17 SSE events")
+	assert.Equal(t, float64(59), sample.ProcessedByTransport["grpc"], "grpc = 50 streams + 9 server frames")
 	assert.Equal(t, float64(0), sample.ProcessedByTransport["passthrough"])
 }
 
@@ -138,13 +143,13 @@ func TestScrape_MissingMetricsYieldsEmptySample(t *testing.T) {
 	assert.Empty(t, sample.ProcessedByTransport)
 }
 
-func TestScrape_OnlyCounterPresent(t *testing.T) {
-	// Simulates broker exposing the counter before adding the gauge
-	// (or, more realistically, the future state where the broker
-	// only has one of the two metrics during a rollout window).
-	body := `# HELP broker_messages_processed_total x
-# TYPE broker_messages_processed_total counter
-broker_messages_processed_total{transport="rest"} 42
+func TestScrape_OnlyRequestsCounterPresent(t *testing.T) {
+	// Mid-upgrade scenario: broker emits requests_total but
+	// stream_messages_total hasn't rolled out yet. Sum still works,
+	// stream side just contributes 0.
+	body := `# HELP broker_requests_total x
+# TYPE broker_requests_total counter
+broker_requests_total{transport="rest"} 42
 `
 	host, port, closeSrv := newTLSServer(t, body, http.StatusOK)
 	defer closeSrv()
@@ -154,6 +159,22 @@ broker_messages_processed_total{transport="rest"} 42
 	require.NoError(t, err)
 	assert.Equal(t, float64(42), sample.ProcessedByTransport["rest"])
 	assert.Empty(t, sample.InflightByTransport)
+}
+
+func TestScrape_OnlyStreamMessagesCounterPresent(t *testing.T) {
+	// Defensive: counter-name-agnostic summing should also handle
+	// the inverse case.
+	body := `# HELP broker_stream_messages_total x
+# TYPE broker_stream_messages_total counter
+broker_stream_messages_total{transport="grpc"} 13
+`
+	host, port, closeSrv := newTLSServer(t, body, http.StatusOK)
+	defer closeSrv()
+	s := newScraperPointingAt(port)
+
+	sample, err := s.Scrape(context.Background(), host)
+	require.NoError(t, err)
+	assert.Equal(t, float64(13), sample.ProcessedByTransport["grpc"])
 }
 
 func TestScrape_Non200Errors(t *testing.T) {
@@ -205,7 +226,8 @@ func TestScrape_ContextCancellationHonored(t *testing.T) {
 // changed, since they're part of the broker contract.
 func TestMetricNamesAreStable(t *testing.T) {
 	assert.Equal(t, "broker_inflight_requests", MetricInflightName)
-	assert.Equal(t, "broker_messages_processed_total", MetricProcessedName)
+	assert.Equal(t, "broker_requests_total", MetricRequestsName)
+	assert.Equal(t, "broker_stream_messages_total", MetricStreamMessagesName)
 	assert.Equal(t, "transport", TransportLabelName)
 }
 
