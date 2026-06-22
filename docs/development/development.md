@@ -46,7 +46,7 @@ kubectl patch -n kube-system deployment metrics-server --type=json -p '[{"op":"a
 - `make manifests` Regenerate all the manifests after making any base manifest
   changes. This is also covered by `make codegen`.
 
-- `make codegen` Run after making changes to `./pkg/api/`.
+- `make codegen` Run after making changes to `./pkg/apis/`.
 
 - `make test` Run unit tests.
 

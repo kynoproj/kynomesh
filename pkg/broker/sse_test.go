@@ -112,7 +112,6 @@ func TestWrapHTTP_SSEContentTypeWithParameters(t *testing.T) {
 
 func TestReverseProxy_SSEFlushesImmediately(t *testing.T) {
 	release := make(chan struct{})
-	t.Cleanup(func() { close(release) })
 
 	agent := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -126,6 +125,7 @@ func TestReverseProxy_SSEFlushesImmediately(t *testing.T) {
 		flusher.Flush()
 	}))
 	t.Cleanup(agent.Close)
+	t.Cleanup(func() { close(release) })
 
 	transport := transportToAddress(strings.TrimPrefix(agent.URL, "http://"))
 	proxy := newAgentReverseProxy(transport, NewMetrics(prometheus.NewRegistry()).PassthroughSet())
