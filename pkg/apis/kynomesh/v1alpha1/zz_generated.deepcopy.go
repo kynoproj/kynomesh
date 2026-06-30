@@ -625,8 +625,8 @@ func (in *Scale) DeepCopyInto(out *Scale) {
 		*out = new(uint32)
 		**out = **in
 	}
-	if in.TargetProcessingSeconds != nil {
-		in, out := &in.TargetProcessingSeconds, &out.TargetProcessingSeconds
+	if in.TargetSaturationPercentage != nil {
+		in, out := &in.TargetSaturationPercentage, &out.TargetSaturationPercentage
 		*out = new(uint32)
 		**out = **in
 	}

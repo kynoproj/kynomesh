@@ -28,20 +28,23 @@ type Scale struct {
 	// Maximum replicas.
 	// +optional
 	Max *int32 `json:"max,omitempty" protobuf:"varint,3,opt,name=max"`
-	// Lookback seconds to calculate the average pending messages and processing rate.
+	// Lookback seconds to calculate the average in-flight requests and processing rate.
 	// +optional
 	LookbackSeconds *uint32 `json:"lookbackSeconds,omitempty" protobuf:"varint,4,opt,name=lookbackSeconds"`
-	// TargetProcessingSeconds is used to tune the aggressiveness of autoscaling for source vertices, it measures how fast
-	// you want the vertex to process all the pending messages. Typically increasing the value, which leads to lower processing
-	// rate, thus less replicas. It's only effective for source vertices.
+	// TargetSaturationPercentage tunes how aggressively to scale. It is the fraction
+	// (1-100) of a replica's learned capacity (the saturation knee) to run at in steady
+	// state. The autoscaler learns each replica's capacity from observed load and keeps
+	// the fleet near this fraction of it: desired replicas trend toward
+	// ceil(totalInflight / (knee * TargetSaturationPercentage/100)).
+	// Lower values scale out earlier (safer latency, higher cost); higher values pack
+	// tighter (lower cost, higher latency risk). Values above 100 are rejected.
+	// Defaults to 80 when unset.
 	// +optional
-	TargetProcessingSeconds *uint32 `json:"targetProcessingSeconds,omitempty" protobuf:"varint,5,opt,name=targetProcessingSeconds"`
+	TargetSaturationPercentage *uint32 `json:"targetSaturationPercentage,omitempty" protobuf:"varint,5,opt,name=targetSaturationPercentage"`
 	// ScaleUpCooldownSeconds defines the cooldown seconds after a scaling operation, before a follow-up scaling up.
-	// It defaults to the CooldownSeconds if not set.
 	// +optional
 	ScaleUpCooldownSeconds *uint32 `json:"scaleUpCooldownSeconds,omitempty" protobuf:"varint,6,opt,name=scaleUpCooldownSeconds"`
 	// ScaleDownCooldownSeconds defines the cooldown seconds after a scaling operation, before a follow-up scaling down.
-	// It defaults to the CooldownSeconds if not set.
 	// +optional
 	ScaleDownCooldownSeconds *uint32 `json:"scaleDownCooldownSeconds,omitempty" protobuf:"varint,7,opt,name=scaleDownCooldownSeconds"`
 	// ReplicasPerScaleUp defines the number of maximum replicas that can be changed in a single scaled up operation.

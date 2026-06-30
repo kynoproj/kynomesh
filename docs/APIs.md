@@ -2708,7 +2708,7 @@ Maximum replicas.
 <em>(Optional)</em>
 <p>
 
-Lookback seconds to calculate the average pending messages and
+Lookback seconds to calculate the average in-flight requests and
 processing rate.
 </p>
 
@@ -2720,7 +2720,7 @@ processing rate.
 
 <td>
 
-<code>targetProcessingSeconds</code></br> <em> uint32 </em>
+<code>targetSaturationPercentage</code></br> <em> uint32 </em>
 </td>
 
 <td>
@@ -2728,11 +2728,14 @@ processing rate.
 <em>(Optional)</em>
 <p>
 
-TargetProcessingSeconds is used to tune the aggressiveness of
-autoscaling for source vertices, it measures how fast you want the
-vertex to process all the pending messages. Typically increasing the
-value, which leads to lower processing rate, thus less replicas. It’s
-only effective for source vertices.
+TargetSaturationPercentage tunes how aggressively to scale. It is the
+fraction (1-100) of a replica’s learned capacity (the saturation knee)
+to run at in steady state. The autoscaler learns each replica’s capacity
+from observed load and keeps the fleet near this fraction of it: desired
+replicas trend toward ceil(totalInflight / (knee \*
+TargetSaturationPercentage/100)). Lower values scale out earlier (safer
+latency, higher cost); higher values pack tighter (lower cost, higher
+latency risk). Values above 100 are rejected. Defaults to 80 when unset.
 </p>
 
 </td>
@@ -2752,8 +2755,7 @@ only effective for source vertices.
 <p>
 
 ScaleUpCooldownSeconds defines the cooldown seconds after a scaling
-operation, before a follow-up scaling up. It defaults to the
-CooldownSeconds if not set.
+operation, before a follow-up scaling up.
 </p>
 
 </td>
@@ -2773,8 +2775,7 @@ CooldownSeconds if not set.
 <p>
 
 ScaleDownCooldownSeconds defines the cooldown seconds after a scaling
-operation, before a follow-up scaling down. It defaults to the
-CooldownSeconds if not set.
+operation, before a follow-up scaling down.
 </p>
 
 </td>

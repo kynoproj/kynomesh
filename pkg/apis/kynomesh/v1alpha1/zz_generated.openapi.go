@@ -1672,28 +1672,28 @@ func schema_pkg_apis_kynomesh_v1alpha1_Scale(ref common.ReferenceCallback) commo
 					},
 					"lookbackSeconds": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Lookback seconds to calculate the average pending messages and processing rate.",
+							Description: "Lookback seconds to calculate the average in-flight requests and processing rate.",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
 					},
-					"targetProcessingSeconds": {
+					"targetSaturationPercentage": {
 						SchemaProps: spec.SchemaProps{
-							Description: "TargetProcessingSeconds is used to tune the aggressiveness of autoscaling for source vertices, it measures how fast you want the vertex to process all the pending messages. Typically increasing the value, which leads to lower processing rate, thus less replicas. It's only effective for source vertices.",
+							Description: "TargetSaturationPercentage tunes how aggressively to scale. It is the fraction (1-100) of a replica's learned capacity (the saturation knee) to run at in steady state. The autoscaler learns each replica's capacity from observed load and keeps the fleet near this fraction of it: desired replicas trend toward ceil(totalInflight / (knee * TargetSaturationPercentage/100)). Lower values scale out earlier (safer latency, higher cost); higher values pack tighter (lower cost, higher latency risk). Values above 100 are rejected. Defaults to 80 when unset.",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
 					},
 					"scaleUpCooldownSeconds": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ScaleUpCooldownSeconds defines the cooldown seconds after a scaling operation, before a follow-up scaling up. It defaults to the CooldownSeconds if not set.",
+							Description: "ScaleUpCooldownSeconds defines the cooldown seconds after a scaling operation, before a follow-up scaling up.",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
 					},
 					"scaleDownCooldownSeconds": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ScaleDownCooldownSeconds defines the cooldown seconds after a scaling operation, before a follow-up scaling down. It defaults to the CooldownSeconds if not set.",
+							Description: "ScaleDownCooldownSeconds defines the cooldown seconds after a scaling operation, before a follow-up scaling down.",
 							Type:        []string{"integer"},
 							Format:      "int64",
 						},
