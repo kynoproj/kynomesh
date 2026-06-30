@@ -1356,8 +1356,8 @@ func (m *Scale) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x30
 	}
-	if m.TargetProcessingSeconds != nil {
-		i = encodeVarintGenerated(dAtA, i, uint64(*m.TargetProcessingSeconds))
+	if m.TargetSaturationPercentage != nil {
+		i = encodeVarintGenerated(dAtA, i, uint64(*m.TargetSaturationPercentage))
 		i--
 		dAtA[i] = 0x28
 	}
@@ -2031,8 +2031,8 @@ func (m *Scale) Size() (n int) {
 	if m.LookbackSeconds != nil {
 		n += 1 + sovGenerated(uint64(*m.LookbackSeconds))
 	}
-	if m.TargetProcessingSeconds != nil {
-		n += 1 + sovGenerated(uint64(*m.TargetProcessingSeconds))
+	if m.TargetSaturationPercentage != nil {
+		n += 1 + sovGenerated(uint64(*m.TargetSaturationPercentage))
 	}
 	if m.ScaleUpCooldownSeconds != nil {
 		n += 1 + sovGenerated(uint64(*m.ScaleUpCooldownSeconds))
@@ -2475,7 +2475,7 @@ func (this *Scale) String() string {
 		`Min:` + valueToStringGenerated(this.Min) + `,`,
 		`Max:` + valueToStringGenerated(this.Max) + `,`,
 		`LookbackSeconds:` + valueToStringGenerated(this.LookbackSeconds) + `,`,
-		`TargetProcessingSeconds:` + valueToStringGenerated(this.TargetProcessingSeconds) + `,`,
+		`TargetSaturationPercentage:` + valueToStringGenerated(this.TargetSaturationPercentage) + `,`,
 		`ScaleUpCooldownSeconds:` + valueToStringGenerated(this.ScaleUpCooldownSeconds) + `,`,
 		`ScaleDownCooldownSeconds:` + valueToStringGenerated(this.ScaleDownCooldownSeconds) + `,`,
 		`ReplicasPerScaleUp:` + valueToStringGenerated(this.ReplicasPerScaleUp) + `,`,
@@ -6641,7 +6641,7 @@ func (m *Scale) Unmarshal(dAtA []byte) error {
 			m.LookbackSeconds = &v
 		case 5:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TargetProcessingSeconds", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TargetSaturationPercentage", wireType)
 			}
 			var v uint32
 			for shift := uint(0); ; shift += 7 {
@@ -6658,7 +6658,7 @@ func (m *Scale) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			m.TargetProcessingSeconds = &v
+			m.TargetSaturationPercentage = &v
 		case 6:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ScaleUpCooldownSeconds", wireType)

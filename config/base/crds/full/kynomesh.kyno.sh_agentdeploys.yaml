@@ -1845,7 +1845,7 @@ spec:
                   scaleUpCooldownSeconds:
                     format: int32
                     type: integer
-                  targetProcessingSeconds:
+                  targetSaturationPercentage:
                     format: int32
                     type: integer
                 type: object

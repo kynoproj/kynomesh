@@ -44,6 +44,7 @@ import (
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling"
 	"github.com/kynoproj/kynomesh/pkg/reconciler/agentset"
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 	sharedutil "github.com/kynoproj/kynomesh/pkg/shared/util"
@@ -72,9 +73,6 @@ const (
 // Start boots the controller manager. It blocks until the signal handler
 // fires (typically SIGINT or SIGTERM) and only returns after the manager has
 // cleanly shut down.
-//
-// namespaced=true scopes the cache to managedNamespace so the operator can
-// run without cluster-wide list/watch RBAC.
 func Start(namespaced bool, managedNamespace string) {
 	logger := logging.NewLogger().Named("controller-manager")
 
@@ -148,6 +146,9 @@ func Start(namespaced bool, managedNamespace string) {
 	}
 	if err := registerAgentDeployController(mgr, logger, image, brokerPullPolicy); err != nil {
 		logger.Fatalw("Failed to register AgentDeploy controller", zap.Error(err))
+	}
+	if err := registerAutoscaling(mgr, logger); err != nil {
+		logger.Fatalw("Failed to register autoscaling components", zap.Error(err))
 	}
 
 	logger.Infow("Starting controller-manager",
@@ -434,3 +435,31 @@ func controllerImageFromPod(pod *corev1.Pod) (string, error) {
 	}
 	return "", fmt.Errorf("pod %s/%s has no container named %q", pod.Namespace, pod.Name, kmv1.ContainerNameController)
 }
+
+// registerAutoscaling wires the standalone autoscaling components into the
+// manager as Runnables.
+func registerAutoscaling(mgr manager.Manager, logger *zap.SugaredLogger) error {
+	reg := scaling.NewRegistry(mgr.GetClient())
+	sampler := scaling.NewSampler(mgr.GetClient(), reg, scaling.GRPCDaemonDialer, logger.Named("scaling-sampler"))
+	autoscaler := scaling.NewAutoscaler(mgr.GetClient(), reg, logger.Named("scaling-autoscaler"))
+	if err := mgr.Add(LeaderElectionRunner(sampler.Start)); err != nil {
+		return fmt.Errorf("add sampler runnable: %w", err)
+	}
+	if err := mgr.Add(LeaderElectionRunner(autoscaler.Start)); err != nil {
+		return fmt.Errorf("add autoscaler runnable: %w", err)
+	}
+	return nil
+}
+
+// LeaderElectionRunner adapts a plain func(ctx) error into a manager.Runnable
+// that runs only on the elected leader.
+type LeaderElectionRunner func(ctx context.Context) error
+
+func (ler LeaderElectionRunner) Start(ctx context.Context) error { return ler(ctx) }
+
+func (ler LeaderElectionRunner) NeedLeaderElection() bool { return true }
+
+var (
+	_ manager.Runnable               = (*LeaderElectionRunner)(nil)
+	_ manager.LeaderElectionRunnable = (*LeaderElectionRunner)(nil)
+)
