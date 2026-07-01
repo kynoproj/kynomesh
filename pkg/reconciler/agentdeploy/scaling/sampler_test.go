@@ -52,45 +52,67 @@ func staticDialer(src MetricsSource) DaemonDialer {
 	return func(string, string) (MetricsSource, error) { return src, nil }
 }
 
-func TestSamplerRecordsPerReplicaSample(t *testing.T) {
+func nn(name string) types.NamespacedName {
+	return types.NamespacedName{Namespace: "ns", Name: name}
+}
+
+func fixedClock(t time.Time) SamplerOption {
+	return WithSamplerClock(func() time.Time { return t })
+}
+
+func TestSamplerSampleKeyRecordsPerReplica(t *testing.T) {
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	ad := scalingAD("foo", 4)
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
 	reg := NewRegistry(c)
-	src := &fakeSource{resp: metricsAt(windowKey1m, 100, 200)}
-	s := NewSampler(c, reg, staticDialer(src), testLogger(), WithFlushInterval(time.Hour))
+	s := NewSampler(c, NewWatchSet(reg), reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 100, 200)}),
+		testLogger(), WithFlushInterval(time.Hour), fixedClock(now))
 
-	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
-	s.sampleOnce(context.Background(), now)
+	require.NoError(t, s.sampleKey(context.Background(), nn("foo")))
 
-	store, ok := reg.Get(types.NamespacedName{Namespace: "ns", Name: "foo"})
-	require.True(t, ok, "store created for sampled AgentDeploy")
-	hist := store.History(now)
+	store, ok := reg.Get(nn("foo"))
+	require.True(t, ok)
+	hist := store.History(now.Add(time.Minute))
 	require.Len(t, hist, 1)
 	assert.Equal(t, 25.0, hist[0].InflightPerRep, "100 total / 4 ready")
 	assert.Equal(t, 50.0, hist[0].RatePerRep)
 }
 
-func TestSamplerSkipsDisabled(t *testing.T) {
-	ad := scalingAD("foo", 4)
+func TestSamplerSampleKeySamplesDisabled(t *testing.T) {
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	ad := scalingAD("foo", 2)
 	ad.Spec.Scale.Disabled = true
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
 	reg := NewRegistry(c)
-	s := NewSampler(c, reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 100, 200)}), testLogger())
+	s := NewSampler(c, NewWatchSet(reg), reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 40, 80)}),
+		testLogger(), WithFlushInterval(time.Hour), fixedClock(now))
 
-	s.sampleOnce(context.Background(), time.Now())
-	_, ok := reg.Get(types.NamespacedName{Namespace: "ns", Name: "foo"})
-	assert.False(t, ok, "disabled AgentDeploy is not sampled")
+	require.NoError(t, s.sampleKey(context.Background(), nn("foo")))
+	store, ok := reg.Get(nn("foo"))
+	require.True(t, ok)
+	assert.Len(t, store.History(now.Add(time.Minute)), 1, "history collected even while disabled")
+}
+
+func TestSamplerSampleKeyForgetsDeleted(t *testing.T) {
+	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).Build() // no objects
+	reg := NewRegistry(c)
+	watch := NewWatchSet(reg)
+	watch.Track(nn("ghost"))
+	s := NewSampler(c, watch, reg, staticDialer(&fakeSource{}), testLogger())
+
+	require.NoError(t, s.sampleKey(context.Background(), nn("ghost")))
+	assert.False(t, watch.Contains(nn("ghost")), "missing AgentDeploy is forgotten")
 }
 
 func TestSamplerFlushesOnInterval(t *testing.T) {
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	ad := scalingAD("foo", 2)
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
 	reg := NewRegistry(c)
-	s := NewSampler(c, reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 40, 80)}), testLogger(),
-		WithFlushInterval(0)) // flush every tick
+	s := NewSampler(c, NewWatchSet(reg), reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 40, 80)}),
+		testLogger(), WithFlushInterval(0), fixedClock(now)) // flush every sample
 
-	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
-	s.sampleOnce(context.Background(), now)
+	require.NoError(t, s.sampleKey(context.Background(), nn("foo")))
 
 	var cm corev1.ConfigMap
 	err := c.Get(context.Background(), client.ObjectKey{Namespace: "ns", Name: HistoryConfigMapName("foo")}, &cm)
@@ -98,17 +120,29 @@ func TestSamplerFlushesOnInterval(t *testing.T) {
 	assert.NotEmpty(t, cm.BinaryData[historyKey])
 }
 
-func TestSamplerReapsDeletedAgentDeploys(t *testing.T) {
-	ad := scalingAD("foo", 2)
-	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
+func TestSamplerStartSamplesAllWatched(t *testing.T) {
+	objs := make([]client.Object, 0, 3)
+	for _, n := range []string{"a", "b", "c"} {
+		objs = append(objs, scalingAD(n, 4))
+	}
+	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(objs...).Build()
 	reg := NewRegistry(c)
-	s := NewSampler(c, reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 40, 80)}), testLogger(), WithFlushInterval(time.Hour))
+	watch := NewWatchSet(reg)
+	for _, n := range []string{"a", "b", "c"} {
+		watch.Track(nn(n))
+	}
+	s := NewSampler(c, watch, reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 100, 200)}),
+		testLogger(), WithWorkers(2), WithTaskInterval(5*time.Millisecond), WithFlushInterval(time.Hour))
 
-	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
-	s.sampleOnce(context.Background(), now)
-	require.NoError(t, c.Delete(context.Background(), ad))
+	go func() { _ = s.Start(t.Context()) }()
 
-	s.sampleOnce(context.Background(), now.Add(time.Minute))
-	_, ok := reg.Get(types.NamespacedName{Namespace: "ns", Name: "foo"})
-	assert.False(t, ok, "deleted AgentDeploy is reaped from the registry")
+	require.Eventually(t, func() bool {
+		for _, n := range []string{"a", "b", "c"} {
+			st, ok := reg.Get(nn(n))
+			if !ok || len(st.History(time.Now())) == 0 {
+				return false
+			}
+		}
+		return true
+	}, 3*time.Second, 10*time.Millisecond, "all watched AgentDeploys get sampled")
 }

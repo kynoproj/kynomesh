@@ -144,11 +144,21 @@ func Start(namespaced bool, managedNamespace string) {
 	if err := registerAgentSetController(mgr, logger, image, brokerPullPolicy); err != nil {
 		logger.Fatalw("Failed to register AgentSet controller", "err", err)
 	}
-	if err := registerAgentDeployController(mgr, logger, image, brokerPullPolicy); err != nil {
+
+	// Autoscaling components share one Registry and one WatchSet.
+	scalingRegistry := scaling.NewRegistry(mgr.GetClient())
+	scalingWatch := scaling.NewWatchSet(scalingRegistry)
+	sampler := scaling.NewSampler(mgr.GetClient(), scalingWatch, scalingRegistry, scaling.GRPCDaemonDialer, logger.Named("scaling-sampler"))
+	autoscaler := scaling.NewAutoscaler(mgr.GetClient(), scalingWatch, scalingRegistry, logger.Named("scaling-autoscaler"))
+
+	if err := registerAgentDeployController(mgr, logger, image, brokerPullPolicy, scalingWatch); err != nil {
 		logger.Fatalw("Failed to register AgentDeploy controller", zap.Error(err))
 	}
-	if err := registerAutoscaling(mgr, logger); err != nil {
-		logger.Fatalw("Failed to register autoscaling components", zap.Error(err))
+	if err := mgr.Add(LeaderElectionRunner(sampler.Start)); err != nil {
+		logger.Fatalw("Failed to add sampler runnable", zap.Error(err))
+	}
+	if err := mgr.Add(LeaderElectionRunner(autoscaler.Start)); err != nil {
+		logger.Fatalw("Failed to add autoscaler runnable", zap.Error(err))
 	}
 
 	logger.Infow("Starting controller-manager",
@@ -310,7 +320,7 @@ func registerAgentSetController(mgr manager.Manager, logger *zap.SugaredLogger, 
 //
 //   - Service (owned): enqueue the controlling AgentDeploy if the headless
 //     service is mutated or deleted out from under us.
-func registerAgentDeployController(mgr manager.Manager, logger *zap.SugaredLogger, brokerImage string, brokerPullPolicy corev1.PullPolicy) error {
+func registerAgentDeployController(mgr manager.Manager, logger *zap.SugaredLogger, brokerImage string, brokerPullPolicy corev1.PullPolicy, watch *scaling.WatchSet) error {
 	r := agentdeploy.NewReconciler(
 		mgr.GetClient(),
 		mgr.GetScheme(),
@@ -318,6 +328,7 @@ func registerAgentDeployController(mgr manager.Manager, logger *zap.SugaredLogge
 		mgr.GetEventRecorder(kmv1.ControllerAgentDeploy),
 		brokerImage,
 		brokerPullPolicy,
+		watch,
 	)
 
 	c, err := controller.New(kmv1.ControllerAgentDeploy, mgr, controller.Options{
@@ -434,21 +445,6 @@ func controllerImageFromPod(pod *corev1.Pod) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("pod %s/%s has no container named %q", pod.Namespace, pod.Name, kmv1.ContainerNameController)
-}
-
-// registerAutoscaling wires the standalone autoscaling components into the
-// manager as Runnables.
-func registerAutoscaling(mgr manager.Manager, logger *zap.SugaredLogger) error {
-	reg := scaling.NewRegistry(mgr.GetClient())
-	sampler := scaling.NewSampler(mgr.GetClient(), reg, scaling.GRPCDaemonDialer, logger.Named("scaling-sampler"))
-	autoscaler := scaling.NewAutoscaler(mgr.GetClient(), reg, logger.Named("scaling-autoscaler"))
-	if err := mgr.Add(LeaderElectionRunner(sampler.Start)); err != nil {
-		return fmt.Errorf("add sampler runnable: %w", err)
-	}
-	if err := mgr.Add(LeaderElectionRunner(autoscaler.Start)); err != nil {
-		return fmt.Errorf("add autoscaler runnable: %w", err)
-	}
-	return nil
 }
 
 // LeaderElectionRunner adapts a plain func(ctx) error into a manager.Runnable

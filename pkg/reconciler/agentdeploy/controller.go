@@ -27,6 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,6 +37,14 @@ import (
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 )
 
+// scaleWatcher is the subset of the scaling WatchSet the controller drives to
+// keep the autoscaling components' shared watch set in sync with the live
+// AgentDeploys.
+type scaleWatcher interface {
+	Track(types.NamespacedName)
+	Forget(types.NamespacedName)
+}
+
 // Reconciler implements controller-runtime's reconcile.Reconciler.
 type Reconciler struct {
 	client.Client
@@ -44,15 +53,19 @@ type Reconciler struct {
 	recorder        events.EventRecorder
 	image           string
 	imagePullPolicy corev1.PullPolicy
+	scaler          scaleWatcher
 }
 
 // NewReconciler returns a Reconciler bound to the supplied client and scheme.
-func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredLogger, recorder events.EventRecorder, image string, imagePullPolicy corev1.PullPolicy) *Reconciler {
+func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredLogger, recorder events.EventRecorder, image string, imagePullPolicy corev1.PullPolicy, scaler scaleWatcher) *Reconciler {
 	if logger == nil {
 		logger = logging.NewLogger().Named(kmv1.ControllerAgentDeploy)
 	}
 	if recorder == nil {
 		recorder = noopRecorder{}
+	}
+	if scaler == nil {
+		scaler = noopScaler{}
 	}
 	return &Reconciler{
 		Client:          c,
@@ -61,14 +74,22 @@ func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredL
 		recorder:        recorder,
 		image:           image,
 		imagePullPolicy: imagePullPolicy,
+		scaler:          scaler,
 	}
 }
+
+// noopScaler is used when no autoscaler is wired in.
+type noopScaler struct{}
+
+func (noopScaler) Track(types.NamespacedName)  {}
+func (noopScaler) Forget(types.NamespacedName) {}
 
 // Reconcile is the controller-runtime entry point.
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	var original kmv1.AgentDeploy
 	if err := r.Get(ctx, req.NamespacedName, &original); err != nil {
 		if apierrors.IsNotFound(err) {
+			r.scaler.Forget(req.NamespacedName)
 			return ctrl.Result{}, nil
 		}
 		r.logger.Errorw("Unable to get AgentDeploy", zap.Any("request", req), zap.Error(err))
@@ -76,8 +97,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !original.DeletionTimestamp.IsZero() {
+		r.scaler.Forget(req.NamespacedName)
 		return ctrl.Result{}, nil
 	}
+
+	// For autoscaling.
+	r.scaler.Track(req.NamespacedName)
 
 	log := r.logger.With("namespace", req.Namespace).With("agentSet", original.Spec.AgentSetName).
 		With("agentDeploy", original.Name)

@@ -19,6 +19,7 @@ package scaling
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -35,14 +36,18 @@ import (
 )
 
 type fakeSource struct {
-	resp        *pb.AgentDeployMetrics
-	err         error
+	resp *pb.AgentDeployMetrics
+	err  error
+
+	mu          sync.Mutex
 	gotName     string
 	gotLookback int64
 }
 
 func (f *fakeSource) GetAgentDeployMetrics(_ context.Context, name string, lookback int64) (*pb.AgentDeployMetrics, error) {
+	f.mu.Lock()
 	f.gotName, f.gotLookback = name, lookback
+	f.mu.Unlock()
 	return f.resp, f.err
 }
 

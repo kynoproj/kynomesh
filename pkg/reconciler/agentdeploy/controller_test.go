@@ -79,7 +79,7 @@ func newTestReconciler(t *testing.T, objs ...client.Object) (*Reconciler, client
 		WithObjects(objs...).
 		WithStatusSubresource(&kmv1.AgentDeploy{}).
 		Build()
-	r := NewReconciler(c, scheme, nil, &events.FakeRecorder{}, testBrokerImage, "")
+	r := NewReconciler(c, scheme, nil, &events.FakeRecorder{}, testBrokerImage, "", nil)
 	return r, c
 }
 
@@ -428,4 +428,46 @@ func TestReconcile_RollingUpdate_NewSpecResetsUpdateCursor(t *testing.T) {
 	var afterChange kmv1.AgentDeploy
 	require.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter"}, &afterChange))
 	assert.NotEqual(t, firstHash, afterChange.Status.UpdateHash, "UpdateHash must track the new spec")
+}
+
+type fakeScaler struct {
+	tracked, forgot []types.NamespacedName
+}
+
+func (f *fakeScaler) Track(k types.NamespacedName)  { f.tracked = append(f.tracked, k) }
+func (f *fakeScaler) Forget(k types.NamespacedName) { f.forgot = append(f.forgot, k) }
+
+func TestReconcile_ManagesWatchSet(t *testing.T) {
+	key := reconcileRequest("greeter").NamespacedName
+
+	t.Run("scaling-enabled starts watching", func(t *testing.T) {
+		r, _ := newTestReconciler(t, newAgentDeploy("greeter", 1))
+		fs := &fakeScaler{}
+		r.scaler = fs
+		_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+		require.NoError(t, err)
+		assert.Contains(t, fs.tracked, key)
+		assert.Empty(t, fs.forgot)
+	})
+
+	t.Run("scaling-disabled is still watched", func(t *testing.T) {
+		ad := newAgentDeploy("greeter", 1)
+		ad.Spec.Scale.Disabled = true
+		r, _ := newTestReconciler(t, ad)
+		fs := &fakeScaler{}
+		r.scaler = fs
+		_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+		require.NoError(t, err)
+		assert.Contains(t, fs.tracked, key, "sampling continues even while scaling is disabled")
+		assert.Empty(t, fs.forgot)
+	})
+
+	t.Run("missing AgentDeploy is forgotten", func(t *testing.T) {
+		r, _ := newTestReconciler(t) // no objects
+		fs := &fakeScaler{}
+		r.scaler = fs
+		_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+		require.NoError(t, err)
+		assert.Contains(t, fs.forgot, key)
+	})
 }

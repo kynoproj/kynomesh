@@ -18,9 +18,12 @@ package scaling
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.uber.org/zap"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
@@ -28,108 +31,106 @@ import (
 
 const defaultScaleInterval = 30 * time.Second
 
-// Autoscaler is the standalone scaling component. On a ticker it reads each
-// AgentDeploy's in-memory history from the Registry, computes the desired
-// replica count, and patches spec.replicas — leaving the agentdeploy controller
-// to realize the change. Its Start method is registered as a leader-elected runner.
-//
-// It never writes status; Status.LastScaledAt (read here for cooldowns) is the
-// agentdeploy controller's responsibility to stamp on an actual replica change.
+// Autoscaler computes desired replicas and patches spec.replicas, leaving the
+// agentdeploy controller to realize the change.
 type Autoscaler struct {
-	client   client.Client
-	registry *Registry
-	logger   *zap.SugaredLogger
-	interval time.Duration
-	clock    func() time.Time
+	client       client.Client
+	watch        *WatchSet
+	registry     *Registry
+	logger       *zap.SugaredLogger
+	workers      int
+	taskInterval time.Duration
+	clock        func() time.Time
+
+	runner *runner
 }
 
 // AutoscalerOption configures an Autoscaler.
 type AutoscalerOption func(*Autoscaler)
 
+func WithScaleWorkers(n int) AutoscalerOption { return func(a *Autoscaler) { a.workers = n } }
 func WithScaleInterval(d time.Duration) AutoscalerOption {
-	return func(a *Autoscaler) { a.interval = d }
+	return func(a *Autoscaler) { a.taskInterval = d }
 }
 func WithAutoscalerClock(f func() time.Time) AutoscalerOption {
 	return func(a *Autoscaler) { a.clock = f }
 }
 
-// NewAutoscaler builds an Autoscaler reading from the shared Registry.
-func NewAutoscaler(c client.Client, reg *Registry, logger *zap.SugaredLogger, opts ...AutoscalerOption) *Autoscaler {
+// NewAutoscaler builds an Autoscaler over the shared WatchSet and Registry.
+func NewAutoscaler(c client.Client, watch *WatchSet, reg *Registry, logger *zap.SugaredLogger, opts ...AutoscalerOption) *Autoscaler {
 	a := &Autoscaler{
-		client:   c,
-		registry: reg,
-		logger:   logger,
-		interval: defaultScaleInterval,
-		clock:    time.Now,
+		client:       c,
+		watch:        watch,
+		registry:     reg,
+		logger:       logger,
+		workers:      defaultWorkers,
+		taskInterval: defaultScaleInterval,
+		clock:        time.Now,
 	}
 	for _, o := range opts {
 		o(a)
 	}
+	a.runner = &runner{
+		name:         "autoscaler",
+		watch:        watch,
+		process:      a.scaleKey,
+		workers:      a.workers,
+		taskInterval: a.taskInterval,
+		logger:       logger,
+	}
 	return a
 }
 
-// Start runs the scaling loop until ctx is cancelled.
-func (a *Autoscaler) Start(ctx context.Context) error {
-	t := time.NewTicker(a.interval)
-	defer t.Stop()
-	a.logger.Infow("Autoscaler started", zap.Duration("interval", a.interval))
-	for {
-		select {
-		case <-ctx.Done():
+// Start runs the scaling runner until ctx is cancelled.
+func (a *Autoscaler) Start(ctx context.Context) error { return a.runner.start(ctx) }
+
+// scaleKey evaluates one AgentDeploy and patches spec.replicas when a change is
+// warranted.
+func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error {
+	var ad kmv1.AgentDeploy
+	if err := a.client.Get(ctx, k, &ad); err != nil {
+		if apierrors.IsNotFound(err) {
+			a.watch.Forget(k)
 			return nil
-		case <-t.C:
-			a.scaleOnce(ctx, a.clock())
 		}
+		return fmt.Errorf("get agentdeploy: %w", err)
 	}
-}
-
-// scaleOnce evaluates every scaling-enabled AgentDeploy once and patches
-// spec.replicas where a change is warranted. Per-AgentDeploy failures are
-// logged and skipped.
-func (a *Autoscaler) scaleOnce(ctx context.Context, now time.Time) {
-	var list kmv1.AgentDeployList
-	if err := a.client.List(ctx, &list); err != nil {
-		a.logger.Errorw("List AgentDeploys for scaling failed", zap.Error(err))
-		return
+	if ad.Spec.Scale.Disabled {
+		return nil
+	}
+	store, ok := a.registry.Get(k)
+	if !ok {
+		return nil // not sampled yet
 	}
 
-	for i := range list.Items {
-		ad := &list.Items[i]
-		if ad.Spec.Scale.Disabled {
-			continue
-		}
-		store, ok := a.registry.Get(key(ad))
-		if !ok {
-			continue // not sampled yet
-		}
-		hist := store.History(now)
-		if len(hist) == 0 {
-			continue // no data; leave spec untouched
-		}
-
-		current := specReplicas(ad)
-		dec := Decide(Inputs{
-			SpecifiedReplicas: current,
-			ReadyReplicas:     int32(ad.Status.ReadyReplicas),
-			History:           hist,
-			Current:           hist[len(hist)-1], // most recent sample
-			Spec:              ad.Spec.Scale,
-			Now:               now,
-			LastScaledAt:      ad.Status.LastScaledAt.Time,
-		})
-		if dec.Skip || dec.DesiredReplicas == current {
-			continue
-		}
-		if err := a.applyReplicas(ctx, ad, dec.DesiredReplicas); err != nil {
-			a.logger.Warnw("Patch replicas failed", zap.String("agentDeploy", ad.Name), zap.Error(err))
-			continue
-		}
-		a.logger.Infow("Scaled AgentDeploy",
-			zap.String("agentDeploy", ad.Name),
-			zap.Int32("from", current),
-			zap.Int32("to", dec.DesiredReplicas),
-			zap.String("reason", string(dec.Reason)))
+	now := a.clock()
+	hist := store.History(now)
+	if len(hist) == 0 {
+		return nil // no data; leave spec untouched
 	}
+
+	current := specReplicas(&ad)
+	dec := Decide(Inputs{
+		SpecifiedReplicas: current,
+		ReadyReplicas:     int32(ad.Status.ReadyReplicas),
+		History:           hist,
+		Current:           hist[len(hist)-1], // most recent sample
+		Spec:              ad.Spec.Scale,
+		Now:               now,
+		LastScaledAt:      ad.Status.LastScaledAt.Time,
+	})
+	if dec.Skip || dec.DesiredReplicas == current {
+		return nil
+	}
+	if err := a.applyReplicas(ctx, &ad, dec.DesiredReplicas); err != nil {
+		return fmt.Errorf("patch replicas: %w", err)
+	}
+	a.logger.Infow("Scaled AgentDeploy",
+		zap.String("agentDeploy", ad.Name),
+		zap.Int32("from", current),
+		zap.Int32("to", dec.DesiredReplicas),
+		zap.String("reason", string(dec.Reason)))
+	return nil
 }
 
 // applyReplicas patches spec.replicas, leaving everything else untouched.
@@ -141,6 +142,7 @@ func (a *Autoscaler) applyReplicas(ctx context.Context, ad *kmv1.AgentDeploy, de
 
 // specReplicas is the AgentDeploy's current spec replica count, defaulting to 1.
 func specReplicas(ad *kmv1.AgentDeploy) int32 {
+	// TODO: this should come from status.replicas
 	if ad.Spec.Replicas != nil {
 		return *ad.Spec.Replicas
 	}
