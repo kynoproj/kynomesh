@@ -140,14 +140,14 @@ func (s *Sampler) sampleKey(ctx context.Context, k types.NamespacedName) error {
 		}
 		return fmt.Errorf("get agentdeploy: %w", err)
 	}
-
+	log := s.logger.With(zap.String("namespace", k.Namespace), zap.String("agentDeploy", k.Name))
 	src, err := s.sourceFor(&ad)
 	if err != nil {
 		return fmt.Errorf("dial daemon: %w", err)
 	}
 	store, err := s.registry.StoreFor(ctx, &ad)
 	if err != nil {
-		s.logger.Warnw("Load history failed", zap.String("agentDeploy", ad.Name), zap.Error(err))
+		log.Warnw("Load history failed", zap.Error(err))
 	}
 
 	scrapeCtx, cancel := context.WithTimeout(ctx, s.scrapeTimeout)
@@ -162,13 +162,12 @@ func (s *Sampler) sampleKey(ctx context.Context, k types.NamespacedName) error {
 	// Tag the sample with the current pod-spec hash so a new deployment resets
 	// the learned history.
 	store.Record(sample, ad.Status.UpdateHash)
-	s.logger.Debugw("Recorded sample",
-		zap.String("agentDeploy", ad.Name),
+	log.Debugw("Recorded sample",
 		zap.Float64("inflightPerReplica", sample.InflightPerRep),
 		zap.Float64("ratePerReplica", sample.RatePerRep),
 		zap.Int32("replicas", sample.Replicas))
 	if err := store.FlushIfDue(ctx, s.clock(), s.flushInterval); err != nil {
-		s.logger.Warnw("Flush history failed", zap.String("agentDeploy", ad.Name), zap.Error(err))
+		log.Warnw("Flush history failed", zap.Error(err))
 	}
 	return nil
 }

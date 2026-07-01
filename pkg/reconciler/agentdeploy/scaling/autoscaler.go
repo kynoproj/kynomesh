@@ -106,26 +106,27 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 		}
 		return fmt.Errorf("get agentdeploy: %w", err)
 	}
+	log := a.logger.With(zap.String("namespace", k.Namespace), zap.String("agentDeploy", k.Name))
 	if ad.Spec.Scale.Disabled {
 		return nil
 	}
 	store, ok := a.registry.Get(k)
 	if !ok {
+		log.Infow("Skipping scale: no sampled metrics yet")
 		return nil // not sampled yet
 	}
 
 	now := a.clock()
 	hist := store.History(now)
 	if len(hist) == 0 {
+		log.Infow("Skipping scale: no historic metrics")
 		return nil // no data; leave spec untouched
 	}
 
 	latest := hist[len(hist)-1]
-	// Staleness guard: if the freshest sample is too old (the Sampler stalled or
-	// the daemon is unreachable), don't scale on outdated load.
+	// Staleness guard: if the freshest sample is too old.
 	if age := now.Sub(latest.Timestamp); age > a.maxSampleAge {
-		a.logger.Debugw("Skipping scale: stale metrics",
-			zap.String("agentDeploy", ad.Name), zap.Duration("sampleAge", age))
+		log.Infow("Skipping scale: stale metrics", zap.Duration("sampleAge", age))
 		return nil
 	}
 
@@ -139,8 +140,7 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 		Now:               now,
 		LastScaledAt:      ad.Status.LastScaledAt.Time,
 	})
-	a.logger.Debugw("Scaling decision",
-		zap.String("agentDeploy", ad.Name),
+	log.Debugw("Scaling decision",
 		zap.Int32("current", current),
 		zap.Int32("desired", dec.DesiredReplicas),
 		zap.String("reason", string(dec.Reason)),
@@ -154,8 +154,7 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 	if err := a.applyReplicas(ctx, &ad, dec.DesiredReplicas); err != nil {
 		return fmt.Errorf("patch replicas: %w", err)
 	}
-	a.logger.Infow("Scaled AgentDeploy",
-		zap.String("agentDeploy", ad.Name),
+	log.Infow("Scaled AgentDeploy",
 		zap.Int32("from", current),
 		zap.Int32("to", dec.DesiredReplicas),
 		zap.String("reason", string(dec.Reason)),
