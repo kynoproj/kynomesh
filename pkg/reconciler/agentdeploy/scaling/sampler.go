@@ -162,6 +162,11 @@ func (s *Sampler) sampleKey(ctx context.Context, k types.NamespacedName) error {
 	// Tag the sample with the current pod-spec hash so a new deployment resets
 	// the learned history.
 	store.Record(sample, ad.Status.UpdateHash)
+	s.logger.Debugw("Recorded sample",
+		zap.String("agentDeploy", ad.Name),
+		zap.Float64("inflightPerReplica", sample.InflightPerRep),
+		zap.Float64("ratePerReplica", sample.RatePerRep),
+		zap.Int32("replicas", sample.Replicas))
 	if err := store.FlushIfDue(ctx, s.clock(), s.flushInterval); err != nil {
 		s.logger.Warnw("Flush history failed", zap.String("agentDeploy", ad.Name), zap.Error(err))
 	}
