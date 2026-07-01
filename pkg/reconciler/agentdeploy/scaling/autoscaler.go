@@ -29,7 +29,13 @@ import (
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
-const defaultScaleInterval = 30 * time.Second
+const (
+	defaultScaleInterval = 30 * time.Second
+	// defaultMaxSampleAge bounds how stale the freshest sample may be before the
+	// Autoscaler declines to act — guards against scaling on outdated load when
+	// the Sampler has stalled or the daemon is unreachable.
+	defaultMaxSampleAge = 2 * time.Minute
+)
 
 // Autoscaler computes desired replicas and patches spec.replicas, leaving the
 // agentdeploy controller to realize the change.
@@ -40,6 +46,7 @@ type Autoscaler struct {
 	logger       *zap.SugaredLogger
 	workers      int
 	taskInterval time.Duration
+	maxSampleAge time.Duration
 	clock        func() time.Time
 
 	runner *runner
@@ -51,6 +58,9 @@ type AutoscalerOption func(*Autoscaler)
 func WithScaleWorkers(n int) AutoscalerOption { return func(a *Autoscaler) { a.workers = n } }
 func WithScaleInterval(d time.Duration) AutoscalerOption {
 	return func(a *Autoscaler) { a.taskInterval = d }
+}
+func WithMaxSampleAge(d time.Duration) AutoscalerOption {
+	return func(a *Autoscaler) { a.maxSampleAge = d }
 }
 func WithAutoscalerClock(f func() time.Time) AutoscalerOption {
 	return func(a *Autoscaler) { a.clock = f }
@@ -65,6 +75,7 @@ func NewAutoscaler(c client.Client, watch *WatchSet, reg *Registry, logger *zap.
 		logger:       logger,
 		workers:      defaultWorkers,
 		taskInterval: defaultScaleInterval,
+		maxSampleAge: defaultMaxSampleAge,
 		clock:        time.Now,
 	}
 	for _, o := range opts {
@@ -95,41 +106,60 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 		}
 		return fmt.Errorf("get agentdeploy: %w", err)
 	}
+	log := a.logger.With(zap.String("namespace", k.Namespace), zap.String("agentDeploy", k.Name))
 	if ad.Spec.Scale.Disabled {
 		return nil
 	}
 	store, ok := a.registry.Get(k)
 	if !ok {
+		log.Infow("Skipping scale: no sampled metrics yet")
 		return nil // not sampled yet
 	}
 
 	now := a.clock()
 	hist := store.History(now)
 	if len(hist) == 0 {
+		log.Infow("Skipping scale: no historic metrics")
 		return nil // no data; leave spec untouched
 	}
 
-	current := specReplicas(&ad)
+	latest := hist[len(hist)-1]
+	// Staleness guard: if the freshest sample is too old.
+	if age := now.Sub(latest.Timestamp); age > a.maxSampleAge {
+		log.Infow("Skipping scale: stale metrics", zap.Duration("sampleAge", age))
+		return nil
+	}
+
+	current := currentReplicas(&ad)
 	dec := Decide(Inputs{
 		SpecifiedReplicas: current,
 		ReadyReplicas:     int32(ad.Status.ReadyReplicas),
 		History:           hist,
-		Current:           hist[len(hist)-1], // most recent sample
+		Current:           latest,
 		Spec:              ad.Spec.Scale,
 		Now:               now,
 		LastScaledAt:      ad.Status.LastScaledAt.Time,
 	})
+	log.Debugw("Scaling decision",
+		zap.Int32("current", current),
+		zap.Int32("desired", dec.DesiredReplicas),
+		zap.String("reason", string(dec.Reason)),
+		zap.Bool("skip", dec.Skip),
+		zap.Float64("kneePerReplica", dec.Estimate.KneePerReplica),
+		zap.Float64("confidence", dec.Estimate.Confidence),
+		zap.Bool("lowerBound", dec.Estimate.IsLowerBound))
 	if dec.Skip || dec.DesiredReplicas == current {
 		return nil
 	}
 	if err := a.applyReplicas(ctx, &ad, dec.DesiredReplicas); err != nil {
 		return fmt.Errorf("patch replicas: %w", err)
 	}
-	a.logger.Infow("Scaled AgentDeploy",
-		zap.String("agentDeploy", ad.Name),
+	log.Infow("Scaled AgentDeploy",
 		zap.Int32("from", current),
 		zap.Int32("to", dec.DesiredReplicas),
-		zap.String("reason", string(dec.Reason)))
+		zap.String("reason", string(dec.Reason)),
+		zap.Float64("kneePerReplica", dec.Estimate.KneePerReplica),
+		zap.Float64("confidence", dec.Estimate.Confidence))
 	return nil
 }
 
@@ -140,9 +170,16 @@ func (a *Autoscaler) applyReplicas(ctx context.Context, ad *kmv1.AgentDeploy, de
 	return a.client.Patch(ctx, ad, patch)
 }
 
-// specReplicas is the AgentDeploy's current spec replica count, defaulting to 1.
+// currentReplicas is the running replica count the decision scales from.
+func currentReplicas(ad *kmv1.AgentDeploy) int32 {
+	if ad.Status.Replicas > 0 {
+		return int32(ad.Status.Replicas)
+	}
+	return specReplicas(ad)
+}
+
+// specReplicas is the AgentDeploy's spec replica count, defaulting to 1.
 func specReplicas(ad *kmv1.AgentDeploy) int32 {
-	// TODO: this should come from status.replicas
 	if ad.Spec.Replicas != nil {
 		return *ad.Spec.Replicas
 	}

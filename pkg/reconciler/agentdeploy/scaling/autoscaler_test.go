@@ -39,7 +39,7 @@ func seedStore(t *testing.T, reg *Registry, ad *kmv1.AgentDeploy, samples ...Sam
 	}
 }
 
-func currentReplicas(t *testing.T, c client.Client, name string) int32 {
+func specReplicasOf(t *testing.T, c client.Client, name string) int32 {
 	t.Helper()
 	var got kmv1.AgentDeploy
 	require.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: "ns", Name: name}, &got))
@@ -64,7 +64,7 @@ func TestAutoscalerScalesUpAndPatchesSpec(t *testing.T) {
 
 	require.NoError(t, newTestAutoscaler(c, reg, now).scaleKey(context.Background(), nn("foo")))
 
-	assert.Greater(t, currentReplicas(t, c, "foo"), int32(1), "spec.replicas scaled up")
+	assert.Greater(t, specReplicasOf(t, c, "foo"), int32(1), "spec.replicas scaled up")
 }
 
 func TestAutoscalerNoChangeLeavesSpecAlone(t *testing.T) {
@@ -80,7 +80,7 @@ func TestAutoscalerNoChangeLeavesSpecAlone(t *testing.T) {
 
 	require.NoError(t, newTestAutoscaler(c, reg, now).scaleKey(context.Background(), nn("foo")))
 
-	assert.Equal(t, int32(4), currentReplicas(t, c, "foo"))
+	assert.Equal(t, int32(4), specReplicasOf(t, c, "foo"))
 }
 
 func TestAutoscalerSkipsDisabled(t *testing.T) {
@@ -93,7 +93,7 @@ func TestAutoscalerSkipsDisabled(t *testing.T) {
 	seedStore(t, reg, ad, sample(now, 1, 80, 160))
 
 	require.NoError(t, newTestAutoscaler(c, reg, now).scaleKey(context.Background(), nn("foo")))
-	assert.Equal(t, int32(1), currentReplicas(t, c, "foo"), "disabled is left untouched")
+	assert.Equal(t, int32(1), specReplicasOf(t, c, "foo"), "disabled is left untouched")
 }
 
 func TestAutoscalerSkipsWhenNotSampled(t *testing.T) {
@@ -105,5 +105,37 @@ func TestAutoscalerSkipsWhenNotSampled(t *testing.T) {
 	reg := NewRegistry(c) // empty — no store for foo
 
 	require.NoError(t, newTestAutoscaler(c, reg, now).scaleKey(context.Background(), nn("foo")))
-	assert.Equal(t, int32(1), currentReplicas(t, c, "foo"), "no history → no scaling")
+	assert.Equal(t, int32(1), specReplicasOf(t, c, "foo"), "no history → no scaling")
+}
+
+func TestAutoscalerUsesStatusReplicasAsCurrent(t *testing.T) {
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	ad := scalingAD("foo", 5)
+	ad.Status.Replicas = 5       // actual running count
+	ad.Spec.Replicas = ptrI32(1) // stale spec value
+	ad.Spec.Scale = kmv1.Scale{Max: ptrI32(10), TargetSaturationPercentage: ptrU32(100)}
+
+	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
+	reg := NewRegistry(c)
+	// total 55, cold target 12 → desired ceil(55/12)=5 == current(status 5) → no change.
+	// Had it used Spec.Replicas=1, desired 5 != 1 would have patched spec upward.
+	seedStore(t, reg, ad, sample(now, 5, 11, 220))
+
+	require.NoError(t, newTestAutoscaler(c, reg, now).scaleKey(context.Background(), nn("foo")))
+	assert.Equal(t, int32(1), specReplicasOf(t, c, "foo"),
+		"decided from Status.Replicas=5 (no change), not Spec.Replicas=1")
+}
+
+func TestAutoscalerSkipsStaleSamples(t *testing.T) {
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	ad := scalingAD("foo", 1)
+	ad.Spec.Scale = kmv1.Scale{Max: ptrI32(10), TargetSaturationPercentage: ptrU32(100)}
+
+	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
+	reg := NewRegistry(c)
+	// Freshest sample is 10 minutes old; default maxSampleAge is 2 minutes.
+	seedStore(t, reg, ad, sample(now.Add(-10*time.Minute), 1, 80, 160))
+
+	require.NoError(t, newTestAutoscaler(c, reg, now).scaleKey(context.Background(), nn("foo")))
+	assert.Equal(t, int32(1), specReplicasOf(t, c, "foo"), "stale metrics → no scaling")
 }
