@@ -34,8 +34,10 @@ import (
 // ingestion (Record), reads (History), persistence (Flush), and startup
 // hydration (Load). Implementations are safe for concurrent use.
 type Store interface {
-	// Record appends a fresh sample to memory. Cheap; does not touch the API.
-	Record(s Sample)
+	// Record appends a fresh sample to memory, tagged with the pod-spec hash it
+	// was collected under; a changed hash (a new deployment) drops the prior
+	// history.
+	Record(s Sample, specHash string)
 	// History returns the time-ordered samples for the estimator.
 	History(now time.Time) []Sample
 	// Load hydrates memory from the backing object (startup). A missing object
@@ -64,6 +66,7 @@ type ConfigMapStore struct {
 
 	flushMu   sync.Mutex
 	lastFlush time.Time
+	specHash  string // pod-spec hash the current history was collected under
 }
 
 var _ Store = (*ConfigMapStore)(nil)
@@ -87,11 +90,22 @@ func NewConfigMapStore(c client.Client, ad *kmv1.AgentDeploy, opts ...bufferOpti
 		},
 		buf: newBuffer(opts...),
 	}
-	s.buf.setGeneration(ad.Generation)
 	return s
 }
 
-func (s *ConfigMapStore) Record(sample Sample) { s.buf.add(sample) }
+// Record appends a sample tagged with the pod-spec hash it was collected under.
+// When that hash changes (a new deployment), the prior history is dropped so
+// capacity learned from the old spec doesn't leak into the new one.
+func (s *ConfigMapStore) Record(sample Sample, specHash string) {
+	s.flushMu.Lock()
+	changed := s.specHash != "" && s.specHash != specHash
+	s.specHash = specHash
+	s.flushMu.Unlock()
+	if changed {
+		s.buf.reset()
+	}
+	s.buf.add(sample)
+}
 
 func (s *ConfigMapStore) History(now time.Time) []Sample { return s.buf.samples(now) }
 
@@ -105,18 +119,25 @@ func (s *ConfigMapStore) Load(ctx context.Context) error {
 		}
 		return fmt.Errorf("failed to get history ConfigMap: %w", err)
 	}
-	records, err := decodeRecords(cm.BinaryData[historyKey])
+	specHash, records, err := decodeHistory(cm.BinaryData[historyKey])
 	if err != nil {
 		return fmt.Errorf("failed to decode history: %w", err)
 	}
+	s.flushMu.Lock()
+	s.specHash = specHash
+	s.flushMu.Unlock()
 	s.buf.load(records)
 	return nil
 }
 
-// Flush persists the current buffer to the backing ConfigMap, creating it if
-// absent. Retries once on a write conflict.
+// Flush persists the current buffer (and the spec hash it was collected under)
+// to the backing ConfigMap, creating it if absent. Retries once on a write
+// conflict.
 func (s *ConfigMapStore) Flush(ctx context.Context) error {
-	return s.upsert(ctx, encodeRecords(s.buf.snapshot()), true)
+	s.flushMu.Lock()
+	h := s.specHash
+	s.flushMu.Unlock()
+	return s.upsert(ctx, encodeHistory(h, s.buf.snapshot()), true)
 }
 
 // FlushIfDue flushes only when interval has elapsed since the last flush,

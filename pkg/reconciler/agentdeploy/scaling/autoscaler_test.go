@@ -35,7 +35,7 @@ func seedStore(t *testing.T, reg *Registry, ad *kmv1.AgentDeploy, samples ...Sam
 	store, err := reg.StoreFor(context.Background(), ad)
 	require.NoError(t, err)
 	for _, s := range samples {
-		store.Record(s)
+		store.Record(s, "h")
 	}
 }
 

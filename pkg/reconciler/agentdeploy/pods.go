@@ -50,6 +50,9 @@ const randomSuffixLength = 5
 //     returns nil and lets the pod-watch event drive the next pass).
 func (r *Reconciler) reconcilePods(ctx context.Context, ad *kmv1.AgentDeploy) error {
 	desired := desiredReplicas(ad)
+	if uint32(desired) != ad.Status.DesiredReplicas {
+		ad.Status.LastScaledAt = metav1.Now()
+	}
 	ad.Status.DesiredReplicas = uint32(desired)
 
 	desiredPodSpec := buildPodSpec(ad, r.image, r.imagePullPolicy)

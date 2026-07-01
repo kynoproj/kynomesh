@@ -49,16 +49,24 @@ func TestBufferEvictsByCount(t *testing.T) {
 	assert.Equal(t, 12.0, got[1].InflightPerRep)
 }
 
-func TestBufferStampsGenerationAndCount(t *testing.T) {
+func TestBufferStampsCount(t *testing.T) {
 	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	b := newBuffer()
-	b.setGeneration(7)
 	b.add(sample(base, 2, 10, 100))
 
 	snap := b.snapshot()
 	assert.Len(t, snap, 1)
-	assert.Equal(t, int64(7), snap[0].generation)
 	assert.Equal(t, uint16(1), snap[0].count)
+}
+
+func TestBufferReset(t *testing.T) {
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	b := newBuffer()
+	b.add(sample(base, 2, 10, 100))
+	b.add(sample(base.Add(15*time.Second), 2, 11, 110))
+
+	b.reset()
+	assert.Empty(t, b.samples(base.Add(time.Minute)))
 }
 
 func TestBufferSnapshotLoadRoundTrip(t *testing.T) {

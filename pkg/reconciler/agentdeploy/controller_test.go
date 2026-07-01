@@ -471,3 +471,76 @@ func TestReconcile_ManagesWatchSet(t *testing.T) {
 		assert.Contains(t, fs.forgot, key)
 	})
 }
+
+func TestReconcile_StampsLastScaledAtOnChange(t *testing.T) {
+	r, c := newTestReconciler(t, newAgentDeploy("greeter", 1))
+	adKey := client.ObjectKey{Namespace: testNamespace, Name: "greeter"}
+
+	// Initial bring-up sets the target (0 → 1), which counts as a scale and
+	// stamps LastScaledAt.
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	var ad kmv1.AgentDeploy
+	require.NoError(t, c.Get(context.Background(), adKey, &ad))
+	require.Equal(t, uint32(1), ad.Status.DesiredReplicas)
+	assert.False(t, ad.Status.LastScaledAt.IsZero(), "initial target set stamps LastScaledAt")
+
+	// Reconcile again with no change: LastScaledAt must not move.
+	prev := ad.Status.LastScaledAt
+	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	require.NoError(t, c.Get(context.Background(), adKey, &ad))
+	assert.Equal(t, prev, ad.Status.LastScaledAt, "no re-stamp when target is unchanged")
+
+	// Change the target replica count: stamps again.
+	three := int32(3)
+	ad.Spec.Replicas = &three
+	require.NoError(t, c.Update(context.Background(), &ad))
+	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	require.NoError(t, c.Get(context.Background(), adKey, &ad))
+	require.Equal(t, uint32(3), ad.Status.DesiredReplicas)
+	assert.False(t, ad.Status.LastScaledAt.IsZero(), "stamped when replica target changes")
+}
+
+func TestReconcile_ReplicaStatusFields(t *testing.T) {
+	r, c := newTestReconciler(t, newAgentDeploy("greeter", 3))
+	adKey := client.ObjectKey{Namespace: testNamespace, Name: "greeter"}
+	get := func() kmv1.AgentDeploy {
+		var g kmv1.AgentDeploy
+		require.NoError(t, c.Get(context.Background(), adKey, &g))
+		return g
+	}
+
+	// Create: 3 pods on the desired hash, none ready yet.
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	g := get()
+	assert.Equal(t, uint32(3), g.Status.DesiredReplicas)
+	assert.Equal(t, uint32(3), g.Status.Replicas)
+	assert.Equal(t, uint32(3), g.Status.UpdatedReplicas, "all pods on the desired hash")
+	assert.Equal(t, uint32(0), g.Status.ReadyReplicas, "fake pods start not-ready")
+	assert.Equal(t, uint32(0), g.Status.UpdatedReadyReplicas)
+	assert.NotEmpty(t, g.Status.UpdateHash)
+	assert.Equal(t, g.Status.UpdateHash, g.Status.CurrentHash, "fully on desired hash after create")
+
+	// All pods ready → ready counts fill in.
+	markAllPodsReady(t, c)
+	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	g = get()
+	assert.Equal(t, uint32(3), g.Status.ReadyReplicas)
+	assert.Equal(t, uint32(3), g.Status.UpdatedReadyReplicas)
+
+	// Scale down to 1 → every count tracks down together.
+	g.Spec.Replicas = ptr.To[int32](1)
+	require.NoError(t, c.Update(context.Background(), &g))
+	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	g = get()
+	assert.Equal(t, uint32(1), g.Status.DesiredReplicas)
+	assert.Equal(t, uint32(1), g.Status.Replicas)
+	assert.Equal(t, uint32(1), g.Status.UpdatedReplicas)
+	assert.Equal(t, uint32(1), g.Status.ReadyReplicas)
+	assert.Equal(t, uint32(1), g.Status.UpdatedReadyReplicas)
+}
