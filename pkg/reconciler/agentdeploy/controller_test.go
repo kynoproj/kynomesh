@@ -476,23 +476,14 @@ func TestReconcile_StampsLastScaledAtOnChange(t *testing.T) {
 	r, c := newTestReconciler(t, newAgentDeploy("greeter", 1))
 	adKey := client.ObjectKey{Namespace: testNamespace, Name: "greeter"}
 
-	// Initial bring-up: no stamp (DesiredReplicas was unset).
+	// Initial bring-up sets the target (0 → 1), which counts as a scale and
+	// stamps LastScaledAt.
 	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
 	require.NoError(t, err)
 	var ad kmv1.AgentDeploy
 	require.NoError(t, c.Get(context.Background(), adKey, &ad))
-	assert.True(t, ad.Status.LastScaledAt.IsZero(), "no stamp on initial bring-up")
 	require.Equal(t, uint32(1), ad.Status.DesiredReplicas)
-
-	// Change the target replica count: stamp.
-	three := int32(3)
-	ad.Spec.Replicas = &three
-	require.NoError(t, c.Update(context.Background(), &ad))
-	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))
-	require.NoError(t, err)
-	require.NoError(t, c.Get(context.Background(), adKey, &ad))
-	assert.False(t, ad.Status.LastScaledAt.IsZero(), "stamped when replica target changes")
-	require.Equal(t, uint32(3), ad.Status.DesiredReplicas)
+	assert.False(t, ad.Status.LastScaledAt.IsZero(), "initial target set stamps LastScaledAt")
 
 	// Reconcile again with no change: LastScaledAt must not move.
 	prev := ad.Status.LastScaledAt
@@ -500,6 +491,16 @@ func TestReconcile_StampsLastScaledAtOnChange(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, c.Get(context.Background(), adKey, &ad))
 	assert.Equal(t, prev, ad.Status.LastScaledAt, "no re-stamp when target is unchanged")
+
+	// Change the target replica count: stamps again.
+	three := int32(3)
+	ad.Spec.Replicas = &three
+	require.NoError(t, c.Update(context.Background(), &ad))
+	_, err = r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+	require.NoError(t, c.Get(context.Background(), adKey, &ad))
+	require.Equal(t, uint32(3), ad.Status.DesiredReplicas)
+	assert.False(t, ad.Status.LastScaledAt.IsZero(), "stamped when replica target changes")
 }
 
 func TestReconcile_ReplicaStatusFields(t *testing.T) {
@@ -542,18 +543,4 @@ func TestReconcile_ReplicaStatusFields(t *testing.T) {
 	assert.Equal(t, uint32(1), g.Status.UpdatedReplicas)
 	assert.Equal(t, uint32(1), g.Status.ReadyReplicas)
 	assert.Equal(t, uint32(1), g.Status.UpdatedReadyReplicas)
-}
-
-func TestReconcile_SeedsLastScaledAtFromCreation(t *testing.T) {
-	ad := newAgentDeploy("greeter", 1)
-	ad.CreationTimestamp = metav1.NewTime(time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC))
-	r, c := newTestReconciler(t, ad)
-
-	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
-	require.NoError(t, err)
-
-	var got kmv1.AgentDeploy
-	require.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "greeter"}, &got))
-	require.False(t, got.CreationTimestamp.IsZero(), "precondition: creation timestamp preserved")
-	assert.Equal(t, got.CreationTimestamp, got.Status.LastScaledAt, "LastScaledAt seeded from creation time")
 }

@@ -36,7 +36,7 @@ import (
 type Store interface {
 	// Record appends a fresh sample to memory, tagged with the pod-spec hash it
 	// was collected under; a changed hash (a new deployment) drops the prior
-	// history. Cheap; does not touch the API.
+	// history.
 	Record(s Sample, specHash string)
 	// History returns the time-ordered samples for the estimator.
 	History(now time.Time) []Sample
