@@ -54,8 +54,8 @@ func TestConfigMapStoreFlushCreatesAndLoadRehydrates(t *testing.T) {
 	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 
 	s := NewConfigMapStore(c, ad)
-	s.Record(sample(now, 3, 12, 200))
-	s.Record(sample(now.Add(15*time.Second), 3, 13, 210))
+	s.Record(sample(now, 3, 12, 200), "h")
+	s.Record(sample(now.Add(15*time.Second), 3, 13, 210), "h")
 	require.NoError(t, s.Flush(ctx))
 
 	// The backing ConfigMap exists, owned and labeled.
@@ -91,13 +91,47 @@ func TestConfigMapStoreFlushUpdatesExisting(t *testing.T) {
 	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 
 	s := NewConfigMapStore(c, ad)
-	s.Record(sample(now, 3, 12, 200))
+	s.Record(sample(now, 3, 12, 200), "h")
 	require.NoError(t, s.Flush(ctx))
 
-	s.Record(sample(now.Add(15*time.Second), 3, 13, 210))
+	s.Record(sample(now.Add(15*time.Second), 3, 13, 210), "h")
 	require.NoError(t, s.Flush(ctx), "second flush updates the existing object")
 
 	s2 := NewConfigMapStore(c, ad)
 	require.NoError(t, s2.Load(ctx))
 	assert.Len(t, s2.History(now.Add(time.Minute)), 2)
+}
+
+func TestConfigMapStoreResetsHistoryOnSpecHashChange(t *testing.T) {
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).Build()
+	s := NewConfigMapStore(c, testAgentDeploy())
+
+	s.Record(sample(now, 3, 12, 200), "hashA")
+	s.Record(sample(now.Add(15*time.Second), 3, 13, 210), "hashA")
+	require.Len(t, s.History(now.Add(time.Minute)), 2)
+
+	// New deployment (different pod-spec hash) drops the old history.
+	s.Record(sample(now.Add(30*time.Second), 3, 20, 300), "hashB")
+	got := s.History(now.Add(time.Minute))
+	require.Len(t, got, 1, "history reset on spec-hash change")
+	assert.Equal(t, 20.0, got[0].InflightPerRep)
+}
+
+func TestConfigMapStoreSpecHashSurvivesReload(t *testing.T) {
+	ctx := context.Background()
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).Build()
+	ad := testAgentDeploy()
+
+	s := NewConfigMapStore(c, ad)
+	s.Record(sample(now, 3, 12, 200), "hashA")
+	require.NoError(t, s.Flush(ctx))
+
+	// A fresh store reloads the persisted hash: same hash keeps history, a
+	// changed hash (a deploy during downtime) resets it.
+	s2 := NewConfigMapStore(c, ad)
+	require.NoError(t, s2.Load(ctx))
+	s2.Record(sample(now.Add(15*time.Second), 3, 13, 210), "hashB")
+	assert.Len(t, s2.History(now.Add(time.Minute)), 1, "reset when reloaded hash differs")
 }

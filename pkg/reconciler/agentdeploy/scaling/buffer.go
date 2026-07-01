@@ -33,12 +33,10 @@ const (
 
 // record is one persisted observation: a Sample plus bookkeeping. count is the
 // number of raw samples folded into this record — always 1 today; reserved for
-// when tier rollup lands. generation is the AgentDeploy generation at capture,
-// for deploy-reset.
+// when tier rollup lands.
 type record struct {
-	sample     Sample
-	count      uint16
-	generation int64
+	sample Sample
+	count  uint16
 }
 
 // buffer is an in-memory, time-ordered ring of records bounded by both age and
@@ -50,7 +48,6 @@ type buffer struct {
 	records    []record
 	maxAge     time.Duration
 	maxRecords int
-	generation int64
 }
 
 type bufferOption func(*buffer)
@@ -66,21 +63,21 @@ func newBuffer(opts ...bufferOption) *buffer {
 	return b
 }
 
-// setGeneration stamps subsequently-added records with the given AgentDeploy
-// generation.
-func (b *buffer) setGeneration(gen int64) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	b.generation = gen
-}
-
 // add appends a sample and evicts anything beyond the age/count bounds, using
 // the sample's own timestamp as the reference "now".
 func (b *buffer) add(s Sample) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	b.records = append(b.records, record{sample: s, count: 1, generation: b.generation})
+	b.records = append(b.records, record{sample: s, count: 1})
 	b.evictLocked(s.Timestamp)
+}
+
+// reset clears all buffered records — used when the AgentDeploy's pod spec
+// changes (a new deployment), so capacity learned from the old spec is dropped.
+func (b *buffer) reset() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.records = b.records[:0]
 }
 
 // evictLocked drops records older than maxAge and, if still over maxRecords,

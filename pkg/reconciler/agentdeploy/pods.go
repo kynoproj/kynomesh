@@ -50,7 +50,20 @@ const randomSuffixLength = 5
 //     returns nil and lets the pod-watch event drive the next pass).
 func (r *Reconciler) reconcilePods(ctx context.Context, ad *kmv1.AgentDeploy) error {
 	desired := desiredReplicas(ad)
+	// Stamp the scale time whenever the target replica count actually changes
+	// (but not on initial bring-up, when DesiredReplicas is still unset). This
+	// is the reference point the autoscaler reads for its cooldowns, regardless
+	// of whether the change came from the autoscaler or a manual edit.
+	if ad.Status.DesiredReplicas != 0 && uint32(desired) != ad.Status.DesiredReplicas {
+		ad.Status.LastScaledAt = metav1.Now()
+	}
 	ad.Status.DesiredReplicas = uint32(desired)
+	// Seed the cooldown reference from the creation time so a brand-new
+	// AgentDeploy is treated as recently scaled to its initial size, rather than
+	// being immediately eligible for autoscaling.
+	if ad.Status.LastScaledAt.IsZero() {
+		ad.Status.LastScaledAt = ad.CreationTimestamp
+	}
 
 	desiredPodSpec := buildPodSpec(ad, r.image, r.imagePullPolicy)
 	desiredHash := sharedutil.MustHash(desiredPodSpec)

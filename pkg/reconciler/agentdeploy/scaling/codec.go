@@ -25,20 +25,31 @@ import (
 
 // codecVersion is the leading byte of every encoded blob; bump it on any wire
 // change so old data is rejected rather than misread.
-const codecVersion byte = 1
+const codecVersion byte = 2
 
 // recordSize is the fixed on-wire size of one record:
-// timestamp(8) + replicas(4) + inflight(8) + rate(8) + count(2) + generation(8).
-const recordSize = 8 + 4 + 8 + 8 + 2 + 8
+// timestamp(8) + replicas(4) + inflight(8) + rate(8) + count(2).
+const recordSize = 8 + 4 + 8 + 8 + 2
 
-const headerSize = 1 + 4 // version byte + uint32 record count
+// blob layout: version(1) | specHashLen(2) | specHash(N) | recordCount(4) | records.
+const (
+	versionSize = 1
+	hashLenSize = 2
+	countSize   = 4
+)
 
-// encodeRecords serializes records to a compact, versioned big-endian blob.
-func encodeRecords(records []record) []byte {
-	buf := make([]byte, headerSize+len(records)*recordSize)
+// encodeHistory serializes the store's spec hash and records to a compact,
+// versioned big-endian blob. The spec hash is stored once (not per record) —
+// it identifies the pod spec the whole window was collected under.
+func encodeHistory(specHash string, records []record) []byte {
+	buf := make([]byte, versionSize+hashLenSize+len(specHash)+countSize+len(records)*recordSize)
 	buf[0] = codecVersion
-	binary.BigEndian.PutUint32(buf[1:], uint32(len(records)))
-	off := headerSize
+	off := 1
+	binary.BigEndian.PutUint16(buf[off:], uint16(len(specHash)))
+	off += hashLenSize
+	off += copy(buf[off:], specHash)
+	binary.BigEndian.PutUint32(buf[off:], uint32(len(records)))
+	off += countSize
 	for _, r := range records {
 		binary.BigEndian.PutUint64(buf[off:], uint64(r.sample.Timestamp.UnixNano()))
 		off += 8
@@ -50,30 +61,36 @@ func encodeRecords(records []record) []byte {
 		off += 8
 		binary.BigEndian.PutUint16(buf[off:], r.count)
 		off += 2
-		binary.BigEndian.PutUint64(buf[off:], uint64(r.generation))
-		off += 8
 	}
 	return buf
 }
 
-// decodeRecords parses a blob produced by encodeRecords. An empty input yields
+// decodeHistory parses a blob produced by encodeHistory. An empty input yields
 // no records; a version mismatch or length inconsistency is an error.
-func decodeRecords(b []byte) ([]record, error) {
+func decodeHistory(b []byte) (string, []record, error) {
 	if len(b) == 0 {
-		return nil, nil
+		return "", nil, nil
 	}
 	if b[0] != codecVersion {
-		return nil, fmt.Errorf("scaling: unknown history codec version %d", b[0])
+		return "", nil, fmt.Errorf("scaling: unknown history codec version %d", b[0])
 	}
-	if len(b) < headerSize {
-		return nil, fmt.Errorf("scaling: history blob too short: %d bytes", len(b))
+	if len(b) < versionSize+hashLenSize {
+		return "", nil, fmt.Errorf("scaling: history blob too short: %d bytes", len(b))
 	}
-	n := int(binary.BigEndian.Uint32(b[1:]))
-	if want := headerSize + n*recordSize; len(b) != want {
-		return nil, fmt.Errorf("scaling: history blob length %d, want %d for %d records", len(b), want, n)
+	off := 1
+	hashLen := int(binary.BigEndian.Uint16(b[off:]))
+	off += hashLenSize
+	if len(b) < off+hashLen+countSize {
+		return "", nil, fmt.Errorf("scaling: history blob truncated in header")
+	}
+	specHash := string(b[off : off+hashLen])
+	off += hashLen
+	n := int(binary.BigEndian.Uint32(b[off:]))
+	off += countSize
+	if want := off + n*recordSize; len(b) != want {
+		return "", nil, fmt.Errorf("scaling: history blob length %d, want %d for %d records", len(b), want, n)
 	}
 	out := make([]record, n)
-	off := headerSize
 	for i := range n {
 		ts := int64(binary.BigEndian.Uint64(b[off:]))
 		off += 8
@@ -85,8 +102,6 @@ func decodeRecords(b []byte) ([]record, error) {
 		off += 8
 		count := binary.BigEndian.Uint16(b[off:])
 		off += 2
-		gen := int64(binary.BigEndian.Uint64(b[off:]))
-		off += 8
 		out[i] = record{
 			sample: Sample{
 				Timestamp:      time.Unix(0, ts).UTC(),
@@ -94,9 +109,8 @@ func decodeRecords(b []byte) ([]record, error) {
 				InflightPerRep: inflight,
 				RatePerRep:     rate,
 			},
-			count:      count,
-			generation: gen,
+			count: count,
 		}
 	}
-	return out, nil
+	return specHash, out, nil
 }
