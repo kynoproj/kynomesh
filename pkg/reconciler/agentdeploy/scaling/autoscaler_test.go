@@ -46,6 +46,12 @@ func currentReplicas(t *testing.T, c client.Client, name string) int32 {
 	return specReplicas(&got)
 }
 
+// newTestAutoscaler builds an Autoscaler with a fixed clock over the registry.
+func newTestAutoscaler(c client.Client, reg *Registry, now time.Time) *Autoscaler {
+	return NewAutoscaler(c, NewWatchSet(reg), reg, testLogger(),
+		WithAutoscalerClock(func() time.Time { return now }))
+}
+
 func TestAutoscalerScalesUpAndPatchesSpec(t *testing.T) {
 	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	ad := scalingAD("foo", 1)
@@ -56,7 +62,7 @@ func TestAutoscalerScalesUpAndPatchesSpec(t *testing.T) {
 	// Heavy load on a single replica → cold-start target 12 → surge.
 	seedStore(t, reg, ad, sample(now, 1, 80, 160))
 
-	NewAutoscaler(c, reg, testLogger()).scaleOnce(context.Background(), now)
+	require.NoError(t, newTestAutoscaler(c, reg, now).scaleKey(context.Background(), nn("foo")))
 
 	assert.Greater(t, currentReplicas(t, c, "foo"), int32(1), "spec.replicas scaled up")
 }
@@ -72,7 +78,7 @@ func TestAutoscalerNoChangeLeavesSpecAlone(t *testing.T) {
 	// total 48, target 12 → desired ceil(48/12)=4 == current → no change.
 	seedStore(t, reg, ad, sample(now, 4, 12, 60))
 
-	NewAutoscaler(c, reg, testLogger()).scaleOnce(context.Background(), now)
+	require.NoError(t, newTestAutoscaler(c, reg, now).scaleKey(context.Background(), nn("foo")))
 
 	assert.Equal(t, int32(4), currentReplicas(t, c, "foo"))
 }
@@ -86,7 +92,7 @@ func TestAutoscalerSkipsDisabled(t *testing.T) {
 	reg := NewRegistry(c)
 	seedStore(t, reg, ad, sample(now, 1, 80, 160))
 
-	NewAutoscaler(c, reg, testLogger()).scaleOnce(context.Background(), now)
+	require.NoError(t, newTestAutoscaler(c, reg, now).scaleKey(context.Background(), nn("foo")))
 	assert.Equal(t, int32(1), currentReplicas(t, c, "foo"), "disabled is left untouched")
 }
 
@@ -98,6 +104,6 @@ func TestAutoscalerSkipsWhenNotSampled(t *testing.T) {
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
 	reg := NewRegistry(c) // empty — no store for foo
 
-	NewAutoscaler(c, reg, testLogger()).scaleOnce(context.Background(), now)
+	require.NoError(t, newTestAutoscaler(c, reg, now).scaleKey(context.Background(), nn("foo")))
 	assert.Equal(t, int32(1), currentReplicas(t, c, "foo"), "no history → no scaling")
 }

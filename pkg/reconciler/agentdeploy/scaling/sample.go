@@ -22,9 +22,9 @@ import (
 	"time"
 )
 
-// Sample is one observation of a replica set, taken at a best-effort cadence
-// (≈15s). For an I/O-bound agentic workload the binding resource is slot
-// occupancy — how many requests a replica holds concurrently — so the two
+// Sample is one observation of a replica set, taken at the Sampler's best-effort
+// cadence (default 30s). For an I/O-bound agentic workload the binding resource
+// is slot occupancy — how many requests a replica holds concurrently — so the two
 // signals that matter are concurrency (InflightPerRep) and throughput
 // (RatePerRep). Latency is deliberately absent: it is dominated by upstream
 // LLM/tool response time, so it cannot distinguish a saturated replica from a

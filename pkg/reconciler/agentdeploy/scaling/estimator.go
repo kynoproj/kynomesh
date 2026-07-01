@@ -45,7 +45,9 @@ const (
 	// the controller use its conservative default.
 	minSamplesToLearn = 8
 	// enoughSamples is the clean-sample count at which the count factor of
-	// confidence saturates (≈15 min at 15s sampling).
+	// confidence saturates (≈30 min at the default 30s cadence). Note this is
+	// count-based, so a different cadence changes the wall-clock ramp to full
+	// confidence — a coverage/time-based replacement is tracked separately.
 	enoughSamples = 60
 	// numBuckets discretizes the concurrency axis to denoise the curve.
 	numBuckets = 10

@@ -19,6 +19,7 @@ package scaling
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -43,6 +44,9 @@ type Store interface {
 	// Flush persists the current buffer to the backing object. Called on a
 	// slow cadence, never per-sample.
 	Flush(ctx context.Context) error
+	// FlushIfDue flushes only if interval has elapsed since the last flush,
+	// tracking that time internally so callers hold no per-store bookkeeping.
+	FlushIfDue(ctx context.Context, now time.Time, interval time.Duration) error
 }
 
 // historyKey is the ConfigMap binaryData key holding the encoded history blob.
@@ -57,6 +61,9 @@ type ConfigMapStore struct {
 	ownerRef  metav1.OwnerReference
 	labels    map[string]string
 	buf       *buffer
+
+	flushMu   sync.Mutex
+	lastFlush time.Time
 }
 
 var _ Store = (*ConfigMapStore)(nil)
@@ -110,6 +117,25 @@ func (s *ConfigMapStore) Load(ctx context.Context) error {
 // absent. Retries once on a write conflict.
 func (s *ConfigMapStore) Flush(ctx context.Context) error {
 	return s.upsert(ctx, encodeRecords(s.buf.snapshot()), true)
+}
+
+// FlushIfDue flushes only when interval has elapsed since the last flush,
+// tracking that timestamp internally. The timestamp advances only on a
+// successful flush, so a failed flush is retried on the next call.
+func (s *ConfigMapStore) FlushIfDue(ctx context.Context, now time.Time, interval time.Duration) error {
+	s.flushMu.Lock()
+	due := now.Sub(s.lastFlush) >= interval
+	s.flushMu.Unlock()
+	if !due {
+		return nil
+	}
+	if err := s.Flush(ctx); err != nil {
+		return err
+	}
+	s.flushMu.Lock()
+	s.lastFlush = now
+	s.flushMu.Unlock()
+	return nil
 }
 
 func (s *ConfigMapStore) upsert(ctx context.Context, blob []byte, retry bool) error {

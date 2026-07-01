@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,8 +33,13 @@ import (
 )
 
 const (
-	defaultSampleInterval = 30 * time.Second
-	defaultFlushInterval  = 5 * time.Minute
+	defaultWorkers = 16
+	// defaultTaskInterval is the target revisit cadence per AgentDeploy.
+	defaultTaskInterval  = 30 * time.Second
+	defaultFlushInterval = 5 * time.Minute
+	// defaultScrapeTimeout caps a single daemon scrape so one hung daemon can't
+	// tie up a worker indefinitely.
+	defaultScrapeTimeout = 10 * time.Second
 )
 
 // DaemonDialer returns a metrics source for an AgentSet's daemon. Injected so
@@ -48,111 +54,116 @@ func GRPCDaemonDialer(namespace, agentSetName string) (MetricsSource, error) {
 	return daemonclient.NewGRPCClient(addr)
 }
 
-// Sampler is the standalone sample-collection component. On a ticker it lists
-// AgentDeploys, scrapes each one's per-AgentSet daemon, and records per-replica
-// Samples into the shared Registry, flushing each Store to its ConfigMap on a
-// slower cadence. Its Start method is registered as a leader-elected runner.
+// Sampler collects per-replica load. It is a runner over the shared WatchSet:
+// each watched AgentDeploy's per-AgentSet daemon is scraped roughly once per
+// task interval and the result recorded into the Registry, with the store
+// flushed to its ConfigMap on a slower cadence. Its Start method is registered
+// as a leader-elected runner.
 type Sampler struct {
-	client         client.Client
-	registry       *Registry
-	dial           DaemonDialer
-	logger         *zap.SugaredLogger
-	sampleInterval time.Duration
-	flushInterval  time.Duration
-	clock          func() time.Time
+	client        client.Client
+	watch         *WatchSet
+	registry      *Registry
+	dial          DaemonDialer
+	logger        *zap.SugaredLogger
+	workers       int
+	taskInterval  time.Duration
+	flushInterval time.Duration
+	scrapeTimeout time.Duration
+	clock         func() time.Time
 
-	mu        sync.Mutex
-	sources   map[string]MetricsSource // keyed by namespace/agentset
-	lastFlush map[types.NamespacedName]time.Time
+	mu      sync.Mutex
+	sources map[string]MetricsSource // keyed by namespace/agentset
+
+	runner *runner
 }
 
 // SamplerOption configures a Sampler.
 type SamplerOption func(*Sampler)
 
-func WithSampleInterval(d time.Duration) SamplerOption {
-	return func(s *Sampler) { s.sampleInterval = d }
+func WithWorkers(n int) SamplerOption { return func(s *Sampler) { s.workers = n } }
+func WithTaskInterval(d time.Duration) SamplerOption {
+	return func(s *Sampler) { s.taskInterval = d }
 }
 func WithFlushInterval(d time.Duration) SamplerOption {
 	return func(s *Sampler) { s.flushInterval = d }
 }
+func WithScrapeTimeout(d time.Duration) SamplerOption {
+	return func(s *Sampler) { s.scrapeTimeout = d }
+}
 func WithSamplerClock(f func() time.Time) SamplerOption { return func(s *Sampler) { s.clock = f } }
 
-// NewSampler builds a Sampler. dial defaults to GRPCDaemonDialer when nil.
-func NewSampler(c client.Client, reg *Registry, dial DaemonDialer, logger *zap.SugaredLogger, opts ...SamplerOption) *Sampler {
+// NewSampler builds a Sampler over the shared WatchSet. dial defaults to
+// GRPCDaemonDialer when nil.
+func NewSampler(c client.Client, watch *WatchSet, reg *Registry, dial DaemonDialer, logger *zap.SugaredLogger, opts ...SamplerOption) *Sampler {
 	if dial == nil {
 		dial = GRPCDaemonDialer
 	}
 	s := &Sampler{
-		client:         c,
-		registry:       reg,
-		dial:           dial,
-		logger:         logger,
-		sampleInterval: defaultSampleInterval,
-		flushInterval:  defaultFlushInterval,
-		clock:          time.Now,
-		sources:        make(map[string]MetricsSource),
-		lastFlush:      make(map[types.NamespacedName]time.Time),
+		client:        c,
+		watch:         watch,
+		registry:      reg,
+		dial:          dial,
+		logger:        logger,
+		workers:       defaultWorkers,
+		taskInterval:  defaultTaskInterval,
+		flushInterval: defaultFlushInterval,
+		scrapeTimeout: defaultScrapeTimeout,
+		clock:         time.Now,
+		sources:       make(map[string]MetricsSource),
 	}
 	for _, o := range opts {
 		o(s)
 	}
+	s.runner = &runner{
+		name:         "sampler",
+		watch:        watch,
+		process:      s.sampleKey,
+		workers:      s.workers,
+		taskInterval: s.taskInterval,
+		logger:       logger,
+	}
 	return s
 }
 
-// Start runs the sampling loop until ctx is cancelled.
-func (s *Sampler) Start(ctx context.Context) error {
-	t := time.NewTicker(s.sampleInterval)
-	defer t.Stop()
-	s.logger.Infow("Sampler started", zap.Duration("interval", s.sampleInterval))
-	for {
-		select {
-		case <-ctx.Done():
+// Start runs the sampling runner until ctx is cancelled.
+func (s *Sampler) Start(ctx context.Context) error { return s.runner.start(ctx) }
+
+// sampleKey scrapes one AgentDeploy and records the sample, regardless of
+// whether scaling is enabled (history is kept warm; the Autoscaler honors
+// Scale.Disabled). A deleted AgentDeploy is forgotten as an in-band safety net.
+func (s *Sampler) sampleKey(ctx context.Context, k types.NamespacedName) error {
+	var ad kmv1.AgentDeploy
+	if err := s.client.Get(ctx, k, &ad); err != nil {
+		if apierrors.IsNotFound(err) {
+			s.watch.Forget(k)
 			return nil
-		case <-t.C:
-			s.sampleOnce(ctx, s.clock())
 		}
-	}
-}
-
-// sampleOnce scrapes every scaling-enabled AgentDeploy once and records the
-// result. Per-AgentDeploy failures are logged and skipped, never fatal.
-func (s *Sampler) sampleOnce(ctx context.Context, now time.Time) {
-	var list kmv1.AgentDeployList
-	if err := s.client.List(ctx, &list); err != nil {
-		s.logger.Errorw("List AgentDeploys for sampling failed", zap.Error(err))
-		return
+		return fmt.Errorf("get agentdeploy: %w", err)
 	}
 
-	live := make(map[types.NamespacedName]bool, len(list.Items))
-	for i := range list.Items {
-		ad := &list.Items[i]
-		if ad.Spec.Scale.Disabled {
-			continue
-		}
-		k := key(ad)
-		live[k] = true
-
-		src, err := s.sourceFor(ad)
-		if err != nil {
-			s.logger.Warnw("Dial daemon failed", zap.String("agentDeploy", ad.Name), zap.Error(err))
-			continue
-		}
-		store, err := s.registry.StoreFor(ctx, ad)
-		if err != nil {
-			s.logger.Warnw("Load history failed", zap.String("agentDeploy", ad.Name), zap.Error(err))
-		}
-		sample, ok, err := collectSample(ctx, src, ad, now)
-		if err != nil {
-			s.logger.Warnw("Collect sample failed", zap.String("agentDeploy", ad.Name), zap.Error(err))
-			continue
-		}
-		if !ok {
-			continue
-		}
-		store.Record(sample)
-		s.maybeFlush(ctx, k, store, now)
+	src, err := s.sourceFor(&ad)
+	if err != nil {
+		return fmt.Errorf("dial daemon: %w", err)
 	}
-	s.reap(live)
+	store, err := s.registry.StoreFor(ctx, &ad)
+	if err != nil {
+		s.logger.Warnw("Load history failed", zap.String("agentDeploy", ad.Name), zap.Error(err))
+	}
+
+	scrapeCtx, cancel := context.WithTimeout(ctx, s.scrapeTimeout)
+	defer cancel()
+	sample, ok, err := collectSample(scrapeCtx, src, &ad, s.clock())
+	if err != nil {
+		return fmt.Errorf("collect: %w", err)
+	}
+	if !ok {
+		return nil
+	}
+	store.Record(sample)
+	if err := store.FlushIfDue(ctx, s.clock(), s.flushInterval); err != nil {
+		s.logger.Warnw("Flush history failed", zap.String("agentDeploy", ad.Name), zap.Error(err))
+	}
+	return nil
 }
 
 // sourceFor returns a (cached) metrics source for the AgentDeploy's AgentSet
@@ -170,35 +181,4 @@ func (s *Sampler) sourceFor(ad *kmv1.AgentDeploy) (MetricsSource, error) {
 	}
 	s.sources[ck] = src
 	return src, nil
-}
-
-// maybeFlush persists the store to its ConfigMap if the flush interval has
-// elapsed since the last flush for this AgentDeploy.
-func (s *Sampler) maybeFlush(ctx context.Context, k types.NamespacedName, store *ConfigMapStore, now time.Time) {
-	s.mu.Lock()
-	last := s.lastFlush[k]
-	due := now.Sub(last) >= s.flushInterval
-	if due {
-		s.lastFlush[k] = now
-	}
-	s.mu.Unlock()
-	if !due {
-		return
-	}
-	if err := store.Flush(ctx); err != nil {
-		s.logger.Warnw("Flush history failed", zap.String("agentDeploy", k.Name), zap.Error(err))
-	}
-}
-
-// reap forgets in-memory state for AgentDeploys no longer present.
-func (s *Sampler) reap(live map[types.NamespacedName]bool) {
-	for _, k := range s.registry.Keys() {
-		if live[k] {
-			continue
-		}
-		s.registry.Forget(k)
-		s.mu.Lock()
-		delete(s.lastFlush, k)
-		s.mu.Unlock()
-	}
 }
