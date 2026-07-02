@@ -106,7 +106,9 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 		}
 		return fmt.Errorf("get agentdeploy: %w", err)
 	}
-	log := a.logger.With(zap.String("namespace", k.Namespace), zap.String("agentDeploy", k.Name))
+	log := a.logger.With(zap.String("namespace", ad.Namespace),
+		zap.String("agentSet", ad.Spec.AgentSetName),
+		zap.String("agentDeploy", ad.Spec.Name))
 	if ad.Spec.Scale.Disabled {
 		return nil
 	}

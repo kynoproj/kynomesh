@@ -158,8 +158,7 @@ func (s *Sampler) flushAll() {
 			defer func() { <-sem }()
 			if err := store.Flush(ctx); err != nil {
 				s.logger.Warnw("Flush on shutdown failed",
-					zap.String("namespace", k.Namespace),
-					zap.String("agentDeploy", k.Name), zap.Error(err))
+					zap.String("namespacedName", k.String()))
 			}
 		}(k, store)
 	}
@@ -178,7 +177,9 @@ func (s *Sampler) sampleKey(ctx context.Context, k types.NamespacedName) error {
 		}
 		return fmt.Errorf("get agentdeploy: %w", err)
 	}
-	log := s.logger.With(zap.String("namespace", k.Namespace), zap.String("agentDeploy", k.Name))
+	log := s.logger.With(zap.String("namespace", ad.Namespace),
+		zap.String("agentSet", ad.Spec.AgentSetName),
+		zap.String("agentDeploy", ad.Spec.Name))
 	src, err := s.sourceFor(&ad)
 	if err != nil {
 		return fmt.Errorf("dial daemon: %w", err)

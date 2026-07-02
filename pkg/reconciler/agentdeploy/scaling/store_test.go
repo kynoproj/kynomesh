@@ -44,6 +44,10 @@ func storeScheme(t *testing.T) *runtime.Scheme {
 func testAgentDeploy() *kmv1.AgentDeploy {
 	return &kmv1.AgentDeploy{
 		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "foo", Generation: 2},
+		Spec: kmv1.AgentDeploySpec{
+			AbstractAgentDeploy: kmv1.AbstractAgentDeploy{Name: "foo"},
+			AgentSetName:        "set",
+		},
 	}
 }
 
