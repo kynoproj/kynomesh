@@ -40,6 +40,9 @@ const (
 	// defaultScrapeTimeout caps a single daemon scrape so one hung daemon can't
 	// tie up a worker indefinitely.
 	defaultScrapeTimeout = 10 * time.Second
+	// shutdownFlushTimeout bounds the best-effort flush of all stores when the
+	// Sampler stops (leader loss / shutdown).
+	shutdownFlushTimeout = 15 * time.Second
 )
 
 // DaemonDialer returns a metrics source for an AgentSet's daemon. Injected so
@@ -125,8 +128,43 @@ func NewSampler(c client.Client, watch *WatchSet, reg *Registry, dial DaemonDial
 	return s
 }
 
-// Start runs the sampling runner until ctx is cancelled.
-func (s *Sampler) Start(ctx context.Context) error { return s.runner.start(ctx) }
+// Start runs the sampling runner until ctx is cancelled, then flushes all
+// in-memory history to its backing ConfigMaps so a leader change or shutdown
+// doesn't lose the samples collected since the last periodic flush.
+func (s *Sampler) Start(ctx context.Context) error {
+	err := s.runner.start(ctx)
+	s.flushAll()
+	return err
+}
+
+// flushAll persists every tracked store on a fresh, bounded context.
+// Best-effort: failures (and anything not reached before the deadline) are
+// logged, not returned — the periodic flush + reload covers the small residual.
+func (s *Sampler) flushAll() {
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownFlushTimeout)
+	defer cancel()
+
+	sem := make(chan struct{}, s.workers)
+	var wg sync.WaitGroup
+	for _, k := range s.registry.Keys() {
+		store, ok := s.registry.Get(k)
+		if !ok {
+			continue
+		}
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(k types.NamespacedName, store *ConfigMapStore) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			if err := store.Flush(ctx); err != nil {
+				s.logger.Warnw("Flush on shutdown failed",
+					zap.String("namespace", k.Namespace),
+					zap.String("agentDeploy", k.Name), zap.Error(err))
+			}
+		}(k, store)
+	}
+	wg.Wait()
+}
 
 // sampleKey scrapes one AgentDeploy and records the sample, regardless of
 // whether scaling is enabled (history is kept warm; the Autoscaler honors
