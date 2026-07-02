@@ -148,8 +148,8 @@ func Start(namespaced bool, managedNamespace string) {
 	// Autoscaling components share one Registry and one WatchSet.
 	scalingRegistry := scaling.NewRegistry(mgr.GetClient())
 	scalingWatch := scaling.NewWatchSet(scalingRegistry)
-	sampler := scaling.NewSampler(mgr.GetClient(), scalingWatch, scalingRegistry, scaling.GRPCDaemonDialer, logger.Named("scaling-sampler"))
-	autoscaler := scaling.NewAutoscaler(mgr.GetClient(), scalingWatch, scalingRegistry, logger.Named("scaling-autoscaler"))
+	sampler := scaling.NewSampler(mgr.GetClient(), scalingWatch, scalingRegistry, scaling.GRPCDaemonDialer, logger.Named("sampler"))
+	autoscaler := scaling.NewAutoscaler(mgr.GetClient(), scalingWatch, scalingRegistry, logger.Named("autoscaler"))
 
 	if err := registerAgentDeployController(mgr, logger, image, brokerPullPolicy, scalingWatch); err != nil {
 		logger.Fatalw("Failed to register AgentDeploy controller", zap.Error(err))

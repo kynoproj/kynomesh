@@ -193,3 +193,25 @@ func TestValidateAgentSet_HandoffAndSequentialMultiAgent(t *testing.T) {
 		assert.NoError(t, ValidateAgentSet(as))
 	})
 }
+
+func TestValidateAgentSet_TargetSaturationPercentage(t *testing.T) {
+	as := agentSet("a")
+	set := func(v *uint32) { as.Spec.Agents[0].Scale.TargetSaturationPercentage = v }
+
+	over := uint32(150)
+	set(&over)
+	err := ValidateAgentSet(as)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "targetSaturationPercentage")
+
+	ok := uint32(80)
+	set(&ok)
+	assert.NoError(t, ValidateAgentSet(as))
+
+	hundred := uint32(100)
+	set(&hundred)
+	assert.NoError(t, ValidateAgentSet(as), "exactly 100 is allowed")
+
+	set(nil)
+	assert.NoError(t, ValidateAgentSet(as), "unset defers to controller default")
+}

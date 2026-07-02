@@ -146,3 +146,59 @@ func TestSamplerStartSamplesAllWatched(t *testing.T) {
 		return true
 	}, 3*time.Second, 10*time.Millisecond, "all watched AgentDeploys get sampled")
 }
+
+func TestSamplerFlushesAllOnShutdown(t *testing.T) {
+	ad := scalingAD("foo", 2)
+	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
+	reg := NewRegistry(c)
+	watch := NewWatchSet(reg)
+	watch.Track(nn("foo"))
+	// Periodic flush interval far in the future, so any persisted history must
+	// have come from the shutdown flush.
+	s := NewSampler(c, watch, reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 40, 80)}),
+		testLogger(), WithWorkers(1), WithTaskInterval(5*time.Millisecond), WithFlushInterval(time.Hour))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { _ = s.Start(ctx); close(done) }()
+
+	// Wait until at least one sample is recorded, then stop.
+	require.Eventually(t, func() bool {
+		st, ok := reg.Get(nn("foo"))
+		return ok && len(st.History(time.Now())) > 0
+	}, 2*time.Second, 10*time.Millisecond)
+	cancel()
+	<-done // Start returns after flushAll completes
+
+	var cm corev1.ConfigMap
+	err := c.Get(context.Background(), client.ObjectKey{Namespace: "ns", Name: HistoryConfigMapName("foo")}, &cm)
+	require.NoError(t, err, "history flushed on shutdown despite the 1h flush interval")
+	assert.NotEmpty(t, cm.BinaryData[historyKey])
+}
+
+func TestSamplerFlushAllPersistsAllStores(t *testing.T) {
+	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	names := []string{"a", "b", "c", "d", "e"}
+	objs := make([]client.Object, 0, len(names))
+	for _, n := range names {
+		objs = append(objs, scalingAD(n, 2))
+	}
+	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(objs...).Build()
+	reg := NewRegistry(c)
+	s := NewSampler(c, NewWatchSet(reg), reg, staticDialer(&fakeSource{}), testLogger(), WithWorkers(3))
+
+	for _, n := range names {
+		store, err := reg.StoreFor(context.Background(), scalingAD(n, 2))
+		require.NoError(t, err)
+		store.Record(sample(now, 2, 10, 100), "h")
+	}
+
+	s.flushAll()
+
+	for _, n := range names {
+		var cm corev1.ConfigMap
+		require.NoError(t, c.Get(context.Background(),
+			client.ObjectKey{Namespace: "ns", Name: HistoryConfigMapName(n)}, &cm), n)
+		assert.NotEmpty(t, cm.BinaryData[historyKey], n)
+	}
+}

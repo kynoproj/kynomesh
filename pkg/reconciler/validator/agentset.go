@@ -76,6 +76,12 @@ func ValidateAgentSet(as *kmv1.AgentSet) error {
 					"shorten the AgentSet name or the agent name",
 				name, len(name), MaxChildAgentDeployNameLen)
 		}
+		if p := a.Scale.TargetSaturationPercentage; p != nil && *p > 100 {
+			return fmt.Errorf(
+				"agent %q scale.targetSaturationPercentage is %d; it must be in [1,100] "+
+					"(it is the fraction of a replica's capacity to run at)",
+				a.Name, *p)
+		}
 	}
 
 	if _, ok := seen[as.Spec.Entry]; !ok {
