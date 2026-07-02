@@ -73,7 +73,7 @@ var _ Store = (*ConfigMapStore)(nil)
 
 // HistoryConfigMapName is the ConfigMap name holding an AgentDeploy's history.
 func HistoryConfigMapName(adName string) string {
-	return adName + "-scaling-history"
+	return adName + "-scaling"
 }
 
 // NewConfigMapStore binds a store to one AgentDeploy.
@@ -85,8 +85,9 @@ func NewConfigMapStore(c client.Client, ad *kmv1.AgentDeploy, opts ...bufferOpti
 		ownerRef:  *metav1.NewControllerRef(ad, kmv1.AgentDeployGroupVersionKind),
 		labels: map[string]string{
 			kmv1.KeyManagedBy:       kmv1.ControllerAgentDeploy,
-			kmv1.KeyAgentDeployName: ad.Name,
-			kmv1.KeyComponent:       "scaling-history",
+			kmv1.KeyAgentSetName:    ad.Spec.AgentSetName,
+			kmv1.KeyAgentDeployName: ad.Spec.Name,
+			kmv1.KeyComponent:       kmv1.ComponentAgent,
 		},
 		buf: newBuffer(opts...),
 	}
