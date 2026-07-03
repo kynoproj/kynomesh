@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -145,11 +146,14 @@ func Start(namespaced bool, managedNamespace string) {
 		logger.Fatalw("Failed to register AgentSet controller", "err", err)
 	}
 
-	// Autoscaling components share one Registry and one WatchSet.
+	// Autoscaling components share one Registry, WatchSet, and metrics set.
+	scalingMetrics := scaling.NewMetrics(ctrlmetrics.Registry)
 	scalingRegistry := scaling.NewRegistry(mgr.GetClient())
-	scalingWatch := scaling.NewWatchSet(scalingRegistry)
-	sampler := scaling.NewSampler(mgr.GetClient(), scalingWatch, scalingRegistry, scaling.GRPCDaemonDialer, logger.Named("sampler"))
-	autoscaler := scaling.NewAutoscaler(mgr.GetClient(), scalingWatch, scalingRegistry, logger.Named("autoscaler"))
+	scalingWatch := scaling.NewWatchSet(scalingRegistry, scalingMetrics)
+	sampler := scaling.NewSampler(mgr.GetClient(), scalingWatch, scalingRegistry, scaling.GRPCDaemonDialer,
+		logger.Named("sampler"), scaling.WithSamplerMetrics(scalingMetrics))
+	autoscaler := scaling.NewAutoscaler(mgr.GetClient(), scalingWatch, scalingRegistry,
+		logger.Named("autoscaler"), scaling.WithAutoscalerMetrics(scalingMetrics))
 
 	if err := registerAgentDeployController(mgr, logger, image, brokerPullPolicy, scalingWatch); err != nil {
 		logger.Fatalw("Failed to register AgentDeploy controller", zap.Error(err))
