@@ -26,11 +26,7 @@ import (
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
-// Metrics holds the autoscaling Prometheus collectors, labeled by namespace,
-// AgentSet, and the short agentDeploy (agent) name. Because those label values
-// aren't recoverable from an AgentDeploy's object key alone, Metrics remembers
-// each key's label set so Delete can drop all its series when the AgentDeploy is
-// forgotten — avoiding series leaks at scale. All methods are nil-safe.
+// Metrics holds the autoscaling Prometheus collectors.
 type Metrics struct {
 	knee            *prometheus.GaugeVec
 	confidence      *prometheus.GaugeVec
