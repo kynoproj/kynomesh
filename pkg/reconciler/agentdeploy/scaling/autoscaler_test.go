@@ -48,7 +48,7 @@ func specReplicasOf(t *testing.T, c client.Client, name string) int32 {
 
 // newTestAutoscaler builds an Autoscaler with a fixed clock over the registry.
 func newTestAutoscaler(c client.Client, reg *Registry, now time.Time) *Autoscaler {
-	return NewAutoscaler(c, NewWatchSet(reg), reg, testLogger(),
+	return NewAutoscaler(c, NewWatchSet(reg, nil), reg, testLogger(),
 		WithAutoscalerClock(func() time.Time { return now }))
 }
 

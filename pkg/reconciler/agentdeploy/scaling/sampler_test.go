@@ -65,7 +65,7 @@ func TestSamplerSampleKeyRecordsPerReplica(t *testing.T) {
 	ad := scalingAD("foo", 4)
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
 	reg := NewRegistry(c)
-	s := NewSampler(c, NewWatchSet(reg), reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 100, 200)}),
+	s := NewSampler(c, NewWatchSet(reg, nil), reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 100, 200)}),
 		testLogger(), WithFlushInterval(time.Hour), fixedClock(now))
 
 	require.NoError(t, s.sampleKey(context.Background(), nn("foo")))
@@ -84,7 +84,7 @@ func TestSamplerSampleKeySamplesDisabled(t *testing.T) {
 	ad.Spec.Scale.Disabled = true
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
 	reg := NewRegistry(c)
-	s := NewSampler(c, NewWatchSet(reg), reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 40, 80)}),
+	s := NewSampler(c, NewWatchSet(reg, nil), reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 40, 80)}),
 		testLogger(), WithFlushInterval(time.Hour), fixedClock(now))
 
 	require.NoError(t, s.sampleKey(context.Background(), nn("foo")))
@@ -96,7 +96,7 @@ func TestSamplerSampleKeySamplesDisabled(t *testing.T) {
 func TestSamplerSampleKeyForgetsDeleted(t *testing.T) {
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).Build() // no objects
 	reg := NewRegistry(c)
-	watch := NewWatchSet(reg)
+	watch := NewWatchSet(reg, nil)
 	watch.Track(nn("ghost"))
 	s := NewSampler(c, watch, reg, staticDialer(&fakeSource{}), testLogger())
 
@@ -109,7 +109,7 @@ func TestSamplerFlushesOnInterval(t *testing.T) {
 	ad := scalingAD("foo", 2)
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
 	reg := NewRegistry(c)
-	s := NewSampler(c, NewWatchSet(reg), reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 40, 80)}),
+	s := NewSampler(c, NewWatchSet(reg, nil), reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 40, 80)}),
 		testLogger(), WithFlushInterval(0), fixedClock(now)) // flush every sample
 
 	require.NoError(t, s.sampleKey(context.Background(), nn("foo")))
@@ -127,7 +127,7 @@ func TestSamplerStartSamplesAllWatched(t *testing.T) {
 	}
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(objs...).Build()
 	reg := NewRegistry(c)
-	watch := NewWatchSet(reg)
+	watch := NewWatchSet(reg, nil)
 	for _, n := range []string{"a", "b", "c"} {
 		watch.Track(nn(n))
 	}
@@ -151,7 +151,7 @@ func TestSamplerFlushesAllOnShutdown(t *testing.T) {
 	ad := scalingAD("foo", 2)
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
 	reg := NewRegistry(c)
-	watch := NewWatchSet(reg)
+	watch := NewWatchSet(reg, nil)
 	watch.Track(nn("foo"))
 	// Periodic flush interval far in the future, so any persisted history must
 	// have come from the shutdown flush.
@@ -185,7 +185,7 @@ func TestSamplerFlushAllPersistsAllStores(t *testing.T) {
 	}
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(objs...).Build()
 	reg := NewRegistry(c)
-	s := NewSampler(c, NewWatchSet(reg), reg, staticDialer(&fakeSource{}), testLogger(), WithWorkers(3))
+	s := NewSampler(c, NewWatchSet(reg, nil), reg, staticDialer(&fakeSource{}), testLogger(), WithWorkers(3))
 
 	for _, n := range names {
 		store, err := reg.StoreFor(context.Background(), scalingAD(n, 2))

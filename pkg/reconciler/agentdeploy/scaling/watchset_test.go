@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/types"
@@ -28,7 +30,7 @@ import (
 
 func TestWatchSetTrackForget(t *testing.T) {
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).Build()
-	w := NewWatchSet(NewRegistry(c))
+	w := NewWatchSet(NewRegistry(c), nil)
 
 	w.Track(nn("a"))
 	w.Track(nn("a")) // idempotent
@@ -46,7 +48,7 @@ func TestWatchSetForgetDropsRegistry(t *testing.T) {
 	ad := scalingAD("foo", 2)
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
 	reg := NewRegistry(c)
-	w := NewWatchSet(reg)
+	w := NewWatchSet(reg, nil)
 
 	w.Track(nn("foo"))
 	_, err := reg.StoreFor(context.Background(), ad)
@@ -64,4 +66,19 @@ func names(keys []types.NamespacedName) []string {
 		out[i] = k.Name
 	}
 	return out
+}
+
+func TestWatchSetForgetDeletesMetrics(t *testing.T) {
+	promReg := prometheus.NewRegistry()
+	m := NewMetrics(promReg)
+	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).Build()
+	w := NewWatchSet(NewRegistry(c), m)
+
+	m.RecordSample(scalingAD("foo", 2))
+	require.Equal(t, 1.0, testutil.ToFloat64(m.samplesTotal.WithLabelValues("ns", "set", "foo")))
+
+	w.Forget(nn("foo"))
+	count, err := testutil.GatherAndCount(promReg, "autoscaler_samples_total")
+	require.NoError(t, err)
+	assert.Equal(t, 0, count, "Forget deletes the AgentDeploy's metric series")
 }

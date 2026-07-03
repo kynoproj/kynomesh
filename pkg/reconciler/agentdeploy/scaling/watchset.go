@@ -27,15 +27,16 @@ import (
 // Sampler and Autoscaler both iterate it via Snapshot. Safe for concurrent use.
 type WatchSet struct {
 	registry *Registry
+	metrics  *Metrics
 	mu       sync.RWMutex
 	keys     map[types.NamespacedName]struct{}
 }
 
-// NewWatchSet returns an empty WatchSet. The registry is used by Forget to drop
-// an AgentDeploy's in-memory history along with its membership.
-func NewWatchSet(reg *Registry) *WatchSet {
+// NewWatchSet returns an empty WatchSet.
+func NewWatchSet(reg *Registry, metrics *Metrics) *WatchSet {
 	return &WatchSet{
 		registry: reg,
+		metrics:  metrics,
 		keys:     make(map[types.NamespacedName]struct{}),
 	}
 }
@@ -58,6 +59,7 @@ func (w *WatchSet) Forget(k types.NamespacedName) {
 	delete(w.keys, k)
 	w.mu.Unlock()
 	w.registry.Forget(k)
+	w.metrics.Delete(k)
 }
 
 // Contains reports whether the key is in the set.

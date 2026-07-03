@@ -48,6 +48,7 @@ type Autoscaler struct {
 	taskInterval time.Duration
 	maxSampleAge time.Duration
 	clock        func() time.Time
+	metrics      *Metrics
 
 	runner *runner
 }
@@ -61,6 +62,9 @@ func WithScaleInterval(d time.Duration) AutoscalerOption {
 }
 func WithMaxSampleAge(d time.Duration) AutoscalerOption {
 	return func(a *Autoscaler) { a.maxSampleAge = d }
+}
+func WithAutoscalerMetrics(m *Metrics) AutoscalerOption {
+	return func(a *Autoscaler) { a.metrics = m }
 }
 func WithAutoscalerClock(f func() time.Time) AutoscalerOption {
 	return func(a *Autoscaler) { a.clock = f }
@@ -142,6 +146,7 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 		Now:               now,
 		LastScaledAt:      ad.Status.LastScaledAt.Time,
 	})
+	a.metrics.ObserveDecision(&ad, dec.Estimate, current, dec.DesiredReplicas)
 	log.Debugw("Scaling decision",
 		zap.Int32("current", current),
 		zap.Int32("desired", dec.DesiredReplicas),
@@ -156,6 +161,7 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 	if err := a.applyReplicas(ctx, &ad, dec.DesiredReplicas); err != nil {
 		return fmt.Errorf("patch replicas: %w", err)
 	}
+	a.metrics.RecordScale(&ad, dec.DesiredReplicas > current)
 	log.Infow("Scaled AgentDeploy",
 		zap.Int32("from", current),
 		zap.Int32("to", dec.DesiredReplicas),

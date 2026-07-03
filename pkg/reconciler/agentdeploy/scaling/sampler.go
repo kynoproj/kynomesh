@@ -73,6 +73,7 @@ type Sampler struct {
 	flushInterval time.Duration
 	scrapeTimeout time.Duration
 	clock         func() time.Time
+	metrics       *Metrics
 
 	mu      sync.Mutex
 	sources map[string]MetricsSource // keyed by namespace/agentset
@@ -93,6 +94,7 @@ func WithFlushInterval(d time.Duration) SamplerOption {
 func WithScrapeTimeout(d time.Duration) SamplerOption {
 	return func(s *Sampler) { s.scrapeTimeout = d }
 }
+func WithSamplerMetrics(m *Metrics) SamplerOption       { return func(s *Sampler) { s.metrics = m } }
 func WithSamplerClock(f func() time.Time) SamplerOption { return func(s *Sampler) { s.clock = f } }
 
 // NewSampler builds a Sampler over the shared WatchSet. dial defaults to
@@ -201,6 +203,7 @@ func (s *Sampler) sampleKey(ctx context.Context, k types.NamespacedName) error {
 	// Tag the sample with the current pod-spec hash so a new deployment resets
 	// the learned history.
 	store.Record(sample, ad.Status.UpdateHash)
+	s.metrics.RecordSample(&ad)
 	log.Debugw("Recorded sample",
 		zap.Float64("inflightPerReplica", sample.InflightPerRep),
 		zap.Float64("ratePerReplica", sample.RatePerRep),
