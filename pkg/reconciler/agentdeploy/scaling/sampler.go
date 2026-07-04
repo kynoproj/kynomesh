@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sort"
 	"sync"
 	"time"
 
@@ -47,6 +48,16 @@ const (
 	// defaultReapInterval is how often cached per-AgentSet daemon clients no
 	// longer referenced by any AgentDeploy are closed and evicted.
 	defaultReapInterval = 10 * time.Minute
+
+	// lookbackFactor sizes the adaptive averaging window as a multiple of the
+	// observed request duration (D = inflight/rate), so the rate is averaged over
+	// several request completions and short-lived noise is smoothed out.
+	lookbackFactor = 5
+	// minAdaptiveLookback / maxAdaptiveLookback clamp the adaptive window. The
+	// upper bound stays well under the daemon rater's retention so the custom
+	// window is always computable.
+	minAdaptiveLookback = 30 * time.Second
+	maxAdaptiveLookback = 15 * time.Minute
 )
 
 // DaemonDialer returns a metrics source for an AgentSet's daemon. Injected so
@@ -263,9 +274,10 @@ func (s *Sampler) sampleKey(ctx context.Context, k types.NamespacedName) error {
 		log.Warnw("Load history failed", zap.Error(err))
 	}
 
+	lookback := lookbackSeconds(&ad, store, s.clock())
 	scrapeCtx, cancel := context.WithTimeout(ctx, s.scrapeTimeout)
 	defer cancel()
-	sample, ok, err := collectSample(scrapeCtx, src, &ad, s.clock())
+	sample, ok, err := collectSample(scrapeCtx, src, &ad, s.clock(), lookback)
 	if err != nil {
 		return fmt.Errorf("collect: %w", err)
 	}
@@ -284,6 +296,64 @@ func (s *Sampler) sampleKey(ctx context.Context, k types.NamespacedName) error {
 		log.Warnw("Flush history failed", zap.Error(err))
 	}
 	return nil
+}
+
+// lookbackSeconds is the averaging window for the daemon query. When the
+// operator has pinned Scale.LookbackSeconds it wins; otherwise the window is
+// sized adaptively from the observed request duration (D = inflight/rate) so
+// slow workloads average over a longer window than fast ones. Before any
+// duration can be derived (cold start) it returns 0, letting the daemon use its
+// built-in 1m window.
+func lookbackSeconds(ad *kmv1.AgentDeploy, store *ConfigMapStore, now time.Time) int64 {
+	if v := getOr(ad.Spec.Scale.LookbackSeconds, 0); v > 0 {
+		return int64(v)
+	}
+	d := medianRequestDuration(historyOf(store, now))
+	if d <= 0 {
+		return 0
+	}
+	lb := clampDuration(time.Duration(lookbackFactor)*d, minAdaptiveLookback, maxAdaptiveLookback)
+	return int64(lb.Seconds())
+}
+
+// historyOf returns the store's recorded samples, tolerating a nil store.
+func historyOf(store *ConfigMapStore, now time.Time) []Sample {
+	if store == nil {
+		return nil
+	}
+	return store.History(now)
+}
+
+// medianRequestDuration derives the typical per-request service time from
+// history via Little's Law (D = inflight/rate), using the median to shrug off
+// outliers. Returns 0 when no sample carries a usable rate.
+func medianRequestDuration(history []Sample) time.Duration {
+	ds := make([]float64, 0, len(history))
+	for _, s := range history {
+		if s.RatePerRep > 0 && s.InflightPerRep > 0 {
+			ds = append(ds, s.InflightPerRep/s.RatePerRep) // seconds
+		}
+	}
+	if len(ds) == 0 {
+		return 0
+	}
+	sort.Float64s(ds)
+	mid := len(ds) / 2
+	med := ds[mid]
+	if len(ds)%2 == 0 {
+		med = (ds[mid-1] + ds[mid]) / 2
+	}
+	return time.Duration(med * float64(time.Second))
+}
+
+func clampDuration(v, lo, hi time.Duration) time.Duration {
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
 }
 
 // sourceFor returns a (cached) metrics source for the AgentDeploy's AgentSet

@@ -43,17 +43,17 @@ type MetricsSource interface {
 	GetAgentDeployMetrics(ctx context.Context, name string, lookbackSeconds int64) (*pb.AgentDeployMetrics, error)
 }
 
-// collectSample fetches one metrics snapshot for ad from src and converts the
-// daemon's fleet totals into a per-replica Sample using ad's ready replicas.
+// collectSample fetches one metrics snapshot for ad from src over the given
+// averaging window (lookbackSeconds; 0 uses the daemon's default 1m window) and
+// converts the daemon's fleet totals into a per-replica Sample using ad's ready
+// replicas.
 //
 // ok=false with a nil error means "no usable sample this tick" — cold start
 // (daemon reports Unavailable/NotFound), no ready replicas to normalize by, or
 // the chosen window isn't computable yet. The caller should simply skip rather
 // than treat it as a failure. The caller is responsible for recording the
 // returned Sample.
-func collectSample(ctx context.Context, src MetricsSource, ad *kmv1.AgentDeploy, now time.Time) (Sample, bool, error) {
-	lookback := int64(getOr(ad.Spec.Scale.LookbackSeconds, 0))
-
+func collectSample(ctx context.Context, src MetricsSource, ad *kmv1.AgentDeploy, now time.Time, lookback int64) (Sample, bool, error) {
 	m, err := src.GetAgentDeployMetrics(ctx, ad.Name, lookback)
 	if err != nil {
 		switch status.Code(err) {

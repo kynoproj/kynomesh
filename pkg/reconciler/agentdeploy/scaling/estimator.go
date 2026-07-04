@@ -41,14 +41,13 @@ const (
 	// decayHalfLife weights recent samples more heavily so the estimate tracks
 	// current capacity rather than a stale multi-day average.
 	decayHalfLife = 6 * time.Hour
-	// minSamplesToLearn is the floor below which we report Confidence 0 and let
-	// the controller use its conservative default.
+	// minSamplesToLearn is the density floor below which we report Confidence 0
+	// and let the controller use its conservative default.
 	minSamplesToLearn = 8
-	// enoughSamples is the clean-sample count at which the count factor of
-	// confidence saturates (≈30 min at the default 30s cadence). Note this is
-	// count-based, so a different cadence changes the wall-clock ramp to full
-	// confidence — a coverage/time-based replacement is tracked separately.
-	enoughSamples = 60
+	// fullConfidenceWindow is the wall-clock span of observations at which the
+	// time factor of confidence saturates. Being time-based (not count-based)
+	// keeps confidence independent of the sampling cadence, which is adaptive.
+	fullConfidenceWindow = 10 * time.Minute
 	// numBuckets discretizes the concurrency axis to denoise the curve.
 	numBuckets = 10
 	// plateauFraction: a concurrency band whose marginal throughput gain falls
@@ -84,7 +83,7 @@ func EstimateKnee(history []Sample, now time.Time) Estimate {
 		return Estimate{
 			KneePerReplica: maxInflight,
 			IsLowerBound:   true,
-			Confidence:     lowerBoundPenalty * countFactor(len(clean)),
+			Confidence:     lowerBoundPenalty * timeSpanFactor(clean),
 		}
 	}
 
@@ -172,19 +171,25 @@ func findKnee(buckets []bucket) (knee float64, isLowerBound bool) {
 	return buckets[len(buckets)-1].inflight, true
 }
 
-// confidence combines clean-sample count and concurrency coverage, penalized
-// when saturation was never actually observed.
+// confidence combines how long we've been observing (time span) with the
+// concurrency coverage, penalized when saturation was never actually observed.
 func confidence(clean []Sample, buckets []bucket, isLowerBound bool) float64 {
-	c := countFactor(len(clean)) * coverageFactor(buckets)
+	c := timeSpanFactor(clean) * coverageFactor(buckets)
 	if isLowerBound {
 		c *= lowerBoundPenalty
 	}
 	return clampF(c, 0, 1)
 }
 
-// countFactor grows with the number of clean samples, saturating at 1.
-func countFactor(n int) float64 {
-	return clampF(float64(n)/float64(enoughSamples), 0, 1)
+// timeSpanFactor grows with the wall-clock span the clean samples cover,
+// saturating at fullConfidenceWindow. Time-based rather than count-based so the
+// confidence ramp doesn't depend on the sampling cadence. clean is time-ordered.
+func timeSpanFactor(clean []Sample) float64 {
+	if len(clean) < 2 {
+		return 0
+	}
+	span := clean[len(clean)-1].Timestamp.Sub(clean[0].Timestamp)
+	return clampF(float64(span)/float64(fullConfidenceWindow), 0, 1)
 }
 
 // coverageFactor rewards a wide observed concurrency band: a curve mapped over
