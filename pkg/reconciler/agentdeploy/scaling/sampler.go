@@ -19,6 +19,7 @@ package scaling
 import (
 	"context"
 	"fmt"
+	"io"
 	"sync"
 	"time"
 
@@ -43,6 +44,9 @@ const (
 	// shutdownFlushTimeout bounds the best-effort flush of all stores when the
 	// Sampler stops (leader loss / shutdown).
 	shutdownFlushTimeout = 15 * time.Second
+	// defaultReapInterval is how often cached per-AgentSet daemon clients no
+	// longer referenced by any AgentDeploy are closed and evicted.
+	defaultReapInterval = 10 * time.Minute
 )
 
 // DaemonDialer returns a metrics source for an AgentSet's daemon. Injected so
@@ -72,6 +76,7 @@ type Sampler struct {
 	taskInterval  time.Duration
 	flushInterval time.Duration
 	scrapeTimeout time.Duration
+	reapInterval  time.Duration
 	clock         func() time.Time
 	metrics       *Metrics
 
@@ -94,6 +99,9 @@ func WithFlushInterval(d time.Duration) SamplerOption {
 func WithScrapeTimeout(d time.Duration) SamplerOption {
 	return func(s *Sampler) { s.scrapeTimeout = d }
 }
+func WithReapInterval(d time.Duration) SamplerOption {
+	return func(s *Sampler) { s.reapInterval = d }
+}
 func WithSamplerMetrics(m *Metrics) SamplerOption       { return func(s *Sampler) { s.metrics = m } }
 func WithSamplerClock(f func() time.Time) SamplerOption { return func(s *Sampler) { s.clock = f } }
 
@@ -113,6 +121,7 @@ func NewSampler(c client.Client, watch *WatchSet, reg *Registry, dial DaemonDial
 		taskInterval:  defaultTaskInterval,
 		flushInterval: defaultFlushInterval,
 		scrapeTimeout: defaultScrapeTimeout,
+		reapInterval:  defaultReapInterval,
 		clock:         time.Now,
 		sources:       make(map[string]MetricsSource),
 	}
@@ -130,13 +139,76 @@ func NewSampler(c client.Client, watch *WatchSet, reg *Registry, dial DaemonDial
 	return s
 }
 
-// Start runs the sampling runner until ctx is cancelled, then flushes all
-// in-memory history to its backing ConfigMaps so a leader change or shutdown
-// doesn't lose the samples collected since the last periodic flush.
+// Start runs the sampling runner.
 func (s *Sampler) Start(ctx context.Context) error {
+	go s.runReaper(ctx)
 	err := s.runner.start(ctx)
 	s.flushAll()
+	s.closeAllSources()
 	return err
+}
+
+// runReaper periodically closes cached daemon clients no longer referenced by
+// any AgentDeploy.
+func (s *Sampler) runReaper(ctx context.Context) {
+	t := time.NewTicker(s.reapInterval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			s.reapSources(ctx)
+		}
+	}
+}
+
+// reapSources closes and evicts any cached per-AgentSet daemon client whose
+// AgentSet is no longer referenced by a live AgentDeploy.
+func (s *Sampler) reapSources(ctx context.Context) {
+	var list kmv1.AgentDeployList
+	// Cheap cache read. It also works for namespace scoped installation,
+	// which only caches the namespace scoped objects.
+	if err := s.client.List(ctx, &list); err != nil {
+		s.logger.Errorw("List AgentDeploys for source reaping failed", zap.Error(err))
+		return
+	}
+	live := make(map[string]bool, len(list.Items))
+	for i := range list.Items {
+		ad := &list.Items[i]
+		live[ad.Namespace+"/"+ad.Spec.AgentSetName] = true
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for ck, src := range s.sources {
+		if live[ck] {
+			continue
+		}
+		closeSource(ck, src, s.logger)
+		delete(s.sources, ck)
+	}
+}
+
+// closeAllSources closes and clears every cached daemon client (shutdown).
+func (s *Sampler) closeAllSources() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for ck, src := range s.sources {
+		closeSource(ck, src, s.logger)
+		delete(s.sources, ck)
+	}
+}
+
+// closeSource closes a daemon client if it is closeable, logging any error.
+func closeSource(key string, src MetricsSource, logger *zap.SugaredLogger) {
+	c, ok := src.(io.Closer)
+	if !ok {
+		return
+	}
+	if err := c.Close(); err != nil {
+		logger.Warnw("Close daemon client failed", zap.String("agentSet", key), zap.Error(err))
+	}
 }
 
 // flushAll persists every tracked store on a fresh, bounded context.
