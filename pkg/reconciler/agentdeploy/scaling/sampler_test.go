@@ -202,3 +202,57 @@ func TestSamplerFlushAllPersistsAllStores(t *testing.T) {
 		assert.NotEmpty(t, cm.BinaryData[historyKey], n)
 	}
 }
+
+// closableSource is a MetricsSource that records Close for reaper tests.
+type closableSource struct {
+	fakeSource
+	closed bool
+}
+
+func (c *closableSource) Close() error { c.closed = true; return nil }
+
+func TestSamplerReapsUnreferencedSources(t *testing.T) {
+	ad := scalingAD("foo", 2) // AgentSet "set" → cache key "ns/set"
+	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
+	reg := NewRegistry(c)
+	s := NewSampler(c, NewWatchSet(reg, nil), reg, staticDialer(&fakeSource{}), testLogger())
+
+	referenced := &closableSource{}
+	stale := &closableSource{}
+	s.mu.Lock()
+	s.sources["ns/set"] = referenced // still referenced by ad "foo"
+	s.sources["ns/gone"] = stale     // no live AgentDeploy uses it
+	s.mu.Unlock()
+
+	s.reapSources(context.Background())
+
+	s.mu.Lock()
+	_, keptRef := s.sources["ns/set"]
+	_, keptStale := s.sources["ns/gone"]
+	s.mu.Unlock()
+	assert.True(t, keptRef, "referenced source kept")
+	assert.False(t, keptStale, "unreferenced source evicted")
+	assert.True(t, stale.closed, "unreferenced source closed")
+	assert.False(t, referenced.closed, "referenced source not closed")
+}
+
+func TestSamplerCloseAllSources(t *testing.T) {
+	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).Build()
+	reg := NewRegistry(c)
+	s := NewSampler(c, NewWatchSet(reg, nil), reg, staticDialer(&fakeSource{}), testLogger())
+
+	a, b := &closableSource{}, &closableSource{}
+	s.mu.Lock()
+	s.sources["ns/a"] = a
+	s.sources["ns/b"] = b
+	s.mu.Unlock()
+
+	s.closeAllSources()
+
+	s.mu.Lock()
+	n := len(s.sources)
+	s.mu.Unlock()
+	assert.Zero(t, n, "all sources evicted")
+	assert.True(t, a.closed)
+	assert.True(t, b.closed)
+}
