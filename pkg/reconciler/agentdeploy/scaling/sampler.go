@@ -274,7 +274,7 @@ func (s *Sampler) sampleKey(ctx context.Context, k types.NamespacedName) error {
 		log.Warnw("Load history failed", zap.Error(err))
 	}
 
-	lookback := lookbackSeconds(&ad, store, s.clock())
+	lookback := lookbackSeconds(&ad, store, s.clock(), s.taskInterval)
 	scrapeCtx, cancel := context.WithTimeout(ctx, s.scrapeTimeout)
 	defer cancel()
 	sample, ok, err := collectSample(scrapeCtx, src, &ad, s.clock(), lookback)
@@ -304,7 +304,13 @@ func (s *Sampler) sampleKey(ctx context.Context, k types.NamespacedName) error {
 // slow workloads average over a longer window than fast ones. Before any
 // duration can be derived (cold start) it returns 0, letting the daemon use its
 // built-in 1m window.
-func lookbackSeconds(ad *kmv1.AgentDeploy, store *ConfigMapStore, now time.Time) int64 {
+//
+// The adaptive window is floored at the scrape interval: a window shorter than
+// the gap between scrapes would leave uncovered stretches of time between
+// consecutive recorded samples (the daemon still counts every request, but that
+// traffic would never land in history). Keeping window >= interval guarantees
+// contiguous coverage.
+func lookbackSeconds(ad *kmv1.AgentDeploy, store *ConfigMapStore, now time.Time, scrapeInterval time.Duration) int64 {
 	if v := getOr(ad.Spec.Scale.LookbackSeconds, 0); v > 0 {
 		return int64(v)
 	}
@@ -313,6 +319,7 @@ func lookbackSeconds(ad *kmv1.AgentDeploy, store *ConfigMapStore, now time.Time)
 		return 0
 	}
 	lb := clampDuration(time.Duration(lookbackFactor)*d, minAdaptiveLookback, maxAdaptiveLookback)
+	lb = max(lb, scrapeInterval)
 	return int64(lb.Seconds())
 }
 

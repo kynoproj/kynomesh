@@ -60,12 +60,12 @@ func TestLookbackSecondsOperatorOverrideWins(t *testing.T) {
 	ad := scalingAD("foo", 2)
 	ad.Spec.Scale.LookbackSeconds = ptrU32(120)
 	// Even with usable history, the pinned value wins.
-	assert.Equal(t, int64(120), lookbackSeconds(ad, nil, time.Now()))
+	assert.Equal(t, int64(120), lookbackSeconds(ad, nil, time.Now(), 30*time.Second))
 }
 
 func TestLookbackSecondsColdStart(t *testing.T) {
 	ad := scalingAD("foo", 2)
-	assert.Equal(t, int64(0), lookbackSeconds(ad, nil, time.Now()),
+	assert.Equal(t, int64(0), lookbackSeconds(ad, nil, time.Now(), 30*time.Second),
 		"no history → 0 lets the daemon use its built-in 1m window")
 }
 
@@ -74,11 +74,15 @@ func TestLookbackSecondsAdaptive(t *testing.T) {
 	tests := []struct {
 		name           string
 		inflight, rate float64
+		interval       time.Duration
 		want           int64
 	}{
-		{"mid range: 5*D", 40, 2, 100},  // D=20s → 100s
-		{"clamped to min", 4, 2, 30},    // D=2s → 10s → floor 30s
-		{"clamped to max", 600, 2, 900}, // D=300s → 1500s → cap 15m
+		{"mid range: 5*D", 40, 2, 30 * time.Second, 100},  // D=20s → 100s
+		{"clamped to min", 4, 2, 30 * time.Second, 30},    // D=2s → 10s → floor 30s
+		{"clamped to max", 600, 2, 30 * time.Second, 900}, // D=300s → 1500s → cap 15m
+		// Window shorter than the scrape interval is lifted to the interval so
+		// recorded history has no temporal gaps.
+		{"floored at interval", 20, 2, 90 * time.Second, 90}, // D=10s → 50s → floor 90s
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -87,7 +91,7 @@ func TestLookbackSecondsAdaptive(t *testing.T) {
 			store, err := NewRegistry(c).StoreFor(context.Background(), ad)
 			require.NoError(t, err)
 			store.Record(Sample{Timestamp: now, Replicas: 2, InflightPerRep: tc.inflight, RatePerRep: tc.rate}, "")
-			assert.Equal(t, tc.want, lookbackSeconds(ad, store, now))
+			assert.Equal(t, tc.want, lookbackSeconds(ad, store, now, tc.interval))
 		})
 	}
 }
