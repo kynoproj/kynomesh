@@ -57,8 +57,9 @@ func (s Sample) valid() bool {
 }
 
 // sanitize returns the subset of history safe to learn from: positive,
-// steady-state readings sorted by time. Samples within warmupAfterScale of a
-// replica-count change are dropped because the fleet had not yet settled.
+// steady-state readings sorted by time, with at most one reading per instant.
+// Samples within warmupAfterScale of a replica-count change are dropped because
+// the fleet had not yet settled.
 //
 // The input slice is not mutated.
 func sanitize(history []Sample) []Sample {
@@ -71,6 +72,7 @@ func sanitize(history []Sample) []Sample {
 	sort.Slice(sorted, func(i, j int) bool {
 		return sorted[i].Timestamp.Before(sorted[j].Timestamp)
 	})
+	sorted = dedupByTimestamp(sorted)
 
 	clean := make([]Sample, 0, len(sorted))
 	var lastChange time.Time
@@ -91,4 +93,24 @@ func sanitize(history []Sample) []Sample {
 		clean = append(clean, s)
 	}
 	return clean
+}
+
+// dedupByTimestamp collapses samples that share a Timestamp down to the last
+// one, assuming the input is sorted ascending by Timestamp. Duplicate instants
+// arise when persisted history is reloaded after a leader failover and then
+// re-recorded, or when overlapping adaptive scrape windows land on the same
+// clock reading; keeping one per instant stops a single moment from being
+// counted more than once in the learned curve and in coverage/time-span
+// confidence. It edits sorted in place (already a private copy) and returns the
+// truncated slice.
+func dedupByTimestamp(sorted []Sample) []Sample {
+	out := sorted[:0]
+	for _, s := range sorted {
+		if n := len(out); n > 0 && s.Timestamp.Equal(out[n-1].Timestamp) {
+			out[n-1] = s // last write for this instant wins
+			continue
+		}
+		out = append(out, s)
+	}
+	return out
 }

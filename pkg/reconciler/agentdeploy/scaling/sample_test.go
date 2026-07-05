@@ -80,6 +80,33 @@ func TestSanitizeSortsByTime(t *testing.T) {
 	assert.True(t, clean[0].Timestamp.Before(clean[1].Timestamp))
 }
 
+func TestSanitizeDedupsSameTimestamp(t *testing.T) {
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	history := []Sample{
+		sample(base, 2, 10, 100),                     // superseded by the next same-instant reading
+		sample(base, 2, 15, 150),                     // last write for base wins
+		sample(base.Add(30*time.Second), 2, 12, 120), // distinct instant, kept
+	}
+	clean := sanitize(history)
+	assert.Len(t, clean, 2)
+	assert.Equal(t, 15.0, clean[0].InflightPerRep, "last reading for the shared instant wins")
+	assert.Equal(t, 12.0, clean[1].InflightPerRep)
+}
+
+func TestSanitizeDedupsAcrossUnsortedInput(t *testing.T) {
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	// Same instant delivered out of order; dedup runs after the sort.
+	history := []Sample{
+		sample(base.Add(30*time.Second), 2, 12, 120),
+		sample(base, 2, 10, 100),
+		sample(base.Add(30*time.Second), 2, 20, 200),
+	}
+	clean := sanitize(history)
+	assert.Len(t, clean, 2)
+	assert.Equal(t, 10.0, clean[0].InflightPerRep)
+	assert.Equal(t, 20.0, clean[1].InflightPerRep, "last reading at t+30s wins")
+}
+
 func TestSanitizeEmpty(t *testing.T) {
 	assert.Nil(t, sanitize(nil))
 	assert.Nil(t, sanitize([]Sample{}))
