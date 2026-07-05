@@ -494,10 +494,6 @@ message Scale {
   // +optional
   optional int32 max = 3;
 
-  // Lookback seconds to calculate the average in-flight requests and processing rate.
-  // +optional
-  optional uint32 lookbackSeconds = 4;
-
   // TargetSaturationPercentage tunes how aggressively to scale. It is the fraction
   // (1-100) of a replica's learned capacity (the saturation knee) to run at in steady
   // state. The autoscaler learns each replica's capacity from observed load and keeps
@@ -507,25 +503,25 @@ message Scale {
   // tighter (lower cost, higher latency risk). Values above 100 are rejected.
   // Defaults to 80 when unset.
   // +optional
-  optional uint32 targetSaturationPercentage = 5;
+  optional uint32 targetSaturationPercentage = 4;
 
   // ScaleUpCooldownSeconds defines the cooldown seconds after a scaling operation, before a follow-up scaling up.
   // +optional
-  optional uint32 scaleUpCooldownSeconds = 6;
+  optional uint32 scaleUpCooldownSeconds = 5;
 
   // ScaleDownCooldownSeconds defines the cooldown seconds after a scaling operation, before a follow-up scaling down.
   // +optional
-  optional uint32 scaleDownCooldownSeconds = 7;
+  optional uint32 scaleDownCooldownSeconds = 6;
 
   // ReplicasPerScaleUp defines the number of maximum replicas that can be changed in a single scaled up operation.
   // The is use to prevent from too aggressive scaling up operations
   // +optional
-  optional uint32 replicasPerScaleUp = 8;
+  optional uint32 replicasPerScaleUp = 7;
 
   // ReplicasPerScaleDown defines the number of maximum replicas that can be changed in a single scaled down operation.
   // The is use to prevent from too aggressive scaling down operations
   // +optional
-  optional uint32 replicasPerScaleDown = 9;
+  optional uint32 replicasPerScaleDown = 8;
 }
 
 // Status is a common structure which can be used for Status field.

@@ -69,32 +69,30 @@ func TestCollectNormalizesToPerReplica(t *testing.T) {
 	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	src := &fakeSource{resp: metricsAt(windowKey1m, 100, 200)}
 
-	got, ok, err := collectSample(context.Background(), src, agentDeploy(4), now)
+	got, ok, err := collectSample(context.Background(), src, agentDeploy(4), now, 0)
 	require.NoError(t, err)
 	require.True(t, ok)
 	assert.Equal(t, int32(4), got.Replicas)
 	assert.Equal(t, 25.0, got.InflightPerRep, "100 total / 4 ready")
 	assert.Equal(t, 50.0, got.RatePerRep, "200 total / 4 ready")
-	assert.Equal(t, int64(0), src.gotLookback, "no lookback set → default window")
+	assert.Equal(t, int64(0), src.gotLookback, "lookback 0 → daemon default window")
 }
 
 func TestCollectUsesCustomWindowWhenLookbackSet(t *testing.T) {
 	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	src := &fakeSource{resp: metricsAt(windowKeyCustom, 60, 120)}
-	ad := agentDeploy(2)
-	ad.Spec.Scale.LookbackSeconds = ptrU32(300)
 
-	got, ok, err := collectSample(context.Background(), src, ad, now)
+	got, ok, err := collectSample(context.Background(), src, agentDeploy(2), now, 300)
 	require.NoError(t, err)
 	require.True(t, ok)
-	assert.Equal(t, int64(300), src.gotLookback)
+	assert.Equal(t, int64(300), src.gotLookback, "custom lookback passed through to daemon")
 	assert.Equal(t, 30.0, got.InflightPerRep)
 }
 
 func TestCollectSkipsOnColdStart(t *testing.T) {
 	for _, code := range []codes.Code{codes.Unavailable, codes.NotFound} {
 		src := &fakeSource{err: status.Error(code, "not ready")}
-		_, ok, err := collectSample(context.Background(), src, agentDeploy(3), time.Now())
+		_, ok, err := collectSample(context.Background(), src, agentDeploy(3), time.Now(), 0)
 		require.NoError(t, err, code.String())
 		assert.False(t, ok)
 	}
@@ -102,7 +100,7 @@ func TestCollectSkipsOnColdStart(t *testing.T) {
 
 func TestCollectSkipsWhenNoReadyReplicas(t *testing.T) {
 	src := &fakeSource{resp: metricsAt(windowKey1m, 100, 200)}
-	_, ok, err := collectSample(context.Background(), src, agentDeploy(0), time.Now())
+	_, ok, err := collectSample(context.Background(), src, agentDeploy(0), time.Now(), 0)
 	require.NoError(t, err)
 	assert.False(t, ok)
 }
@@ -110,14 +108,14 @@ func TestCollectSkipsWhenNoReadyReplicas(t *testing.T) {
 func TestCollectSkipsWhenWindowMissing(t *testing.T) {
 	// Daemon returned data, but not for the window we read.
 	src := &fakeSource{resp: metricsAt(windowKey5mForTest(), 100, 200)}
-	_, ok, err := collectSample(context.Background(), src, agentDeploy(3), time.Now())
+	_, ok, err := collectSample(context.Background(), src, agentDeploy(3), time.Now(), 0)
 	require.NoError(t, err)
 	assert.False(t, ok)
 }
 
 func TestCollectReturnsRealErrors(t *testing.T) {
 	src := &fakeSource{err: errors.New("connection refused")}
-	_, ok, err := collectSample(context.Background(), src, agentDeploy(3), time.Now())
+	_, ok, err := collectSample(context.Background(), src, agentDeploy(3), time.Now(), 0)
 	assert.Error(t, err)
 	assert.False(t, ok)
 }

@@ -1670,13 +1670,6 @@ func schema_pkg_apis_kynomesh_v1alpha1_Scale(ref common.ReferenceCallback) commo
 							Format:      "int32",
 						},
 					},
-					"lookbackSeconds": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Lookback seconds to calculate the average in-flight requests and processing rate.",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
 					"targetSaturationPercentage": {
 						SchemaProps: spec.SchemaProps{
 							Description: "TargetSaturationPercentage tunes how aggressively to scale. It is the fraction (1-100) of a replica's learned capacity (the saturation knee) to run at in steady state. The autoscaler learns each replica's capacity from observed load and keeps the fleet near this fraction of it: desired replicas trend toward ceil(totalInflight / (knee * TargetSaturationPercentage/100)). Lower values scale out earlier (safer latency, higher cost); higher values pack tighter (lower cost, higher latency risk). Values above 100 are rejected. Defaults to 80 when unset.",

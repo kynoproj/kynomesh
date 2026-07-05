@@ -620,11 +620,6 @@ func (in *Scale) DeepCopyInto(out *Scale) {
 		*out = new(int32)
 		**out = **in
 	}
-	if in.LookbackSeconds != nil {
-		in, out := &in.LookbackSeconds, &out.LookbackSeconds
-		*out = new(uint32)
-		**out = **in
-	}
 	if in.TargetSaturationPercentage != nil {
 		in, out := &in.TargetSaturationPercentage, &out.TargetSaturationPercentage
 		*out = new(uint32)

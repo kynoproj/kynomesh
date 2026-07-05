@@ -1823,9 +1823,6 @@ spec:
                 properties:
                   disabled:
                     type: boolean
-                  lookbackSeconds:
-                    format: int32
-                    type: integer
                   max:
                     format: int32
                     type: integer
@@ -5426,9 +5423,6 @@ spec:
                       properties:
                         disabled:
                           type: boolean
-                        lookbackSeconds:
-                          format: int32
-                          type: integer
                         max:
                           format: int32
                           type: integer
