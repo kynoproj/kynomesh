@@ -1339,27 +1339,27 @@ func (m *Scale) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	if m.ReplicasPerScaleDown != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.ReplicasPerScaleDown))
 		i--
-		dAtA[i] = 0x48
+		dAtA[i] = 0x40
 	}
 	if m.ReplicasPerScaleUp != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.ReplicasPerScaleUp))
 		i--
-		dAtA[i] = 0x40
+		dAtA[i] = 0x38
 	}
 	if m.ScaleDownCooldownSeconds != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.ScaleDownCooldownSeconds))
 		i--
-		dAtA[i] = 0x38
+		dAtA[i] = 0x30
 	}
 	if m.ScaleUpCooldownSeconds != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.ScaleUpCooldownSeconds))
 		i--
-		dAtA[i] = 0x30
+		dAtA[i] = 0x28
 	}
 	if m.TargetSaturationPercentage != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.TargetSaturationPercentage))
 		i--
-		dAtA[i] = 0x28
+		dAtA[i] = 0x20
 	}
 	if m.Max != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.Max))
@@ -6610,7 +6610,7 @@ func (m *Scale) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Max = &v
-		case 5:
+		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TargetSaturationPercentage", wireType)
 			}
@@ -6630,7 +6630,7 @@ func (m *Scale) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.TargetSaturationPercentage = &v
-		case 6:
+		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ScaleUpCooldownSeconds", wireType)
 			}
@@ -6650,7 +6650,7 @@ func (m *Scale) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.ScaleUpCooldownSeconds = &v
-		case 7:
+		case 6:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ScaleDownCooldownSeconds", wireType)
 			}
@@ -6670,7 +6670,7 @@ func (m *Scale) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.ScaleDownCooldownSeconds = &v
-		case 8:
+		case 7:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ReplicasPerScaleUp", wireType)
 			}
@@ -6690,7 +6690,7 @@ func (m *Scale) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.ReplicasPerScaleUp = &v
-		case 9:
+		case 8:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ReplicasPerScaleDown", wireType)
 			}

@@ -2696,7 +2696,6 @@ Maximum replicas.
 
 </tr>
 
-
 <tr>
 
 <td>

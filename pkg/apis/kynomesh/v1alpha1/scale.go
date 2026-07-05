@@ -37,19 +37,19 @@ type Scale struct {
 	// tighter (lower cost, higher latency risk). Values above 100 are rejected.
 	// Defaults to 80 when unset.
 	// +optional
-	TargetSaturationPercentage *uint32 `json:"targetSaturationPercentage,omitempty" protobuf:"varint,5,opt,name=targetSaturationPercentage"`
+	TargetSaturationPercentage *uint32 `json:"targetSaturationPercentage,omitempty" protobuf:"varint,4,opt,name=targetSaturationPercentage"`
 	// ScaleUpCooldownSeconds defines the cooldown seconds after a scaling operation, before a follow-up scaling up.
 	// +optional
-	ScaleUpCooldownSeconds *uint32 `json:"scaleUpCooldownSeconds,omitempty" protobuf:"varint,6,opt,name=scaleUpCooldownSeconds"`
+	ScaleUpCooldownSeconds *uint32 `json:"scaleUpCooldownSeconds,omitempty" protobuf:"varint,5,opt,name=scaleUpCooldownSeconds"`
 	// ScaleDownCooldownSeconds defines the cooldown seconds after a scaling operation, before a follow-up scaling down.
 	// +optional
-	ScaleDownCooldownSeconds *uint32 `json:"scaleDownCooldownSeconds,omitempty" protobuf:"varint,7,opt,name=scaleDownCooldownSeconds"`
+	ScaleDownCooldownSeconds *uint32 `json:"scaleDownCooldownSeconds,omitempty" protobuf:"varint,6,opt,name=scaleDownCooldownSeconds"`
 	// ReplicasPerScaleUp defines the number of maximum replicas that can be changed in a single scaled up operation.
 	// The is use to prevent from too aggressive scaling up operations
 	// +optional
-	ReplicasPerScaleUp *uint32 `json:"replicasPerScaleUp,omitempty" protobuf:"varint,8,opt,name=replicasPerScaleUp"`
+	ReplicasPerScaleUp *uint32 `json:"replicasPerScaleUp,omitempty" protobuf:"varint,7,opt,name=replicasPerScaleUp"`
 	// ReplicasPerScaleDown defines the number of maximum replicas that can be changed in a single scaled down operation.
 	// The is use to prevent from too aggressive scaling down operations
 	// +optional
-	ReplicasPerScaleDown *uint32 `json:"replicasPerScaleDown,omitempty" protobuf:"varint,9,opt,name=replicasPerScaleDown"`
+	ReplicasPerScaleDown *uint32 `json:"replicasPerScaleDown,omitempty" protobuf:"varint,8,opt,name=replicasPerScaleDown"`
 }
