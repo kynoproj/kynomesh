@@ -1361,11 +1361,6 @@ func (m *Scale) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x28
 	}
-	if m.LookbackSeconds != nil {
-		i = encodeVarintGenerated(dAtA, i, uint64(*m.LookbackSeconds))
-		i--
-		dAtA[i] = 0x20
-	}
 	if m.Max != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.Max))
 		i--
@@ -2028,9 +2023,6 @@ func (m *Scale) Size() (n int) {
 	if m.Max != nil {
 		n += 1 + sovGenerated(uint64(*m.Max))
 	}
-	if m.LookbackSeconds != nil {
-		n += 1 + sovGenerated(uint64(*m.LookbackSeconds))
-	}
 	if m.TargetSaturationPercentage != nil {
 		n += 1 + sovGenerated(uint64(*m.TargetSaturationPercentage))
 	}
@@ -2474,7 +2466,6 @@ func (this *Scale) String() string {
 		`Disabled:` + fmt.Sprintf("%v", this.Disabled) + `,`,
 		`Min:` + valueToStringGenerated(this.Min) + `,`,
 		`Max:` + valueToStringGenerated(this.Max) + `,`,
-		`LookbackSeconds:` + valueToStringGenerated(this.LookbackSeconds) + `,`,
 		`TargetSaturationPercentage:` + valueToStringGenerated(this.TargetSaturationPercentage) + `,`,
 		`ScaleUpCooldownSeconds:` + valueToStringGenerated(this.ScaleUpCooldownSeconds) + `,`,
 		`ScaleDownCooldownSeconds:` + valueToStringGenerated(this.ScaleDownCooldownSeconds) + `,`,
@@ -6619,26 +6610,6 @@ func (m *Scale) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Max = &v
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LookbackSeconds", wireType)
-			}
-			var v uint32
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenerated
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.LookbackSeconds = &v
 		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TargetSaturationPercentage", wireType)

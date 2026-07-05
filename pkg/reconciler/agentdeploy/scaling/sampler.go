@@ -274,7 +274,7 @@ func (s *Sampler) sampleKey(ctx context.Context, k types.NamespacedName) error {
 		log.Warnw("Load history failed", zap.Error(err))
 	}
 
-	lookback := lookbackSeconds(&ad, store, s.clock(), s.taskInterval)
+	lookback := lookbackSeconds(store, s.clock(), s.taskInterval)
 	scrapeCtx, cancel := context.WithTimeout(ctx, s.scrapeTimeout)
 	defer cancel()
 	sample, ok, err := collectSample(scrapeCtx, src, &ad, s.clock(), lookback)
@@ -298,22 +298,18 @@ func (s *Sampler) sampleKey(ctx context.Context, k types.NamespacedName) error {
 	return nil
 }
 
-// lookbackSeconds is the averaging window for the daemon query. When the
-// operator has pinned Scale.LookbackSeconds it wins; otherwise the window is
-// sized adaptively from the observed request duration (D = inflight/rate) so
-// slow workloads average over a longer window than fast ones. Before any
-// duration can be derived (cold start) it returns 0, letting the daemon use its
-// built-in 1m window.
+// lookbackSeconds is the averaging window for the daemon query, sized adaptively
+// from the observed request duration (D = inflight/rate) so slow workloads
+// average over a longer window than fast ones. Before any duration can be
+// derived (cold start) it returns 0, letting the daemon use its built-in 1m
+// window.
 //
 // The adaptive window is floored at the scrape interval: a window shorter than
 // the gap between scrapes would leave uncovered stretches of time between
 // consecutive recorded samples (the daemon still counts every request, but that
 // traffic would never land in history). Keeping window >= interval guarantees
 // contiguous coverage.
-func lookbackSeconds(ad *kmv1.AgentDeploy, store *ConfigMapStore, now time.Time, scrapeInterval time.Duration) int64 {
-	if v := getOr(ad.Spec.Scale.LookbackSeconds, 0); v > 0 {
-		return int64(v)
-	}
+func lookbackSeconds(store *ConfigMapStore, now time.Time, scrapeInterval time.Duration) int64 {
 	d := medianRequestDuration(historyOf(store, now))
 	if d <= 0 {
 		return 0

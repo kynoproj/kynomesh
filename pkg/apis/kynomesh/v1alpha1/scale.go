@@ -28,9 +28,6 @@ type Scale struct {
 	// Maximum replicas.
 	// +optional
 	Max *int32 `json:"max,omitempty" protobuf:"varint,3,opt,name=max"`
-	// Lookback seconds to calculate the average in-flight requests and processing rate.
-	// +optional
-	LookbackSeconds *uint32 `json:"lookbackSeconds,omitempty" protobuf:"varint,4,opt,name=lookbackSeconds"`
 	// TargetSaturationPercentage tunes how aggressively to scale. It is the fraction
 	// (1-100) of a replica's learned capacity (the saturation knee) to run at in steady
 	// state. The autoscaler learns each replica's capacity from observed load and keeps

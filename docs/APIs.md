@@ -2696,25 +2696,6 @@ Maximum replicas.
 
 </tr>
 
-<tr>
-
-<td>
-
-<code>lookbackSeconds</code></br> <em> uint32 </em>
-</td>
-
-<td>
-
-<em>(Optional)</em>
-<p>
-
-Lookback seconds to calculate the average in-flight requests and
-processing rate.
-</p>
-
-</td>
-
-</tr>
 
 <tr>
 

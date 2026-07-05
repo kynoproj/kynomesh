@@ -56,16 +56,8 @@ func TestClampDuration(t *testing.T) {
 	assert.Equal(t, time.Minute, clampDuration(time.Minute, lo, hi))
 }
 
-func TestLookbackSecondsOperatorOverrideWins(t *testing.T) {
-	ad := scalingAD("foo", 2)
-	ad.Spec.Scale.LookbackSeconds = ptrU32(120)
-	// Even with usable history, the pinned value wins.
-	assert.Equal(t, int64(120), lookbackSeconds(ad, nil, time.Now(), 30*time.Second))
-}
-
 func TestLookbackSecondsColdStart(t *testing.T) {
-	ad := scalingAD("foo", 2)
-	assert.Equal(t, int64(0), lookbackSeconds(ad, nil, time.Now(), 30*time.Second),
+	assert.Equal(t, int64(0), lookbackSeconds(nil, time.Now(), 30*time.Second),
 		"no history → 0 lets the daemon use its built-in 1m window")
 }
 
@@ -91,7 +83,7 @@ func TestLookbackSecondsAdaptive(t *testing.T) {
 			store, err := NewRegistry(c).StoreFor(context.Background(), ad)
 			require.NoError(t, err)
 			store.Record(Sample{Timestamp: now, Replicas: 2, InflightPerRep: tc.inflight, RatePerRep: tc.rate}, "")
-			assert.Equal(t, tc.want, lookbackSeconds(ad, store, now, tc.interval))
+			assert.Equal(t, tc.want, lookbackSeconds(store, now, tc.interval))
 		})
 	}
 }
