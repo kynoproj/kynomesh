@@ -144,7 +144,12 @@ func Decide(in Inputs) Decision {
 		return Decision{DesiredReplicas: desired, Reason: ReasonManualOutRange, Skip: false}
 	}
 
-	//TODO: need to revisit
+	// No ready replicas: none are in the Service's endpoints, so the broker
+	// routes no traffic and the daemon observes no load — there is simply no
+	// signal to scale on. Holding also protects pods that are still warming up
+	// (or restarting) from being scaled down on a transient. Recovery is
+	// guaranteed because minMax floors min at 1, so a pod always exists to
+	// become ready and resume sampling; the deployment can't strand at zero.
 	if in.ReadyReplicas == 0 {
 		return Decision{DesiredReplicas: in.SpecifiedReplicas, Reason: ReasonNotReady, Skip: true}
 	}
