@@ -113,13 +113,45 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 	log := a.logger.With(zap.String("namespace", ad.Namespace),
 		zap.String("agentSet", ad.Spec.AgentSetName),
 		zap.String("agentDeploy", ad.Spec.Name))
+	if !ad.DeletionTimestamp.IsZero() {
+		a.watch.Forget(k)
+		log.Debug("AgentDeploy being deleted")
+		return nil
+	}
 	if ad.Spec.Scale.Disabled {
 		return nil
 	}
+	if ad.Status.Phase != kmv1.AgentDeployPhaseRunning {
+		log.Infow("Skipping scale: AgentDeploy not in Running phase")
+		return nil
+	}
+	if ad.Status.UpdateHash != ad.Status.CurrentHash && ad.Status.UpdateHash != "" {
+		log.Info("Skipping scale: AgentDeploy is updating")
+		return nil
+	}
+	if ad.Status.Replicas != ad.Status.DesiredReplicas {
+		log.Infow("Skipping scale: reconcile in flight, replicas mismatch",
+			zap.Uint32("currentReplicas", ad.Status.Replicas),
+			zap.Uint32("desiredReplicas", ad.Status.DesiredReplicas))
+		return nil
+	}
+	if ad.Status.ReadyReplicas == 0 {
+		log.Infow("Skipping scale: no ready replicas")
+		return nil
+	}
+	secondsSinceLastScale := time.Since(ad.Status.LastScaledAt.Time).Seconds()
+	scaleDownCooldown := float64(getOr(ad.Spec.Scale.ScaleDownCooldownSeconds, defaultScaleUpCooldownSec))
+	scaleUpCooldown := float64(getOr(ad.Spec.Scale.ScaleUpCooldownSeconds, defaultScaleUpCooldownSec))
+	if secondsSinceLastScale < scaleDownCooldown && secondsSinceLastScale < scaleUpCooldown {
+		// Skip scaling without needing further calculation
+		log.Infof("Skipping scale: Cooldown period, skip scaling.")
+		return nil
+	}
+
 	store, ok := a.registry.Get(k)
 	if !ok {
 		log.Infow("Skipping scale: no sampled metrics yet")
-		return nil // not sampled yet
+		return nil
 	}
 
 	now := a.clock()
@@ -138,13 +170,13 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 
 	current := currentReplicas(&ad)
 	dec := Decide(Inputs{
-		SpecifiedReplicas: current,
-		ReadyReplicas:     int32(ad.Status.ReadyReplicas),
-		History:           hist,
-		Current:           latest,
-		Spec:              ad.Spec.Scale,
-		Now:               now,
-		LastScaledAt:      ad.Status.LastScaledAt.Time,
+		CurrentReplicas: current,
+		ReadyReplicas:   int32(ad.Status.ReadyReplicas),
+		History:         hist,
+		Current:         latest,
+		Spec:            ad.Spec.Scale,
+		Now:             now,
+		LastScaledAt:    ad.Status.LastScaledAt.Time,
 	})
 	a.metrics.ObserveDecision(&ad, dec.Estimate, current, dec.DesiredReplicas)
 	log.Debugw("Scaling decision",
@@ -180,16 +212,5 @@ func (a *Autoscaler) applyReplicas(ctx context.Context, ad *kmv1.AgentDeploy, de
 
 // currentReplicas is the running replica count the decision scales from.
 func currentReplicas(ad *kmv1.AgentDeploy) int32 {
-	if ad.Status.Replicas > 0 {
-		return int32(ad.Status.Replicas)
-	}
-	return specReplicas(ad)
-}
-
-// specReplicas is the AgentDeploy's spec replica count, defaulting to 1.
-func specReplicas(ad *kmv1.AgentDeploy) int32 {
-	if ad.Spec.Replicas != nil {
-		return *ad.Spec.Replicas
-	}
-	return 1
+	return int32(ad.Status.Replicas)
 }

@@ -42,9 +42,7 @@ import (
 type Reason string
 
 const (
-	ReasonDisabled       Reason = "disabled"
 	ReasonMinEqualsMax   Reason = "min equals max"
-	ReasonNotReady       Reason = "no ready replicas"
 	ReasonCooldownUp     Reason = "scale-up cooldown"
 	ReasonCooldownDown   Reason = "scale-down cooldown"
 	ReasonManualOutRange Reason = "manual scale outside [min,max]"
@@ -57,8 +55,8 @@ const (
 
 // Inputs carries everything a per-tick decision needs.
 type Inputs struct {
-	// SpecifiedReplicas is what the AgentDeploy spec currently asks for.
-	SpecifiedReplicas int32
+	// CurrentReplicas is the running replica count the decision scales from.
+	CurrentReplicas int32
 	// ReadyReplicas is what's actually serving traffic.
 	ReadyReplicas int32
 	// History is the rolling window of past samples used to learn capacity.
@@ -117,41 +115,25 @@ const (
 // inputs always produce the same output.
 //
 // Order of checks (each short-circuits with Skip=true unless noted):
-//  1. Spec.Disabled
-//  2. min == max (sets DesiredReplicas=min; Skip iff current already equals it)
-//  3. current outside [min,max] — manual scale, patch toward clamp, no cooldown
-//  4. ReadyReplicas == 0
-//  5. no observable load — drift toward min, step-capped, scale-down cooldown
-//  6. desired = ceil(totalInflight / target); target derived from the learned
+//  1. min == max (sets DesiredReplicas=min; Skip iff current already equals it)
+//  2. current outside [min,max] — manual scale, patch toward clamp, no cooldown
+//  3. no observable load — drift toward min, step-capped, scale-down cooldown
+//  4. desired = ceil(totalInflight / target); target derived from the learned
 //     knee, the saturation lever, and confidence
-//  7. scale up: surge fast-path, else step cap + scale-up cooldown
-//  8. scale down: step cap + scale-down cooldown (no fast-path — asymmetric)
+//  5. scale up: surge fast-path, else step cap + scale-up cooldown
+//  6. scale down: step cap + scale-down cooldown (no fast-path — asymmetric)
 func Decide(in Inputs) Decision {
-	if in.Spec.Disabled {
-		return Decision{DesiredReplicas: in.SpecifiedReplicas, Reason: ReasonDisabled, Skip: true}
-	}
-
 	minR, maxR := minMax(in.Spec)
 	if minR == maxR {
-		skip := in.SpecifiedReplicas == minR
+		skip := in.CurrentReplicas == minR
 		return Decision{DesiredReplicas: minR, Reason: ReasonMinEqualsMax, Skip: skip}
 	}
 
 	// Manual scaling escape hatch: spec.replicas outside [min,max] is pulled
 	// back into range immediately, bypassing cooldowns and step caps.
-	if in.SpecifiedReplicas < minR || in.SpecifiedReplicas > maxR {
-		desired := clamp(in.SpecifiedReplicas, minR, maxR)
+	if in.CurrentReplicas < minR || in.CurrentReplicas > maxR {
+		desired := clamp(in.CurrentReplicas, minR, maxR)
 		return Decision{DesiredReplicas: desired, Reason: ReasonManualOutRange, Skip: false}
-	}
-
-	// No ready replicas: none are in the Service's endpoints, so the broker
-	// routes no traffic and the daemon observes no load — there is simply no
-	// signal to scale on. Holding also protects pods that are still warming up
-	// (or restarting) from being scaled down on a transient. Recovery is
-	// guaranteed because minMax floors min at 1, so a pod always exists to
-	// become ready and resume sampling; the deployment can't strand at zero.
-	if in.ReadyReplicas == 0 {
-		return Decision{DesiredReplicas: in.SpecifiedReplicas, Reason: ReasonNotReady, Skip: true}
 	}
 
 	scaleUpCooldown := time.Duration(getOr(in.Spec.ScaleUpCooldownSeconds, defaultScaleUpCooldownSec)) * time.Second
@@ -165,13 +147,13 @@ func Decide(in Inputs) Decision {
 	// Idle: no observable load. Drift toward Min over time, step-capped, gated
 	// by the scale-down cooldown.
 	if totalInflight <= 0 {
-		if in.SpecifiedReplicas <= minR {
-			return Decision{DesiredReplicas: in.SpecifiedReplicas, Reason: ReasonNoChange, Skip: true}
+		if in.CurrentReplicas <= minR {
+			return Decision{DesiredReplicas: in.CurrentReplicas, Reason: ReasonNoChange, Skip: true}
 		}
 		if sinceLast < scaleDownCooldown {
-			return Decision{DesiredReplicas: in.SpecifiedReplicas, Reason: ReasonCooldownDown, Skip: true}
+			return Decision{DesiredReplicas: in.CurrentReplicas, Reason: ReasonCooldownDown, Skip: true}
 		}
-		next := max(in.SpecifiedReplicas-stepDown, minR)
+		next := max(in.CurrentReplicas-stepDown, minR)
 		return Decision{DesiredReplicas: next, Reason: ReasonDriftToMin, Skip: false}
 	}
 
@@ -179,11 +161,11 @@ func Decide(in Inputs) Decision {
 	target := scalingTarget(in, est)
 	desired := clamp(int32(math.Ceil(totalInflight/target)), minR, maxR)
 
-	if desired == in.SpecifiedReplicas {
+	if desired == in.CurrentReplicas {
 		return Decision{DesiredReplicas: desired, Reason: ReasonNoChange, Skip: true, Estimate: est}
 	}
 
-	if desired > in.SpecifiedReplicas {
+	if desired > in.CurrentReplicas {
 		return scaleUp(in, est, desired, target, totalInflight, stepUp, scaleUpCooldown, sinceLast)
 	}
 	return scaleDown(in, est, desired, stepDown, scaleDownCooldown, sinceLast)
@@ -207,10 +189,10 @@ func scaleUp(in Inputs, est Estimate, desired int32, target, totalInflight float
 		return Decision{DesiredReplicas: desired, Reason: ReasonSurge, Skip: false, Estimate: est}
 	}
 	if sinceLast < cooldown {
-		return Decision{DesiredReplicas: in.SpecifiedReplicas, Reason: ReasonCooldownUp, Skip: true, Estimate: est}
+		return Decision{DesiredReplicas: in.CurrentReplicas, Reason: ReasonCooldownUp, Skip: true, Estimate: est}
 	}
-	diff := min(desired-in.SpecifiedReplicas, stepUp)
-	return Decision{DesiredReplicas: in.SpecifiedReplicas + diff, Reason: ReasonScaleUp, Skip: false, Estimate: est}
+	diff := min(desired-in.CurrentReplicas, stepUp)
+	return Decision{DesiredReplicas: in.CurrentReplicas + diff, Reason: ReasonScaleUp, Skip: false, Estimate: est}
 }
 
 // scaleDown handles desired < current. Deliberately has no fast-path: shedding
@@ -218,16 +200,16 @@ func scaleUp(in Inputs, est Estimate, desired int32, target, totalInflight float
 // down replicas a brief dip will need back.
 func scaleDown(in Inputs, est Estimate, desired, stepDown int32, cooldown, sinceLast time.Duration) Decision {
 	if sinceLast < cooldown {
-		return Decision{DesiredReplicas: in.SpecifiedReplicas, Reason: ReasonCooldownDown, Skip: true, Estimate: est}
+		return Decision{DesiredReplicas: in.CurrentReplicas, Reason: ReasonCooldownDown, Skip: true, Estimate: est}
 	}
-	diff := min(in.SpecifiedReplicas-desired, stepDown)
-	return Decision{DesiredReplicas: in.SpecifiedReplicas - diff, Reason: ReasonScaleDown, Skip: false, Estimate: est}
+	diff := min(in.CurrentReplicas-desired, stepDown)
+	return Decision{DesiredReplicas: in.CurrentReplicas - diff, Reason: ReasonScaleDown, Skip: false, Estimate: est}
 }
 
 // isSurge reports whether the load is severe enough to bypass scale-up
 // throttling: provisioned capacity is overshot by surgeRatio.
 func isSurge(in Inputs, target, totalInflight float64) bool {
-	capacity := float64(in.SpecifiedReplicas) * target
+	capacity := float64(in.CurrentReplicas) * target
 	return capacity > 0 && totalInflight/capacity >= surgeRatio
 }
 
@@ -241,7 +223,7 @@ func inflightBasis(in Inputs) int32 {
 	if in.ReadyReplicas > 0 {
 		return in.ReadyReplicas
 	}
-	return in.SpecifiedReplicas
+	return in.CurrentReplicas
 }
 
 // targetSaturation resolves the saturation lever to a fraction in (0,1].

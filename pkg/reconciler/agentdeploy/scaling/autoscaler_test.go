@@ -43,7 +43,8 @@ func specReplicasOf(t *testing.T, c client.Client, name string) int32 {
 	t.Helper()
 	var got kmv1.AgentDeploy
 	require.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: "ns", Name: name}, &got))
-	return specReplicas(&got)
+	require.NotNil(t, got.Spec.Replicas)
+	return *got.Spec.Replicas
 }
 
 // newTestAutoscaler builds an Autoscaler with a fixed clock over the registry.
