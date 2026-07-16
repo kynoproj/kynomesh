@@ -44,7 +44,12 @@ func scalingAD(name string, ready uint32) *kmv1.AgentDeploy {
 			AgentSetName:        "set",
 			Replicas:            ptrI32(1),
 		},
-		Status: kmv1.AgentDeployStatus{Replicas: ready, DesiredReplicas: ready, ReadyReplicas: ready},
+		Status: kmv1.AgentDeployStatus{
+			Phase:           kmv1.AgentDeployPhaseRunning,
+			Replicas:        ready,
+			DesiredReplicas: ready,
+			ReadyReplicas:   ready,
+		},
 	}
 }
 
