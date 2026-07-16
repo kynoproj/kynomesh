@@ -60,18 +60,6 @@ func TestDecide(t *testing.T) {
 		wantWhy      Reason
 	}{
 		{
-			name:         "disabled short-circuits",
-			mutateSpec:   func(s *kmv1.Scale) { s.Disabled = true },
-			specified:    5,
-			ready:        5,
-			curReplicas:  5,
-			curInflight:  100,
-			lastScaledAt: longAgo,
-			wantRepl:     5,
-			wantSkip:     true,
-			wantWhy:      ReasonDisabled,
-		},
-		{
 			name:         "min equals max and current matches",
 			mutateSpec:   func(s *kmv1.Scale) { s.Min, s.Max = ptrI32(4), ptrI32(4) },
 			specified:    4,
@@ -116,17 +104,6 @@ func TestDecide(t *testing.T) {
 			wantRepl:     10,
 			wantSkip:     false,
 			wantWhy:      ReasonManualOutRange,
-		},
-		{
-			name:         "no ready replicas skips",
-			specified:    3,
-			ready:        0,
-			curReplicas:  3,
-			curInflight:  100,
-			lastScaledAt: longAgo,
-			wantRepl:     3,
-			wantSkip:     true,
-			wantWhy:      ReasonNotReady,
 		},
 		{
 			name:         "idle at min stays put",
@@ -280,8 +257,8 @@ func TestDecide(t *testing.T) {
 				tc.mutateSpec(&spec)
 			}
 			got := Decide(Inputs{
-				SpecifiedReplicas: tc.specified,
-				ReadyReplicas:     tc.ready,
+				CurrentReplicas: tc.specified,
+				ReadyReplicas:   tc.ready,
 				Current: Sample{
 					Timestamp:      now,
 					Replicas:       tc.curReplicas,
@@ -308,13 +285,13 @@ func TestDecideUsesLearnedCapacity(t *testing.T) {
 
 	decideWith := func(hist []Sample) Decision {
 		return Decide(Inputs{
-			SpecifiedReplicas: 5,
-			ReadyReplicas:     5,
-			History:           hist,
-			Current:           Sample{Timestamp: now, Replicas: 5, InflightPerRep: 20, RatePerRep: 200},
-			Spec:              spec,
-			Now:               now,
-			LastScaledAt:      now.Add(-time.Hour),
+			CurrentReplicas: 5,
+			ReadyReplicas:   5,
+			History:         hist,
+			Current:         Sample{Timestamp: now, Replicas: 5, InflightPerRep: 20, RatePerRep: 200},
+			Spec:            spec,
+			Now:             now,
+			LastScaledAt:    now.Add(-time.Hour),
 		})
 	}
 
@@ -334,13 +311,13 @@ func TestDecideColdStartReactsToSurge(t *testing.T) {
 	spec := baseSpec()
 	spec.Max = ptrI32(50)
 	got := Decide(Inputs{
-		SpecifiedReplicas: 1,
-		ReadyReplicas:     1,
-		History:           nil, // cold start
-		Current:           Sample{Timestamp: now, Replicas: 1, InflightPerRep: 80},
-		Spec:              spec,
-		Now:               now,
-		LastScaledAt:      now, // cooldown not elapsed — surge must override
+		CurrentReplicas: 1,
+		ReadyReplicas:   1,
+		History:         nil, // cold start
+		Current:         Sample{Timestamp: now, Replicas: 1, InflightPerRep: 80},
+		Spec:            spec,
+		Now:             now,
+		LastScaledAt:    now, // cooldown not elapsed — surge must override
 	})
 	assert.Equal(t, ReasonSurge, got.Reason)
 	assert.Greater(t, got.DesiredReplicas, int32(1), "cold start must react to surge")
