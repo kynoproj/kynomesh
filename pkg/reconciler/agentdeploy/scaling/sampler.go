@@ -36,8 +36,10 @@ import (
 
 const (
 	defaultWorkers = 16
-	// defaultTaskInterval is the target revisit cadence per AgentDeploy.
-	defaultTaskInterval  = 30 * time.Second
+	// defaultTaskInterval is the target revisit cadence per AgentDeploy. At 60s a
+	// full 7-day window fits well under the count/byte caps (age-bound, not
+	// count-bound), and the density stays ample for the 6h-half-life estimator.
+	defaultTaskInterval  = 60 * time.Second
 	defaultFlushInterval = 5 * time.Minute
 	// defaultScrapeTimeout caps a single daemon scrape so one hung daemon can't
 	// tie up a worker indefinitely.
