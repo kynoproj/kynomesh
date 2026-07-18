@@ -239,10 +239,7 @@ func newBrokerContainer(image string, pullPolicy corev1.PullPolicy, encodedAgent
 	return c
 }
 
-// brokerReadinessProbe gates readiness on the broker's external A2A listener
-// (AgentBrokerPort) accepting connections. A TCP connect succeeds only once the
-// listener is bound, so the pod is not Ready — and the AgentDeploy/AgentSet do
-// not report Running — until the broker is actually dialable.
+// brokerReadinessProbe gates readiness on the broker's port.
 func brokerReadinessProbe() *corev1.Probe {
 	return &corev1.Probe{
 		ProbeHandler:        corev1.ProbeHandler{TCPSocket: &corev1.TCPSocketAction{Port: intstr.FromString("broker")}},
@@ -254,7 +251,7 @@ func brokerReadinessProbe() *corev1.Probe {
 	}
 }
 
-// brokerLivenessProbe restarts the broker if its A2A listener stops accepting.
+// brokerLivenessProbe restarts the broker if its port stops accepting.
 func brokerLivenessProbe() *corev1.Probe {
 	return &corev1.Probe{
 		ProbeHandler:        corev1.ProbeHandler{TCPSocket: &corev1.TCPSocketAction{Port: intstr.FromString("broker")}},

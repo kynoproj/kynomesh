@@ -169,10 +169,7 @@ func WaitForAgentSetPodsTerminated(ctx context.Context, kube kubernetes.Interfac
 }
 
 // ServiceHasReadyEndpoint reports whether some EndpointSlice for the named
-// Service has at least one endpoint with Ready==true. A Service only routes to
-// ready endpoints, so this is the signal that the Service is dialable — the
-// gap that pod readiness alone doesn't cover (endpoint programming lags a pod
-// going Ready).
+// Service has at least one endpoint with Ready==true.
 func ServiceHasReadyEndpoint(ctx context.Context, kube kubernetes.Interface, namespace, serviceName string) (bool, error) {
 	selector := fmt.Sprintf("%s=%s", discoveryv1.LabelServiceName, serviceName)
 	slices, err := kube.DiscoveryV1().EndpointSlices(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
