@@ -167,6 +167,26 @@ func (w *When) AgentSetEntryPortForward(localPort int) *When {
 	return w
 }
 
+// WaitForAgentServicesReady blocks until every per-agent ClusterIP Service and
+// the entry (ingress) Service has a ready endpoint.
+func (w *When) WaitForAgentServicesReady() *When {
+	w.t.Helper()
+	if w.agentSet == nil {
+		w.t.Fatal("No AgentSet selected")
+	}
+	services := make([]string, 0, len(w.agentSet.Spec.Agents)+1)
+	for _, a := range w.agentSet.Spec.Agents {
+		services = append(services, w.agentSet.ChildAgentDeployName(a.Name))
+	}
+	services = append(services, w.agentSet.EntryServiceName())
+	ctx := context.Background()
+	if err := WaitForServicesReady(ctx, w.kubeClient, Namespace, services, defaultTimeout); err != nil {
+		w.t.Fatalf("Timeout waiting for Services %v to have ready endpoints: %v", services, err)
+	}
+	w.t.Logf("Confirmed ready endpoints for Services %v", services)
+	return w
+}
+
 // SendA2AMessage sends message to localPort (a forward to the entry Service)
 // via a2acli, stashing the response for the following Expect assertion.
 func (w *When) SendA2AMessage(localPort int, message string) *When {
