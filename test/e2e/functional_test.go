@@ -42,6 +42,7 @@ func (s *FunctionalSuite) TestResearchAssistant() {
 		AgentSetRunning().
 		AgentPodsRunning(2).
 		When().
+		WaitForAgentServicesReady().
 		AgentSetEntryPortForward(localPort).
 		SendA2AMessage(localPort, "Hello, what can you do?").
 		Expect().

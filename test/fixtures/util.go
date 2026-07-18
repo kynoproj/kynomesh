@@ -29,6 +29,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -164,6 +165,44 @@ func WaitForAgentSetPodsTerminated(ctx context.Context, kube kubernetes.Interfac
 			return false, fmt.Errorf("failed to list AgentSet pods: %w", err)
 		}
 		return len(podList.Items) == 0, nil
+	})
+}
+
+// ServiceHasReadyEndpoint reports whether some EndpointSlice for the named
+// Service has at least one endpoint with Ready==true. A Service only routes to
+// ready endpoints, so this is the signal that the Service is dialable — the
+// gap that pod readiness alone doesn't cover (endpoint programming lags a pod
+// going Ready).
+func ServiceHasReadyEndpoint(ctx context.Context, kube kubernetes.Interface, namespace, serviceName string) (bool, error) {
+	selector := fmt.Sprintf("%s=%s", discoveryv1.LabelServiceName, serviceName)
+	slices, err := kube.DiscoveryV1().EndpointSlices(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return false, fmt.Errorf("failed to list EndpointSlices for Service %q: %w", serviceName, err)
+	}
+	for _, sl := range slices.Items {
+		for _, ep := range sl.Endpoints {
+			if ep.Conditions.Ready != nil && *ep.Conditions.Ready {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+// WaitForServicesReady blocks until every named Service has a ready endpoint or
+// timeout elapses.
+func WaitForServicesReady(ctx context.Context, kube kubernetes.Interface, namespace string, serviceNames []string, timeout time.Duration) error {
+	return wait.PollUntilContextTimeout(ctx, pollInterval, timeout, true, func(ctx context.Context) (bool, error) {
+		for _, name := range serviceNames {
+			ready, err := ServiceHasReadyEndpoint(ctx, kube, namespace, name)
+			if err != nil {
+				return false, err
+			}
+			if !ready {
+				return false, nil
+			}
+		}
+		return true, nil
 	})
 }
 

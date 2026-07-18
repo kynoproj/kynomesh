@@ -18,6 +18,7 @@ package agentdeploy
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
@@ -230,10 +231,39 @@ func newBrokerContainer(image string, pullPolicy corev1.PullPolicy, encodedAgent
 			},
 		},
 	}
+	c.ReadinessProbe = brokerReadinessProbe()
+	c.LivenessProbe = brokerLivenessProbe()
 	if tmpl != nil {
 		tmpl.ApplyToContainer(&c)
 	}
 	return c
+}
+
+// brokerReadinessProbe gates readiness on the broker's external A2A listener
+// (AgentBrokerPort) accepting connections. A TCP connect succeeds only once the
+// listener is bound, so the pod is not Ready — and the AgentDeploy/AgentSet do
+// not report Running — until the broker is actually dialable.
+func brokerReadinessProbe() *corev1.Probe {
+	return &corev1.Probe{
+		ProbeHandler:        corev1.ProbeHandler{TCPSocket: &corev1.TCPSocketAction{Port: intstr.FromString("broker")}},
+		InitialDelaySeconds: kmv1.DefaultBrokerReadinessInitialDelaySec,
+		PeriodSeconds:       kmv1.DefaultBrokerReadinessPeriodSec,
+		TimeoutSeconds:      kmv1.DefaultBrokerReadinessTimeoutSec,
+		FailureThreshold:    kmv1.DefaultBrokerReadinessFailureThreshold,
+		SuccessThreshold:    kmv1.DefaultBrokerReadinessSuccessThreshold,
+	}
+}
+
+// brokerLivenessProbe restarts the broker if its A2A listener stops accepting.
+func brokerLivenessProbe() *corev1.Probe {
+	return &corev1.Probe{
+		ProbeHandler:        corev1.ProbeHandler{TCPSocket: &corev1.TCPSocketAction{Port: intstr.FromString("broker")}},
+		InitialDelaySeconds: kmv1.DefaultBrokerLivenessInitialDelaySec,
+		PeriodSeconds:       kmv1.DefaultBrokerLivenessPeriodSec,
+		TimeoutSeconds:      kmv1.DefaultBrokerLivenessTimeoutSec,
+		FailureThreshold:    kmv1.DefaultBrokerLivenessFailureThreshold,
+		SuccessThreshold:    kmv1.DefaultBrokerLivenessSuccessThreshold,
+	}
 }
 
 // newInitRuntimeContainer builds the init container that prepares /var/run/kynomesh.

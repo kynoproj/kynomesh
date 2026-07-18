@@ -484,6 +484,45 @@ func initContainerByName(ps corev1.PodSpec, name string) corev1.Container {
 	return corev1.Container{}
 }
 
+func TestBuildPodSpec_BrokerProbes(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.Container = &kmv1.Container{Image: "user/agent:v1"}
+
+	broker := buildPodSpec(ad, testBrokerImage, "").Containers[0]
+	require.Equal(t, kmv1.ContainerNameAgentBroker, broker.Name)
+
+	require.NotNil(t, broker.ReadinessProbe)
+	require.NotNil(t, broker.ReadinessProbe.TCPSocket, "readiness gates on the :8490 listener")
+	assert.Equal(t, "broker", broker.ReadinessProbe.TCPSocket.Port.String())
+	assert.Equal(t, kmv1.DefaultBrokerReadinessInitialDelaySec, broker.ReadinessProbe.InitialDelaySeconds)
+	assert.Equal(t, kmv1.DefaultBrokerReadinessPeriodSec, broker.ReadinessProbe.PeriodSeconds)
+	assert.Equal(t, kmv1.DefaultBrokerReadinessTimeoutSec, broker.ReadinessProbe.TimeoutSeconds)
+	assert.Equal(t, kmv1.DefaultBrokerReadinessFailureThreshold, broker.ReadinessProbe.FailureThreshold)
+	assert.Equal(t, kmv1.DefaultBrokerReadinessSuccessThreshold, broker.ReadinessProbe.SuccessThreshold)
+
+	require.NotNil(t, broker.LivenessProbe)
+	require.NotNil(t, broker.LivenessProbe.TCPSocket)
+	assert.Equal(t, "broker", broker.LivenessProbe.TCPSocket.Port.String())
+	assert.Equal(t, kmv1.DefaultBrokerLivenessInitialDelaySec, broker.LivenessProbe.InitialDelaySeconds)
+	assert.Equal(t, kmv1.DefaultBrokerLivenessPeriodSec, broker.LivenessProbe.PeriodSeconds)
+	assert.Equal(t, kmv1.DefaultBrokerLivenessTimeoutSec, broker.LivenessProbe.TimeoutSeconds)
+	assert.Equal(t, kmv1.DefaultBrokerLivenessFailureThreshold, broker.LivenessProbe.FailureThreshold)
+	assert.Equal(t, kmv1.DefaultBrokerLivenessSuccessThreshold, broker.LivenessProbe.SuccessThreshold)
+}
+
+func TestBuildPodSpec_BrokerTemplatePreservesProbes(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.Container = &kmv1.Container{Image: "user/agent:v1"}
+	ad.Spec.BrokerTemplate = &kmv1.ContainerTemplate{ImagePullPolicy: corev1.PullIfNotPresent}
+
+	broker := buildPodSpec(ad, testBrokerImage, "").Containers[0]
+
+	require.NotNil(t, broker.ReadinessProbe, "BrokerTemplate must not clobber controller-owned probes")
+	require.NotNil(t, broker.ReadinessProbe.TCPSocket)
+	require.NotNil(t, broker.LivenessProbe)
+	require.NotNil(t, broker.LivenessProbe.TCPSocket)
+}
+
 func TestBuildPodSpec_BrokerTemplateAppliedAfterDefaults(t *testing.T) {
 	// BrokerTemplate is the user's knob for tuning the controller-owned
 	// broker container — resources, env, securityContext, etc. — without
