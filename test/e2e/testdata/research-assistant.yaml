@@ -1,0 +1,24 @@
+# AgentSet for the research-assistant example.
+# Copied from kynomesh-go/examples/research-assistant/manifests/agentset.yaml.
+#
+# Both agents share a single image built from examples/research-assistant.
+# The -role flag on each container selects which agent to run.
+apiVersion: kynomesh.kyno.sh/v1alpha1
+kind: AgentSet
+metadata:
+  name: research-assistant
+spec:
+  # Supervisor: the entry agent sees all workers; workers see no peers.
+  # That matches this example exactly — the coordinator calls searcher,
+  # but searcher has nothing to call.
+  pattern: Supervisor
+  entry: coordinator
+  agents:
+    - name: coordinator
+      container:
+        image: quay.io/kynoio/examples/research-assistant-go:latest
+        args: ["-role", "coordinator"]
+    - name: searcher
+      container:
+        image: quay.io/kynoio/examples/research-assistant-go:latest
+        args: ["-role", "searcher"]

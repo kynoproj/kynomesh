@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 
@@ -26,6 +27,30 @@ import (
 
 type FunctionalSuite struct {
 	E2ESuite
+}
+
+// TestResearchAssistant brings up the two-agent research-assistant AgentSet,
+// sends a message to the entry (coordinator) agent via a2acli over a
+// port-forward, and asserts the coordinator delegated to the searcher peer.
+func (s *FunctionalSuite) TestResearchAssistant() {
+	const localPort = 8490
+
+	s.Given().AgentSet("@testdata/research-assistant.yaml").
+		When().
+		CreateAgentSetAndWait().
+		Expect().
+		AgentSetRunning().
+		AgentPodsRunning(2).
+		When().
+		AgentSetEntryPortForward(localPort).
+		SendA2AMessage(localPort, "Hello, what can you do?").
+		Expect().
+		AgentResponseContains(`via "searcher"`).
+		When().
+		TerminateAllPodPortForwards().
+		DeleteAgentSetAndWait().
+		Expect().
+		AgentSetDeleted(2 * time.Minute)
 }
 
 func TestFunctionalSuite(t *testing.T) {
