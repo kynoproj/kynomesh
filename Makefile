@@ -33,6 +33,8 @@ DOCKER_PUSH?=false
 IMAGE_NAMESPACE?=quay.io/kynoproj
 VERSION?=latest
 BASE_VERSION:=latest
+# a2acli is the A2A client the e2e tests shell out to for agent messaging.
+A2ACLI_VERSION?=latest
 
 override LDFLAGS += \
   -X ${PACKAGE}.version=${VERSION} \
@@ -128,7 +130,7 @@ test-coverage:
 	go tool cover -func=test/profile.cov
 
 test-e2e:
-test-%:
+test-%: install-a2acli
 	$(MAKE) cleanup-e2e
 ifndef SKIP_IMAGE_BUILD
 	# Skip building image in CI since the image would have been built during "make start"
@@ -214,6 +216,18 @@ manifests: crds
 
 $(GOPATH)/bin/golangci-lint:
 	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GOPATH)/bin v2.12.2
+
+# Install a2acli via its published release binary. INSTALL_DIR puts it in
+# $(GOPATH)/bin (on PATH, no sudo). A2ACLI_VERSION pins a release tag; "latest"
+# lets the installer resolve the newest release itself. The version check is a
+# post-install sanity gate that the binary actually runs.
+$(GOPATH)/bin/a2acli:
+	$(if $(filter-out latest,$(A2ACLI_VERSION)),A2ACLI_VERSION=$(A2ACLI_VERSION)) INSTALL_DIR=$(GOPATH)/bin \
+		bash -c 'curl -fsSL https://raw.githubusercontent.com/kynoproj/a2acli/main/install.sh | bash'
+	@$(GOPATH)/bin/a2acli version >/dev/null
+
+.PHONY: install-a2acli
+install-a2acli: $(GOPATH)/bin/a2acli
 
 .PHONY: lint
 lint: $(GOPATH)/bin/golangci-lint

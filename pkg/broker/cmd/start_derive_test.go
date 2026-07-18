@@ -92,7 +92,7 @@ func TestAdvertiseHostFor(t *testing.T) {
 				ad.Name = "demo-ad"
 				return ad
 			}(),
-			want: "demo-ad-headless.demo-ns.svc.cluster.local",
+			want: "demo-ad.demo-ns.svc.cluster.local",
 		},
 	}
 	for _, tc := range cases {

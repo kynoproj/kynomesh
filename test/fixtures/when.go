@@ -42,6 +42,10 @@ type When struct {
 
 	portForwarderStopChannels map[string]chan struct{}
 	streamLogsStopChannels    map[string]chan struct{}
+
+	// a2aResponse holds the parsed result of the last SendA2AMessage call so
+	// the following Expect can assert on it.
+	a2aResponse A2AResponse
 }
 
 // CreateAgentSetAndWait creates the AgentSet on the cluster and blocks until
@@ -137,6 +141,45 @@ func (w *When) AgentSetPodPortForward(localPort, remotePort int) *When {
 	return w
 }
 
+// AgentSetEntryPortForward forwards localPort to the broker port (8490) on a
+// pod backing the AgentSet's entry Service, so a2acli can reach the entry agent
+// over the forward.
+func (w *When) AgentSetEntryPortForward(localPort int) *When {
+	w.t.Helper()
+	if w.agentSet == nil {
+		w.t.Fatal("No AgentSet selected for port-forward")
+	}
+	ctx := context.Background()
+	podName, err := EntryPodName(ctx, w.kubeClient, Namespace, w.agentSet.Name)
+	if err != nil {
+		w.t.Fatalf("Failed to resolve entry pod: %v", err)
+	}
+	w.t.Logf("AgentSet entry POD name: %s", podName)
+
+	stopCh := make(chan struct{}, 1)
+	if err := PodPortForward(w.restConfig, Namespace, podName, localPort, kmv1.AgentBrokerPort, stopCh); err != nil {
+		w.t.Fatalf("Failed to start entry port-forward: %v", err)
+	}
+	if w.portForwarderStopChannels == nil {
+		w.portForwarderStopChannels = make(map[string]chan struct{})
+	}
+	w.portForwarderStopChannels[podName] = stopCh
+	return w
+}
+
+// SendA2AMessage sends message to localPort (a forward to the entry Service)
+// via a2acli, stashing the response for the following Expect assertion.
+func (w *When) SendA2AMessage(localPort int, message string) *When {
+	w.t.Helper()
+	resp, err := SendA2AMessage(localPort, message)
+	if err != nil {
+		w.t.Fatalf("a2acli send failed: %v", err)
+	}
+	w.t.Logf("a2acli response: %s", resp.Raw)
+	w.a2aResponse = resp
+	return w
+}
+
 // TerminateAllPodPortForwards closes every active port-forward started via
 // this fixture.
 func (w *When) TerminateAllPodPortForwards() *When {
@@ -210,13 +253,6 @@ func (w *When) TerminateAllPodLogs() *When {
 	return w
 }
 
-// SendMessageToAgent posts req to a known agent endpoint after a port-forward.
-func (w *When) SendMessageToAgent(agentName string, req HttpPostRequest) *When {
-	w.t.Helper()
-	SendMessageTo(fmt.Sprintf("%s-%s-headless", w.agentSet.Name, agentName), agentName, req)
-	return w
-}
-
 // Wait pauses for the given duration. Useful between actions when a controller
 // reconciliation needs settling time.
 func (w *When) Wait(timeout time.Duration) *When {
@@ -273,5 +309,6 @@ func (w *When) Expect() *Expect {
 		agentDeploy:       w.agentDeploy,
 		restConfig:        w.restConfig,
 		kubeClient:        w.kubeClient,
+		a2aResponse:       w.a2aResponse,
 	}
 }

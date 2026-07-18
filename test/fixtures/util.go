@@ -86,6 +86,26 @@ func Exec(name string, args ...string) (string, error) {
 	return string(out), err
 }
 
+// EntryPodName returns the name of a running pod backing the AgentSet's entry
+// Service. Kubernetes port-forwarding is pod-level, so forwarding "to the entry
+// Service" means resolving one of its backing pods first, exactly as
+// `kubectl port-forward svc/<name>-ingress` does under the hood.
+func EntryPodName(ctx context.Context, kube kubernetes.Interface, namespace, agentSetName string) (string, error) {
+	selector := fmt.Sprintf("%s=%s,%s=true,%s=true",
+		kmv1.KeyAgentSetName, agentSetName, kmv1.KeyEntry, kmv1.KeyServing)
+	podList, err := kube.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: selector,
+		FieldSelector: "status.phase=Running",
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to list entry pods for AgentSet %q: %w", agentSetName, err)
+	}
+	if len(podList.Items) == 0 {
+		return "", fmt.Errorf("no running entry pods found for AgentSet %q", agentSetName)
+	}
+	return podList.Items[0].Name, nil
+}
+
 // WaitForAgentSetRunning blocks until the AgentSet reaches the Running phase
 // or timeout elapses.
 func WaitForAgentSetRunning(ctx context.Context, c flowpkg.AgentSetInterface, name string, timeout time.Duration) error {
@@ -118,7 +138,7 @@ func WaitForAgentSetDeleted(ctx context.Context, c flowpkg.AgentSetInterface, na
 // WaitForAgentSetPodsRunning waits until at least minReady pods owned by the
 // AgentSet are in the Running phase.
 func WaitForAgentSetPodsRunning(ctx context.Context, kube kubernetes.Interface, namespace, agentSetName string, minReady int, timeout time.Duration) error {
-	selector := fmt.Sprintf("%s=%s", kmv1.KeyAgentSetName, agentSetName)
+	selector := fmt.Sprintf("%s=%s,%s=%s", kmv1.KeyAgentSetName, agentSetName, kmv1.KeyComponent, kmv1.ComponentAgent)
 	return wait.PollUntilContextTimeout(ctx, pollInterval, timeout, true, func(ctx context.Context) (bool, error) {
 		podList, err := kube.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
@@ -137,7 +157,7 @@ func WaitForAgentSetPodsRunning(ctx context.Context, kube kubernetes.Interface, 
 // WaitForAgentSetPodsTerminated blocks until no pods matching the AgentSet
 // remain in the namespace.
 func WaitForAgentSetPodsTerminated(ctx context.Context, kube kubernetes.Interface, namespace, agentSetName string, timeout time.Duration) error {
-	selector := fmt.Sprintf("%s=%s", kmv1.KeyAgentSetName, agentSetName)
+	selector := fmt.Sprintf("%s=%s,%s=%s", kmv1.KeyAgentSetName, agentSetName, kmv1.KeyComponent, kmv1.ComponentAgent)
 	return wait.PollUntilContextTimeout(ctx, pollInterval, timeout, true, func(ctx context.Context) (bool, error) {
 		podList, err := kube.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {

@@ -18,6 +18,7 @@ package fixtures
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -39,6 +40,7 @@ type Expect struct {
 	agentDeploy       *kmv1.AgentDeploy
 	restConfig        *rest.Config
 	kubeClient        kubernetes.Interface
+	a2aResponse       A2AResponse
 }
 
 // AgentSetRunning asserts that the AgentSet has reached the Running phase
@@ -124,6 +126,17 @@ func (e *Expect) AgentSetPodLogContains(regex string, opts ...PodLogCheckOption)
 	return e
 }
 
+// AgentResponseContains asserts that the text of the last a2acli response
+// captured by When().SendA2AMessage contains substr.
+func (e *Expect) AgentResponseContains(substr string) *Expect {
+	e.t.Helper()
+	if !strings.Contains(e.a2aResponse.Text(), substr) {
+		e.t.Fatalf("Expected agent response text to contain %q, got: %s", substr, e.a2aResponse.Raw)
+	}
+	e.t.Logf("Confirmed agent response text contains %q", substr)
+	return e
+}
+
 // When transitions the fixture back into the actions phase, allowing chained
 // assertion-then-action flows.
 func (e *Expect) When() *When {
@@ -135,5 +148,6 @@ func (e *Expect) When() *When {
 		agentDeploy:       e.agentDeploy,
 		restConfig:        e.restConfig,
 		kubeClient:        e.kubeClient,
+		a2aResponse:       e.a2aResponse,
 	}
 }

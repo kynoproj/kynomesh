@@ -184,7 +184,7 @@ func advertiseHostFor(ad *kmv1.AgentDeploy) string {
 		return ""
 	}
 	return fmt.Sprintf("%s.%s.svc.%s",
-		ad.HeadlessServiceName(), ad.Namespace, clusterDNSDomain)
+		ad.ServiceName(), ad.Namespace, clusterDNSDomain)
 }
 
 // brokerRuntime holds process-lifetime broker state.

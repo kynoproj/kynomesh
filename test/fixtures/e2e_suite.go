@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
-	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -67,7 +66,6 @@ func (s *E2ESuite) SetupSuite() {
 	// Clean up resources if any
 	s.deleteResources([]schema.GroupVersionResource{
 		kmv1.AgentSetGroupVersionResource,
-		batchv1.SchemeGroupVersion.WithResource("jobs"),
 	})
 	s.T().Log("Ready for testing")
 }
@@ -75,9 +73,6 @@ func (s *E2ESuite) SetupSuite() {
 func (s *E2ESuite) TearDownSuite() {
 	s.deleteResources([]schema.GroupVersionResource{
 		kmv1.AgentSetGroupVersionResource,
-	})
-	s.deleteResources([]schema.GroupVersionResource{
-		batchv1.SchemeGroupVersion.WithResource("jobs"),
 	})
 	close(s.stopch)
 }
