@@ -40,7 +40,13 @@ type Expect struct {
 	agentDeploy       *kmv1.AgentDeploy
 	restConfig        *rest.Config
 	kubeClient        kubernetes.Interface
-	a2aResponse       A2AResponse
+
+	// Live background state carried across phase transitions so a later When
+	// can stop it (load senders, port-forwards).
+	portForwarderStopChannels map[string]chan struct{}
+	loadStop                  chan struct{}
+	loadDone                  <-chan struct{}
+	a2aResponse               A2AResponse
 }
 
 // AgentSetRunning asserts that the AgentSet has reached the Running phase
@@ -137,17 +143,48 @@ func (e *Expect) AgentResponseContains(substr string) *Expect {
 	return e
 }
 
+// AgentDeployScaledUp asserts that the child AgentDeploy for agentName reaches
+// spec.replicas >= minReplicas within timeout — i.e. the autoscaler scaled it
+// up under load.
+func (e *Expect) AgentDeployScaledUp(agentName string, minReplicas int32, timeout time.Duration) *Expect {
+	e.t.Helper()
+	name := e.agentSet.ChildAgentDeployName(agentName)
+	ctx := context.Background()
+	if err := WaitForAgentDeployReplicasAtLeast(ctx, e.agentDeployClient, name, minReplicas, timeout); err != nil {
+		e.t.Fatalf("Expected AgentDeploy %q to scale to >= %d replicas: %v", name, minReplicas, err)
+	}
+	e.t.Logf("Confirmed AgentDeploy %q scaled to >= %d replicas", name, minReplicas)
+	return e
+}
+
+// AgentDeployScaledDown asserts that the child AgentDeploy for agentName falls
+// back to spec.replicas <= maxReplicas within timeout — i.e. the autoscaler
+// scaled it down after load drained.
+func (e *Expect) AgentDeployScaledDown(agentName string, maxReplicas int32, timeout time.Duration) *Expect {
+	e.t.Helper()
+	name := e.agentSet.ChildAgentDeployName(agentName)
+	ctx := context.Background()
+	if err := WaitForAgentDeployReplicasAtMost(ctx, e.agentDeployClient, name, maxReplicas, timeout); err != nil {
+		e.t.Fatalf("Expected AgentDeploy %q to scale down to <= %d replicas: %v", name, maxReplicas, err)
+	}
+	e.t.Logf("Confirmed AgentDeploy %q scaled down to <= %d replicas", name, maxReplicas)
+	return e
+}
+
 // When transitions the fixture back into the actions phase, allowing chained
 // assertion-then-action flows.
 func (e *Expect) When() *When {
 	return &When{
-		t:                 e.t,
-		agentSetClient:    e.agentSetClient,
-		agentDeployClient: e.agentDeployClient,
-		agentSet:          e.agentSet,
-		agentDeploy:       e.agentDeploy,
-		restConfig:        e.restConfig,
-		kubeClient:        e.kubeClient,
-		a2aResponse:       e.a2aResponse,
+		t:                         e.t,
+		agentSetClient:            e.agentSetClient,
+		agentDeployClient:         e.agentDeployClient,
+		agentSet:                  e.agentSet,
+		agentDeploy:               e.agentDeploy,
+		restConfig:                e.restConfig,
+		kubeClient:                e.kubeClient,
+		a2aResponse:               e.a2aResponse,
+		portForwarderStopChannels: e.portForwarderStopChannels,
+		loadStop:                  e.loadStop,
+		loadDone:                  e.loadDone,
 	}
 }

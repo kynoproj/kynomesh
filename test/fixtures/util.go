@@ -26,6 +26,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -201,6 +202,78 @@ func WaitForServicesReady(ctx context.Context, kube kubernetes.Interface, namesp
 		}
 		return true, nil
 	})
+}
+
+// WaitForAgentDeployReplicasAtLeast blocks until the named AgentDeploy's
+// spec.replicas is >= want (a nil spec.replicas counts as the default 1), or
+// timeout elapses. This is how a scale-up is observed: the autoscaler patches
+// spec.replicas.
+func WaitForAgentDeployReplicasAtLeast(ctx context.Context, c flowpkg.AgentDeployInterface, name string, want int32, timeout time.Duration) error {
+	return wait.PollUntilContextTimeout(ctx, pollInterval, timeout, true, func(ctx context.Context) (bool, error) {
+		ad, err := c.Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			if apierr.IsNotFound(err) {
+				return false, nil
+			}
+			return false, fmt.Errorf("failed to get AgentDeploy %q: %w", name, err)
+		}
+		replicas := int32(1)
+		if ad.Spec.Replicas != nil {
+			replicas = *ad.Spec.Replicas
+		}
+		return replicas >= want, nil
+	})
+}
+
+// WaitForAgentDeployReplicasAtMost blocks until the named AgentDeploy's
+// spec.replicas is <= want (a nil spec.replicas counts as the default 1), or
+// timeout elapses. Used to observe a scale-down after load drains.
+func WaitForAgentDeployReplicasAtMost(ctx context.Context, c flowpkg.AgentDeployInterface, name string, want int32, timeout time.Duration) error {
+	return wait.PollUntilContextTimeout(ctx, pollInterval, timeout, true, func(ctx context.Context) (bool, error) {
+		ad, err := c.Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			if apierr.IsNotFound(err) {
+				return false, nil
+			}
+			return false, fmt.Errorf("failed to get AgentDeploy %q: %w", name, err)
+		}
+		replicas := int32(1)
+		if ad.Spec.Replicas != nil {
+			replicas = *ad.Spec.Replicas
+		}
+		return replicas <= want, nil
+	})
+}
+
+// GenerateLoad drives sustained concurrent load against a port-forwarded broker:
+// concurrency goroutines each repeatedly send message (each send blocks until the
+// agent replies) until stop is closed. Held-open requests accumulate as in-flight
+// occupancy, which the autoscaler scales on. Send errors are tolerated (a scale
+// event mid-flight can reset connections); the point is to keep load up, not to
+// assert per-request success. The returned channel is closed once every sender
+// has returned after stop.
+func GenerateLoad(localPort int, message string, concurrency int, stop <-chan struct{}) <-chan struct{} {
+	done := make(chan struct{})
+	var wg sync.WaitGroup
+	for range concurrency {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+					_, _ = SendA2AMessage(localPort, message)
+				}
+			}
+		}()
+	}
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	return done
 }
 
 // PodPortForward forwards a local port to a port on the named pod. The caller

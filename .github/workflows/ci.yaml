@@ -98,12 +98,12 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       max-parallel: 13
       matrix:
-        case: [e2e]
+        case: [e2e, scaling-e2e]
 
     steps:
       - name: Checkout code
