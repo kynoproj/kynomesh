@@ -208,8 +208,6 @@ func (w *When) SendA2AMessage(localPort int, message string) *When {
 // GenerateLoad starts sustained concurrent load in the background against
 // localPort (a forward to the entry Service), so the chain can proceed to a
 // scale-up assertion while load is applied. It runs until StopLoad is called.
-// concurrency held-open requests accumulate as in-flight occupancy, which the
-// autoscaler scales on.
 func (w *When) GenerateLoad(localPort, concurrency int) *When {
 	w.t.Helper()
 	if w.loadStop != nil {

@@ -247,10 +247,7 @@ func WaitForAgentDeployReplicasAtMost(ctx context.Context, c flowpkg.AgentDeploy
 
 // GenerateLoad drives sustained concurrent load against a port-forwarded broker:
 // concurrency goroutines each repeatedly send message (each send blocks until the
-// agent replies) until stop is closed. Held-open requests accumulate as in-flight
-// occupancy, which the autoscaler scales on. Send errors are tolerated (a scale
-// event mid-flight can reset connections); the point is to keep load up, not to
-// assert per-request success. The returned channel is closed once every sender
+// agent replies) until stop is closed. The returned channel is closed once every sender
 // has returned after stop.
 func GenerateLoad(localPort int, message string, concurrency int, stop <-chan struct{}) <-chan struct{} {
 	done := make(chan struct{})

@@ -41,8 +41,6 @@ type Expect struct {
 	restConfig        *rest.Config
 	kubeClient        kubernetes.Interface
 
-	// Live background state carried across phase transitions so a later When
-	// can stop it (load senders, port-forwards).
 	portForwarderStopChannels map[string]chan struct{}
 	loadStop                  chan struct{}
 	loadDone                  <-chan struct{}
