@@ -43,6 +43,11 @@ type When struct {
 	portForwarderStopChannels map[string]chan struct{}
 	streamLogsStopChannels    map[string]chan struct{}
 
+	// loadStop signals background load generators to stop; loadDone is closed
+	// once they have all returned. Both nil when no load is running.
+	loadStop chan struct{}
+	loadDone <-chan struct{}
+
 	// a2aResponse holds the parsed result of the last SendA2AMessage call so
 	// the following Expect can assert on it.
 	a2aResponse A2AResponse
@@ -200,6 +205,36 @@ func (w *When) SendA2AMessage(localPort int, message string) *When {
 	return w
 }
 
+// GenerateLoad starts sustained concurrent load in the background against
+// localPort (a forward to the entry Service), so the chain can proceed to a
+// scale-up assertion while load is applied. It runs until StopLoad is called.
+func (w *When) GenerateLoad(localPort, concurrency int) *When {
+	w.t.Helper()
+	if w.loadStop != nil {
+		w.t.Fatal("Load already running; call StopLoad first")
+	}
+	w.t.Logf("Generating load: %d concurrent senders", concurrency)
+	w.loadStop = make(chan struct{})
+	w.loadDone = GenerateLoad(localPort, "drive autoscaling load", concurrency, w.loadStop)
+	return w
+}
+
+// StopLoad signals the background load to stop and blocks until every sender has
+// returned, so a following scale-down assertion sees in-flight actually drain.
+func (w *When) StopLoad() *When {
+	w.t.Helper()
+	if w.loadStop == nil {
+		return w
+	}
+	w.t.Log("Stopping load")
+	close(w.loadStop)
+	<-w.loadDone
+	w.loadStop = nil
+	w.loadDone = nil
+	w.t.Log("Load stopped")
+	return w
+}
+
 // TerminateAllPodPortForwards closes every active port-forward started via
 // this fixture.
 func (w *When) TerminateAllPodPortForwards() *When {
@@ -322,13 +357,16 @@ func (w *When) Given() *Given {
 // Expect transitions the fixture into the assertion phase.
 func (w *When) Expect() *Expect {
 	return &Expect{
-		t:                 w.t,
-		agentSetClient:    w.agentSetClient,
-		agentDeployClient: w.agentDeployClient,
-		agentSet:          w.agentSet,
-		agentDeploy:       w.agentDeploy,
-		restConfig:        w.restConfig,
-		kubeClient:        w.kubeClient,
-		a2aResponse:       w.a2aResponse,
+		t:                         w.t,
+		agentSetClient:            w.agentSetClient,
+		agentDeployClient:         w.agentDeployClient,
+		agentSet:                  w.agentSet,
+		agentDeploy:               w.agentDeploy,
+		restConfig:                w.restConfig,
+		kubeClient:                w.kubeClient,
+		a2aResponse:               w.a2aResponse,
+		portForwarderStopChannels: w.portForwarderStopChannels,
+		loadStop:                  w.loadStop,
+		loadDone:                  w.loadDone,
 	}
 }

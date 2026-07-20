@@ -1,5 +1,4 @@
 # AgentSet for the research-assistant example.
-# Copied from kynomesh-go/examples/research-assistant/manifests/agentset.yaml.
 #
 # Both agents share a single image built from examples/research-assistant.
 # The -role flag on each container selects which agent to run.

@@ -129,7 +129,12 @@ test-coverage:
 	cat test/profile.cov | grep -v /v1alpha1/generated | grep -v /v1alpha1/zz_generated > test/tmp_profile.cov && mv test/tmp_profile.cov test/profile.cov
 	go tool cover -func=test/profile.cov
 
+# TEST_TIMEOUT bounds a single group's `go test` run.
+TEST_TIMEOUT ?= 20m
+
 test-e2e:
+test-scaling-e2e: TEST_TIMEOUT = 30m
+test-scaling-e2e:
 test-%: install-a2acli
 	$(MAKE) cleanup-e2e
 ifndef SKIP_IMAGE_BUILD
@@ -138,7 +143,7 @@ ifndef SKIP_IMAGE_BUILD
 endif
 	$(MAKE) restart-control-plane-components
 	go generate $(shell find ./test/$* -name '*.go')
-	go test -v -timeout 20m -count 1 --tags test -p 1 ./test/$*
+	go test -v -timeout $(TEST_TIMEOUT) -count 1 --tags e2e -p 1 ./test/$*
 	$(MAKE) cleanup-e2e
 
 restart-control-plane-components:
@@ -162,7 +167,7 @@ Test%:
 	kubectl -n kynomesh-system delete po e2e-api-pod  --ignore-not-found=true
 	go generate $(shell find $(shell grep -rl $(*) ./test/*-e2e/*.go))
 	cat test/manifests/e2e-api-pod.yaml |  sed 's@quay.io/kynoproj/@$(IMAGE_NAMESPACE)/@' | sed 's/:latest/:$(VERSION)/' | kubectl -n kynomesh-system apply -f -
-	-go test -v -timeout 20m -count 1 --tags test -p 1 ./test/$(shell grep $(*) -R ./test | head -1 | awk -F\/ '{print $$3}' ) -run='.*/$*'
+	-go test -v -timeout 20m -count 1 --tags e2e -p 1 ./test/$(shell grep $(*) -R ./test | head -1 | awk -F\/ '{print $$3}' ) -run='.*/$*'
 	$(MAKE) cleanup-e2e
 
 .PHONY: image

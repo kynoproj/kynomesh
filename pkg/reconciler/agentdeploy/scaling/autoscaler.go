@@ -144,7 +144,7 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 	scaleUpCooldown := float64(getOr(ad.Spec.Scale.ScaleUpCooldownSeconds, defaultScaleUpCooldownSec))
 	if secondsSinceLastScale < scaleDownCooldown && secondsSinceLastScale < scaleUpCooldown {
 		// Skip scaling without needing further calculation
-		log.Infof("Skipping scale: Cooldown period, skip scaling.")
+		log.Infow("Skipping scale: Cooldown period")
 		return nil
 	}
 
