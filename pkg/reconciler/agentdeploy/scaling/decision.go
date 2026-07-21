@@ -212,7 +212,8 @@ func scaleDown(in Inputs, est Estimate, desired, stepDown int32, cooldown, since
 
 // isSurge reports whether the load is severe enough to flag as a surge:
 // provisioned capacity is overshot by surgeRatio. Used only to tag the
-// decision reason; scaling stays cooldown- and step-cap-bounded either way.
+// decision reason for now, can be used to determine if different strategy
+// is needed later; scaling stays cooldown- and step-cap-bounded either way.
 func isSurge(in Inputs, target, totalInflight float64) bool {
 	capacity := float64(in.CurrentReplicas) * target
 	return capacity > 0 && totalInflight/capacity >= surgeRatio
