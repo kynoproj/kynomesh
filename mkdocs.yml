@@ -60,6 +60,7 @@ nav:
           - core-concepts/agentset.md
           - core-concepts/agentdeploy.md
       - Reference:
+          - Autoscaling: "user-guide/reference/autoscaling.md"
           - APIs.md
   - Operator Manual:
       - Releases ⧉: "operations/releases.md"

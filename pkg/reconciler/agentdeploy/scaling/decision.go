@@ -23,8 +23,7 @@ limitations under the License.
 //     the result.
 //   - Controller (Decide): a pure function that turns the estimate plus the live
 //     snapshot into the next replica count, applying the operator's saturation
-//     target, a latency safety guard, a surge fast-path, and per-direction
-//     cooldowns/step caps.
+//     target and per-direction cooldowns/step caps.
 //
 // Decide does no I/O and reads no clocks beyond the supplied Now/LastScaledAt,
 // so it is deterministic and fully testable. Orchestration (metrics collection,
@@ -106,8 +105,9 @@ const (
 	// fully-trusted target is pulled to confFloor*target when we know nothing,
 	// so a cold start over-provisions rather than under-provisions.
 	confFloor = 0.6
-	// surgeRatio: provisioned capacity overshot by this factor triggers the
-	// fast-path (bypass cooldown, jump straight to desired).
+	// surgeRatio: provisioned capacity overshot by this factor is tagged as a
+	// surge (ReasonSurge) for observability. It does not change how scaling is
+	// throttled — the cooldown and per-step cap still apply.
 	surgeRatio = 1.5
 )
 
@@ -120,8 +120,8 @@ const (
 //  3. no observable load — drift toward min, step-capped, scale-down cooldown
 //  4. desired = ceil(totalInflight / target); target derived from the learned
 //     knee, the saturation lever, and confidence
-//  5. scale up: surge fast-path, else step cap + scale-up cooldown
-//  6. scale down: step cap + scale-down cooldown (no fast-path — asymmetric)
+//  5. scale up: scale-up cooldown + step cap (heavy load tagged ReasonSurge)
+//  6. scale down: scale-down cooldown + step cap
 func Decide(in Inputs) Decision {
 	minR, maxR := minMax(in.Spec)
 	if minR == maxR {
@@ -181,23 +181,27 @@ func scalingTarget(in Inputs, est Estimate) float64 {
 	return math.Max(knee*effectiveS, 1e-9)
 }
 
-// scaleUp handles desired > current. A severe under-provision takes the surge
-// fast-path: ignore the cooldown and jump straight to desired. Otherwise the
-// normal step cap and scale-up cooldown apply.
+// scaleUp handles desired > current. The scale-up cooldown and the
+// per-step cap always apply — even under a surge — so a single spike (or a
+// low-confidence cold-start estimate) can't stampede the fleet toward max in
+// one tick. A severe under-provision is still tagged ReasonSurge for
+// observability, but it scales the same bounded way as any other scale-up; a
+// sustained surge simply keeps stepping up on each subsequent tick.
 func scaleUp(in Inputs, est Estimate, desired int32, target, totalInflight float64, stepUp int32, cooldown, sinceLast time.Duration) Decision {
-	if isSurge(in, target, totalInflight) {
-		return Decision{DesiredReplicas: desired, Reason: ReasonSurge, Skip: false, Estimate: est}
-	}
 	if sinceLast < cooldown {
 		return Decision{DesiredReplicas: in.CurrentReplicas, Reason: ReasonCooldownUp, Skip: true, Estimate: est}
 	}
+	reason := ReasonScaleUp
+	if isSurge(in, target, totalInflight) {
+		reason = ReasonSurge
+	}
 	diff := min(desired-in.CurrentReplicas, stepUp)
-	return Decision{DesiredReplicas: in.CurrentReplicas + diff, Reason: ReasonScaleUp, Skip: false, Estimate: est}
+	return Decision{DesiredReplicas: in.CurrentReplicas + diff, Reason: reason, Skip: false, Estimate: est}
 }
 
-// scaleDown handles desired < current. Deliberately has no fast-path: shedding
-// capacity is always gentle (step cap + scale-down cooldown) to avoid tearing
-// down replicas a brief dip will need back.
+// scaleDown handles desired < current. Symmetric with scaleUp: gated by the
+// scale-down cooldown and capped at stepDown per step, so a brief dip doesn't
+// shed replicas the agent will need back a moment later.
 func scaleDown(in Inputs, est Estimate, desired, stepDown int32, cooldown, sinceLast time.Duration) Decision {
 	if sinceLast < cooldown {
 		return Decision{DesiredReplicas: in.CurrentReplicas, Reason: ReasonCooldownDown, Skip: true, Estimate: est}
@@ -206,8 +210,9 @@ func scaleDown(in Inputs, est Estimate, desired, stepDown int32, cooldown, since
 	return Decision{DesiredReplicas: in.CurrentReplicas - diff, Reason: ReasonScaleDown, Skip: false, Estimate: est}
 }
 
-// isSurge reports whether the load is severe enough to bypass scale-up
-// throttling: provisioned capacity is overshot by surgeRatio.
+// isSurge reports whether the load is severe enough to flag as a surge:
+// provisioned capacity is overshot by surgeRatio. Used only to tag the
+// decision reason; scaling stays cooldown- and step-cap-bounded either way.
 func isSurge(in Inputs, target, totalInflight float64) bool {
 	capacity := float64(in.CurrentReplicas) * target
 	return capacity > 0 && totalInflight/capacity >= surgeRatio

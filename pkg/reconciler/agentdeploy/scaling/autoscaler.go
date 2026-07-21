@@ -140,7 +140,7 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 		return nil
 	}
 	secondsSinceLastScale := time.Since(ad.Status.LastScaledAt.Time).Seconds()
-	scaleDownCooldown := float64(getOr(ad.Spec.Scale.ScaleDownCooldownSeconds, defaultScaleUpCooldownSec))
+	scaleDownCooldown := float64(getOr(ad.Spec.Scale.ScaleDownCooldownSeconds, defaultScaleDownCooldownSec))
 	scaleUpCooldown := float64(getOr(ad.Spec.Scale.ScaleUpCooldownSeconds, defaultScaleUpCooldownSec))
 	if secondsSinceLastScale < scaleDownCooldown && secondsSinceLastScale < scaleUpCooldown {
 		// Skip scaling without needing further calculation
