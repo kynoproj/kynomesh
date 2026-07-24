@@ -19,12 +19,8 @@ when you use another (see [below](#kubernetes-hpa)).
 
 Kynomesh autoscaling is **on by default** — every agent is autoscaled unless you
 opt out. With no `scale` block an agent still autoscales using the defaults
-(`min` 1, `max` unbounded). Set a `scale` block to bound or tune it, or set
+(`min` 1, `max` 50). Set a `scale` block to bound or tune it, or set
 `disabled: true` to turn it off and pin the replica count.
-
-Unlike Numaflow's `0 - N` autoscaling, Kynomesh does **not** scale to zero:
-`min` is floored at 1, so an agent always keeps at least one replica ready to
-serve.
 
 ### How it works
 
@@ -50,15 +46,6 @@ keep the fleet near a target utilization.
 - **The controller patches `spec.replicas`** on the AgentDeploy; the normal
   reconcile then rolls pods to match.
 
-Scaling is bounded the same way in both directions: a change happens only after
-the relevant cooldown (`scaleUpCooldownSeconds` / `scaleDownCooldownSeconds`)
-has elapsed, and moves by at most `replicasPerScaleUp` / `replicasPerScaleDown`
-replicas per step. This keeps scaling stable against short-lived fluctuations —
-a brief spike or dip that recovers within the cooldown window doesn't move the
-replica count — while a sustained trend still reaches the right size across
-successive intervals. When load stays at zero, the deployment steps down toward
-`min` over time.
-
 ### Configuration
 
 `scale` is set per agent, on each entry under the AgentSet's `agents` list:
@@ -76,30 +63,49 @@ spec:
       container:
         image: example/coordinator:latest
       scale:
-        min: 1
-        max: 10
-        targetSaturationPercentage: 80
+        disabled: false # Optional, defaults to false.
+        min: 1 # Optional, minimum replicas, defaults to 1.
+        max: 10 # Optional, maximum replicas, defaults to 50.
+        targetSaturationPercentage: 80 # Optional, how aggressively to scale, default to 80.
+        scaleUpCooldownSeconds: 90 # Optional, defaults to 90.
+        scaleDownCooldownSeconds: 90 # Optional, defaults to 90.
+        replicasPerScaleUp: 2 # Optional, defaults to 2.
+        replicasPerScaleDown: 2 # Optional, defaults to 2.
     - name: searcher
       container:
         image: example/searcher:latest
       # No scale block: searcher still autoscales, with the defaults
-      # (min 1, max unbounded).
+      # (min 1, max 50).
 ```
 
-| Field                        | Type        | Default   | Description                                                                                                                                                                                                       |
-| ---------------------------- | ----------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `disabled`                   | bool        | `false`   | Turn Kynomesh autoscaling off — set when using HPA or another external autoscaler.                                                                                                                                |
-| `min`                        | int         | `1`       | Minimum replicas. The agent never scales below this (floored at 1).                                                                                                                                               |
-| `max`                        | int         | unbounded | Maximum replicas.                                                                                                                                                                                                 |
-| `targetSaturationPercentage` | int (1–100) | `80`      | Fraction of a replica's learned capacity to run at in steady state. Lower scales out earlier (safer latency, higher cost); higher packs tighter (lower cost, higher latency risk). Values above 100 are rejected. |
-| `scaleUpCooldownSeconds`     | int         | `90`      | Minimum seconds between successive scale-up steps.                                                                                                                                                                |
-| `scaleDownCooldownSeconds`   | int         | `90`      | Minimum seconds between successive scale-down steps.                                                                                                                                                              |
-| `replicasPerScaleUp`         | int         | `2`       | Max replicas added in a single scale-up step.                                                                                                                                                                     |
-| `replicasPerScaleDown`       | int         | `2`       | Max replicas removed in a single scale-down step.                                                                                                                                                                 |
+- `disabled` - Whether to disable Kynomesh autoscaling, defaults to `false`.
+- `min` - Minimum replicas, valid value could be an integer >= 1. Defaults to
+  `1`.
+- `max` - Maximum replicas, positive integer which should not be less than
+  `min`, defaults to `50`. if `max` and `min` are the same, that will be the
+  fixed replica number.
+- `targetSaturationPercentage` - Aggressiveness of the autoscaling. It is the
+  fraction (1-100) of a replica's learned capacity (the saturation knee) to run
+  at in steady state.
+- `scaleUpCooldownSeconds` - After a scaling operation, how many seconds to wait
+  for the same AgentDeploy, if the follow-up operation is a scaling up, defaults
+  to `90`.
+- `scaleDownCooldownSeconds` - After a scaling operation, how many seconds to
+  wait for the same AgentDeploy, if the follow-up operation is a scaling down,
+  defaults to `90`.
+- `replicasPerScaleUp` - Maximum number of replica change happens in one scale
+  up operation, defaults to `2`. For example, if current replica number is 3,
+  the calculated desired replica number is 8; instead of scaling up the
+  AgentDeploy to 8, it only does 5.
+- `replicasPerScaleDown` - Maximum number of replica change happens in one scale
+  down operation, defaults to `2`. For example, if current replica number is 9,
+  the calculated desired replica number is 4; instead of scaling down the
+  AgentDeploy to 4, it only does 7.
 
 ## Kubernetes HPA
 
-To drive an agent's replicas with the Kubernetes Horizontal Pod Autoscaler,
+To drive an AgentDeloy's replicas with the
+[Kubernetes Horizontal Pod Autoscaler](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/),
 disable Kynomesh autoscaling so the two don't fight over `spec.replicas`:
 
 ```yaml
@@ -139,18 +145,7 @@ way: disable Kynomesh autoscaling (`scale.disabled: true`) and target the
 AgentDeploy's `scale` subresource from the tool's scaling object (e.g. KEDA's
 `ScaledObject` `scaleTargetRef`).
 
-## Observing scaling
-
-The controller records the current and desired replica counts, the learned knee,
-and confidence as metrics, and emits a log line on each decision. To watch
-replicas change:
-
-```sh
-kubectl get agentdeploy -w # or "ad" as a short name
-```
-
 ## See Also
 
 - [AgentDeploy](../../core-concepts/agentdeploy.md) — the unit that gets scaled.
 - [AgentSet](../../core-concepts/agentset.md) — where the `scale` block lives.
-- [APIs](../../APIs.md) — full CRD reference.

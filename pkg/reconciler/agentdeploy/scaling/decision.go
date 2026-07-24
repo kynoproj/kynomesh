@@ -82,14 +82,12 @@ type Decision struct {
 	Estimate Estimate
 }
 
-// Default cooldown / step / capacity values applied when Spec leaves a field
-// unset. Conservative on purpose — operators opt into faster scaling by
-// setting explicit values.
 const (
 	defaultScaleUpCooldownSec   uint32 = 90
 	defaultScaleDownCooldownSec uint32 = 90
 	defaultReplicasPerScaleUp   uint32 = 2
 	defaultReplicasPerScaleDown uint32 = 2
+	defaultMaxReplicas          int32  = 50
 	// defaultKneePerReplica is the assumed per-replica capacity before the
 	// estimator has learned anything (cold start). The controller blends away
 	// from it as confidence grows.
@@ -252,7 +250,7 @@ func minMax(s kmv1.Scale) (int32, int32) {
 	if s.Min != nil && *s.Min > 1 {
 		minR = *s.Min
 	}
-	maxR := int32(math.MaxInt32)
+	maxR := defaultMaxReplicas
 	if s.Max != nil {
 		maxR = *s.Max
 	}
