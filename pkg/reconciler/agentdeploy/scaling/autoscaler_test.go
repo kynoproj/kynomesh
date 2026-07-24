@@ -60,7 +60,8 @@ func TestAutoscalerScalesUpAndPatchesSpec(t *testing.T) {
 
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
 	reg := NewRegistry(c)
-	// Heavy load on a single replica → cold-start target 12 → surge.
+	// Heavy load on a single replica → cold-start target 12 → surge, scaled up
+	// by the step cap (cooldown is long-elapsed since LastScaledAt is unset).
 	seedStore(t, reg, ad, sample(now, 1, 80, 160))
 
 	require.NoError(t, newTestAutoscaler(c, reg, now).scaleKey(context.Background(), nn("foo")))

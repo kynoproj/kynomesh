@@ -174,13 +174,24 @@ func TestDecide(t *testing.T) {
 			wantWhy:      ReasonCooldownUp,
 		},
 		{
-			name:         "surge jumps straight to desired ignoring cooldown",
+			name:         "surge still respects scale-up cooldown",
 			specified:    2,
 			ready:        2,
 			curReplicas:  2,
-			curInflight:  50, // total 100, capacity 24, ratio 4.17 → surge; desired ceil(100/12)=9
+			curInflight:  50, // total 100, capacity 24, ratio 4.17 → surge, but cooldown not elapsed
 			lastScaledAt: now,
-			wantRepl:     9,
+			wantRepl:     2,
+			wantSkip:     true,
+			wantWhy:      ReasonCooldownUp,
+		},
+		{
+			name:         "surge scales up by step cap once cooldown elapsed",
+			specified:    2,
+			ready:        2,
+			curReplicas:  2,
+			curInflight:  50, // total 100, target 12, ratio 4.17 → surge; desired ceil(100/12)=9, +2 step cap
+			lastScaledAt: longAgo,
+			wantRepl:     4,
 			wantSkip:     false,
 			wantWhy:      ReasonSurge,
 		},
@@ -305,20 +316,32 @@ func TestDecideUsesLearnedCapacity(t *testing.T) {
 }
 
 // TestDecideColdStartReactsToSurge verifies a brand-new deployment with no
-// history still scales up hard on a load surge (never idle when under load).
+// history reacts to a load surge once the scale-up cooldown is clear, scaling
+// up by the step cap and tagging the decision as a surge. The surge does not
+// bypass the cooldown or the step cap — it only ramps faster by continuing to
+// step up on each tick while the load persists.
 func TestDecideColdStartReactsToSurge(t *testing.T) {
 	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	spec := baseSpec()
 	spec.Max = ptrI32(50)
-	got := Decide(Inputs{
+	inputs := Inputs{
 		CurrentReplicas: 1,
 		ReadyReplicas:   1,
 		History:         nil, // cold start
 		Current:         Sample{Timestamp: now, Replicas: 1, InflightPerRep: 80},
 		Spec:            spec,
 		Now:             now,
-		LastScaledAt:    now, // cooldown not elapsed — surge must override
-	})
-	assert.Equal(t, ReasonSurge, got.Reason)
-	assert.Greater(t, got.DesiredReplicas, int32(1), "cold start must react to surge")
+	}
+
+	// Cooldown not elapsed: even a surge is held.
+	inputs.LastScaledAt = now
+	held := Decide(inputs)
+	assert.Equal(t, ReasonCooldownUp, held.Reason)
+	assert.Equal(t, int32(1), held.DesiredReplicas, "surge does not bypass the cooldown")
+
+	// Cooldown elapsed: react to the surge, step-capped (+2), tagged surge.
+	inputs.LastScaledAt = now.Add(-time.Hour)
+	acted := Decide(inputs)
+	assert.Equal(t, ReasonSurge, acted.Reason)
+	assert.Equal(t, int32(3), acted.DesiredReplicas, "cold start ramps by the step cap, not straight to desired")
 }

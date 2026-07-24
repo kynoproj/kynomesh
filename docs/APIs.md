@@ -3058,7 +3058,7 @@ UpdateStrategy
 <p>
 
 UpdateStrategy indicates the strategy that the controller will use to
-perform updates for Vertex or MonoVertex.
+perform updates for AgentDeploy.
 </p>
 
 </p>
