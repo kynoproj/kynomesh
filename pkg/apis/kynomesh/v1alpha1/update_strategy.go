@@ -21,7 +21,7 @@ import (
 )
 
 // UpdateStrategy indicates the strategy that the
-// controller will use to perform updates for Vertex or MonoVertex.
+// controller will use to perform updates for AgentDeploy.
 type UpdateStrategy struct {
 	// Type indicates the type of the StatefulSetUpdateStrategy.
 	// Default is RollingUpdate.

@@ -1816,7 +1816,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_UpdateStrategy(ref common.ReferenceCallba
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "UpdateStrategy indicates the strategy that the controller will use to perform updates for Vertex or MonoVertex.",
+				Description: "UpdateStrategy indicates the strategy that the controller will use to perform updates for AgentDeploy.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"type": {
