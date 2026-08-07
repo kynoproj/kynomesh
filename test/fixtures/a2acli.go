@@ -56,13 +56,12 @@ func (r A2AResponse) Text() string {
 // with the local address (matching the research-assistant example's usage).
 func SendA2AMessage(localPort int, message string) (A2AResponse, error) {
 	host := fmt.Sprintf("localhost:%d", localPort)
-	// Capture stdout only: a2acli writes JSON to stdout and diagnostics to
-	// stderr, so mixing them (CombinedOutput) would corrupt the JSON.
 	cmd := exec.Command("a2acli",
 		"-k",
 		"-u", "https://"+host,
 		"--override-host="+host,
 		"send", message,
+		"-o", "json",
 	)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
