@@ -58,11 +58,14 @@ func SendA2AMessage(localPort int, message string) (A2AResponse, error) {
 	host := fmt.Sprintf("localhost:%d", localPort)
 	// Capture stdout only: a2acli writes JSON to stdout and diagnostics to
 	// stderr, so mixing them (CombinedOutput) would corrupt the JSON.
+	// -o json is required: a2acli defaults to human-readable text output since
+	// v0.1.3, so we ask for JSON explicitly to keep the response parseable.
 	cmd := exec.Command("a2acli",
 		"-k",
 		"-u", "https://"+host,
 		"--override-host="+host,
 		"send", message,
+		"-o", "json",
 	)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
