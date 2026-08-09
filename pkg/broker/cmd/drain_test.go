@@ -49,9 +49,9 @@ func newMetricsServer(t *testing.T) *metricsServer {
 			http.Error(w, "boom", http.StatusInternalServerError)
 			return
 		}
-		fmt.Fprintf(w, "# HELP broker_inflight_requests test\n# TYPE broker_inflight_requests gauge\n")
-		fmt.Fprintf(w, "broker_inflight_requests{transport=\"jsonrpc\"} %d\n", ms.inflight.Load())
-		fmt.Fprintf(w, "broker_inflight_requests{transport=\"grpc\"} 0\n")
+		_, _ = fmt.Fprintf(w, "# HELP broker_inflight_requests test\n# TYPE broker_inflight_requests gauge\n")
+		_, _ = fmt.Fprintf(w, "broker_inflight_requests{transport=\"jsonrpc\"} %d\n", ms.inflight.Load())
+		_, _ = fmt.Fprintf(w, "broker_inflight_requests{transport=\"grpc\"} 0\n")
 	}))
 	// Extract the port so Drain can build https://localhost:<port>/metrics.
 	_, portStr, err := net.SplitHostPort(strings.TrimPrefix(ms.URL, "https://"))
@@ -151,7 +151,7 @@ func TestSumInflight(t *testing.T) {
 
 func TestScrapeInflight_MetricAbsentIsZero(t *testing.T) {
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		fmt.Fprintln(w, "# no broker metrics here")
+		_, _ = fmt.Fprintln(w, "# no broker metrics here")
 	}))
 	t.Cleanup(srv.Close)
 
