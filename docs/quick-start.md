@@ -130,7 +130,7 @@ kubectl port-forward svc/research-assistant-ingress 8490
 In another terminal, send a question with `a2acli`:
 
 ```shell
-a2acli -k -u https://localhost:8490 --override-host=localhost:8490 send 'tell me about kynomesh'
+a2acli -k -u https://localhost:8490 --override-host=localhost:8490 send 'tell me about kynomesh' -o json
 ```
 
 The `coordinator` forwards your question to the `searcher`, wraps the result,

@@ -97,6 +97,12 @@ type AbstractPodTemplate struct {
 	// +patchStrategy=merge,retainKeys
 	// +optional
 	ResourceClaims []corev1.PodResourceClaim `json:"resourceClaims,omitempty" patchStrategy:"merge,retainKeys" patchMergeKey:"name" protobuf:"bytes,14,rep,name=resourceClaims"`
+	// TerminationGracePeriodSeconds is the optional duration in seconds the pod
+	// needs to terminate gracefully. The broker's preStop hook drains in-flight
+	// requests within this window, so raise it for agents with long-running
+	// calls. Defaults to 120 when unset.
+	// +optional
+	TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds,omitempty" protobuf:"varint,15,opt,name=terminationGracePeriodSeconds"`
 }
 
 // ApplyToPodSpec updates the PodSpec with the values in the AbstractPodTemplate
@@ -139,6 +145,9 @@ func (apt *AbstractPodTemplate) ApplyToPodSpec(ps *corev1.PodSpec) {
 	}
 	if len(ps.ResourceClaims) == 0 {
 		ps.ResourceClaims = apt.ResourceClaims
+	}
+	if ps.TerminationGracePeriodSeconds == nil {
+		ps.TerminationGracePeriodSeconds = apt.TerminationGracePeriodSeconds
 	}
 }
 

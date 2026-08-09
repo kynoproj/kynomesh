@@ -2637,6 +2637,9 @@ spec:
                         - name
                         type: object
                       type: array
+                    terminationGracePeriodSeconds:
+                      format: int64
+                      type: integer
                     tolerations:
                       items:
                         properties:
@@ -4301,6 +4304,9 @@ spec:
                         type: object
                       serviceAccountName:
                         type: string
+                      terminationGracePeriodSeconds:
+                        format: int64
+                        type: integer
                       tolerations:
                         items:
                           properties:

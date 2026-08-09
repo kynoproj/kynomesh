@@ -228,6 +228,11 @@ func (m *AbstractPodTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.TerminationGracePeriodSeconds != nil {
+		i = encodeVarintGenerated(dAtA, i, uint64(*m.TerminationGracePeriodSeconds))
+		i--
+		dAtA[i] = 0x78
+	}
 	if len(m.ResourceClaims) > 0 {
 		for iNdEx := len(m.ResourceClaims) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -1664,6 +1669,9 @@ func (m *AbstractPodTemplate) Size() (n int) {
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
+	if m.TerminationGracePeriodSeconds != nil {
+		n += 1 + sovGenerated(uint64(*m.TerminationGracePeriodSeconds))
+	}
 	return n
 }
 
@@ -2186,6 +2194,7 @@ func (this *AbstractPodTemplate) String() string {
 		`DNSPolicy:` + fmt.Sprintf("%v", this.DNSPolicy) + `,`,
 		`DNSConfig:` + strings.Replace(fmt.Sprintf("%v", this.DNSConfig), "PodDNSConfig", "v1.PodDNSConfig", 1) + `,`,
 		`ResourceClaims:` + repeatedStringForResourceClaims + `,`,
+		`TerminationGracePeriodSeconds:` + valueToStringGenerated(this.TerminationGracePeriodSeconds) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3495,6 +3504,26 @@ func (m *AbstractPodTemplate) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 15:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TerminationGracePeriodSeconds", wireType)
+			}
+			var v int64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.TerminationGracePeriodSeconds = &v
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
