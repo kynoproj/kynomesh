@@ -72,7 +72,7 @@ const (
 	// AgentDeploy pods when the user sets none. It is sized for agentic
 	// workloads: the broker's preStop drain waits for long-running in-flight
 	// requests to finish, and this is the ceiling for (drain + post-SIGTERM
-	// shutdown). Kubernetes' default of 30s would cut multi-minute agent calls.
+	// shutdown).
 	DefaultTerminationGracePeriodSeconds int64 = 120
 	// DaemonAPIPort is the port the per-AgentSet daemon listens on for
 	// gRPC + REST API traffic, multiplexed on a single TLS listener.
@@ -87,10 +87,8 @@ const (
 	TopologyFilePath      = KynomeshRunPath + "/topology.json" // Topology file path
 	ServerInfoFilePath    = KynomeshRunPath + "/server-info"   // Agent server-info file (written by the agent at startup)
 	ProbeBinaryPath       = KynomeshRunPath + "/bin/kynoprobe" // Static probe binary copied by init-runtime; used by agent container probes
-	ProbeBinaryImagePath  = "/bin/kynoprobe"                   //probe binary lives inside the kynomesh image
-	// KynomeshBinaryPath is the kynomesh binary inside the broker image (the
-	// image ENTRYPOINT); used to invoke subcommands like `drain` from hooks.
-	KynomeshBinaryPath = "/bin/kynomesh"
+	ProbeBinaryImagePath  = "/bin/kynoprobe"                   // The probe binary lives inside the kynomesh image
+	KynomeshBinaryPath    = "/bin/kynomesh"                    // The main binary lives inside the kynomesh image
 )
 
 // Agent container probe timing defaults.

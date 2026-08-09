@@ -32,8 +32,7 @@ import (
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 )
 
-// inflightMetricName is the broker gauge summed across transports to decide
-// whether the pod still has work in flight.
+// inflightMetricName is the inflight metric name exposed by the broker.
 const inflightMetricName = "broker_inflight_requests"
 
 // DrainConfig configures the preStop drain. Zero values fall back to defaults.
@@ -74,8 +73,6 @@ func RunDrain(cfg DrainConfig) {
 // Limitation: broker_inflight_requests counts a streaming call (gRPC stream or
 // SSE) as in-flight for its entire lifetime, so a long-lived stream keeps the
 // gauge above zero and this drain waits out the full budget before terminating.
-// Finite (unary) requests — the common case — drain promptly. Stream-aware
-// draining is tracked separately in issue #157.
 func Drain(ctx context.Context, cfg DrainConfig) bool {
 	logger := logging.FromContext(ctx)
 
@@ -123,9 +120,7 @@ func Drain(ctx context.Context, cfg DrainConfig) bool {
 	}
 }
 
-// insecureClient returns an HTTP client that skips TLS verification. The
-// introspection server uses a self-signed cert and drain only ever calls it on
-// localhost within the same pod, so skipping verification is safe here.
+// insecureClient returns an HTTP client that skips TLS verification.
 func insecureClient() *http.Client {
 	return &http.Client{Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // localhost self-signed
@@ -151,9 +146,8 @@ func scrapeInflight(ctx context.Context, client *http.Client, url string) (float
 }
 
 // sumInflight scans Prometheus text-format metrics and sums every
-// broker_inflight_requests sample (across all transport labels). The need is
-// tiny — one gauge — so a line scan avoids depending on the full text parser
-// (and its global validation-scheme state). Samples look like:
+// broker_inflight_requests sample (across all transport labels).
+// Samples look like:
 //
 //	broker_inflight_requests{transport="jsonrpc"} 3
 //

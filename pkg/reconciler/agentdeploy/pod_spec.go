@@ -43,9 +43,6 @@ func buildPodSpec(ad *kmv1.AgentDeploy, image string, imagePullPolicy corev1.Pul
 	}
 	ad.Spec.ApplyToPodSpec(&ps)
 
-	// Give in-flight agentic requests time to drain on termination (the broker
-	// preStop hook waits them out). Only defaulted when unset so a user pod
-	// template can still override.
 	if ps.TerminationGracePeriodSeconds == nil {
 		grace := kmv1.DefaultTerminationGracePeriodSeconds
 		ps.TerminationGracePeriodSeconds = &grace
@@ -100,9 +97,7 @@ func newAgentContainer(ad *kmv1.AgentDeploy) corev1.Container {
 	return c
 }
 
-// brokerDrainExec returns the preStop command for the broker container: the
-// kynomesh binary's `drain` subcommand, which waits for in-flight requests to
-// finish before termination.
+// brokerDrainExec returns the preStop command for the broker container.
 func brokerDrainExec() []string {
 	return []string{kmv1.KynomeshBinaryPath, "drain"}
 }
@@ -248,8 +243,7 @@ func newBrokerContainer(image string, pullPolicy corev1.PullPolicy, encodedAgent
 	}
 	c.ReadinessProbe = brokerReadinessProbe()
 	c.LivenessProbe = brokerLivenessProbe()
-	// preStop drains in-flight requests before the broker is terminated, so
-	// scale-down and rolling updates don't cut long-running agentic calls.
+	// preStop drains in-flight requests before the broker is terminated.
 	c.Lifecycle = &corev1.Lifecycle{
 		PreStop: &corev1.LifecycleHandler{
 			Exec: &corev1.ExecAction{Command: brokerDrainExec()},
