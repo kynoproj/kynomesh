@@ -523,6 +523,23 @@ func TestBuildPodSpec_BrokerTemplatePreservesProbes(t *testing.T) {
 	require.NotNil(t, broker.LivenessProbe.TCPSocket)
 }
 
+func TestBuildPodSpec_BrokerPreStopDrain(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	broker := buildPodSpec(ad, testBrokerImage, "").Containers[0]
+
+	require.NotNil(t, broker.Lifecycle, "broker needs a preStop drain hook")
+	require.NotNil(t, broker.Lifecycle.PreStop)
+	require.NotNil(t, broker.Lifecycle.PreStop.Exec)
+	assert.Equal(t, []string{kmv1.KynomeshBinaryPath, "drain"}, broker.Lifecycle.PreStop.Exec.Command)
+}
+
+func TestBuildPodSpec_TerminationGracePeriod(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ps := buildPodSpec(ad, testBrokerImage, "")
+	require.NotNil(t, ps.TerminationGracePeriodSeconds, "grace period must be defaulted for agentic drains")
+	assert.Equal(t, kmv1.DefaultTerminationGracePeriodSeconds, *ps.TerminationGracePeriodSeconds)
+}
+
 func TestBuildPodSpec_BrokerTemplateAppliedAfterDefaults(t *testing.T) {
 	// BrokerTemplate is the user's knob for tuning the controller-owned
 	// broker container — resources, env, securityContext, etc. — without

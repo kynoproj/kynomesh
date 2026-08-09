@@ -42,6 +42,12 @@ func (ct *ContainerTemplate) ApplyToContainer(c *corev1.Container) {
 	c.Resources.Requests = mergeResourceList(c.Resources.Requests, ct.Resources.Requests)
 	c.Resources.Limits = mergeResourceList(c.Resources.Limits, ct.Resources.Limits)
 	c.SecurityContext = ct.SecurityContext
+	// ImagePullPolicy is intentionally container-wins (unlike the fields above,
+	// where the template overrides). The container's policy is stamped from
+	// KYNOMESH_IMAGE_PULL_POLICY, an environment-level guardrail (e.g.
+	// IfNotPresent for local/test clusters). The template only fills it in when the
+	// environment left it unset, so a per-AgentSet template can't override that
+	// guardrail.
 	if c.ImagePullPolicy == "" {
 		c.ImagePullPolicy = ct.ImagePullPolicy
 	}
