@@ -23627,6 +23627,11 @@
             "$ref": "#/definitions/io.k8s.api.core.v1.Container"
           }
         },
+        "terminationGracePeriodSeconds": {
+          "description": "TerminationGracePeriodSeconds is the optional duration in seconds the pod needs to terminate gracefully. The broker's preStop hook drains in-flight requests within this window, so raise it for agents with long-running calls. Defaults to 120 when unset.",
+          "type": "integer",
+          "format": "int64"
+        },
         "tolerations": {
           "description": "If specified, the pod's tolerations.",
           "type": "array",
@@ -23717,6 +23722,11 @@
         "serviceAccountName": {
           "description": "ServiceAccountName applied to the pod",
           "type": "string"
+        },
+        "terminationGracePeriodSeconds": {
+          "description": "TerminationGracePeriodSeconds is the optional duration in seconds the pod needs to terminate gracefully. The broker's preStop hook drains in-flight requests within this window, so raise it for agents with long-running calls. Defaults to 120 when unset.",
+          "type": "integer",
+          "format": "int64"
         },
         "tolerations": {
           "description": "If specified, the pod's tolerations.",
@@ -23892,6 +23902,11 @@
             "$ref": "#/definitions/io.k8s.api.core.v1.Container"
           }
         },
+        "terminationGracePeriodSeconds": {
+          "description": "TerminationGracePeriodSeconds is the optional duration in seconds the pod needs to terminate gracefully. The broker's preStop hook drains in-flight requests within this window, so raise it for agents with long-running calls. Defaults to 120 when unset.",
+          "type": "integer",
+          "format": "int64"
+        },
         "tolerations": {
           "description": "If specified, the pod's tolerations.",
           "type": "array",
@@ -24061,6 +24076,11 @@
         "serviceAccountName": {
           "description": "ServiceAccountName applied to the pod",
           "type": "string"
+        },
+        "terminationGracePeriodSeconds": {
+          "description": "TerminationGracePeriodSeconds is the optional duration in seconds the pod needs to terminate gracefully. The broker's preStop hook drains in-flight requests within this window, so raise it for agents with long-running calls. Defaults to 120 when unset.",
+          "type": "integer",
+          "format": "int64"
         },
         "tolerations": {
           "description": "If specified, the pod's tolerations.",

@@ -43,6 +43,11 @@ func buildPodSpec(ad *kmv1.AgentDeploy, image string, imagePullPolicy corev1.Pul
 	}
 	ad.Spec.ApplyToPodSpec(&ps)
 
+	if ps.TerminationGracePeriodSeconds == nil {
+		grace := kmv1.DefaultTerminationGracePeriodSeconds
+		ps.TerminationGracePeriodSeconds = &grace
+	}
+
 	// Only apply to built-in containers
 	const controllerOwnedContainerCount = 1 // broker
 	const controllerOwnedInitCount = 2      // init-runtime, agent
@@ -90,6 +95,11 @@ func newAgentContainer(ad *kmv1.AgentDeploy) corev1.Container {
 	always := corev1.ContainerRestartPolicyAlways
 	c.RestartPolicy = &always
 	return c
+}
+
+// brokerDrainExec returns the preStop command for the broker container.
+func brokerDrainExec() []string {
+	return []string{kmv1.KynomeshBinaryPath, "drain"}
 }
 
 // agentProbeExec returns the exec command the agent container runs for
@@ -233,6 +243,12 @@ func newBrokerContainer(image string, pullPolicy corev1.PullPolicy, encodedAgent
 	}
 	c.ReadinessProbe = brokerReadinessProbe()
 	c.LivenessProbe = brokerLivenessProbe()
+	// preStop drains in-flight requests before the broker is terminated.
+	c.Lifecycle = &corev1.Lifecycle{
+		PreStop: &corev1.LifecycleHandler{
+			Exec: &corev1.ExecAction{Command: brokerDrainExec()},
+		},
+	}
 	if tmpl != nil {
 		tmpl.ApplyToContainer(&c)
 	}

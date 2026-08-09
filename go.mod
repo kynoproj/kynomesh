@@ -6,7 +6,7 @@ require (
 	github.com/a2aproject/a2a-go/v2 v2.4.0
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/go-logr/zapr v1.3.0
-	github.com/go-swagger/go-swagger v0.35.3
+	github.com/go-swagger/go-swagger v0.36.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0
 	github.com/prometheus/client_golang v1.24.1
@@ -49,28 +49,28 @@ require (
 	github.com/fxamacker/cbor/v2 v2.9.1 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-openapi/analysis v0.25.5 // indirect
-	github.com/go-openapi/codescan v0.35.1 // indirect
+	github.com/go-openapi/codescan v0.36.2 // indirect
 	github.com/go-openapi/errors v0.22.8 // indirect
-	github.com/go-openapi/inflect v0.21.6 // indirect
+	github.com/go-openapi/inflect v1.0.0 // indirect
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
 	github.com/go-openapi/jsonreference v1.0.0 // indirect
 	github.com/go-openapi/loads v0.25.0 // indirect
-	github.com/go-openapi/runtime v0.32.6 // indirect
-	github.com/go-openapi/runtime/server-middleware v0.32.6 // indirect
+	github.com/go-openapi/runtime v0.33.0 // indirect
+	github.com/go-openapi/runtime/server-middleware v0.33.0 // indirect
 	github.com/go-openapi/spec v0.22.9 // indirect
 	github.com/go-openapi/strfmt v0.27.0 // indirect
-	github.com/go-openapi/swag v0.27.3 // indirect
-	github.com/go-openapi/swag/cmdutils v0.27.3 // indirect
-	github.com/go-openapi/swag/conv v0.27.3 // indirect
-	github.com/go-openapi/swag/fileutils v0.27.3 // indirect
-	github.com/go-openapi/swag/jsonutils v0.27.3 // indirect
-	github.com/go-openapi/swag/loading v0.27.3 // indirect
-	github.com/go-openapi/swag/mangling v0.27.3 // indirect
-	github.com/go-openapi/swag/netutils v0.27.3 // indirect
-	github.com/go-openapi/swag/pools v0.27.3 // indirect
-	github.com/go-openapi/swag/stringutils v0.27.3 // indirect
-	github.com/go-openapi/swag/typeutils v0.27.3 // indirect
-	github.com/go-openapi/swag/yamlutils v0.27.3 // indirect
+	github.com/go-openapi/swag v0.28.0 // indirect
+	github.com/go-openapi/swag/cmdutils v0.28.0 // indirect
+	github.com/go-openapi/swag/conv v0.28.0 // indirect
+	github.com/go-openapi/swag/fileutils v0.28.0 // indirect
+	github.com/go-openapi/swag/jsonutils v0.28.0 // indirect
+	github.com/go-openapi/swag/loading v0.28.0 // indirect
+	github.com/go-openapi/swag/mangling v0.28.0 // indirect
+	github.com/go-openapi/swag/netutils v0.28.0 // indirect
+	github.com/go-openapi/swag/pools v0.28.0 // indirect
+	github.com/go-openapi/swag/stringutils v0.28.0 // indirect
+	github.com/go-openapi/swag/typeutils v0.28.0 // indirect
+	github.com/go-openapi/swag/yamlutils v0.28.0 // indirect
 	github.com/go-openapi/validate v0.26.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobuffalo/flect v1.0.3 // indirect
@@ -86,14 +86,14 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
-	github.com/mattn/go-isatty v0.0.23 // indirect
+	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/spdystream v0.5.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/oklog/ulid/v2 v2.1.1 // indirect
+	github.com/oklog/ulid/v2 v2.1.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -111,7 +111,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.54.0 // indirect
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect

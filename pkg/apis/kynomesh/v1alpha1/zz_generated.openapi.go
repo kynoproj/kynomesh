@@ -201,6 +201,13 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 							},
 						},
 					},
+					"terminationGracePeriodSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TerminationGracePeriodSeconds is the optional duration in seconds the pod needs to terminate gracefully. The broker's preStop hook drains in-flight requests within this window, so raise it for agents with long-running calls. Defaults to 120 when unset.",
+							Type:        []string{"integer"},
+							Format:      "int64",
+						},
+					},
 					"container": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Agent container, the user's agent code runs here.",
@@ -431,6 +438,13 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractPodTemplate(ref common.ReferenceC
 									},
 								},
 							},
+						},
+					},
+					"terminationGracePeriodSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TerminationGracePeriodSeconds is the optional duration in seconds the pod needs to terminate gracefully. The broker's preStop hook drains in-flight requests within this window, so raise it for agents with long-running calls. Defaults to 120 when unset.",
+							Type:        []string{"integer"},
+							Format:      "int64",
 						},
 					},
 				},
@@ -683,6 +697,13 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 									},
 								},
 							},
+						},
+					},
+					"terminationGracePeriodSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TerminationGracePeriodSeconds is the optional duration in seconds the pod needs to terminate gracefully. The broker's preStop hook drains in-flight requests within this window, so raise it for agents with long-running calls. Defaults to 120 when unset.",
+							Type:        []string{"integer"},
+							Format:      "int64",
 						},
 					},
 					"container": {
@@ -1062,6 +1083,13 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeployTemplate(ref common.ReferenceC
 									},
 								},
 							},
+						},
+					},
+					"terminationGracePeriodSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TerminationGracePeriodSeconds is the optional duration in seconds the pod needs to terminate gracefully. The broker's preStop hook drains in-flight requests within this window, so raise it for agents with long-running calls. Defaults to 120 when unset.",
+							Type:        []string{"integer"},
+							Format:      "int64",
 						},
 					},
 					"brokerTemplate": {

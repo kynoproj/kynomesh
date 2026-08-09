@@ -167,6 +167,13 @@ message AbstractPodTemplate {
   // +patchStrategy=merge,retainKeys
   // +optional
   repeated .k8s.io.api.core.v1.PodResourceClaim resourceClaims = 14;
+
+  // TerminationGracePeriodSeconds is the optional duration in seconds the pod
+  // needs to terminate gracefully. The broker's preStop hook drains in-flight
+  // requests within this window, so raise it for agents with long-running
+  // calls. Defaults to 120 when unset.
+  // +optional
+  optional int64 terminationGracePeriodSeconds = 15;
 }
 
 // +genclient

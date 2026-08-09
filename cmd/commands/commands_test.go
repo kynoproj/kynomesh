@@ -52,6 +52,26 @@ func TestRootCmd_HasBrokerSubcommand(t *testing.T) {
 	assert.True(t, found, "expected 'broker' subcommand to be registered on rootCmd")
 }
 
+func TestRootCmd_HasDrainSubcommand(t *testing.T) {
+	var found bool
+	for _, sub := range rootCmd.Commands() {
+		if sub.Use == "drain" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected 'drain' subcommand to be registered on rootCmd")
+}
+
+func TestNewDrainCommand_Metadata(t *testing.T) {
+	c := NewDrainCommand()
+	require.NotNil(t, c)
+	assert.Equal(t, "drain", c.Use)
+	assert.NotNil(t, c.Run, "drain command should have a Run handler")
+	require.NotNil(t, c.Flags().Lookup("introspection-port"), "expected --introspection-port flag")
+	require.NotNil(t, c.Flags().Lookup("budget-seconds"), "expected --budget-seconds flag")
+}
+
 func TestRootCmd_RunPrintsHelp(t *testing.T) {
 	var out bytes.Buffer
 	rootCmd.SetOut(&out)
