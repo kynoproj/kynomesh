@@ -1100,7 +1100,7 @@ service. Port-forward it to your local machine:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/research-assistant-ingress<span class="w"> </span><span class="m">8490</span>
 </code></pre></div>
 <p>In another terminal, send a question with <code>a2acli</code>:</p>
-<div class="highlight"><pre><span></span><code>a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span>send<span class="w"> </span><span class="s1">&#39;tell me about kynomesh&#39;</span>
+<div class="highlight"><pre><span></span><code>a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span>send<span class="w"> </span><span class="s1">&#39;tell me about kynomesh&#39;</span><span class="w"> </span>-o<span class="w"> </span>json
 </code></pre></div>
 <p>The <code>coordinator</code> forwards your question to the <code>searcher</code>, wraps the result,
 and returns something like:</p>

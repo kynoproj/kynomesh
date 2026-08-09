@@ -1412,6 +1412,28 @@ available to those containers which consume them by name.
 
 </tr>
 
+<tr>
+
+<td>
+
+<code>terminationGracePeriodSeconds</code></br> <em> int64 </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+TerminationGracePeriodSeconds is the optional duration in seconds the
+pod needs to terminate gracefully. The broker’s preStop hook drains
+in-flight requests within this window, so raise it for agents with
+long-running calls. Defaults to 120 when unset.
+</p>
+
+</td>
+
+</tr>
+
 </tbody>
 
 </table>
