@@ -534,10 +534,21 @@ func TestBuildPodSpec_BrokerPreStopDrain(t *testing.T) {
 }
 
 func TestBuildPodSpec_TerminationGracePeriod(t *testing.T) {
-	ad := newAgentDeploy("greeter", 1)
-	ps := buildPodSpec(ad, testBrokerImage, "")
-	require.NotNil(t, ps.TerminationGracePeriodSeconds, "grace period must be defaulted for agentic drains")
-	assert.Equal(t, kmv1.DefaultTerminationGracePeriodSeconds, *ps.TerminationGracePeriodSeconds)
+	t.Run("defaults when unset", func(t *testing.T) {
+		ad := newAgentDeploy("greeter", 1)
+		ps := buildPodSpec(ad, testBrokerImage, "")
+		require.NotNil(t, ps.TerminationGracePeriodSeconds, "grace period must be defaulted for agentic drains")
+		assert.Equal(t, kmv1.DefaultTerminationGracePeriodSeconds, *ps.TerminationGracePeriodSeconds)
+	})
+
+	t.Run("user override preserved", func(t *testing.T) {
+		ad := newAgentDeploy("greeter", 1)
+		custom := int64(300)
+		ad.Spec.TerminationGracePeriodSeconds = &custom
+		ps := buildPodSpec(ad, testBrokerImage, "")
+		require.NotNil(t, ps.TerminationGracePeriodSeconds)
+		assert.Equal(t, custom, *ps.TerminationGracePeriodSeconds, "a user-set grace period must win over the default")
+	})
 }
 
 func TestBuildPodSpec_BrokerTemplateAppliedAfterDefaults(t *testing.T) {
