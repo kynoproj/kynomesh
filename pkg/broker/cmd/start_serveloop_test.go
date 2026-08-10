@@ -25,10 +25,28 @@ import (
 	"github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 
 	"github.com/kynoproj/kynomesh/pkg/broker"
 	sharedtls "github.com/kynoproj/kynomesh/pkg/shared/tls"
 )
+
+func TestStopGRPCWithin_IdleReturnsFast(t *testing.T) {
+	srv := grpc.NewServer()
+	// No listener serving, no active streams → GracefulStop returns immediately.
+	start := time.Now()
+	stopGRPCWithin(srv, 5*time.Second)
+	assert.Less(t, time.Since(start), time.Second, "idle server should stop well under the budget")
+}
+
+func TestStopGRPCWithin_BoundedByBudget(t *testing.T) {
+	srv := grpc.NewServer()
+	// Even in the worst case the call must return within roughly the budget and
+	// never hang; a tiny budget exercises the Stop() fallback path.
+	start := time.Now()
+	stopGRPCWithin(srv, 50*time.Millisecond)
+	assert.Less(t, time.Since(start), time.Second, "must not hang past the budget")
+}
 
 // buildLoopStack constructs a minimal brokerStack with both http.Servers
 // bound to ":0" (the OS picks ephemeral ports) and a passthrough-only

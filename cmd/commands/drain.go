@@ -17,8 +17,6 @@ limitations under the License.
 package commands
 
 import (
-	"time"
-
 	"github.com/spf13/cobra"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
@@ -29,38 +27,20 @@ import (
 // NewDrainCommand returns the "drain" subcommand, run as the broker pod's
 // preStop hook. It waits for in-flight requests to finish before the container
 // is terminated, so scale-down and rolling updates don't cut long-running
-// agentic requests.
+// agentic requests. Its timing is derived from the pod's
+// terminationGracePeriodSeconds (injected as an env var) — no separate knobs.
 func NewDrainCommand() *cobra.Command {
-	var (
-		introspectionPort int
-		propagationSecs   int
-		budgetSecs        int
-		pollSecs          int
-	)
+	var introspectionPort int
 
 	command := &cobra.Command{
 		Use:   "drain",
 		Short: "Wait for in-flight broker requests to drain (broker pod preStop hook)",
 		Run: func(cmd *cobra.Command, args []string) {
-			brokercmd.RunDrain(brokercmd.DrainConfig{
-				IntrospectionPort: introspectionPort,
-				PropagationDelay:  time.Duration(propagationSecs) * time.Second,
-				Budget:            time.Duration(budgetSecs) * time.Second,
-				PollInterval:      time.Duration(pollSecs) * time.Second,
-			})
+			brokercmd.RunDrain(introspectionPort)
 		},
 	}
 	command.Flags().IntVar(&introspectionPort, "introspection-port",
 		sharedutil.LookupEnvIntOr("KYNOMESH_BROKER_INTROSPECTION_PORT", kmv1.AgentBrokerIntrospectionPort),
 		"Broker introspection port to scrape /metrics for in-flight requests.")
-	command.Flags().IntVar(&propagationSecs, "propagation-seconds",
-		sharedutil.LookupEnvIntOr("KYNOMESH_DRAIN_PROPAGATION_SECONDS", 5),
-		"Fixed initial wait for endpoint removal to propagate before polling in-flight.")
-	command.Flags().IntVar(&budgetSecs, "budget-seconds",
-		sharedutil.LookupEnvIntOr("KYNOMESH_DRAIN_BUDGET_SECONDS", 110),
-		"Overall drain budget; must fit within the pod's terminationGracePeriodSeconds.")
-	command.Flags().IntVar(&pollSecs, "poll-seconds",
-		sharedutil.LookupEnvIntOr("KYNOMESH_DRAIN_POLL_SECONDS", 2),
-		"How often to re-check in-flight requests while draining.")
 	return command
 }

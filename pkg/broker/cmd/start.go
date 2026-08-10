@@ -63,8 +63,6 @@ func probeAgentCard(ctx context.Context, client *http.Client, baseURL string) (*
 }
 
 const (
-	shutdownTimeout = 10 * time.Second
-
 	// agentProbeTimeout caps the startup AgentCard fetch.
 	agentProbeTimeout = 5 * time.Second
 
@@ -354,6 +352,12 @@ func runServeLoop(ctx context.Context, stack *brokerStack, port, introspectionPo
 		return err
 	}
 
+	// The post-SIGTERM shutdown budget is a small tail of the grace period; the
+	// preStop drain has already emptied in-flight before SIGTERM, so this only
+	// mops up the residue. Deriving from the grace period keeps it bounded well
+	// inside the kubelet's SIGKILL deadline.
+	shutdownTimeout := resolveBudgets().Shutdown
+	logger.Infow("Broker shutting down", zap.Duration("budget", shutdownTimeout))
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 	if err := proxySrv.Shutdown(shutdownCtx); err != nil {
@@ -363,7 +367,7 @@ func runServeLoop(ctx context.Context, stack *brokerStack, port, introspectionPo
 		logger.Warnw("Broker introspection shutdown error", zap.Error(err))
 	}
 	if rt.grpcServer != nil {
-		rt.grpcServer.GracefulStop()
+		stopGRPCWithin(rt.grpcServer, shutdownTimeout)
 	}
 
 	if err := <-mainServeErr; err != nil {
@@ -373,6 +377,22 @@ func runServeLoop(ctx context.Context, stack *brokerStack, port, introspectionPo
 		return err
 	}
 	return nil
+}
+
+// stopGRPCWithin drains the gRPC server gracefully but no longer than budget:
+// GracefulStop runs in a goroutine, and if it hasn't finished when the budget
+// elapses, Stop force-closes it so shutdown can't hang past the grace period.
+func stopGRPCWithin(srv *grpc.Server, budget time.Duration) {
+	done := make(chan struct{})
+	go func() {
+		srv.GracefulStop()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(budget):
+		srv.Stop()
+	}
 }
 
 func newIntrospectionServer(port int, handler http.Handler, cert *tls.Certificate) *http.Server {
