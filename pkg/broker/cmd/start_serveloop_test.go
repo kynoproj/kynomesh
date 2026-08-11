@@ -64,16 +64,15 @@ func buildLoopStack(t *testing.T) *brokerStack {
 		passthrough: stubOKHandler("ok"),
 	}
 
-	mainSrv, err := newMultiplexedServer(0, rt, nil, cert)
+	mainSrv, mainLn, err := newMultiplexedServer(0, rt, nil, cert)
 	require.NoError(t, err)
-	mainSrv.Addr = "127.0.0.1:0"
 
 	introSrv := newIntrospectionServer(0, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}), cert)
 	introSrv.Addr = "127.0.0.1:0"
 
-	return &brokerStack{rt: rt, proxySrv: mainSrv, introspectionSrv: introSrv}
+	return &brokerStack{rt: rt, proxySrv: mainSrv, proxyLn: mainLn, introspectionSrv: introSrv}
 }
 
 // TestRunServeLoop_CleanShutdownOnContextCancel verifies the happy path:
@@ -103,12 +102,12 @@ func TestRunServeLoop_CleanShutdownOnContextCancel(t *testing.T) {
 }
 
 // TestRunServeLoop_MainListenerError surfaces the error from the main
-// HTTP listener when it fails to start. We force the failure by
-// pointing the server at an invalid bind address that net.Listen
-// rejects synchronously.
+// listener when Serve fails. The listener is bound at construction, so we
+// force the failure by closing it before the loop serves it — Serve then
+// returns a non-ErrServerClosed error that must propagate.
 func TestRunServeLoop_MainListenerError(t *testing.T) {
 	stack := buildLoopStack(t)
-	stack.proxySrv.Addr = "not-a-valid-address"
+	require.NoError(t, stack.proxyLn.Close())
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

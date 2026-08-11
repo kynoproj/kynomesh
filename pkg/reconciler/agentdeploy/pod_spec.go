@@ -263,10 +263,22 @@ func newBrokerContainer(image string, pullPolicy corev1.PullPolicy, encodedAgent
 	return c
 }
 
-// brokerReadinessProbe gates readiness on the broker's port.
+// brokerHTTPGet builds an HTTPS GET probe handler against the broker's own
+// introspection port.
+func brokerHTTPGet(path string) corev1.ProbeHandler {
+	return corev1.ProbeHandler{
+		HTTPGet: &corev1.HTTPGetAction{
+			Path:   path,
+			Port:   intstr.FromString("introspect"),
+			Scheme: corev1.URISchemeHTTPS,
+		},
+	}
+}
+
+// brokerReadinessProbe gates readiness on the broker's /readyz.
 func brokerReadinessProbe() *corev1.Probe {
 	return &corev1.Probe{
-		ProbeHandler:        corev1.ProbeHandler{TCPSocket: &corev1.TCPSocketAction{Port: intstr.FromString("broker")}},
+		ProbeHandler:        brokerHTTPGet("/readyz"),
 		InitialDelaySeconds: kmv1.DefaultBrokerReadinessInitialDelaySec,
 		PeriodSeconds:       kmv1.DefaultBrokerReadinessPeriodSec,
 		TimeoutSeconds:      kmv1.DefaultBrokerReadinessTimeoutSec,
@@ -275,10 +287,10 @@ func brokerReadinessProbe() *corev1.Probe {
 	}
 }
 
-// brokerLivenessProbe restarts the broker if its port stops accepting.
+// brokerLivenessProbe restarts the broker if its /healthz stops responding.
 func brokerLivenessProbe() *corev1.Probe {
 	return &corev1.Probe{
-		ProbeHandler:        corev1.ProbeHandler{TCPSocket: &corev1.TCPSocketAction{Port: intstr.FromString("broker")}},
+		ProbeHandler:        brokerHTTPGet("/healthz"),
 		InitialDelaySeconds: kmv1.DefaultBrokerLivenessInitialDelaySec,
 		PeriodSeconds:       kmv1.DefaultBrokerLivenessPeriodSec,
 		TimeoutSeconds:      kmv1.DefaultBrokerLivenessTimeoutSec,

@@ -120,8 +120,9 @@ func TestMultiplexedServer_RoutesHTTPTraffic(t *testing.T) {
 	cert, err := sharedtls.GenerateX509KeyPair()
 	require.NoError(t, err)
 
-	srv, err := newMultiplexedServer(0, testRuntime(t), stubCardHandler(), cert)
+	srv, ln, err := newMultiplexedServer(0, testRuntime(t), stubCardHandler(), cert)
 	require.NoError(t, err)
+	t.Cleanup(func() { _ = ln.Close() })
 	ts := httptest.NewServer(srv.Handler)
 	t.Cleanup(ts.Close)
 
@@ -177,8 +178,9 @@ func TestMultiplexedServer_NoPassthroughLeavesUnknownPaths404(t *testing.T) {
 
 	cert, err := sharedtls.GenerateX509KeyPair()
 	require.NoError(t, err)
-	srv, err := newMultiplexedServer(0, rt, stubCardHandler(), cert)
+	srv, ln, err := newMultiplexedServer(0, rt, stubCardHandler(), cert)
 	require.NoError(t, err)
+	t.Cleanup(func() { _ = ln.Close() })
 	ts := httptest.NewServer(srv.Handler)
 	t.Cleanup(ts.Close)
 
@@ -197,20 +199,15 @@ func startTLSServer(t *testing.T) (port int, cert *tls.Certificate) {
 	cert, err := sharedtls.GenerateX509KeyPair()
 	require.NoError(t, err)
 
-	// Bind to an OS-assigned port up front so the test can dial it back.
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	// newMultiplexedServer binds the (TLS) listener itself on an OS-assigned
+	// port; read the chosen port back so the test can dial it.
+	srv, ln, err := newMultiplexedServer(0, testRuntime(t), stubCardHandler(), cert)
 	require.NoError(t, err)
 	port = ln.Addr().(*net.TCPAddr).Port
 
-	srv, err := newMultiplexedServer(port, testRuntime(t), stubCardHandler(), cert)
-	require.NoError(t, err)
-
-	tlsLn := tls.NewListener(ln, srv.TLSConfig)
 	serveErr := make(chan error, 1)
 	go func() {
-		// srv.Serve treats the listener as already-TLS-wrapped, which is
-		// what we want — TLSConfig.Certificates is the source of truth.
-		serveErr <- srv.Serve(tlsLn)
+		serveErr <- srv.Serve(ln)
 	}()
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

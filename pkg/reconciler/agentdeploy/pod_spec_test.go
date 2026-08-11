@@ -492,8 +492,10 @@ func TestBuildPodSpec_BrokerProbes(t *testing.T) {
 	require.Equal(t, kmv1.ContainerNameAgentBroker, broker.Name)
 
 	require.NotNil(t, broker.ReadinessProbe)
-	require.NotNil(t, broker.ReadinessProbe.TCPSocket, "readiness gates on the :8490 listener")
-	assert.Equal(t, "broker", broker.ReadinessProbe.TCPSocket.Port.String())
+	require.NotNil(t, broker.ReadinessProbe.HTTPGet, "readiness hits the broker's own /readyz over HTTPS")
+	assert.Equal(t, "/readyz", broker.ReadinessProbe.HTTPGet.Path)
+	assert.Equal(t, "introspect", broker.ReadinessProbe.HTTPGet.Port.String())
+	assert.Equal(t, corev1.URISchemeHTTPS, broker.ReadinessProbe.HTTPGet.Scheme)
 	assert.Equal(t, kmv1.DefaultBrokerReadinessInitialDelaySec, broker.ReadinessProbe.InitialDelaySeconds)
 	assert.Equal(t, kmv1.DefaultBrokerReadinessPeriodSec, broker.ReadinessProbe.PeriodSeconds)
 	assert.Equal(t, kmv1.DefaultBrokerReadinessTimeoutSec, broker.ReadinessProbe.TimeoutSeconds)
@@ -501,8 +503,10 @@ func TestBuildPodSpec_BrokerProbes(t *testing.T) {
 	assert.Equal(t, kmv1.DefaultBrokerReadinessSuccessThreshold, broker.ReadinessProbe.SuccessThreshold)
 
 	require.NotNil(t, broker.LivenessProbe)
-	require.NotNil(t, broker.LivenessProbe.TCPSocket)
-	assert.Equal(t, "broker", broker.LivenessProbe.TCPSocket.Port.String())
+	require.NotNil(t, broker.LivenessProbe.HTTPGet)
+	assert.Equal(t, "/healthz", broker.LivenessProbe.HTTPGet.Path)
+	assert.Equal(t, "introspect", broker.LivenessProbe.HTTPGet.Port.String())
+	assert.Equal(t, corev1.URISchemeHTTPS, broker.LivenessProbe.HTTPGet.Scheme)
 	assert.Equal(t, kmv1.DefaultBrokerLivenessInitialDelaySec, broker.LivenessProbe.InitialDelaySeconds)
 	assert.Equal(t, kmv1.DefaultBrokerLivenessPeriodSec, broker.LivenessProbe.PeriodSeconds)
 	assert.Equal(t, kmv1.DefaultBrokerLivenessTimeoutSec, broker.LivenessProbe.TimeoutSeconds)
@@ -518,9 +522,9 @@ func TestBuildPodSpec_BrokerTemplatePreservesProbes(t *testing.T) {
 	broker := buildPodSpec(ad, testBrokerImage, "").Containers[0]
 
 	require.NotNil(t, broker.ReadinessProbe, "BrokerTemplate must not clobber controller-owned probes")
-	require.NotNil(t, broker.ReadinessProbe.TCPSocket)
+	require.NotNil(t, broker.ReadinessProbe.HTTPGet)
 	require.NotNil(t, broker.LivenessProbe)
-	require.NotNil(t, broker.LivenessProbe.TCPSocket)
+	require.NotNil(t, broker.LivenessProbe.HTTPGet)
 }
 
 func TestBuildPodSpec_BrokerPreStopDrain(t *testing.T) {

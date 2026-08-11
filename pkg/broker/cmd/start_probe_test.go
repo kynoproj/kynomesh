@@ -146,8 +146,9 @@ func TestMultiplexedServer_NoCardHandler(t *testing.T) {
 
 	cert, err := sharedtls.GenerateX509KeyPair()
 	require.NoError(t, err)
-	srv, err := newMultiplexedServer(0, rt, nil, cert)
+	srv, ln, err := newMultiplexedServer(0, rt, nil, cert)
 	require.NoError(t, err)
+	t.Cleanup(func() { _ = ln.Close() })
 	ts := httptest.NewServer(srv.Handler)
 	t.Cleanup(ts.Close)
 

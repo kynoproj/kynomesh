@@ -24,10 +24,12 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -202,7 +204,11 @@ type brokerRuntime struct {
 type brokerStack struct {
 	rt               *brokerRuntime
 	proxySrv         *http.Server
+	proxyLn          net.Listener
 	introspectionSrv *http.Server
+	// proxyServing is flipped true once the :8490 listener is being served;
+	// /readyz reads it so readiness reflects the A2A port, not just the process.
+	proxyServing *atomic.Bool
 }
 
 func assembleBroker(ctx context.Context, port, introspectionPort int) (*brokerStack, error) {
@@ -262,19 +268,28 @@ func assembleBroker(ctx context.Context, port, introspectionPort int) (*brokerSt
 		return nil, fmt.Errorf("generate broker TLS certificate: %w", err)
 	}
 
-	proxySrv, err := newMultiplexedServer(port, rt, cardProxy, cert)
+	proxySrv, proxyLn, err := newMultiplexedServer(port, rt, cardProxy, cert)
 	if err != nil {
 		return nil, fmt.Errorf("build broker server: %w", err)
 	}
 
-	ready := func() error { return nil }
+	// proxyServing flips true once the :8490 A2A listener is being served.
+	proxyServing := &atomic.Bool{}
+	ready := func() error {
+		if !proxyServing.Load() {
+			return fmt.Errorf("broker A2A listener not accepting yet")
+		}
+		return nil
+	}
 	introspectionHandler := broker.NewIntrospectionHandler(ctx, metricsRegistry, ready)
 	introspectionSrv := newIntrospectionServer(introspectionPort, introspectionHandler, cert)
 
 	return &brokerStack{
 		rt:               rt,
 		proxySrv:         proxySrv,
+		proxyLn:          proxyLn,
 		introspectionSrv: introspectionSrv,
+		proxyServing:     proxyServing,
 	}, nil
 }
 
@@ -322,7 +337,11 @@ func runServeLoop(ctx context.Context, stack *brokerStack, port, introspectionPo
 			zap.Int("port", port),
 			zap.Strings("enabledTransports", enabledTransportNames(rt.enabled)),
 			zap.Bool("tls", true))
-		if err := proxySrv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		// The listener is already bound (newMultiplexedServer); flip readiness now.
+		if stack.proxyServing != nil {
+			stack.proxyServing.Store(true)
+		}
+		if err := proxySrv.Serve(stack.proxyLn); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			mainServeErr <- fmt.Errorf("broker server: %w", err)
 			return
 		}
@@ -459,14 +478,15 @@ func grpcNewClient(target string) (*grpc.ClientConn, error) {
 	return grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
 }
 
-// newMultiplexedServer builds the shared TLS *http.Server. HTTP/2 is
-// negotiated via ALPN so gRPC shares the listener with HTTP/1.1 traffic.
+// newMultiplexedServer builds the shared TLS *http.Server and its bound TLS
+// listener. HTTP/2 is negotiated via ALPN so gRPC shares the listener with
+// HTTP/1.1 traffic.
 func newMultiplexedServer(
 	port int,
 	rt *brokerRuntime,
 	cardHandler http.Handler,
 	cert *tls.Certificate,
-) (*http.Server, error) {
+) (*http.Server, net.Listener, error) {
 	httpMux := http.NewServeMux()
 	if cardHandler != nil {
 		httpMux.Handle(a2asrv.WellKnownAgentCardPath, cardHandler)
@@ -502,9 +522,13 @@ func newMultiplexedServer(
 		},
 	}
 	if err := http2.ConfigureServer(srv, &http2.Server{}); err != nil {
-		return nil, fmt.Errorf("configure http/2: %w", err)
+		return nil, nil, fmt.Errorf("configure http/2: %w", err)
 	}
-	return srv, nil
+	ln, err := tls.Listen("tcp", srv.Addr, srv.TLSConfig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("broker listen: %w", err)
+	}
+	return srv, ln, nil
 }
 
 // isGRPCRequest reports whether r is an HTTP/2 request with a gRPC Content-Type.
