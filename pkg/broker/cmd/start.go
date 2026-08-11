@@ -342,7 +342,7 @@ func runServeLoop(ctx context.Context, stack *brokerStack, port, introspectionPo
 	}()
 
 	// Wait for either a shutdown signal or a fatal server exit on
-	// either listener. Once one fires, gracefully shut both down.
+	// either listener. Once one fires, gracefully shut everybody down.
 	select {
 	case <-ctx.Done():
 		logger.Infow("Broker received shutdown signal, stopping transports")
@@ -352,10 +352,7 @@ func runServeLoop(ctx context.Context, stack *brokerStack, port, introspectionPo
 		return err
 	}
 
-	// The post-SIGTERM shutdown budget is a small tail of the grace period; the
-	// preStop drain has already emptied in-flight before SIGTERM, so this only
-	// mops up the residue. Deriving from the grace period keeps it bounded well
-	// inside the kubelet's SIGKILL deadline.
+	// Shutdown.
 	shutdownTimeout := resolveBudgets().Shutdown
 	logger.Infow("Broker shutting down", zap.Duration("budget", shutdownTimeout))
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
@@ -379,9 +376,7 @@ func runServeLoop(ctx context.Context, stack *brokerStack, port, introspectionPo
 	return nil
 }
 
-// stopGRPCWithin drains the gRPC server gracefully but no longer than budget:
-// GracefulStop runs in a goroutine, and if it hasn't finished when the budget
-// elapses, Stop force-closes it so shutdown can't hang past the grace period.
+// stopGRPCWithin drains the gRPC server gracefully but no longer than budget.
 func stopGRPCWithin(srv *grpc.Server, budget time.Duration) {
 	done := make(chan struct{})
 	go func() {

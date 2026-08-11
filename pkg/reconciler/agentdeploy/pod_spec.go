@@ -29,9 +29,6 @@ import (
 func buildPodSpec(ad *kmv1.AgentDeploy, image string, imagePullPolicy corev1.PullPolicy) corev1.PodSpec {
 	encodedAgentDeploy := kmv1.EncodeAgentDeploy(ad)
 
-	// Resolve the effective grace period up front: the user's pod-template value
-	// if set, else the default. The broker derives its drain and shutdown
-	// budgets from this, so it is injected into the broker container's env.
 	grace := kmv1.DefaultTerminationGracePeriodSeconds
 	if ad.Spec.TerminationGracePeriodSeconds != nil {
 		grace = *ad.Spec.TerminationGracePeriodSeconds
@@ -228,9 +225,7 @@ func mergeEnv(existing, overrides []corev1.EnvVar) []corev1.EnvVar {
 	return out
 }
 
-// newBrokerContainer builds the broker sidecar. graceSeconds is the pod's
-// terminationGracePeriodSeconds, injected so the broker can derive its drain
-// and post-SIGTERM shutdown budgets from it.
+// newBrokerContainer builds the broker sidecar.
 func newBrokerContainer(image string, pullPolicy corev1.PullPolicy, encodedAgentDeploy string, tmpl *kmv1.ContainerTemplate, graceSeconds int64) corev1.Container {
 	c := corev1.Container{
 		Name:            kmv1.ContainerNameAgentBroker,
