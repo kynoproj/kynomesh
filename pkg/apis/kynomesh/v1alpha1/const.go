@@ -45,11 +45,7 @@ const (
 	EnvImagePullPolicy             = "KYNOMESH_IMAGE_PULL_POLICY"
 	EnvPPROFEnabled                = "KYNOMESH_PPROF_ENABLED"
 	EnvAgentSetAgentDeploys        = "KYNOMESH_AGENTSET_AGENTDEPLOYS"
-	// EnvTerminationGraceSeconds carries the pod's terminationGracePeriodSeconds
-	// to the broker (the Downward API can't expose spec.terminationGracePeriodSeconds,
-	// so the controller injects the resolved value). The broker derives its
-	// preStop drain and post-SIGTERM shutdown budgets from it.
-	EnvTerminationGraceSeconds = "KYNOMESH_TERMINATION_GRACE_SECONDS"
+	EnvTerminationGraceSeconds     = "KYNOMESH_TERMINATION_GRACE_SECONDS"
 
 	// Container names
 	ContainerNameAgent       = "agent"

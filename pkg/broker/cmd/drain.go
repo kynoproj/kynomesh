@@ -52,17 +52,12 @@ type DrainConfig struct {
 	PollInterval time.Duration
 }
 
-// drainPollInterval is how often the preStop drain re-checks in-flight. Fixed
-// cadence (not derived from the grace period): a couple seconds balances
-// responsiveness against scrape overhead.
+// drainPollInterval is how often the preStop drain re-checks in-flight.
 const drainPollInterval = 2 * time.Second
 
-// RunDrain is the entrypoint for the `drain` preStop subcommand. The
-// propagation and budget are derived from the pod's terminationGracePeriodSeconds
-// (injected as an env var) so there is a single knob. It sets up logging and
-// runs Drain to completion. It never fails the hook: a drain that times out is
-// expected behavior (the post-SIGTERM shutdown handles residue), so the preStop
-// exits 0 regardless.
+// RunDrain is the entrypoint for the `drain` preStop subcommand. It never fails
+// the hook: a drain that times out is expected behavior (the post-SIGTERM shutdown
+// handles residue), so the preStop exits 0 regardless.
 func RunDrain(introspectionPort int) {
 	logger := logging.WithAgentLabels(logging.NewLogger().Named("broker-drain"))
 	// No signal handling on purpose: preStop runs before SIGTERM is delivered,

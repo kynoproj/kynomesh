@@ -29,24 +29,17 @@ import (
 // drain finishes before SIGTERM, then the post-SIGTERM shutdown runs — so their
 // maxima plus a safety margin must fit within the grace period, or the kubelet
 // SIGKILLs mid-shutdown.
-//
-// terminationGracePeriodSeconds is the single knob: everything below is derived
-// from it, so the budgets stay consistent no matter how the operator sets it.
 type terminationBudgets struct {
 	// Propagation is a fixed initial wait in the preStop drain that lets
 	// Kubernetes finish removing the pod from Service endpoints.
 	Propagation time.Duration
 	// Drain is the preStop poll-until-idle budget (includes Propagation).
 	Drain time.Duration
-	// Shutdown is the post-SIGTERM http/gRPC graceful-stop budget. It is a small
-	// tail because the preStop drain has already emptied in-flight before SIGTERM;
-	// this only mops up the residue.
+	// Shutdown is the post-SIGTERM http/gRPC graceful-stop budget.
 	Shutdown time.Duration
 }
 
-// deriveBudgets splits a grace period into its phases. Guards keep tiny and huge
-// grace periods sane: shutdown and propagation are clamped, a margin is
-// reserved, and drain takes whatever remains (never negative).
+// deriveBudgets splits a grace period into its phases.
 func deriveBudgets(grace time.Duration) terminationBudgets {
 	const margin = 2 * time.Second
 	propagation := clampDuration(grace/20, 2*time.Second, 10*time.Second)

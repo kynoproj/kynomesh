@@ -27,8 +27,7 @@ import (
 // NewDrainCommand returns the "drain" subcommand, run as the broker pod's
 // preStop hook. It waits for in-flight requests to finish before the container
 // is terminated, so scale-down and rolling updates don't cut long-running
-// agentic requests. Its timing is derived from the pod's
-// terminationGracePeriodSeconds (injected as an env var) — no separate knobs.
+// agentic requests.
 func NewDrainCommand() *cobra.Command {
 	var introspectionPort int
 
