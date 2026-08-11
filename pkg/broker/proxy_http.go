@@ -22,29 +22,34 @@ import (
 	"net/url"
 )
 
-func NewJSONRPCReverseProxy(agentTransport *http.Transport, counters *Metrics) http.Handler {
-	return newAgentReverseProxy(agentTransport, counters.JSONRPCSet())
+// The A2A proxies (JSON-RPC, REST) are gated by limiter so admitted in-flight
+// requests count against the broker's max-in-flight cap.
+func NewJSONRPCReverseProxy(agentTransport *http.Transport, counters *Metrics, limiter Limiter) http.Handler {
+	return newAgentReverseProxy(agentTransport, limiter, counters.JSONRPCSet())
 }
 
-func NewRESTReverseProxy(agentTransport *http.Transport, counters *Metrics) http.Handler {
-	return newAgentReverseProxy(agentTransport, counters.RESTSet())
+func NewRESTReverseProxy(agentTransport *http.Transport, counters *Metrics, limiter Limiter) http.Handler {
+	return newAgentReverseProxy(agentTransport, limiter, counters.RESTSet())
 }
 
 // NewPassthroughReverseProxy is the catch-all for non-A2A routes (custom
-// REST, UIs, WebSocket upgrades) so they remain observable separately.
+// REST, UIs, WebSocket upgrades) so they remain observable separately. It is
+// deliberately NOT rate-limited — a long-lived UI or WebSocket must not consume
+// an A2A in-flight slot — so no limiter is threaded here.
 func NewPassthroughReverseProxy(agentTransport *http.Transport, counters *Metrics) http.Handler {
-	return newAgentReverseProxy(agentTransport, counters.PassthroughSet())
+	return newAgentReverseProxy(agentTransport, nil, counters.PassthroughSet())
 }
 
 // newAgentReverseProxy builds a reverse proxy whose Director plants a
 // synthetic AgentBackendHost target; the supplied transport handles the
-// real dial (UDS or TCP).
-func newAgentReverseProxy(agentTransport *http.Transport, set transportSet) http.Handler {
+// real dial (UDS or TCP). A nil limiter disables admission control for the
+// route.
+func newAgentReverseProxy(agentTransport *http.Transport, limiter Limiter, set transportSet) http.Handler {
 	target := &url.URL{Scheme: "http", Host: AgentBackendHost}
 	rp := httputil.NewSingleHostReverseProxy(target)
 	rp.Transport = agentTransport
 	// FlushInterval = -1 disables proxy-side buffering so server-sent
 	// events reach the client byte-for-byte as the agent emits them.
 	rp.FlushInterval = -1
-	return wrapHTTP(set, rp)
+	return wrapHTTP(limiter, set, rp)
 }

@@ -18,11 +18,17 @@ package broker
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
+
+// retryAfterSeconds is the Retry-After hint returned with an HTTP 429 when the
+// broker sheds a request at its in-flight cap. It is a coarse backoff nudge for
+// well-behaved clients, not a precise availability estimate.
+const retryAfterSeconds = 1
 
 // Transport label values. The set is closed: the broker emits one of
 // these on every metric, the daemon's scraper is label-agnostic but
@@ -47,6 +53,7 @@ var requestDurationBuckets = []float64{
 type Metrics struct {
 	inflight        *prometheus.GaugeVec
 	requests        *prometheus.CounterVec
+	rejected        *prometheus.CounterVec
 	streamMessages  *prometheus.CounterVec
 	requestDuration *prometheus.HistogramVec
 }
@@ -66,6 +73,13 @@ func NewMetrics(registry prometheus.Registerer) *Metrics {
 			prometheus.CounterOpts{
 				Name: "broker_requests_total",
 				Help: "Total number of requests the broker has handled, by transport. One increment per HTTP request completion or gRPC stream close.",
+			},
+			[]string{"transport"},
+		),
+		rejected: promauto.With(registry).NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "broker_rejected_total",
+				Help: "Total number of requests the broker rejected at admission because the max in-flight cap was reached, by transport. HTTP rejections return 429; gRPC returns RESOURCE_EXHAUSTED.",
 			},
 			[]string{"transport"},
 		),
@@ -102,6 +116,7 @@ func (c *Metrics) Passthrough() prometheus.Gauge {
 type transportSet struct {
 	inflight       prometheus.Gauge
 	requests       prometheus.Counter
+	rejected       prometheus.Counter
 	streamMessages prometheus.Counter
 	duration       prometheus.Observer
 }
@@ -110,6 +125,7 @@ func (c *Metrics) setFor(transport string) transportSet {
 	return transportSet{
 		inflight:       c.inflight.WithLabelValues(transport),
 		requests:       c.requests.WithLabelValues(transport),
+		rejected:       c.rejected.WithLabelValues(transport),
 		streamMessages: c.streamMessages.WithLabelValues(transport),
 		duration:       c.requestDuration.WithLabelValues(transport),
 	}
@@ -135,8 +151,23 @@ func (c *Metrics) PassthroughSet() transportSet { return c.setFor(TransportPasst
 // Defers keep the gauge balanced and the request counted through
 // panics — important because the upstream reverse proxy can panic
 // on transport errors mid-stream.
-func wrapHTTP(set transportSet, h http.Handler) http.Handler {
+//
+// limiter admits or sheds requests at the in-flight cap. At capacity the
+// request is rejected with 429 + Retry-After before it reaches the agent, and
+// counted in broker_rejected_total rather than the inflight/requests metrics.
+// A nil limiter admits everything (no cap configured).
+func wrapHTTP(limiter Limiter, set transportSet, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if limiter != nil {
+			release, ok := limiter.Acquire()
+			if !ok {
+				set.rejected.Inc()
+				w.Header().Set("Retry-After", strconv.Itoa(retryAfterSeconds))
+				http.Error(w, "broker at max in-flight capacity", http.StatusTooManyRequests)
+				return
+			}
+			defer release()
+		}
 		set.inflight.Inc()
 		start := time.Now()
 		rec := newStreamRecorder(w, set.streamMessages)

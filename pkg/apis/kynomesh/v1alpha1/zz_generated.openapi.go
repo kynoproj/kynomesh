@@ -43,6 +43,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata":              schema_pkg_apis_kynomesh_v1alpha1_Metadata(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Peer":                  schema_pkg_apis_kynomesh_v1alpha1_Peer(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Probe":                 schema_pkg_apis_kynomesh_v1alpha1_Probe(ref),
+		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.RateLimit":             schema_pkg_apis_kynomesh_v1alpha1_RateLimit(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.RollingUpdateStrategy": schema_pkg_apis_kynomesh_v1alpha1_RollingUpdateStrategy(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale":                 schema_pkg_apis_kynomesh_v1alpha1_Scale(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Status":                schema_pkg_apis_kynomesh_v1alpha1_Status(ref),
@@ -246,6 +247,12 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale"),
 						},
 					},
+					"rateLimit": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RateLimit configures broker-side admission control. When unset, the broker admits requests without limit.",
+							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.RateLimit"),
+						},
+					},
 					"initContainers": {
 						SchemaProps: spec.SchemaProps{
 							Description: "List of customized init containers belonging to the pod. More info: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/",
@@ -293,7 +300,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 			},
 		},
 		Dependencies: []string{
-			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.RateLimit", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
 	}
 }
 
@@ -744,6 +751,12 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale"),
 						},
 					},
+					"rateLimit": {
+						SchemaProps: spec.SchemaProps{
+							Description: "RateLimit configures broker-side admission control. When unset, the broker admits requests without limit.",
+							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.RateLimit"),
+						},
+					},
 					"initContainers": {
 						SchemaProps: spec.SchemaProps{
 							Description: "List of customized init containers belonging to the pod. More info: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/",
@@ -812,7 +825,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Topology", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.RateLimit", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Topology", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
 	}
 }
 
@@ -1639,6 +1652,26 @@ func schema_pkg_apis_kynomesh_v1alpha1_Probe(ref common.ReferenceCallback) commo
 					"failureThreshold": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_pkg_apis_kynomesh_v1alpha1_RateLimit(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "RateLimit configures broker-side admission control for an agent.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"maxInFlight": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MaxInFlight caps the number of concurrent in-flight A2A requests the broker admits. Requests beyond the cap are rejected immediately (HTTP 429 with Retry-After, gRPC RESOURCE_EXHAUSTED) instead of being queued. Only A2A traffic (JSON-RPC, REST, gRPC) counts against the cap; passthrough (non-A2A) traffic is not gated. 0 or unset means unlimited.",
 							Type:        []string{"integer"},
 							Format:      "int32",
 						},

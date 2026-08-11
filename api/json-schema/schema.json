@@ -23586,6 +23586,10 @@
           "description": "PublicBaseURL is the externally reachable base URL of this agent's broker (e.g. https://agent.example.com). When set, the broker uses it to rewrite AgentCard SupportedInterfaces URLs so external clients can reach the agent through an ingress or gateway in front of the cluster. If empty, the broker advertises its in-cluster address.",
           "type": "string"
         },
+        "rateLimit": {
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.RateLimit",
+          "description": "RateLimit configures broker-side admission control. When unset, the broker admits requests without limit."
+        },
         "resourceClaims": {
           "description": "ResourceClaims defines which ResourceClaims must be allocated and reserved before the Pod is allowed to start. The resources will be made available to those containers which consume them by name.",
           "items": {
@@ -23855,6 +23859,10 @@
         "publicBaseURL": {
           "description": "PublicBaseURL is the externally reachable base URL of this agent's broker (e.g. https://agent.example.com). When set, the broker uses it to rewrite AgentCard SupportedInterfaces URLs so external clients can reach the agent through an ingress or gateway in front of the cluster. If empty, the broker advertises its in-cluster address.",
           "type": "string"
+        },
+        "rateLimit": {
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.RateLimit",
+          "description": "RateLimit configures broker-side admission control. When unset, the broker admits requests without limit."
         },
         "replicas": {
           "format": "int32",
@@ -24369,6 +24377,17 @@
         },
         "timeoutSeconds": {
           "description": "Number of seconds after which the probe times out. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "sh.kyno.kynomesh.v1alpha1.RateLimit": {
+      "description": "RateLimit configures broker-side admission control for an agent.",
+      "properties": {
+        "maxInFlight": {
+          "description": "MaxInFlight caps the number of concurrent in-flight A2A requests the broker admits. Requests beyond the cap are rejected immediately (HTTP 429 with Retry-After, gRPC RESOURCE_EXHAUSTED) instead of being queued. Only A2A traffic (JSON-RPC, REST, gRPC) counts against the cap; passthrough (non-A2A) traffic is not gated. 0 or unset means unlimited.",
           "format": "int32",
           "type": "integer"
         }

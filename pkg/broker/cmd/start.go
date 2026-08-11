@@ -426,6 +426,16 @@ func newIntrospectionServer(port int, handler http.Handler, cert *tls.Certificat
 func buildRuntime(ctx context.Context, registry *prometheus.Registry, agentTransport *http.Transport, card *a2a.AgentCard, agentDeploy *kmv1.AgentDeploy, dial agentDial) (*brokerRuntime, error) {
 	logger := logging.FromContext(ctx)
 	counters := broker.NewMetrics(registry)
+
+	// One limiter shared across all A2A transports: the cap is per-agent, and a
+	// single broker serves JSON-RPC, REST and gRPC for that agent. Passthrough
+	// (non-A2A) traffic is intentionally not gated.
+	maxInFlight := resolveMaxInFlight(agentDeploy)
+	limiter := broker.NewLimiter(maxInFlight)
+	if maxInFlight > 0 {
+		logger.Infow("Broker rate limiting enabled", zap.Int("maxInFlight", maxInFlight))
+	}
+
 	rt := &brokerRuntime{
 		logger:      logger,
 		counters:    counters,
@@ -442,10 +452,10 @@ func buildRuntime(ctx context.Context, registry *prometheus.Registry, agentTrans
 	for _, iface := range card.SupportedInterfaces {
 		switch iface.ProtocolBinding {
 		case a2a.TransportProtocolJSONRPC:
-			rt.httpProxies[iface.ProtocolBinding] = broker.NewJSONRPCReverseProxy(agentTransport, rt.counters)
+			rt.httpProxies[iface.ProtocolBinding] = broker.NewJSONRPCReverseProxy(agentTransport, rt.counters, limiter)
 			rt.enabled[iface.ProtocolBinding] = true
 		case a2a.TransportProtocolHTTPJSON:
-			rt.httpProxies[iface.ProtocolBinding] = broker.NewRESTReverseProxy(agentTransport, rt.counters)
+			rt.httpProxies[iface.ProtocolBinding] = broker.NewRESTReverseProxy(agentTransport, rt.counters, limiter)
 			rt.enabled[iface.ProtocolBinding] = true
 		case a2a.TransportProtocolGRPC:
 			conn, err := dialAgentGRPC(dial)
@@ -453,7 +463,7 @@ func buildRuntime(ctx context.Context, registry *prometheus.Registry, agentTrans
 				return nil, fmt.Errorf("dial agent gRPC at %q: %w", dial.target(), err)
 			}
 			rt.grpcConn = conn
-			rt.grpcServer = grpc.NewServer(broker.GRPCPassthroughOptions(conn, rt.counters)...)
+			rt.grpcServer = grpc.NewServer(broker.GRPCPassthroughOptions(conn, rt.counters, limiter)...)
 			rt.enabled[iface.ProtocolBinding] = true
 		default:
 			logger.Warnw("Ignoring AgentCard interface with unsupported ProtocolBinding",
@@ -462,6 +472,16 @@ func buildRuntime(ctx context.Context, registry *prometheus.Registry, agentTrans
 		}
 	}
 	return rt, nil
+}
+
+// resolveMaxInFlight reads the per-agent max in-flight cap from the injected
+// AgentDeploy spec. Returns 0 (unlimited) when unset — the nil-safe path for
+// local-dev where no spec is injected.
+func resolveMaxInFlight(ad *kmv1.AgentDeploy) int {
+	if ad == nil || ad.Spec.RateLimit == nil || ad.Spec.RateLimit.MaxInFlight == nil {
+		return 0
+	}
+	return int(*ad.Spec.RateLimit.MaxInFlight)
 }
 
 // dialAgentGRPC is a test seam.
