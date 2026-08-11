@@ -551,6 +551,30 @@ func TestBuildPodSpec_TerminationGracePeriod(t *testing.T) {
 	})
 }
 
+func TestBuildPodSpec_BrokerGraceEnvInjected(t *testing.T) {
+	brokerGraceEnv := func(ad *kmv1.AgentDeploy) string {
+		broker := buildPodSpec(ad, testBrokerImage, "").Containers[0]
+		for _, e := range broker.Env {
+			if e.Name == kmv1.EnvTerminationGraceSeconds {
+				return e.Value
+			}
+		}
+		return ""
+	}
+
+	t.Run("default", func(t *testing.T) {
+		ad := newAgentDeploy("greeter", 1)
+		assert.Equal(t, "120", brokerGraceEnv(ad), "broker env carries the resolved grace period")
+	})
+
+	t.Run("user override", func(t *testing.T) {
+		ad := newAgentDeploy("greeter", 1)
+		custom := int64(300)
+		ad.Spec.TerminationGracePeriodSeconds = &custom
+		assert.Equal(t, "300", brokerGraceEnv(ad))
+	})
+}
+
 func TestBuildPodSpec_BrokerTemplateAppliedAfterDefaults(t *testing.T) {
 	// BrokerTemplate is the user's knob for tuning the controller-owned
 	// broker container — resources, env, securityContext, etc. — without

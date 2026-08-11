@@ -69,7 +69,6 @@ func TestNewDrainCommand_Metadata(t *testing.T) {
 	assert.Equal(t, "drain", c.Use)
 	assert.NotNil(t, c.Run, "drain command should have a Run handler")
 	require.NotNil(t, c.Flags().Lookup("introspection-port"), "expected --introspection-port flag")
-	require.NotNil(t, c.Flags().Lookup("budget-seconds"), "expected --budget-seconds flag")
 }
 
 func TestRootCmd_RunPrintsHelp(t *testing.T) {

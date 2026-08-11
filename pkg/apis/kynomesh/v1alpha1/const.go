@@ -45,6 +45,7 @@ const (
 	EnvImagePullPolicy             = "KYNOMESH_IMAGE_PULL_POLICY"
 	EnvPPROFEnabled                = "KYNOMESH_PPROF_ENABLED"
 	EnvAgentSetAgentDeploys        = "KYNOMESH_AGENTSET_AGENTDEPLOYS"
+	EnvTerminationGraceSeconds     = "KYNOMESH_TERMINATION_GRACE_SECONDS"
 
 	// Container names
 	ContainerNameAgent       = "agent"

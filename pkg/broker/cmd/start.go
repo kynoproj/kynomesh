@@ -63,8 +63,6 @@ func probeAgentCard(ctx context.Context, client *http.Client, baseURL string) (*
 }
 
 const (
-	shutdownTimeout = 10 * time.Second
-
 	// agentProbeTimeout caps the startup AgentCard fetch.
 	agentProbeTimeout = 5 * time.Second
 
@@ -344,7 +342,7 @@ func runServeLoop(ctx context.Context, stack *brokerStack, port, introspectionPo
 	}()
 
 	// Wait for either a shutdown signal or a fatal server exit on
-	// either listener. Once one fires, gracefully shut both down.
+	// either listener. Once one fires, gracefully shut everybody down.
 	select {
 	case <-ctx.Done():
 		logger.Infow("Broker received shutdown signal, stopping transports")
@@ -354,6 +352,9 @@ func runServeLoop(ctx context.Context, stack *brokerStack, port, introspectionPo
 		return err
 	}
 
+	// Shutdown.
+	shutdownTimeout := resolveBudgets().Shutdown
+	logger.Infow("Broker shutting down", zap.Duration("budget", shutdownTimeout))
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 	if err := proxySrv.Shutdown(shutdownCtx); err != nil {
@@ -363,7 +364,7 @@ func runServeLoop(ctx context.Context, stack *brokerStack, port, introspectionPo
 		logger.Warnw("Broker introspection shutdown error", zap.Error(err))
 	}
 	if rt.grpcServer != nil {
-		rt.grpcServer.GracefulStop()
+		stopGRPCWithin(rt.grpcServer, shutdownTimeout)
 	}
 
 	if err := <-mainServeErr; err != nil {
@@ -373,6 +374,20 @@ func runServeLoop(ctx context.Context, stack *brokerStack, port, introspectionPo
 		return err
 	}
 	return nil
+}
+
+// stopGRPCWithin drains the gRPC server gracefully but no longer than budget.
+func stopGRPCWithin(srv *grpc.Server, budget time.Duration) {
+	done := make(chan struct{})
+	go func() {
+		srv.GracefulStop()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(budget):
+		srv.Stop()
+	}
 }
 
 func newIntrospectionServer(port int, handler http.Handler, cert *tls.Certificate) *http.Server {

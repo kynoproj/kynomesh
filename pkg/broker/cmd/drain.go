@@ -52,16 +52,24 @@ type DrainConfig struct {
 	PollInterval time.Duration
 }
 
-// RunDrain is the entrypoint for the `drain` preStop subcommand. It sets up
-// logging and runs Drain to completion. It never fails the hook: a drain that
-// times out is expected behavior (the post-SIGTERM shutdown handles residue),
-// so the preStop exits 0 regardless.
-func RunDrain(cfg DrainConfig) {
+// drainPollInterval is how often the preStop drain re-checks in-flight.
+const drainPollInterval = 2 * time.Second
+
+// RunDrain is the entrypoint for the `drain` preStop subcommand. It never fails
+// the hook: a drain that times out is expected behavior (the post-SIGTERM shutdown
+// handles residue), so the preStop exits 0 regardless.
+func RunDrain(introspectionPort int) {
 	logger := logging.WithAgentLabels(logging.NewLogger().Named("broker-drain"))
 	// No signal handling on purpose: preStop runs before SIGTERM is delivered,
 	// so this process should drain for its full budget, not exit on SIGTERM.
 	ctx := logging.WithLogger(context.Background(), logger)
-	Drain(ctx, cfg)
+	b := resolveBudgets()
+	Drain(ctx, DrainConfig{
+		IntrospectionPort: introspectionPort,
+		PropagationDelay:  b.Propagation,
+		Budget:            b.Drain,
+		PollInterval:      drainPollInterval,
+	})
 }
 
 // Drain runs the preStop drain: wait out endpoint propagation, then poll the
