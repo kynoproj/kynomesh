@@ -46,6 +46,7 @@ func (s *FunctionalSuite) TestResearchAssistant() {
 		When().
 		WaitForAgentServicesReady().
 		AgentSetEntryPortForward(localPort).
+		Wait(2*time.Second).
 		SendA2AMessage(localPort, "Hello, what can you do?").
 		Expect().
 		AgentResponseContains(`via "searcher"`).
