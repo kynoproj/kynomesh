@@ -1,5 +1,4 @@
-site_name:
-  Kynomesh - Distributed multi-agent orchestration platform on Kubernetes
+site_name: Kynomesh - Distributed multi-agent orchestration
 repo_url: https://github.com/kynoproj/kynomesh
 edit_uri: edit/main/docs/
 strict: true
