@@ -13,7 +13,7 @@
     
     
       
-        <title>Agent Discovery - Kynomesh - Distributed multi-agent orchestration</title>
+        <title>Rate limiting - Kynomesh - Distributed multi-agent orchestration</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#agent-discovery" class="md-skip">
+        <a href="#rate-limiting" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Agent Discovery
+              Rate limiting
             
           </span>
         </div>
@@ -232,6 +232,8 @@
         
   
   
+    
+  
 
 
   
@@ -243,7 +245,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../core-concepts/overview/" class="md-tabs__link">
+      <a href="../../../core-concepts/overview/" class="md-tabs__link md-tabs__link--active">
         User Guide
       </a>
     </li>
@@ -271,15 +273,13 @@
         
   
   
-    
-  
 
 
   
   
   
     <li class="md-tabs__item">
-      <a href="../../development/" class="md-tabs__link md-tabs__link--active">
+      <a href="../../../development/development/" class="md-tabs__link">
         Contributor Guide
       </a>
     </li>
@@ -404,12 +404,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
       
       
       
@@ -505,12 +507,14 @@
               
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" checked>
       
       
       
@@ -533,7 +537,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../user-guide/reference/autoscaling/" class="md-nav__link">
+      <a href="../autoscaling/" class="md-nav__link">
         Autoscaling
       </a>
     </li>
@@ -545,11 +549,101 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../../user-guide/reference/rate-limiting/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Rate limiting
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Rate limiting
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-use-it" class="md-nav__link">
+    When to use it
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-it-caps" class="md-nav__link">
+    What it caps
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    Configuration
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-happens-at-the-limit" class="md-nav__link">
+    What happens at the limit
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fleet-wide-not-per-pod" class="md-nav__link">
+    Fleet-wide, not per-pod
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interaction-with-autoscaling" class="md-nav__link">
+    Interaction with autoscaling
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#observability" class="md-nav__link">
+    Observability
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    See Also
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -650,14 +744,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
       
       
       
@@ -680,7 +772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../development/" class="md-nav__link">
+      <a href="../../../development/development/" class="md-nav__link">
         Development
       </a>
     </li>
@@ -692,14 +784,12 @@
               
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_2" type="checkbox" id="__nav_5_2" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_2" type="checkbox" id="__nav_5_2" >
       
       
       
@@ -720,100 +810,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Agent Discovery
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../development/specifications/agent-discovery/" class="md-nav__link">
         Agent Discovery
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#services-per-agentsetagentdeploy" class="md-nav__link">
-    Services per AgentSet/AgentDeploy
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#external-path-agentset-entry-service" class="md-nav__link">
-    External path: AgentSet entry service
-  </a>
-  
-    <nav class="md-nav" aria-label="External path: AgentSet entry service">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#port" class="md-nav__link">
-    Port
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#peer-path-per-agentdeploy-clusterip-service" class="md-nav__link">
-    Peer path: per-AgentDeploy ClusterIP service
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#per-pod-introspection-headless-service" class="md-nav__link">
-    Per-pod introspection: headless service
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#topology-file" class="md-nav__link">
-    Topology file
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#end-to-end-request-flow" class="md-nav__link">
-    End-to-end request flow
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -832,7 +833,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../static-code-analysis/" class="md-nav__link">
+      <a href="../../../development/static-code-analysis/" class="md-nav__link">
         Static Code Analysis
       </a>
     </li>
@@ -873,56 +874,57 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#services-per-agentsetagentdeploy" class="md-nav__link">
-    Services per AgentSet/AgentDeploy
+  <a href="#when-to-use-it" class="md-nav__link">
+    When to use it
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#external-path-agentset-entry-service" class="md-nav__link">
-    External path: AgentSet entry service
-  </a>
-  
-    <nav class="md-nav" aria-label="External path: AgentSet entry service">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#port" class="md-nav__link">
-    Port
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#peer-path-per-agentdeploy-clusterip-service" class="md-nav__link">
-    Peer path: per-AgentDeploy ClusterIP service
+  <a href="#what-it-caps" class="md-nav__link">
+    What it caps
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#per-pod-introspection-headless-service" class="md-nav__link">
-    Per-pod introspection: headless service
+  <a href="#configuration" class="md-nav__link">
+    Configuration
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#topology-file" class="md-nav__link">
-    Topology file
+  <a href="#what-happens-at-the-limit" class="md-nav__link">
+    What happens at the limit
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#end-to-end-request-flow" class="md-nav__link">
-    End-to-end request flow
+  <a href="#fleet-wide-not-per-pod" class="md-nav__link">
+    Fleet-wide, not per-pod
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interaction-with-autoscaling" class="md-nav__link">
+    Interaction with autoscaling
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#observability" class="md-nav__link">
+    Observability
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    See Also
   </a>
   
 </li>
@@ -939,154 +941,114 @@
             <article class="md-content__inner md-typeset">
               
                 
-  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/development/specifications/agent-discovery.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/user-guide/reference/rate-limiting.md" title="Edit this page" class="md-content__button md-icon">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
 
-<h1 id="agent-discovery">Agent Discovery<a class="headerlink" href="#agent-discovery" title="Permanent link">&para;</a></h1>
-<blockquote>
-<p>[!NOTE] This document is for Kynomesh contributors. It describes the internal
-mechanics of how callers and peer agents find and reach agents inside an
-AgentSet.</p>
-</blockquote>
-<p>There are three distinct discovery paths in Kynomesh, each backed by a different
-Kubernetes Service object:</p>
-<ol>
-<li><strong>External callers → AgentSet entry.</strong> A normal ClusterIP Service owned by
-   the AgentSet, routing to the <em>entry</em> AgentDeploy's pods.</li>
-<li><strong>Peer-to-peer (agent → sibling broker).</strong> A normal ClusterIP Service owned
-   by each sibling AgentDeploy, load-balancing across that sibling's pods.</li>
-<li><strong>Per-pod introspection (scraper → individual pod).</strong> A headless Service
-   owned by each AgentDeploy, exposing each pod's broker introspection port
-   under a stable DNS name. Used by per-pod metrics scrapers, primarily for
-   autoscaling.</li>
-</ol>
-<h2 id="services-per-agentsetagentdeploy">Services per AgentSet/AgentDeploy<a class="headerlink" href="#services-per-agentsetagentdeploy" title="Permanent link">&para;</a></h2>
-<p>For an AgentSet <code>greeter</code> with agents <code>planner</code> (entry) and <code>worker</code>, the
-following objects are created in the namespace:</p>
+<h1 id="rate-limiting">Rate limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h1>
+<p><code>Kynomesh</code> can cap how much load each agent admits, shedding the excess rather
+than letting it queue. Set a per-agent <strong>maximum in-flight</strong> limit and the
+agent's broker rejects requests beyond the cap instead of forwarding them to
+your agent container.</p>
+<p>This is enforcement, not just observation: once an agent is at its limit, new
+requests are refused immediately so the agent — and whatever it depends on —
+stays within budget.</p>
+<h2 id="when-to-use-it">When to use it<a class="headerlink" href="#when-to-use-it" title="Permanent link">&para;</a></h2>
+<p>The typical reason is an <strong>external dependency with a hard ceiling</strong>: an LLM
+provider quota, a rate-limited downstream API, or a shared database you don't
+want a single agent to overwhelm. A concurrency cap bounds how many requests can
+be in flight against that dependency at once.</p>
+<p>For agentic (LLM/tool) workloads the binding resource is <em>slot occupancy</em> — each
+in-flight request holds a context and an upstream connection for the duration of
+a (often multi-second) call. Capping concurrency bounds that directly, which is
+why the limit is expressed as <strong>max in-flight requests</strong> rather than
+requests-per-second.</p>
+<h2 id="what-it-caps">What it caps<a class="headerlink" href="#what-it-caps" title="Permanent link">&para;</a></h2>
+<p>Only <strong>A2A traffic</strong> (JSON-RPC, REST, and gRPC) counts against the limit.
+Passthrough traffic — custom REST endpoints, UIs, WebSocket upgrades the broker
+also proxies — is <strong>not</strong> gated, so a long-lived UI or WebSocket connection
+never consumes an in-flight slot meant for A2A requests.</p>
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<p><code>rateLimit</code> is set per agent, on each entry under the AgentSet's <code>agents</code> list:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh.kyno.sh/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AgentSet</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">research-assistant</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Supervisor</span>
+<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coordinator</span>
+<span class="w">  </span><span class="nt">agents</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coordinator</span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example/coordinator:latest</span>
+<span class="w">      </span><span class="nt">rateLimit</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">maxInFlight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span><span class="w"> </span><span class="c1"># Max concurrent in-flight A2A requests for this agent.</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">searcher</span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example/searcher:latest</span>
+<span class="w">      </span><span class="c1"># No rateLimit block: searcher admits requests without limit.</span>
+</code></pre></div>
+<ul>
+<li><code>maxInFlight</code> — the maximum number of concurrent in-flight A2A requests the
+  agent admits across its whole fleet. <code>0</code> or unset means <strong>unlimited</strong>.</li>
+</ul>
+<h2 id="what-happens-at-the-limit">What happens at the limit<a class="headerlink" href="#what-happens-at-the-limit" title="Permanent link">&para;</a></h2>
+<p>When an agent is already handling <code>maxInFlight</code> requests, the broker rejects the
+next one immediately, before it reaches your agent container:</p>
 <table>
 <thead>
 <tr>
-<th>Service</th>
-<th>Owner</th>
-<th>Type</th>
-<th>Selector matches</th>
+<th>Transport</th>
+<th>Rejection</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>greeter-ingress</code></td>
-<td>AgentSet <code>greeter</code></td>
-<td>ClusterIP</td>
-<td>entry pods of <code>greeter</code> (any AgentDeploy)</td>
+<td>JSON-RPC / REST</td>
+<td>HTTP <code>429 Too Many Requests</code> with <code>Retry-After</code></td>
 </tr>
 <tr>
-<td><code>greeter-planner</code></td>
-<td>AgentDeploy <code>greeter-planner</code></td>
-<td>ClusterIP</td>
-<td>pods of the <code>planner</code> AgentDeploy</td>
-</tr>
-<tr>
-<td><code>greeter-planner-headless</code></td>
-<td>AgentDeploy <code>greeter-planner</code></td>
-<td>Headless</td>
-<td>pods of the <code>planner</code> AgentDeploy</td>
-</tr>
-<tr>
-<td><code>greeter-worker</code></td>
-<td>AgentDeploy <code>greeter-worker</code></td>
-<td>ClusterIP</td>
-<td>pods of the <code>worker</code> AgentDeploy</td>
-</tr>
-<tr>
-<td><code>greeter-worker-headless</code></td>
-<td>AgentDeploy <code>greeter-worker</code></td>
-<td>Headless</td>
-<td>pods of the <code>worker</code> AgentDeploy</td>
+<td>gRPC</td>
+<td><code>RESOURCE_EXHAUSTED</code></td>
 </tr>
 </tbody>
 </table>
-<p>The naming convention is fixed:</p>
+<p>Clients should treat these as back-pressure and retry with backoff.</p>
+<h2 id="fleet-wide-not-per-pod">Fleet-wide, not per-pod<a class="headerlink" href="#fleet-wide-not-per-pod" title="Permanent link">&para;</a></h2>
+<p><code>maxInFlight</code> is the cap for the <strong>whole agent</strong>, not per replica. When an agent
+runs multiple replicas, they share the limit so the fleet together stays near
+it.</p>
+<p>The cap is <strong>approximate</strong>: it can drift briefly while the agent is scaling, and
+under heavy load the fleet may admit slightly more than <code>maxInFlight</code>. Treat it
+as a target rather than a hard ceiling — if you're protecting a strict external
+limit, set <code>maxInFlight</code> with a little headroom below it.</p>
+<h2 id="interaction-with-autoscaling">Interaction with autoscaling<a class="headerlink" href="#interaction-with-autoscaling" title="Permanent link">&para;</a></h2>
+<p>Rate limiting and <a href="../autoscaling/">autoscaling</a> compose. When an agent reaches
+its <code>maxInFlight</code> cap, <strong>scale-up is suppressed</strong> — adding replicas won't raise
+a fixed external ceiling, so the agent settles at the replica count that serves
+the admitted load instead of climbing toward <code>max</code>.</p>
+<p>Scale-<strong>down</strong> is unaffected: an idle rate-limited agent still sheds replicas
+normally.</p>
+<h2 id="observability">Observability<a class="headerlink" href="#observability" title="Permanent link">&para;</a></h2>
+<p>The broker exposes a counter for rejected requests, labeled by transport:</p>
 <ul>
-<li>Per-AgentSet entry service: <code>&lt;agentset&gt;-ingress</code>.</li>
-<li>Per-AgentDeploy ClusterIP service: <code>&lt;agentdeploy&gt;</code>.</li>
-<li>Per-AgentDeploy headless service: <code>&lt;agentdeploy&gt;-headless</code>.</li>
+<li><code>broker_rejected_total{transport}</code> — requests refused at admission because the
+  agent was at its in-flight cap.</li>
 </ul>
-<blockquote>
-<p>[!IMPORTANT] Because the entry service is <code>&lt;agentset&gt;-ingress</code>, the agent name
-<code>ingress</code> is reserved by the AgentSet validator. Without that guard, a child
-AgentDeploy <code>&lt;agentset&gt;-ingress</code> and its ClusterIP Service would collide with
-the AgentSet's entry service.</p>
-</blockquote>
-<h2 id="external-path-agentset-entry-service">External path: AgentSet entry service<a class="headerlink" href="#external-path-agentset-entry-service" title="Permanent link">&para;</a></h2>
-<p>The entry service is the front door of an AgentSet. Anything outside the set
-(other AgentSets, HTTP gateways, manual <code>curl</code> from a developer pod) reaches the
-set through <code>&lt;agentset&gt;-ingress.&lt;namespace&gt;.svc.cluster.local:8490</code>.</p>
-<h3 id="port">Port<a class="headerlink" href="#port" title="Permanent link">&para;</a></h3>
-<p>The entry service exposes a single <code>broker</code> port (<code>8490</code>) targeting the broker
-sidecar's named <code>broker</code> port.</p>
-<h2 id="peer-path-per-agentdeploy-clusterip-service">Peer path: per-AgentDeploy ClusterIP service<a class="headerlink" href="#peer-path-per-agentdeploy-clusterip-service" title="Permanent link">&para;</a></h2>
-<p>When an agent needs to send a message to a sibling agent inside the same
-AgentSet, it resolves the sibling's per-AgentDeploy ClusterIP Service DNS name
-directly and opens an A2A connection to it. The sibling's ClusterIP service
-load-balances the connection across the sibling's ready pods, where the
-sibling's broker terminates the A2A call and hands it down to the sibling agent
-over their shared UDS.</p>
-<p>The traversal in one line is:</p>
-<div class="highlight"><pre><span></span><code>agent  -&gt;  &lt;sibling-agentdeploy&gt;.&lt;ns&gt;.svc.cluster.local:8490  -&gt;  sibling broker  -&gt;  sibling agent
-</code></pre></div>
-<p>The agent learns the sibling's DNS name from its topology file (see below); no
-Kubernetes API lookup is involved at request time.</p>
-<h2 id="per-pod-introspection-headless-service">Per-pod introspection: headless service<a class="headerlink" href="#per-pod-introspection-headless-service" title="Permanent link">&para;</a></h2>
-<p>Each AgentDeploy also owns a headless Service named <code>&lt;agentdeploy&gt;-headless</code>
-(<code>clusterIP: None</code>, <code>publishNotReadyAddresses: true</code>), so each AgentDeploy pod
-gets an A record:</p>
-<div class="highlight"><pre><span></span><code>&lt;agentdeploy&gt;-&lt;replica&gt;.&lt;agentdeploy&gt;-headless.&lt;ns&gt;.svc.cluster.local
-</code></pre></div>
-<p>The headless service exposes the broker's <strong>introspection port</strong> (<code>8491</code>) for
-precise pod-level metrics scraping, used for autoscaling.</p>
-<h2 id="topology-file">Topology file<a class="headerlink" href="#topology-file" title="Permanent link">&para;</a></h2>
-<p>The agent itself never reads the Kubernetes API. The AgentSet controller encodes
-per-child peer information into each AgentDeploy spec when it builds children.
-At pod startup, an init container materializes that payload into
-<code>/var/run/kynomesh/topology.json</code>, which the agent and broker read.</p>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;pattern&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Supervisor&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;isEntry&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;peers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;worker&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://greeter-worker.ns.svc.cluster.local:8490&quot;</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">  </span><span class="p">]</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>Peer URLs use the per-AgentDeploy ClusterIP Service of the sibling —
-load-balanced across the sibling's replicas and readiness-gated.</p>
-<h2 id="end-to-end-request-flow">End-to-end request flow<a class="headerlink" href="#end-to-end-request-flow" title="Permanent link">&para;</a></h2>
-<p>For an external HTTP call landing on the entry service of an AgentSet:</p>
-<div class="highlight"><pre><span></span><code>   external caller
-        |
-        v
-   greeter-ingress.&lt;ns&gt;.svc.cluster.local:8490    (AgentSet-owned, ClusterIP)
-        |  selector matches: agentset-name=greeter, entry=true, serving=true
-        v
-   pod: greeter-planner-0-xxxxx  (broker sidecar)
-        |  forwards over UDS
-        v
-   container: agent  (user code)
-        |  hands off to a worker via topology peer URL
-        v
-   greeter-worker.&lt;ns&gt;.svc.cluster.local:8490     (AgentDeploy-owned, ClusterIP)
-        |
-        v
-   pod: greeter-worker-0-yyyyy   (broker sidecar) -&gt; agent
-</code></pre></div>
-<p>For a sequential pattern (<code>planner -&gt; reviewer -&gt; publisher</code>), the agent in
-<code>planner</code> reads its topology file and finds a single peer entry pointing at
-<code>greeter-reviewer.&lt;ns&gt;.svc.cluster.local:8490</code>, and so on down the chain.</p>
+<p>Read it alongside <code>broker_inflight_requests{transport}</code> (the current in-flight
+count the limit is compared against). A rising <code>broker_rejected_total</code> with
+<code>broker_inflight_requests</code> pinned near the cap means the agent is actively
+shedding load — the signal that demand exceeds the configured limit.</p>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../autoscaling/">Autoscaling</a> — how rate limiting bounds scale-up.</li>
+<li><a href="../../../core-concepts/agentdeploy/">AgentDeploy</a> — the unit the limit applies
+  to.</li>
+<li><a href="../../../core-concepts/agentset/">AgentSet</a> — where the <code>rateLimit</code> block
+  lives.</li>
+</ul>
 
               
             </article>
@@ -1109,7 +1071,7 @@ load-balanced across the sibling's replicas and readiness-gated.</p>
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../../development/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Development" rel="prev">
+        <a href="../autoscaling/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Autoscaling" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1118,20 +1080,20 @@ load-balanced across the sibling's replicas and readiness-gated.</p>
               <span class="md-footer__direction">
                 Previous
               </span>
-              Development
+              Autoscaling
             </div>
           </div>
         </a>
       
       
         
-        <a href="../../static-code-analysis/" class="md-footer__link md-footer__link--next" aria-label="Next: Static Code Analysis" rel="next">
+        <a href="../../../APIs/" class="md-footer__link md-footer__link--next" aria-label="Next: APIs" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Static Code Analysis
+              APIs
             </div>
           </div>
           <div class="md-footer__button md-icon">

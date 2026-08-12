@@ -633,6 +633,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../rate-limiting/" class="md-nav__link">
+        Rate limiting
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../APIs/" class="md-nav__link">
         APIs
       </a>
@@ -918,7 +932,7 @@
 
 
 <h1 id="autoscaling">Autoscaling<a class="headerlink" href="#autoscaling" title="Permanent link">&para;</a></h1>
-<p>Kynomesh autoscales each agent independently based on the load it actually
+<p><code>Kynomesh</code> autoscales each agent independently based on the load it actually
 receives. Every <a href="../../../core-concepts/agentdeploy/">AgentDeploy</a> is scaled on
 its own, so a busy agent grows while its idle peers stay small.</p>
 <p>There are three ways to autoscale an agent:</p>
@@ -958,6 +972,10 @@ keep the fleet near a target utilization.</p>
   <code>[min, max]</code>.</li>
 <li><strong>The controller patches <code>spec.replicas</code></strong> on the AgentDeploy; the normal
   reconcile then rolls pods to match.</li>
+<li><strong>Rate-limit ceiling.</strong> If the agent has a
+  <a href="../rate-limiting/"><code>rateLimit.maxInFlight</code></a> cap, scale-up is suppressed once
+  total in-flight reaches it — more replicas can't raise a fixed external
+  ceiling, so the agent settles instead of climbing toward <code>max</code>.</li>
 </ul>
 <h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
 <p><code>scale</code> is set per agent, on each entry under the AgentSet's <code>agents</code> list:</p>
@@ -1048,6 +1066,8 @@ AgentDeploy's <code>scale</code> subresource from the tool's scaling object (e.g
 <code>ScaledObject</code> <code>scaleTargetRef</code>).</p>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
+<li><a href="../rate-limiting/">Rate limiting</a> — cap an agent's in-flight load; interacts
+  with autoscaling (a rate-limited agent stops scaling up once it hits its cap).</li>
 <li><a href="../../../core-concepts/agentdeploy/">AgentDeploy</a> — the unit that gets scaled.</li>
 <li><a href="../../../core-concepts/agentset/">AgentSet</a> — where the <code>scale</code> block lives.</li>
 </ul>
@@ -1089,13 +1109,13 @@ AgentDeploy's <code>scale</code> subresource from the tool's scaling object (e.g
       
       
         
-        <a href="../../../APIs/" class="md-footer__link md-footer__link--next" aria-label="Next: APIs" rel="next">
+        <a href="../rate-limiting/" class="md-footer__link md-footer__link--next" aria-label="Next: Rate limiting" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              APIs
+              Rate limiting
             </div>
           </div>
           <div class="md-footer__button md-icon">
