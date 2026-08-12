@@ -59,13 +59,7 @@ func (s *FunctionalSuite) TestResearchAssistant() {
 }
 
 // TestRateLimitShedsExcessLoad verifies broker-side max-in-flight enforcement
-// across a fleet. A single agent capped at maxInFlight=4 runs two replicas
-// (autoscaling disabled), so each broker enforces a slice of the fleet cap. Each
-// request is held open ~5s; 15 concurrent senders far exceed the slots, so the
-// brokers must reject the excess — broker_rejected_total climbs above zero. The
-// pinned replica count keeps the rate limit, not scale-up, the thing shedding
-// load, and exercises the fleet (DNS-count) limiter rather than the pod-local
-// path.
+// across a fleet.
 func (s *FunctionalSuite) TestRateLimitShedsExcessLoad() {
 	const (
 		entryPort      = 8490
