@@ -175,6 +175,7 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 		History:         hist,
 		Current:         latest,
 		Spec:            ad.Spec.Scale,
+		MaxInFlight:     maxInFlightOf(&ad),
 		Now:             now,
 		LastScaledAt:    ad.Status.LastScaledAt.Time,
 	})
@@ -213,4 +214,13 @@ func (a *Autoscaler) applyReplicas(ctx context.Context, ad *kmv1.AgentDeploy, de
 // currentReplicas is the running replica count the decision scales from.
 func currentReplicas(ad *kmv1.AgentDeploy) int32 {
 	return int32(ad.Status.Replicas)
+}
+
+// maxInFlightOf returns the fleet-wide rate-limit cap from the spec, or 0 when
+// unset (no cap).
+func maxInFlightOf(ad *kmv1.AgentDeploy) int32 {
+	if ad.Spec.RateLimit == nil || ad.Spec.RateLimit.MaxInFlight == nil {
+		return 0
+	}
+	return *ad.Spec.RateLimit.MaxInFlight
 }
