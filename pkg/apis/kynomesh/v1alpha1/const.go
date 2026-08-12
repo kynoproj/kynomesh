@@ -121,3 +121,30 @@ const (
 	DefaultBrokerLivenessFailureThreshold int32 = 6
 	DefaultBrokerLivenessSuccessThreshold int32 = 1
 )
+
+// Autoscaling defaults.
+const (
+	// DefaultMinReplicas is the replica floor when scale.min is unset. An
+	// AgentDeploy never runs fewer than this.
+	DefaultMinReplicas int32 = 1
+	// DefaultMaxReplicas is the replica ceiling when scale.max is unset. Both
+	// the reconcile (initial/clamped replica count) and the autoscaler bound to
+	// this so they agree on the upper limit.
+	DefaultMaxReplicas int32 = 50
+	// DefaultScaleUpCooldownSeconds is the wait after a scale before another
+	// scale-up, when scale.scaleUpCooldownSeconds is unset.
+	DefaultScaleUpCooldownSeconds uint32 = 90
+	// DefaultScaleDownCooldownSeconds is the wait after a scale before another
+	// scale-down, when scale.scaleDownCooldownSeconds is unset.
+	DefaultScaleDownCooldownSeconds uint32 = 90
+	// DefaultReplicasPerScaleUp caps the replica change per scale-up step when
+	// scale.replicasPerScaleUp is unset.
+	DefaultReplicasPerScaleUp uint32 = 2
+	// DefaultReplicasPerScaleDown caps the replica change per scale-down step
+	// when scale.replicasPerScaleDown is unset.
+	DefaultReplicasPerScaleDown uint32 = 2
+	// DefaultTargetSaturationPercentage is the steady-state fraction (1-100) of
+	// a replica's learned capacity to run at, when
+	// scale.targetSaturationPercentage is unset.
+	DefaultTargetSaturationPercentage uint32 = 80
+)
