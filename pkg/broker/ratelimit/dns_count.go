@@ -36,10 +36,11 @@ const DefaultDNSPollInterval = 10 * time.Second
 // slice of the global cap; a background loop re-reads the replica count from the
 // headless Service DNS and rebalances the slice as the fleet scales.
 //
-// The bound is soft: DNS records lag scale events by a TTL and the slice is an
-// integer floor, so the fleet total can briefly drift from the exact cap. This
-// is an accepted trade for zero request-path coordination and no extra
-// dependency. See NewLimiter for the strict pod-local variant.
+// The bound is soft: DNS records lag scale events by a TTL, and slices are
+// rounded up (see sliceFor) so the fleet total can exceed the exact cap under
+// full saturation. This is an accepted trade for zero request-path coordination,
+// no extra dependency, and a total-in-flight signal that can actually reach the
+// cap for autoscaling. See NewLimiter for the strict pod-local variant.
 type dnsCountLimiter struct {
 	sem *semaphore
 
