@@ -23,6 +23,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
+	"github.com/kynoproj/kynomesh/pkg/broker/ratelimit"
 )
 
 // retryAfterSeconds is the Retry-After hint returned with an HTTP 429 when the
@@ -147,7 +149,7 @@ func (c *Metrics) PassthroughSet() transportSet { return c.setFor(TransportPasst
 //     response Content-Type is text/event-stream (detection happens
 //     after the agent's response headers arrive — see
 //     statusRecorder).
-func wrapHTTP(limiter Limiter, set transportSet, h http.Handler) http.Handler {
+func wrapHTTP(limiter ratelimit.Limiter, set transportSet, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if limiter != nil {
 			release, ok := limiter.Acquire()

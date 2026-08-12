@@ -27,6 +27,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+
+	"github.com/kynoproj/kynomesh/pkg/broker/ratelimit"
 )
 
 // rawCodec is a grpc.Codec that passes frames through as opaque []byte,
@@ -59,7 +61,7 @@ func (rawCodec) Unmarshal(data []byte, v any) error {
 // GRPCPassthroughOptions turns a fresh *grpc.Server into a transparent
 // proxy to backendConn. Both options must be applied; no other services
 // should be registered on the server.
-func GRPCPassthroughOptions(backendConn *grpc.ClientConn, metrics *Metrics, limiter Limiter) []grpc.ServerOption {
+func GRPCPassthroughOptions(backendConn *grpc.ClientConn, metrics *Metrics, limiter ratelimit.Limiter) []grpc.ServerOption {
 	set := metrics.GRPCSet()
 	return []grpc.ServerOption{
 		grpc.ForceServerCodec(rawCodec{}),

@@ -33,10 +33,10 @@ import (
 	"go.uber.org/zap"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
-	"github.com/kynoproj/kynomesh/pkg/daemon/server/discovery"
 	"github.com/kynoproj/kynomesh/pkg/daemon/server/rater"
 	"github.com/kynoproj/kynomesh/pkg/daemon/server/scraper"
 	"github.com/kynoproj/kynomesh/pkg/daemon/server/service"
+	"github.com/kynoproj/kynomesh/pkg/shared/discovery"
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 	sharedtls "github.com/kynoproj/kynomesh/pkg/shared/tls"
 	"github.com/kynoproj/kynomesh/pkg/version"

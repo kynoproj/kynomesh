@@ -20,13 +20,15 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+
+	"github.com/kynoproj/kynomesh/pkg/broker/ratelimit"
 )
 
-func NewJSONRPCReverseProxy(agentTransport *http.Transport, counters *Metrics, limiter Limiter) http.Handler {
+func NewJSONRPCReverseProxy(agentTransport *http.Transport, counters *Metrics, limiter ratelimit.Limiter) http.Handler {
 	return newAgentReverseProxy(agentTransport, limiter, counters.JSONRPCSet())
 }
 
-func NewRESTReverseProxy(agentTransport *http.Transport, counters *Metrics, limiter Limiter) http.Handler {
+func NewRESTReverseProxy(agentTransport *http.Transport, counters *Metrics, limiter ratelimit.Limiter) http.Handler {
 	return newAgentReverseProxy(agentTransport, limiter, counters.RESTSet())
 }
 
@@ -41,7 +43,7 @@ func NewPassthroughReverseProxy(agentTransport *http.Transport, counters *Metric
 // newAgentReverseProxy builds a reverse proxy whose Director plants a
 // synthetic AgentBackendHost target; the supplied transport handles the
 // real dial (UDS or TCP).
-func newAgentReverseProxy(agentTransport *http.Transport, limiter Limiter, set transportSet) http.Handler {
+func newAgentReverseProxy(agentTransport *http.Transport, limiter ratelimit.Limiter, set transportSet) http.Handler {
 	target := &url.URL{Scheme: "http", Host: AgentBackendHost}
 	rp := httputil.NewSingleHostReverseProxy(target)
 	rp.Transport = agentTransport
