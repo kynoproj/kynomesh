@@ -147,15 +147,6 @@ func (c *Metrics) PassthroughSet() transportSet { return c.setFor(TransportPasst
 //     response Content-Type is text/event-stream (detection happens
 //     after the agent's response headers arrive — see
 //     statusRecorder).
-//
-// Defers keep the gauge balanced and the request counted through
-// panics — important because the upstream reverse proxy can panic
-// on transport errors mid-stream.
-//
-// limiter admits or sheds requests at the in-flight cap. At capacity the
-// request is rejected with 429 + Retry-After before it reaches the agent, and
-// counted in broker_rejected_total rather than the inflight/requests metrics.
-// A nil limiter admits everything (no cap configured).
 func wrapHTTP(limiter Limiter, set transportSet, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if limiter != nil {

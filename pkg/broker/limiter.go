@@ -41,8 +41,7 @@ func (unlimited) Acquire() (func(), bool) { return noopRelease, true }
 
 // semaphoreLimiter caps concurrent in-flight requests at a fixed count using a
 // buffered channel as a counting semaphore. It is pod-local: the cap applies to
-// this broker instance only. Fleet-wide enforcement is layered on top by
-// choosing the cap (see the DNS-count limiter) — the mechanism here is unchanged.
+// this broker instance only.
 type semaphoreLimiter struct {
 	slots chan struct{}
 }

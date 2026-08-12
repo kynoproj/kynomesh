@@ -206,8 +206,7 @@ type brokerStack struct {
 	proxySrv         *http.Server
 	proxyLn          net.Listener
 	introspectionSrv *http.Server
-	// proxyServing is flipped true once the :8490 listener is being served;
-	// /readyz reads it so readiness reflects the A2A port, not just the process.
+	// proxyServing is flipped true once the :8490 listener is being served.
 	proxyServing *atomic.Bool
 }
 

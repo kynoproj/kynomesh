@@ -59,11 +59,6 @@ func (rawCodec) Unmarshal(data []byte, v any) error {
 // GRPCPassthroughOptions turns a fresh *grpc.Server into a transparent
 // proxy to backendConn. Both options must be applied; no other services
 // should be registered on the server.
-//
-// limiter gates admission: a stream that would exceed the broker's max
-// in-flight cap is rejected with RESOURCE_EXHAUSTED before it reaches the
-// agent, and counted in broker_rejected_total rather than the inflight/requests
-// metrics. A nil limiter admits every stream (no cap configured).
 func GRPCPassthroughOptions(backendConn *grpc.ClientConn, metrics *Metrics, limiter Limiter) []grpc.ServerOption {
 	set := metrics.GRPCSet()
 	return []grpc.ServerOption{
