@@ -26,13 +26,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kynoproj/kynomesh/pkg/broker/ratelimit"
 )
 
 func TestWrapHTTP_AdmitsUnderCap(t *testing.T) {
 	c := NewMetrics(prometheus.NewRegistry())
 	set := c.JSONRPCSet()
 
-	wrapped := wrapHTTP(NewLimiter(1), set, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	wrapped := wrapHTTP(ratelimit.NewLimiter(1), set, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	rec := httptest.NewRecorder()
@@ -51,7 +53,7 @@ func TestWrapHTTP_RejectsAtCapWith429AndRetryAfter(t *testing.T) {
 	// limiter is genuinely at capacity when it arrives.
 	block := make(chan struct{})
 	entered := make(chan struct{})
-	limiter := NewLimiter(1)
+	limiter := ratelimit.NewLimiter(1)
 	wrapped := wrapHTTP(limiter, set, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/hold" {
 			close(entered)
@@ -85,7 +87,7 @@ func TestWrapHTTP_ReleasesSlotOnCompletion(t *testing.T) {
 	c := NewMetrics(prometheus.NewRegistry())
 	set := c.JSONRPCSet()
 
-	limiter := NewLimiter(1)
+	limiter := ratelimit.NewLimiter(1)
 	wrapped := wrapHTTP(limiter, set, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))

@@ -34,6 +34,8 @@ import (
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
+
+	"github.com/kynoproj/kynomesh/pkg/broker/ratelimit"
 )
 
 // grpcPair brings up a backend gRPC server with the standard health
@@ -51,7 +53,7 @@ func startGRPCPair(t *testing.T) *grpcPair {
 	return startGRPCPairWithLimiter(t, nil)
 }
 
-func startGRPCPairWithLimiter(t *testing.T, limiter Limiter) *grpcPair {
+func startGRPCPairWithLimiter(t *testing.T, limiter ratelimit.Limiter) *grpcPair {
 	t.Helper()
 
 	socketPath := filepath.Join(shortSocketDir(t), "g.sock")
@@ -163,7 +165,7 @@ func TestGRPCPassthrough_UnknownMethodSurfacesBackendStatus(t *testing.T) {
 }
 
 func TestGRPCPassthrough_RejectsAtCapWithResourceExhausted(t *testing.T) {
-	pair := startGRPCPairWithLimiter(t, NewLimiter(1))
+	pair := startGRPCPairWithLimiter(t, ratelimit.NewLimiter(1))
 
 	conn, err := grpc.NewClient(pair.brokerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)

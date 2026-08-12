@@ -17,12 +17,26 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
+
+func i32(v int32) *int32 { return &v }
+
+func adWithCap(name, ns string, cap *int32) *kmv1.AgentDeploy {
+	ad := &kmv1.AgentDeploy{}
+	ad.Name = name
+	ad.Namespace = ns
+	if cap != nil {
+		ad.Spec.RateLimit = &kmv1.RateLimit{MaxInFlight: cap}
+	}
+	return ad
+}
 
 func TestResolveMaxInFlight(t *testing.T) {
 	adWith := func(limit *int32) *kmv1.AgentDeploy {
@@ -51,3 +65,50 @@ func TestResolveMaxInFlight(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildLimiter_UnlimitedAdmitsEverything(t *testing.T) {
+	l := buildLimiter(context.Background(), adWithCap("greeter", "default", nil))
+	for range 100 {
+		release, ok := l.Acquire()
+		require.True(t, ok)
+		release()
+	}
+}
+
+func TestBuildLimiter_PodLocalWhenNoAgentDeployIdentity(t *testing.T) {
+	// A cap but no name/namespace (local-dev): pod-local cap, no DNS loop.
+	l := buildLimiter(context.Background(), adWithCap("", "", i32(2)))
+	r1, ok := l.Acquire()
+	require.True(t, ok)
+	r2, ok := l.Acquire()
+	require.True(t, ok)
+	_, ok = l.Acquire()
+	assert.False(t, ok, "pod-local cap of 2 must reject the 3rd concurrent request")
+	r1()
+	r2()
+}
+
+func TestBuildLimiter_FleetLimiterEnforcesCapBeforeDNSNarrows(t *testing.T) {
+	// In-cluster (name+namespace present): a DNS-count limiter. Inject a stub
+	// resolver via the seam and a pre-cancelled ctx so the loop does its one
+	// immediate recount against the stub, then stops — no real DNS, no races.
+	restore := dnsResolver
+	t.Cleanup(func() { dnsResolver = restore })
+	dnsResolver = stubResolver{ips: []string{"10.0.0.1"}} // 1 replica -> full cap
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	l := buildLimiter(ctx, adWithCap("greeter", "default", i32(2)))
+	r1, ok := l.Acquire()
+	require.True(t, ok)
+	r2, ok := l.Acquire()
+	require.True(t, ok)
+	_, ok = l.Acquire()
+	assert.False(t, ok, "fleet limiter must enforce the cap even before the first DNS read")
+	r1()
+	r2()
+}
+
+type stubResolver struct{ ips []string }
+
+func (s stubResolver) LookupHost(context.Context, string) ([]string, error) { return s.ips, nil }

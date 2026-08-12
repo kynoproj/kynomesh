@@ -44,7 +44,9 @@ import (
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 	"github.com/kynoproj/kynomesh/pkg/broker"
+	"github.com/kynoproj/kynomesh/pkg/broker/ratelimit"
 	"github.com/kynoproj/kynomesh/pkg/broker/serverinfo"
+	"github.com/kynoproj/kynomesh/pkg/shared/discovery"
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 	sharedtls "github.com/kynoproj/kynomesh/pkg/shared/tls"
 	"github.com/kynoproj/kynomesh/pkg/version"
@@ -429,11 +431,7 @@ func buildRuntime(ctx context.Context, registry *prometheus.Registry, agentTrans
 	// One limiter shared across all A2A transports: the cap is per-agent, and a
 	// single broker serves JSON-RPC, REST and gRPC for that agent. Passthrough
 	// (non-A2A) traffic is intentionally not gated.
-	maxInFlight := resolveMaxInFlight(agentDeploy)
-	limiter := broker.NewLimiter(maxInFlight)
-	if maxInFlight > 0 {
-		logger.Infow("Broker rate limiting enabled", zap.Int("maxInFlight", maxInFlight))
-	}
+	limiter := buildLimiter(ctx, agentDeploy)
 
 	rt := &brokerRuntime{
 		logger:      logger,
@@ -481,6 +479,30 @@ func resolveMaxInFlight(ad *kmv1.AgentDeploy) int {
 	}
 	return int(*ad.Spec.RateLimit.MaxInFlight)
 }
+
+// buildLimiter constructs the shared A2A admission limiter.
+func buildLimiter(ctx context.Context, ad *kmv1.AgentDeploy) ratelimit.Limiter {
+	logger := logging.FromContext(ctx)
+	maxInFlight := resolveMaxInFlight(ad)
+	if maxInFlight <= 0 {
+		return ratelimit.NewLimiter(0)
+	}
+
+	if ad == nil || ad.Name == "" || ad.Namespace == "" {
+		logger.Infow("Broker rate limiting enabled (local-dev)", zap.Int("maxInFlight", maxInFlight))
+		return ratelimit.NewLimiter(maxInFlight)
+	}
+
+	limiter, start := ratelimit.NewDNSCountLimiter(maxInFlight, ad.Name, ad.Namespace, dnsResolver)
+	go start(ctx)
+	logger.Infow("Broker rate limiting enabled (fleet, DNS-count)",
+		zap.Int("maxInFlight", maxInFlight))
+	return limiter
+}
+
+// dnsResolver resolves the headless Service for the DNS-count limiter; a test
+// seam so wiring tests don't hit the real resolver.
+var dnsResolver discovery.Resolver = net.DefaultResolver
 
 // dialAgentGRPC is a test seam.
 var dialAgentGRPC = dialAgentGRPCDefault
