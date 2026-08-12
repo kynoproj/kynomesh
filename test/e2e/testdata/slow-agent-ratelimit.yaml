@@ -20,8 +20,5 @@ spec:
       rateLimit:
         maxInFlight: 4
       scale:
-        # Pin to two replicas so the rate limit, not autoscaling, sheds the
-        # excess load, and the fleet (DNS-count) limiter is exercised.
-        disabled: true
         min: 2
         max: 2
