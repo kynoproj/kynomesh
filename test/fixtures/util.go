@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -271,6 +272,51 @@ func GenerateLoad(localPort int, message string, concurrency int, stop <-chan st
 		close(done)
 	}()
 	return done
+}
+
+// brokerRejectedRe matches a broker_rejected_total sample line and captures its
+// value, e.g. `broker_rejected_total{transport="jsonrpc"} 3`.
+var brokerRejectedRe = regexp.MustCompile(`(?m)^broker_rejected_total(?:\{[^}]*\})?\s+([0-9.e+-]+)`)
+
+// brokerRejectedTotal fetches the broker introspection /metrics endpoint over a
+// port-forward to :8491 and sums broker_rejected_total across transports. It
+// reuses the shared insecure-TLS httpexpect client (self-signed broker cert).
+func brokerRejectedTotal(localPort int) (float64, error) {
+	url := fmt.Sprintf("https://localhost:%d/metrics", localPort)
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		return 0, fmt.Errorf("scrape %s: %w", url, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("scrape %s: status %d", url, resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, fmt.Errorf("read metrics body: %w", err)
+	}
+
+	var total float64
+	for _, m := range brokerRejectedRe.FindAllStringSubmatch(string(body), -1) {
+		if v, perr := strconv.ParseFloat(m[1], 64); perr == nil {
+			total += v
+		}
+	}
+	return total, nil
+}
+
+// WaitForBrokerRejections polls the broker /metrics over a port-forward to
+// :8491 until broker_rejected_total exceeds want, or timeout elapses. The final
+// (asserted) read is left to the caller via HTTPExpect.
+func WaitForBrokerRejections(ctx context.Context, localPort int, want float64, timeout time.Duration) error {
+	return wait.PollUntilContextTimeout(ctx, pollInterval, timeout, true, func(context.Context) (bool, error) {
+		v, err := brokerRejectedTotal(localPort)
+		if err != nil {
+			// Transient scrape failures (forward still coming up) are retried.
+			return false, nil
+		}
+		return v > want, nil
+	})
 }
 
 // PodPortForward forwards a local port to a port on the named pod. The caller
