@@ -122,8 +122,7 @@ const (
 	DefaultBrokerLivenessSuccessThreshold int32 = 1
 )
 
-// Autoscaling defaults for the Scale spec, applied when the corresponding
-// scale.* field is unset.
+// Autoscaling defaults.
 const (
 	// DefaultMinReplicas is the replica floor when scale.min is unset. An
 	// AgentDeploy never runs fewer than this.
