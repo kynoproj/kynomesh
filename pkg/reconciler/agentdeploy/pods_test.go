@@ -98,19 +98,42 @@ func TestNewPod_StampsServingLabel(t *testing.T) {
 }
 
 func TestDesiredReplicas(t *testing.T) {
-	zero, neg := int32(0), int32(-3)
+	zero, neg, three, int32one, big := int32(0), int32(-3), int32(3), int32(1), int32(9999)
+	min2, max2, max1 := int32(2), int32(2), int32(1)
+	max5 := int32(5)
 	cases := []struct {
-		name string
-		in   *int32
-		want int
+		name     string
+		disabled bool
+		replicas *int32
+		scale    kmv1.Scale
+		want     int
 	}{
-		{"nil defaults to 1", nil, 1},
-		{"zero", &zero, 0},
-		{"negative clamps to 0", &neg, 0},
+		// Autoscaling enabled, spec.replicas unset: come up at the min floor.
+		{"enabled, nil defaults to 1", false, nil, kmv1.Scale{}, 1},
+		{"enabled, nil min 2 comes up at 2", false, nil, kmv1.Scale{Min: &min2}, 2},
+		{"enabled, nil min 2 max 2 comes up at 2", false, nil, kmv1.Scale{Min: &min2, Max: &max2}, 2},
+		// Invalid min>max (webhook rejects this): min wins as the floor.
+		{"enabled, nil min 2 max 1 favors min", false, nil, kmv1.Scale{Min: &min2, Max: &max1}, 2},
+		// Autoscaling enabled, spec.replicas set (autoscaler-driven): honored,
+		// clamped to [min,max].
+		{"enabled honors autoscaler value within bounds", false, &three, kmv1.Scale{Min: &min2, Max: &max5}, 3},
+		{"enabled clamps up to min", false, &int32one, kmv1.Scale{Min: &min2, Max: &max5}, 2},
+		{"enabled clamps down to max", false, &three, kmv1.Scale{Min: &min2, Max: &max2}, 2},
+		{"enabled floors zero to min", false, &zero, kmv1.Scale{}, 1},
+		{"enabled clamps to default max 50 when max unset", false, &big, kmv1.Scale{}, 50},
+		// Autoscaling disabled: spec.replicas is authoritative.
+		{"disabled, nil defaults to 1", true, nil, kmv1.Scale{}, 1},
+		{"disabled, nil ignores min", true, nil, kmv1.Scale{Min: &min2}, 1},
+		{"disabled respects spec.replicas ignoring min", true, &three, kmv1.Scale{Min: &min2}, 3},
+		{"disabled, zero floors to 1", true, &zero, kmv1.Scale{}, 1},
+		{"disabled, negative floors to 1", true, &neg, kmv1.Scale{}, 1},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ad := &kmv1.AgentDeploy{Spec: kmv1.AgentDeploySpec{Replicas: tc.in}}
+			scale := tc.scale
+			scale.Disabled = tc.disabled
+			ad := &kmv1.AgentDeploy{Spec: kmv1.AgentDeploySpec{Replicas: tc.replicas}}
+			ad.Spec.Scale = scale
 			assert.Equal(t, tc.want, desiredReplicas(ad))
 		})
 	}

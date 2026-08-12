@@ -121,3 +121,14 @@ const (
 	DefaultBrokerLivenessFailureThreshold int32 = 6
 	DefaultBrokerLivenessSuccessThreshold int32 = 1
 )
+
+// Autoscaling / replica defaults for Scale.
+const (
+	// DefaultMinReplicas is the replica floor when scale.min is unset. An
+	// AgentDeploy never runs fewer than this.
+	DefaultMinReplicas int32 = 1
+	// DefaultMaxReplicas is the replica ceiling when scale.max is unset. Both
+	// the reconcile (initial/clamped replica count) and the autoscaler bound to
+	// this so they agree on the upper limit.
+	DefaultMaxReplicas int32 = 50
+)

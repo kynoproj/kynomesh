@@ -91,7 +91,6 @@ const (
 	defaultScaleDownCooldownSec uint32 = 90
 	defaultReplicasPerScaleUp   uint32 = 2
 	defaultReplicasPerScaleDown uint32 = 2
-	defaultMaxReplicas          int32  = 50
 	// defaultKneePerReplica is the assumed per-replica capacity before the
 	// estimator has learned anything (cold start). The controller blends away
 	// from it as confidence grows.
@@ -254,11 +253,11 @@ func targetSaturation(s kmv1.Scale) float64 {
 
 // minMax resolves the Scale spec's min/max into concrete int32s.
 func minMax(s kmv1.Scale) (int32, int32) {
-	minR := int32(1)
-	if s.Min != nil && *s.Min > 1 {
+	minR := kmv1.DefaultMinReplicas
+	if s.Min != nil && *s.Min > kmv1.DefaultMinReplicas {
 		minR = *s.Min
 	}
-	maxR := defaultMaxReplicas
+	maxR := kmv1.DefaultMaxReplicas
 	if s.Max != nil {
 		maxR = *s.Max
 	}
