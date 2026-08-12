@@ -1,0 +1,27 @@
+# AgentSet for the broker rate-limiting functional test.
+#
+# A single slow agent (each request held open ~5s) with a small max-in-flight
+# cap, pinned at two replicas (autoscaling disabled).
+apiVersion: kynomesh.kyno.sh/v1alpha1
+kind: AgentSet
+metadata:
+  name: slow-agent-rl
+spec:
+  pattern: Supervisor
+  entry: slow
+  agents:
+    - name: slow
+      container:
+        image: quay.io/kynoio/examples/slow-agent-go:latest
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: SLOW_AGENT_DELAY
+            value: "5s"
+      rateLimit:
+        maxInFlight: 4
+      scale:
+        # Pin to two replicas so the rate limit, not autoscaling, sheds the
+        # excess load, and the fleet (DNS-count) limiter is exercised.
+        disabled: true
+        min: 2
+        max: 2
