@@ -474,8 +474,7 @@ func buildRuntime(ctx context.Context, registry *prometheus.Registry, agentTrans
 }
 
 // resolveMaxInFlight reads the per-agent max in-flight cap from the injected
-// AgentDeploy spec. Returns 0 (unlimited) when unset — the nil-safe path for
-// local-dev where no spec is injected.
+// AgentDeploy spec. Returns 0 (unlimited) when unset.
 func resolveMaxInFlight(ad *kmv1.AgentDeploy) int {
 	if ad == nil || ad.Spec.RateLimit == nil || ad.Spec.RateLimit.MaxInFlight == nil {
 		return 0
