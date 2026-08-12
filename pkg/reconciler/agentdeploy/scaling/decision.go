@@ -50,6 +50,7 @@ const (
 	ReasonSurge          Reason = "surge"
 	ReasonNoChange       Reason = "no change"
 	ReasonDriftToMin     Reason = "idle drift toward min"
+	ReasonRateLimited    Reason = "rate-limit ceiling reached"
 )
 
 // Inputs carries everything a per-tick decision needs.
@@ -64,6 +65,9 @@ type Inputs struct {
 	Current Sample
 	// Spec is the Scale spec from the AgentDeploy.
 	Spec kmv1.Scale
+	// MaxInFlight is the fleet-wide rate-limit cap (spec.rateLimit.maxInFlight),
+	// or 0 when unset.
+	MaxInFlight int32
 	// Now is the decision timestamp. Passed in (not time.Now()) to keep
 	// Decide pure and deterministically testable.
 	Now time.Time
@@ -186,6 +190,10 @@ func scalingTarget(in Inputs, est Estimate) float64 {
 // observability, but it scales the same bounded way as any other scale-up; a
 // sustained surge simply keeps stepping up on each subsequent tick.
 func scaleUp(in Inputs, est Estimate, desired int32, target, totalInflight float64, stepUp int32, cooldown, sinceLast time.Duration) Decision {
+	// Rate-limit ceiling.
+	if in.MaxInFlight > 0 && totalInflight >= float64(in.MaxInFlight) {
+		return Decision{DesiredReplicas: in.CurrentReplicas, Reason: ReasonRateLimited, Skip: true, Estimate: est}
+	}
 	if sinceLast < cooldown {
 		return Decision{DesiredReplicas: in.CurrentReplicas, Reason: ReasonCooldownUp, Skip: true, Estimate: est}
 	}
