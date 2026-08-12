@@ -101,18 +101,13 @@ func (l *dnsCountLimiter) recount(ctx context.Context) {
 	l.sem.SetLimit(slice)
 }
 
-// sliceFor partitions the global cap across replicas. It floors the division so
-// the sum of slices never exceeds the cap (a hard fleet bound), but never drops
-// below 1: a replica that could admit nothing is useless, so when replicas
-// outnumber the cap we deliberately trade the exact bound for liveness. A zero
-// replica count (no ready pods yet) leaves the full cap in place.
+// sliceFor partitions the global cap across replicas, rounding UP. Ceiling is
+// deliberate: the cap exists to protect an external dependency (e.g. an LLM
+// quota), and the autoscaler suppresses scale-up once total in-flight reaches
+// maxInFlight.
 func sliceFor(maxInFlight, replicas int) int {
 	if replicas <= 1 {
 		return maxInFlight
 	}
-	slice := maxInFlight / replicas
-	if slice < 1 {
-		return 1
-	}
-	return slice
+	return (maxInFlight + replicas - 1) / replicas
 }

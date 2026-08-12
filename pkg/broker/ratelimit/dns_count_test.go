@@ -54,9 +54,10 @@ func TestSliceFor(t *testing.T) {
 		{name: "single replica gets the whole cap", maxInFlight: 20, replicas: 1, want: 20},
 		{name: "zero replicas leaves the full cap", maxInFlight: 20, replicas: 0, want: 20},
 		{name: "even split", maxInFlight: 20, replicas: 4, want: 5},
-		{name: "floors the division", maxInFlight: 20, replicas: 3, want: 6},
-		{name: "never below 1 when replicas exceed cap", maxInFlight: 2, replicas: 8, want: 1},
+		{name: "ceils the division", maxInFlight: 20, replicas: 3, want: 7},
+		{name: "ceils to 1 when replicas exceed cap", maxInFlight: 2, replicas: 8, want: 1},
 		{name: "exactly one each", maxInFlight: 5, replicas: 5, want: 1},
+		{name: "ceils up on remainder", maxInFlight: 10, replicas: 3, want: 4},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
