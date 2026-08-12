@@ -272,16 +272,57 @@ func (r *Reconciler) updatePodStatus(ctx context.Context, ad *kmv1.AgentDeploy) 
 	return nil
 }
 
-// desiredReplicas returns the replica count from spec, defaulting to 1.
+// desiredReplicas returns the replica count to render pods for, keyed on whether
+// autoscaling is enabled.
 func desiredReplicas(ad *kmv1.AgentDeploy) int {
+	if ad.Spec.Scale.Disabled {
+		if ad.Spec.Replicas == nil {
+			return 1
+		}
+		return atLeastOne(int(*ad.Spec.Replicas))
+	}
+
+	lo, hi := scaleBounds(ad.Spec.Scale)
 	if ad.Spec.Replicas == nil {
+		return lo
+	}
+	return clampInt(int(*ad.Spec.Replicas), lo, hi)
+}
+
+// scaleBounds resolves the [min,max] replica bounds from the scale spec: min
+// floors at DefaultMinReplicas, max defaults to DefaultMaxReplicas when unset.
+func scaleBounds(s kmv1.Scale) (lo, hi int) {
+	lo = int(kmv1.DefaultMinReplicas)
+	if s.Min != nil && *s.Min > kmv1.DefaultMinReplicas {
+		lo = int(*s.Min)
+	}
+	hi = int(kmv1.DefaultMaxReplicas)
+	if s.Max != nil {
+		hi = int(*s.Max)
+	}
+	if hi < lo {
+		hi = lo
+	}
+	return lo, hi
+}
+
+func clampInt(v, lo, hi int) int {
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
+}
+
+// atLeastOne floors v at 1: an AgentDeploy never renders zero replicas, so a
+// spec.replicas of 0 or negative is treated as 1.
+func atLeastOne(v int) int {
+	if v < 1 {
 		return 1
 	}
-	r := int(*ad.Spec.Replicas)
-	if r < 0 {
-		return 0
-	}
-	return r
+	return v
 }
 
 // newPod renders a corev1.Pod for the given replica index.
