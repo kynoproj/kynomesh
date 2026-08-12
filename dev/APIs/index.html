@@ -963,6 +963,27 @@ Settings for autoscaling
 
 <td>
 
+<code>rateLimit</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.RateLimit"> RateLimit </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+RateLimit configures broker-side admission control. When unset, the
+broker admits requests without limit.
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
 <code>initContainers</code></br> <em>
 <a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#container-v1-core">
 \[\]Kubernetes core/v1.Container </a> </em>
@@ -3317,6 +3338,75 @@ Minimum value is 1.
 
 Minimum consecutive failures for the probe to be considered failed after
 having succeeded. Defaults to 3. Minimum value is 1.
+</p>
+
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="kynomesh.kyno.sh/v1alpha1.RateLimit">
+
+RateLimit
+</h3>
+
+<p>
+
+(<em>Appears on:</em>
+<a href="#kynomesh.kyno.sh/v1alpha1.AbstractAgentDeploy">AbstractAgentDeploy</a>)
+</p>
+
+<p>
+
+<p>
+
+RateLimit configures broker-side admission control for an agent.
+</p>
+
+</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>
+
+Field
+</th>
+
+<th>
+
+Description
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>
+
+<code>maxInFlight</code></br> <em> int32 </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+MaxInFlight caps the number of concurrent in-flight A2A requests the
+broker admits. Requests beyond the cap are rejected immediately (HTTP
+429 with Retry-After, gRPC RESOURCE_EXHAUSTED) instead of being queued.
+Only A2A traffic (JSON-RPC, REST, gRPC) counts against the cap;
+passthrough (non-A2A) traffic is not gated. 0 or unset means unlimited.
 </p>
 
 </td>
