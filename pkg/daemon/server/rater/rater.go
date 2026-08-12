@@ -67,8 +67,7 @@ type Scraper interface {
 }
 
 // DiscoverFunc resolves the live pod DNS hostnames for an
-// AgentDeploy. Implemented by pkg/shared/discovery.Discover
-// bound to a namespace and resolver.
+// AgentDeploy.
 type DiscoverFunc func(ctx context.Context, agentDeploy string) ([]string, error)
 
 // Clock is a test seam. Production passes time.Now.

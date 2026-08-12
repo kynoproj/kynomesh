@@ -480,11 +480,7 @@ func resolveMaxInFlight(ad *kmv1.AgentDeploy) int {
 	return int(*ad.Spec.RateLimit.MaxInFlight)
 }
 
-// buildLimiter constructs the shared A2A admission limiter. In-cluster (an
-// AgentDeploy is injected) a positive cap yields a DNS-count limiter that
-// partitions the cap across live replicas, and its rebalancing loop is started
-// under ctx. Without an injected AgentDeploy (local-dev) it falls back to a
-// pod-local cap. An unset/zero cap is unlimited.
+// buildLimiter constructs the shared A2A admission limiter.
 func buildLimiter(ctx context.Context, ad *kmv1.AgentDeploy) ratelimit.Limiter {
 	logger := logging.FromContext(ctx)
 	maxInFlight := resolveMaxInFlight(ad)
@@ -493,16 +489,14 @@ func buildLimiter(ctx context.Context, ad *kmv1.AgentDeploy) ratelimit.Limiter {
 	}
 
 	if ad == nil || ad.Name == "" || ad.Namespace == "" {
-		logger.Infow("Broker rate limiting enabled (pod-local)", zap.Int("maxInFlight", maxInFlight))
+		logger.Infow("Broker rate limiting enabled (local-dev)", zap.Int("maxInFlight", maxInFlight))
 		return ratelimit.NewLimiter(maxInFlight)
 	}
 
 	limiter, start := ratelimit.NewDNSCountLimiter(maxInFlight, ad.Name, ad.Namespace, dnsResolver)
 	go start(ctx)
 	logger.Infow("Broker rate limiting enabled (fleet, DNS-count)",
-		zap.Int("maxInFlight", maxInFlight),
-		zap.String("agentDeploy", ad.Name),
-		zap.String("namespace", ad.Namespace))
+		zap.Int("maxInFlight", maxInFlight))
 	return limiter
 }
 

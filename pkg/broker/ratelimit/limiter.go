@@ -38,8 +38,7 @@ func (unlimited) Acquire() (func(), bool) { return noopRelease, true }
 
 // NewLimiter returns a pod-local Limiter capping in-flight requests at
 // maxInFlight. A maxInFlight of 0 or negative means unlimited. The cap applies
-// to this broker instance only; fleet-wide enforcement is layered on top by a
-// limiter that adjusts the effective cap (see NewDNSCountLimiter).
+// to this broker instance only.
 func NewLimiter(maxInFlight int) Limiter {
 	if maxInFlight <= 0 {
 		return unlimited{}
