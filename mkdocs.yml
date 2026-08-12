@@ -60,6 +60,7 @@ nav:
           - core-concepts/agentdeploy.md
       - Reference:
           - Autoscaling: "user-guide/reference/autoscaling.md"
+          - Rate limiting: "user-guide/reference/rate-limiting.md"
           - APIs.md
   - Operator Manual:
       - Releases ⧉: "operations/releases.md"

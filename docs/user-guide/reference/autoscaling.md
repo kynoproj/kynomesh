@@ -1,6 +1,6 @@
 # Autoscaling
 
-Kynomesh autoscales each agent independently based on the load it actually
+`Kynomesh` autoscales each agent independently based on the load it actually
 receives. Every [AgentDeploy](../../core-concepts/agentdeploy.md) is scaled on
 its own, so a busy agent grows while its idle peers stay small.
 
@@ -45,6 +45,10 @@ keep the fleet near a target utilization.
   `[min, max]`.
 - **The controller patches `spec.replicas`** on the AgentDeploy; the normal
   reconcile then rolls pods to match.
+- **Rate-limit ceiling.** If the agent has a
+  [`rateLimit.maxInFlight`](./rate-limiting.md) cap, scale-up is suppressed once
+  total in-flight reaches it — more replicas can't raise a fixed external
+  ceiling, so the agent settles instead of climbing toward `max`.
 
 ### Configuration
 
@@ -147,5 +151,7 @@ AgentDeploy's `scale` subresource from the tool's scaling object (e.g. KEDA's
 
 ## See Also
 
+- [Rate limiting](./rate-limiting.md) — cap an agent's in-flight load; interacts
+  with autoscaling (a rate-limited agent stops scaling up once it hits its cap).
 - [AgentDeploy](../../core-concepts/agentdeploy.md) — the unit that gets scaled.
 - [AgentSet](../../core-concepts/agentset.md) — where the `scale` block lives.
