@@ -86,22 +86,12 @@ type Decision struct {
 	Estimate Estimate
 }
 
+// Tuning constants for the safety mechanisms.
 const (
-	defaultScaleUpCooldownSec   uint32 = 90
-	defaultScaleDownCooldownSec uint32 = 90
-	defaultReplicasPerScaleUp   uint32 = 2
-	defaultReplicasPerScaleDown uint32 = 2
 	// defaultKneePerReplica is the assumed per-replica capacity before the
 	// estimator has learned anything (cold start). The controller blends away
 	// from it as confidence grows.
 	defaultKneePerReplica float64 = 20
-	// defaultTargetSaturationPct is the steady-state fraction of capacity to
-	// run at when the operator sets no explicit target.
-	defaultTargetSaturationPct uint32 = 80
-)
-
-// Tuning constants for the safety mechanisms.
-const (
 	// confFloor is the saturation discount applied at zero confidence: even a
 	// fully-trusted target is pulled to confFloor*target when we know nothing,
 	// so a cold start over-provisions rather than under-provisions.
@@ -137,10 +127,10 @@ func Decide(in Inputs) Decision {
 		return Decision{DesiredReplicas: desired, Reason: ReasonManualOutRange, Skip: false}
 	}
 
-	scaleUpCooldown := time.Duration(getOr(in.Spec.ScaleUpCooldownSeconds, defaultScaleUpCooldownSec)) * time.Second
-	scaleDownCooldown := time.Duration(getOr(in.Spec.ScaleDownCooldownSeconds, defaultScaleDownCooldownSec)) * time.Second
-	stepUp := int32(getOr(in.Spec.ReplicasPerScaleUp, defaultReplicasPerScaleUp))
-	stepDown := int32(getOr(in.Spec.ReplicasPerScaleDown, defaultReplicasPerScaleDown))
+	scaleUpCooldown := time.Duration(getOr(in.Spec.ScaleUpCooldownSeconds, kmv1.DefaultScaleUpCooldownSeconds)) * time.Second
+	scaleDownCooldown := time.Duration(getOr(in.Spec.ScaleDownCooldownSeconds, kmv1.DefaultScaleDownCooldownSeconds)) * time.Second
+	stepUp := int32(getOr(in.Spec.ReplicasPerScaleUp, kmv1.DefaultReplicasPerScaleUp))
+	stepDown := int32(getOr(in.Spec.ReplicasPerScaleDown, kmv1.DefaultReplicasPerScaleDown))
 	sinceLast := in.Now.Sub(in.LastScaledAt)
 
 	totalInflight := in.Current.InflightPerRep * float64(inflightBasis(in))
@@ -241,9 +231,9 @@ func inflightBasis(in Inputs) int32 {
 // Unset or 0 falls back to the default; values above 100 are clamped (the
 // admission webhook is expected to reject them outright).
 func targetSaturation(s kmv1.Scale) float64 {
-	pct := getOr(s.TargetSaturationPercentage, defaultTargetSaturationPct)
+	pct := getOr(s.TargetSaturationPercentage, kmv1.DefaultTargetSaturationPercentage)
 	if pct == 0 {
-		pct = defaultTargetSaturationPct
+		pct = kmv1.DefaultTargetSaturationPercentage
 	}
 	if pct > 100 {
 		pct = 100
