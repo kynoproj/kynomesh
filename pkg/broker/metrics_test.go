@@ -53,7 +53,7 @@ func TestWrapHTTP_BracketsRequestAndCountsCompletion(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	wrapped := wrapHTTP(set, inner)
+	wrapped := wrapHTTP(nil, set, inner)
 	rec := httptest.NewRecorder()
 	wrapped.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
 
@@ -67,7 +67,7 @@ func TestWrapHTTP_DecrementsOnPanic(t *testing.T) {
 	// misbehaving upstream can't leak in-flight slots forever.
 	c := NewMetrics(prometheus.NewRegistry())
 	set := c.JSONRPCSet()
-	wrapped := wrapHTTP(set, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+	wrapped := wrapHTTP(nil, set, http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		panic("boom")
 	}))
 
@@ -85,7 +85,7 @@ func TestWrapHTTP_ObservesDuration(t *testing.T) {
 	c := NewMetrics(prometheus.NewRegistry())
 	set := c.RESTSet()
 
-	wrapped := wrapHTTP(set, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	wrapped := wrapHTTP(nil, set, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	wrapped.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil))

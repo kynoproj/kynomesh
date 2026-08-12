@@ -78,7 +78,7 @@ func TestJSONRPCReverseProxy_ForwardsRequestVerbatim(t *testing.T) {
 	socketPath, rec := newUDSEchoBackend(t, "backend-reply")
 
 	counters := NewMetrics(prometheus.NewRegistry())
-	proxy := NewJSONRPCReverseProxy(NewUDSHTTPTransport(socketPath), counters)
+	proxy := NewJSONRPCReverseProxy(NewUDSHTTPTransport(socketPath), counters, nil)
 
 	req := httptest.NewRequest("POST", "/rpc", stringReader("hello"))
 	w := httptest.NewRecorder()
@@ -109,7 +109,7 @@ func TestJSONRPCReverseProxy_IncrementsJSONRPCCounter(t *testing.T) {
 	go func() { _ = srv.Serve(ln) }()
 	t.Cleanup(func() { _ = srv.Close() })
 
-	proxy := NewJSONRPCReverseProxy(NewUDSHTTPTransport(socketPath), counters)
+	proxy := NewJSONRPCReverseProxy(NewUDSHTTPTransport(socketPath), counters, nil)
 	proxy.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/rpc", nil))
 
 	assert.Equal(t, float64(1), midCallJSONRPC, "JSON-RPC counter must be 1 while the request is in flight")
@@ -137,7 +137,7 @@ func TestRESTReverseProxy_IncrementsRESTCounter(t *testing.T) {
 	go func() { _ = srv.Serve(ln) }()
 	t.Cleanup(func() { _ = srv.Close() })
 
-	proxy := NewRESTReverseProxy(NewUDSHTTPTransport(socketPath), counters)
+	proxy := NewRESTReverseProxy(NewUDSHTTPTransport(socketPath), counters, nil)
 	proxy.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/api/foo", nil))
 
 	assert.Equal(t, float64(1), midCallREST)

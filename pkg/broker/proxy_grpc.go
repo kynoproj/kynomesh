@@ -24,6 +24,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
@@ -58,11 +59,19 @@ func (rawCodec) Unmarshal(data []byte, v any) error {
 // GRPCPassthroughOptions turns a fresh *grpc.Server into a transparent
 // proxy to backendConn. Both options must be applied; no other services
 // should be registered on the server.
-func GRPCPassthroughOptions(backendConn *grpc.ClientConn, metrics *Metrics) []grpc.ServerOption {
+func GRPCPassthroughOptions(backendConn *grpc.ClientConn, metrics *Metrics, limiter Limiter) []grpc.ServerOption {
 	set := metrics.GRPCSet()
 	return []grpc.ServerOption{
 		grpc.ForceServerCodec(rawCodec{}),
 		grpc.UnknownServiceHandler(func(_ any, ss grpc.ServerStream) error {
+			if limiter != nil {
+				release, ok := limiter.Acquire()
+				if !ok {
+					set.rejected.Inc()
+					return status.Error(codes.ResourceExhausted, "broker at max in-flight capacity")
+				}
+				defer release()
+			}
 			set.inflight.Inc()
 			start := time.Now()
 			defer func() {

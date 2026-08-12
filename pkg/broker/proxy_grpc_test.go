@@ -29,9 +29,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/status"
 )
 
 // grpcPair brings up a backend gRPC server with the standard health
@@ -45,6 +47,11 @@ type grpcPair struct {
 }
 
 func startGRPCPair(t *testing.T) *grpcPair {
+	t.Helper()
+	return startGRPCPairWithLimiter(t, nil)
+}
+
+func startGRPCPairWithLimiter(t *testing.T, limiter Limiter) *grpcPair {
 	t.Helper()
 
 	socketPath := filepath.Join(shortSocketDir(t), "g.sock")
@@ -64,7 +71,7 @@ func startGRPCPair(t *testing.T) *grpcPair {
 	counters := NewMetrics(prometheus.NewRegistry())
 	brokerLn, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	brokerSrv := grpc.NewServer(GRPCPassthroughOptions(backendConn, counters)...)
+	brokerSrv := grpc.NewServer(GRPCPassthroughOptions(backendConn, counters, limiter)...)
 	go func() { _ = brokerSrv.Serve(brokerLn) }()
 	t.Cleanup(brokerSrv.Stop)
 
@@ -153,4 +160,42 @@ func TestGRPCPassthrough_UnknownMethodSurfacesBackendStatus(t *testing.T) {
 	// version (Unimplemented vs Unknown depending on path), so we settle
 	// for "not OK and not a transport-level read error".
 	assert.NotEqual(t, io.EOF, err)
+}
+
+func TestGRPCPassthrough_RejectsAtCapWithResourceExhausted(t *testing.T) {
+	pair := startGRPCPairWithLimiter(t, NewLimiter(1))
+
+	conn, err := grpc.NewClient(pair.brokerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = conn.Close() })
+
+	// Hold the only slot open with a long-lived streaming call.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stream, err := healthpb.NewHealthClient(conn).Watch(ctx, &healthpb.HealthCheckRequest{})
+	require.NoError(t, err)
+	_, err = stream.Recv()
+	require.NoError(t, err)
+	require.Eventually(t, func() bool { return testutil.ToFloat64(pair.counters.GRPC()) == 1 },
+		2*time.Second, 10*time.Millisecond, "streaming call must hold the only slot")
+
+	// A second call at cap=1 must be rejected with RESOURCE_EXHAUSTED.
+	callCtx, callCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer callCancel()
+	rejErr := conn.Invoke(callCtx, "/grpc.health.v1.Health/Check",
+		&healthpb.HealthCheckRequest{}, &healthpb.HealthCheckResponse{})
+	require.Error(t, rejErr, "call over the cap must be rejected")
+	assert.Equal(t, codes.ResourceExhausted, status.Code(rejErr),
+		"rejection must use RESOURCE_EXHAUSTED")
+	assert.Equal(t, float64(1), testutil.ToFloat64(pair.counters.rejected.WithLabelValues(TransportGRPC)),
+		"rejection must be counted")
+
+	// Releasing the slot (cancel the stream) must let a new call through.
+	cancel()
+	require.Eventually(t, func() bool { return testutil.ToFloat64(pair.counters.GRPC()) == 0 },
+		2*time.Second, 10*time.Millisecond, "slot must free after the stream closes")
+	okCtx, okCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer okCancel()
+	_, err = healthpb.NewHealthClient(conn).Check(okCtx, &healthpb.HealthCheckRequest{})
+	assert.NoError(t, err, "a freed slot must admit the next call")
 }

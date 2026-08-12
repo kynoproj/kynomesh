@@ -67,6 +67,8 @@ func (m *Peer) Reset() { *m = Peer{} }
 
 func (m *Probe) Reset() { *m = Probe{} }
 
+func (m *RateLimit) Reset() { *m = RateLimit{} }
+
 func (m *RollingUpdateStrategy) Reset() { *m = RollingUpdateStrategy{} }
 
 func (m *Scale) Reset() { *m = Scale{} }
@@ -103,7 +105,7 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	copy(dAtA[i:], m.PublicBaseURL)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.PublicBaseURL)))
 	i--
-	dAtA[i] = 0x52
+	dAtA[i] = 0x5a
 	{
 		size, err := m.UpdateStrategy.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
@@ -113,7 +115,7 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
 	i--
-	dAtA[i] = 0x4a
+	dAtA[i] = 0x52
 	if len(m.Sidecars) > 0 {
 		for iNdEx := len(m.Sidecars) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -125,7 +127,7 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintGenerated(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x42
+			dAtA[i] = 0x4a
 		}
 	}
 	if len(m.InitContainers) > 0 {
@@ -139,8 +141,20 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintGenerated(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x3a
+			dAtA[i] = 0x42
 		}
+	}
+	if m.RateLimit != nil {
+		{
+			size, err := m.RateLimit.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x3a
 	}
 	{
 		size, err := m.Scale.MarshalToSizedBuffer(dAtA[:i])
@@ -1286,6 +1300,34 @@ func (m *Probe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *RateLimit) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RateLimit) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RateLimit) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.MaxInFlight != nil {
+		i = encodeVarintGenerated(dAtA, i, uint64(*m.MaxInFlight))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *RollingUpdateStrategy) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1586,6 +1628,10 @@ func (m *AbstractAgentDeploy) Size() (n int) {
 	}
 	l = m.Scale.Size()
 	n += 1 + l + sovGenerated(uint64(l))
+	if m.RateLimit != nil {
+		l = m.RateLimit.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
 	if len(m.InitContainers) > 0 {
 		for _, e := range m.InitContainers {
 			l = e.Size()
@@ -2005,6 +2051,18 @@ func (m *Probe) Size() (n int) {
 	return n
 }
 
+func (m *RateLimit) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.MaxInFlight != nil {
+		n += 1 + sovGenerated(uint64(*m.MaxInFlight))
+	}
+	return n
+}
+
 func (m *RollingUpdateStrategy) Size() (n int) {
 	if m == nil {
 		return 0
@@ -2142,6 +2200,7 @@ func (this *AbstractAgentDeploy) String() string {
 		`BrokerTemplate:` + strings.Replace(this.BrokerTemplate.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
 		`Volumes:` + repeatedStringForVolumes + `,`,
 		`Scale:` + strings.Replace(strings.Replace(this.Scale.String(), "Scale", "Scale", 1), `&`, ``, 1) + `,`,
+		`RateLimit:` + strings.Replace(this.RateLimit.String(), "RateLimit", "RateLimit", 1) + `,`,
 		`InitContainers:` + repeatedStringForInitContainers + `,`,
 		`Sidecars:` + repeatedStringForSidecars + `,`,
 		`UpdateStrategy:` + strings.Replace(strings.Replace(this.UpdateStrategy.String(), "UpdateStrategy", "UpdateStrategy", 1), `&`, ``, 1) + `,`,
@@ -2453,6 +2512,16 @@ func (this *Probe) String() string {
 		`PeriodSeconds:` + valueToStringGenerated(this.PeriodSeconds) + `,`,
 		`SuccessThreshold:` + valueToStringGenerated(this.SuccessThreshold) + `,`,
 		`FailureThreshold:` + valueToStringGenerated(this.FailureThreshold) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *RateLimit) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&RateLimit{`,
+		`MaxInFlight:` + valueToStringGenerated(this.MaxInFlight) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2780,6 +2849,42 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RateLimit", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.RateLimit == nil {
+				m.RateLimit = &RateLimit{}
+			}
+			if err := m.RateLimit.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field InitContainers", wireType)
 			}
 			var msglen int
@@ -2812,7 +2917,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 8:
+		case 9:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Sidecars", wireType)
 			}
@@ -2846,7 +2951,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 9:
+		case 10:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field UpdateStrategy", wireType)
 			}
@@ -2879,7 +2984,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 10:
+		case 11:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field PublicBaseURL", wireType)
 			}
@@ -6443,6 +6548,76 @@ func (m *Probe) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.FailureThreshold = &v
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RateLimit) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RateLimit: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RateLimit: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxInFlight", wireType)
+			}
+			var v int32
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.MaxInFlight = &v
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])

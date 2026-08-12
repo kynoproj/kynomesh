@@ -1801,6 +1801,12 @@ spec:
                 type: string
               publicBaseURL:
                 type: string
+              rateLimit:
+                properties:
+                  maxInFlight:
+                    format: int32
+                    type: integer
+                type: object
               replicas:
                 default: 1
                 format: int32

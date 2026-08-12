@@ -39,7 +39,7 @@ import (
 func TestWrapHTTP_SSEEvents(t *testing.T) {
 	c := NewMetrics(prometheus.NewRegistry())
 	set := c.PassthroughSet()
-	wrapped := wrapHTTP(set, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	wrapped := wrapHTTP(nil, set, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.WriteHeader(http.StatusOK)
 		for i := range 3 {
@@ -61,7 +61,7 @@ func TestWrapHTTP_SSEEvents(t *testing.T) {
 func TestWrapHTTP_SSEEventsAcrossWrites(t *testing.T) {
 	c := NewMetrics(prometheus.NewRegistry())
 	set := c.PassthroughSet()
-	wrapped := wrapHTTP(set, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	wrapped := wrapHTTP(nil, set, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.WriteHeader(http.StatusOK)
 		// Split a single event across two writes so the "\n\n"
@@ -80,7 +80,7 @@ func TestWrapHTTP_SSEEventsAcrossWrites(t *testing.T) {
 func TestWrapHTTP_NonSSEResponseDoesNotCountEvents(t *testing.T) {
 	c := NewMetrics(prometheus.NewRegistry())
 	set := c.RESTSet()
-	wrapped := wrapHTTP(set, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	wrapped := wrapHTTP(nil, set, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		// A regular JSON body that happens to contain "\n\n" must
@@ -100,7 +100,7 @@ func TestWrapHTTP_NonSSEResponseDoesNotCountEvents(t *testing.T) {
 func TestWrapHTTP_SSEContentTypeWithParameters(t *testing.T) {
 	c := NewMetrics(prometheus.NewRegistry())
 	set := c.RESTSet()
-	wrapped := wrapHTTP(set, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	wrapped := wrapHTTP(nil, set, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("data: hello\n\n"))
@@ -128,7 +128,7 @@ func TestReverseProxy_SSEFlushesImmediately(t *testing.T) {
 	t.Cleanup(func() { close(release) })
 
 	transport := transportToAddress(strings.TrimPrefix(agent.URL, "http://"))
-	proxy := newAgentReverseProxy(transport, NewMetrics(prometheus.NewRegistry()).PassthroughSet())
+	proxy := newAgentReverseProxy(transport, nil, NewMetrics(prometheus.NewRegistry()).PassthroughSet())
 	frontend := httptest.NewServer(proxy)
 	t.Cleanup(frontend.Close)
 

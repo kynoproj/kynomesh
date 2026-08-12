@@ -136,24 +136,28 @@ type AbstractAgentDeploy struct {
 	// Settings for autoscaling
 	// +optional
 	Scale Scale `json:"scale,omitempty" protobuf:"bytes,6,opt,name=scale"`
+	// RateLimit configures broker-side admission control. When unset, the
+	// broker admits requests without limit.
+	// +optional
+	RateLimit *RateLimit `json:"rateLimit,omitempty" protobuf:"bytes,7,opt,name=rateLimit"`
 	// List of customized init containers belonging to the pod.
 	// More info: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
 	// +optional
-	InitContainers []corev1.Container `json:"initContainers,omitempty" protobuf:"bytes,7,rep,name=initContainers"`
+	InitContainers []corev1.Container `json:"initContainers,omitempty" protobuf:"bytes,8,rep,name=initContainers"`
 	// List of customized sidecar containers belonging to the pod.
 	// +optional
-	Sidecars []corev1.Container `json:"sidecars,omitempty" protobuf:"bytes,8,rep,name=sidecars"`
+	Sidecars []corev1.Container `json:"sidecars,omitempty" protobuf:"bytes,9,rep,name=sidecars"`
 	// The strategy to use to replace existing pods with new ones.
 	// +kubebuilder:default={"type": "RollingUpdate", "rollingUpdate": {"maxUnavailable": "25%"}}
 	// +optional
-	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty" protobuf:"bytes,9,opt,name=updateStrategy"`
+	UpdateStrategy UpdateStrategy `json:"updateStrategy,omitempty" protobuf:"bytes,10,opt,name=updateStrategy"`
 	// PublicBaseURL is the externally reachable base URL of this agent's
 	// broker (e.g. https://agent.example.com). When set, the broker uses
 	// it to rewrite AgentCard SupportedInterfaces URLs so external clients
 	// can reach the agent through an ingress or gateway in front of the
 	// cluster. If empty, the broker advertises its in-cluster address.
 	// +optional
-	PublicBaseURL string `json:"publicBaseURL,omitempty" protobuf:"bytes,10,opt,name=publicBaseURL"`
+	PublicBaseURL string `json:"publicBaseURL,omitempty" protobuf:"bytes,11,opt,name=publicBaseURL"`
 }
 
 type AgentDeployStatus struct {
