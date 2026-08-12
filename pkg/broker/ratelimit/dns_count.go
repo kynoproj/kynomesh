@@ -93,7 +93,6 @@ func (l *dnsCountLimiter) recount(ctx context.Context) {
 	hosts, err := discovery.Discover(ctx, l.resolver, l.agentDeploy, l.namespace)
 	if err != nil {
 		logger.Warnw("Rate-limit replica recount failed; keeping current slice",
-			zap.String("agentDeploy", l.agentDeploy),
 			zap.Int("slice", l.sem.limitValue()),
 			zap.Error(err))
 		return
