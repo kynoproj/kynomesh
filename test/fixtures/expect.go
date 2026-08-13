@@ -18,6 +18,8 @@ package fixtures
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -166,6 +168,26 @@ func (e *Expect) AgentDeployScaledDown(agentName string, maxReplicas int32, time
 		e.t.Fatalf("Expected AgentDeploy %q to scale down to <= %d replicas: %v", name, maxReplicas, err)
 	}
 	e.t.Logf("Confirmed AgentDeploy %q scaled down to <= %d replicas", name, maxReplicas)
+	return e
+}
+
+// BrokerRejectedRequests asserts that the broker rejected at least one request
+// at admission — a positive broker_rejected_total on the introspection endpoint
+// (localPort -> :8491) — the ground-truth signal that the rate limit shed load.
+// It waits for rejections to accumulate under load, then makes the assertion via
+// HTTPExpect: /metrics returns 200 and its body carries a non-zero
+// broker_rejected_total sample.
+func (e *Expect) BrokerRejectedRequests(localPort int, timeout time.Duration) *Expect {
+	e.t.Helper()
+	ctx := context.Background()
+	if err := WaitForBrokerRejections(ctx, localPort, 0, timeout); err != nil {
+		e.t.Fatalf("Expected broker_rejected_total > 0 within %s: %v", timeout, err)
+	}
+	baseURL := fmt.Sprintf("https://localhost:%d", localPort)
+	HTTPExpect(e.t, baseURL).GET("/metrics").Expect().
+		Status(http.StatusOK).
+		Body().Match(`broker_rejected_total(?:\{[^}]*\})?\s+[1-9][0-9.e+-]*`)
+	e.t.Log("Confirmed broker rejected requests (broker_rejected_total > 0)")
 	return e
 }
 

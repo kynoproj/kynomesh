@@ -1,0 +1,21 @@
+# AgentSet for the broker rate-limiting functional test.
+apiVersion: kynomesh.kyno.sh/v1alpha1
+kind: AgentSet
+metadata:
+  name: slow-agent-rl
+spec:
+  pattern: Supervisor
+  entry: slow
+  agents:
+    - name: slow
+      container:
+        image: quay.io/kynoio/examples/slow-agent-go:latest
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: SLOW_AGENT_DELAY
+            value: "5s"
+      rateLimit:
+        maxInFlight: 4
+      scale:
+        min: 2
+        max: 2

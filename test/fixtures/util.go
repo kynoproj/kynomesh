@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -88,22 +89,23 @@ func Exec(name string, args ...string) (string, error) {
 	return string(out), err
 }
 
-// EntryPodName returns the name of a running pod backing the AgentSet's entry
-// Service. Kubernetes port-forwarding is pod-level, so forwarding "to the entry
-// Service" means resolving one of its backing pods first, exactly as
-// `kubectl port-forward svc/<name>-ingress` does under the hood.
-func EntryPodName(ctx context.Context, kube kubernetes.Interface, namespace, agentSetName string) (string, error) {
-	selector := fmt.Sprintf("%s=%s,%s=true,%s=true",
-		kmv1.KeyAgentSetName, agentSetName, kmv1.KeyEntry, kmv1.KeyServing)
+// AgentDeployPodName returns the name of a running pod of the AgentSet's
+// AgentDeploy named agentName (a per-agent entry under spec.agents). Pods carry
+// KeyAgentDeployName = the agent's Spec.Name.
+func AgentDeployPodName(ctx context.Context, kube kubernetes.Interface, namespace, agentSetName, agentName string) (string, error) {
+	selector := fmt.Sprintf("%s=%s,%s=%s,%s=%s",
+		kmv1.KeyAgentSetName, agentSetName,
+		kmv1.KeyAgentDeployName, agentName,
+		kmv1.KeyComponent, kmv1.ComponentAgent)
 	podList, err := kube.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: selector,
 		FieldSelector: "status.phase=Running",
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to list entry pods for AgentSet %q: %w", agentSetName, err)
+		return "", fmt.Errorf("failed to list pods for AgentDeploy %q/%q: %w", agentSetName, agentName, err)
 	}
 	if len(podList.Items) == 0 {
-		return "", fmt.Errorf("no running entry pods found for AgentSet %q", agentSetName)
+		return "", fmt.Errorf("no running pods found for AgentDeploy %q/%q", agentSetName, agentName)
 	}
 	return podList.Items[0].Name, nil
 }
@@ -273,9 +275,64 @@ func GenerateLoad(localPort int, message string, concurrency int, stop <-chan st
 	return done
 }
 
-// PodPortForward forwards a local port to a port on the named pod. The caller
-// is responsible for closing stopCh to terminate the forward.
-func PodPortForward(restConfig *rest.Config, namespace, podName string, localPort, remotePort int, stopCh chan struct{}) error {
+// brokerRejectedRe matches a broker_rejected_total sample line and captures its
+// value, e.g. `broker_rejected_total{transport="jsonrpc"} 3`.
+var brokerRejectedRe = regexp.MustCompile(`(?m)^broker_rejected_total(?:\{[^}]*\})?\s+([0-9.e+-]+)`)
+
+// brokerRejectedTotal fetches the broker introspection /metrics endpoint over a
+// port-forward to :8491 and sums broker_rejected_total across transports. It
+// reuses the shared insecure-TLS httpexpect client (self-signed broker cert).
+func brokerRejectedTotal(localPort int) (float64, error) {
+	url := fmt.Sprintf("https://localhost:%d/metrics", localPort)
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		return 0, fmt.Errorf("scrape %s: %w", url, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("scrape %s: status %d", url, resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, fmt.Errorf("read metrics body: %w", err)
+	}
+
+	var total float64
+	for _, m := range brokerRejectedRe.FindAllStringSubmatch(string(body), -1) {
+		if v, perr := strconv.ParseFloat(m[1], 64); perr == nil {
+			total += v
+		}
+	}
+	return total, nil
+}
+
+// WaitForBrokerRejections polls the broker /metrics over a port-forward to
+// :8491 until broker_rejected_total exceeds want, or timeout elapses. The final
+// (asserted) read is left to the caller via HTTPExpect.
+func WaitForBrokerRejections(ctx context.Context, localPort int, want float64, timeout time.Duration) error {
+	return wait.PollUntilContextTimeout(ctx, pollInterval, timeout, true, func(context.Context) (bool, error) {
+		v, err := brokerRejectedTotal(localPort)
+		if err != nil {
+			// Transient scrape failures (forward still coming up) are retried.
+			return false, nil
+		}
+		return v > want, nil
+	})
+}
+
+// PortPair is one local:remote port mapping for a port-forward.
+type PortPair struct {
+	Local  int
+	Remote int
+}
+
+// PodPortForward forwards one or more local:remote port pairs to the named pod
+// through a single tunnel, so every pair provably lands on the same pod. The
+// caller is responsible for closing stopCh to terminate the forward.
+func PodPortForward(restConfig *rest.Config, namespace, podName string, pairs []PortPair, stopCh chan struct{}) error {
+	if len(pairs) == 0 {
+		return fmt.Errorf("PodPortForward: no port pairs given")
+	}
 	roundTripper, upgrader, err := spdy.RoundTripperFor(restConfig)
 	if err != nil {
 		return fmt.Errorf("failed to build SPDY round tripper: %w", err)
@@ -284,9 +341,14 @@ func PodPortForward(restConfig *rest.Config, namespace, podName string, localPor
 	hostIP := strings.TrimLeft(restConfig.Host, "htps:/")
 	serverURL := &url.URL{Scheme: "https", Path: path, Host: hostIP}
 
+	ports := make([]string, len(pairs))
+	for i, p := range pairs {
+		ports[i] = fmt.Sprintf("%d:%d", p.Local, p.Remote)
+	}
+
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, http.MethodPost, serverURL)
 	readyCh := make(chan struct{})
-	forwarder, err := portforward.New(dialer, []string{fmt.Sprintf("%d:%d", localPort, remotePort)}, stopCh, readyCh, io.Discard, io.Discard)
+	forwarder, err := portforward.New(dialer, ports, stopCh, readyCh, io.Discard, io.Discard)
 	if err != nil {
 		return fmt.Errorf("failed to create port-forwarder: %w", err)
 	}

@@ -162,11 +162,10 @@ cleanup-e2e:
 # To run just one of the e2e tests by name (i.e. 'make TestCreateSimpleAgentSet'):
 Test%:
 	$(MAKE) cleanup-e2e
-	$(MAKE) image e2eapi-image
+	$(MAKE) image
 	kubectl -n kynomesh-system delete po -lapp.kubernetes.io/component=controller-manager,app.kubernetes.io/part-of=kynomesh
-	kubectl -n kynomesh-system delete po e2e-api-pod  --ignore-not-found=true
-	go generate $(shell find $(shell grep -rl $(*) ./test/*-e2e/*.go))
-	cat test/manifests/e2e-api-pod.yaml |  sed 's@quay.io/kynoproj/@$(IMAGE_NAMESPACE)/@' | sed 's/:latest/:$(VERSION)/' | kubectl -n kynomesh-system apply -f -
+	$(eval GEN_FILES := $(shell grep -rl $(*) ./test/*e2e/*.go 2>/dev/null))
+	$(if $(GEN_FILES),go generate $(GEN_FILES))
 	-go test -v -timeout 20m -count 1 --tags e2e -p 1 ./test/$(shell grep $(*) -R ./test | head -1 | awk -F\/ '{print $$3}' ) -run='.*/$*'
 	$(MAKE) cleanup-e2e
 
@@ -246,14 +245,6 @@ start: image
 	kubectl kustomize test/manifests | sed 's@quay.io/kynoproj/@$(IMAGE_NAMESPACE)/@' | sed 's/:$(BASE_VERSION)/:$(VERSION)/' | kubectl -n kynomesh-system apply -l app.kubernetes.io/part-of=kynomesh --prune=false --force -f -
 	kubectl -n kynomesh-system rollout status deploy -lapp.kubernetes.io/part-of=kynomesh --timeout=60s
 	kubectl -n kynomesh-system wait -lapp.kubernetes.io/part-of=kynomesh --for=condition=Ready --timeout 60s pod --all
-
-.PHONY: e2eapi-image
-e2eapi-image: clean dist/e2eapi
-	DOCKER_BUILDKIT=1 $(DOCKER) build . --target e2eapi --tag $(IMAGE_NAMESPACE)/e2eapi:$(VERSION) --build-arg VERSION="$(VERSION)"
-	@if [[ "$(DOCKER_PUSH)" = "true" ]]; then $(DOCKER) push $(IMAGE_NAMESPACE)/e2eapi:$(VERSION); fi
-ifdef IMAGE_IMPORT_CMD
-	$(IMAGE_IMPORT_CMD) $(IMAGE_NAMESPACE)/e2eapi:$(VERSION)
-endif
 
 /usr/local/bin/mkdocs:
 	$(PYTHON) -m pip install mkdocs==1.3.0 mkdocs_material==8.3.9 mkdocs-embed-external-markdown==2.3.0 mike==2.1.3

@@ -57,6 +57,37 @@ func (s *FunctionalSuite) TestResearchAssistant() {
 		AgentSetDeleted(2 * time.Minute)
 }
 
+// TestRateLimitShedsExcessLoad verifies broker-side max-in-flight enforcement
+// across a fleet.
+func (s *FunctionalSuite) TestRateLimitShedsExcessLoad() {
+	const (
+		entryPort      = 8490
+		introspectPort = 8491
+		concurrency    = 15 // well above the maxInFlight of 4
+		rejectWait     = 2 * time.Minute
+	)
+
+	s.Given().AgentSet("@testdata/slow-agent-ratelimit.yaml").
+		When().
+		CreateAgentSetAndWait().
+		Expect().
+		AgentSetRunning().
+		AgentPodsRunning(2).
+		When().
+		WaitForAgentServicesReady().
+		AgentSetEntryPortForwardWithIntrospection(entryPort, introspectPort).
+		GenerateLoad(entryPort, concurrency).
+		Expect().
+		// The cap sheds the excess concurrent load: rejections must appear.
+		BrokerRejectedRequests(introspectPort, rejectWait).
+		When().
+		StopLoad().
+		TerminateAllPodPortForwards().
+		DeleteAgentSetAndWait().
+		Expect().
+		AgentSetDeleted(2 * time.Minute)
+}
+
 func TestFunctionalSuite(t *testing.T) {
 	suite.Run(t, new(FunctionalSuite))
 }
