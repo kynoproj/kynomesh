@@ -1,7 +1,4 @@
 # AgentSet for the broker rate-limiting functional test.
-#
-# A single slow agent (each request held open ~5s) with a small max-in-flight
-# cap, pinned at two replicas (autoscaling disabled).
 apiVersion: kynomesh.kyno.sh/v1alpha1
 kind: AgentSet
 metadata:
