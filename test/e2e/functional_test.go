@@ -75,10 +75,6 @@ func (s *FunctionalSuite) TestRateLimitShedsExcessLoad() {
 		AgentPodsRunning(2).
 		When().
 		WaitForAgentServicesReady().
-		// Forward the entry broker (8490) for load and its introspection port
-		// (8491) for the metrics scrape, both to the same entry pod through one
-		// tunnel — the port-forward is pod-direct, so metrics must observe the
-		// pod that receives the load.
 		AgentSetEntryPortForwardWithIntrospection(entryPort, introspectPort).
 		GenerateLoad(entryPort, concurrency).
 		Expect().
