@@ -319,9 +319,19 @@ func WaitForBrokerRejections(ctx context.Context, localPort int, want float64, t
 	})
 }
 
-// PodPortForward forwards a local port to a port on the named pod. The caller
-// is responsible for closing stopCh to terminate the forward.
-func PodPortForward(restConfig *rest.Config, namespace, podName string, localPort, remotePort int, stopCh chan struct{}) error {
+// PortPair is one local:remote port mapping for a port-forward.
+type PortPair struct {
+	Local  int
+	Remote int
+}
+
+// PodPortForward forwards one or more local:remote port pairs to the named pod
+// through a single tunnel, so every pair provably lands on the same pod. The
+// caller is responsible for closing stopCh to terminate the forward.
+func PodPortForward(restConfig *rest.Config, namespace, podName string, pairs []PortPair, stopCh chan struct{}) error {
+	if len(pairs) == 0 {
+		return fmt.Errorf("PodPortForward: no port pairs given")
+	}
 	roundTripper, upgrader, err := spdy.RoundTripperFor(restConfig)
 	if err != nil {
 		return fmt.Errorf("failed to build SPDY round tripper: %w", err)
@@ -330,9 +340,14 @@ func PodPortForward(restConfig *rest.Config, namespace, podName string, localPor
 	hostIP := strings.TrimLeft(restConfig.Host, "htps:/")
 	serverURL := &url.URL{Scheme: "https", Path: path, Host: hostIP}
 
+	ports := make([]string, len(pairs))
+	for i, p := range pairs {
+		ports[i] = fmt.Sprintf("%d:%d", p.Local, p.Remote)
+	}
+
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, http.MethodPost, serverURL)
 	readyCh := make(chan struct{})
-	forwarder, err := portforward.New(dialer, []string{fmt.Sprintf("%d:%d", localPort, remotePort)}, stopCh, readyCh, io.Discard, io.Discard)
+	forwarder, err := portforward.New(dialer, ports, stopCh, readyCh, io.Discard, io.Discard)
 	if err != nil {
 		return fmt.Errorf("failed to create port-forwarder: %w", err)
 	}

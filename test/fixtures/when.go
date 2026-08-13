@@ -113,43 +113,26 @@ func (w *When) UpdateAgentSet(mutate func(*kmv1.AgentSet)) *When {
 	return w
 }
 
-// AgentSetPodPortForward forwards localPort to remotePort on the first running
-// pod for the AgentSet.
-func (w *When) AgentSetPodPortForward(localPort, remotePort int) *When {
-	w.t.Helper()
-	if w.agentSet == nil {
-		w.t.Fatal("No AgentSet selected for port-forward")
-	}
-	labelSelector := fmt.Sprintf("%s=%s", kmv1.KeyAgentSetName, w.agentSet.Name)
-	ctx := context.Background()
-	podList, err := w.kubeClient.CoreV1().Pods(Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: labelSelector,
-		FieldSelector: "status.phase=Running",
-	})
-	if err != nil {
-		w.t.Fatalf("Error listing AgentSet pods: %v", err)
-	}
-	if len(podList.Items) == 0 {
-		w.t.Fatalf("No running pods found for AgentSet %q", w.agentSet.Name)
-	}
-	podName := podList.Items[0].GetName()
-	w.t.Logf("AgentSet POD name: %s", podName)
-
-	stopCh := make(chan struct{}, 1)
-	if err := PodPortForward(w.restConfig, Namespace, podName, localPort, remotePort, stopCh); err != nil {
-		w.t.Fatalf("Failed to start AgentSet pod port-forward: %v", err)
-	}
-	if w.portForwarderStopChannels == nil {
-		w.portForwarderStopChannels = make(map[string]chan struct{})
-	}
-	w.portForwarderStopChannels[podName] = stopCh
-	return w
-}
-
 // AgentSetEntryPortForward forwards localPort to the broker port (8490) on a
 // pod backing the AgentSet's entry Service, so a2acli can reach the entry agent
 // over the forward.
 func (w *When) AgentSetEntryPortForward(localPort int) *When {
+	return w.forwardEntryPod(PortPair{Local: localPort, Remote: kmv1.AgentBrokerPort})
+}
+
+// AgentSetEntryPortForwardWithIntrospection forwards both the broker port (8490)
+// and the introspection port (8491) of the entry pod, through one tunnel to the
+// SAME pod.
+func (w *When) AgentSetEntryPortForwardWithIntrospection(entryLocalPort, introspectLocalPort int) *When {
+	return w.forwardEntryPod(
+		PortPair{Local: entryLocalPort, Remote: kmv1.AgentBrokerPort},
+		PortPair{Local: introspectLocalPort, Remote: kmv1.AgentBrokerIntrospectionPort},
+	)
+}
+
+// forwardEntryPod forwards all given port pairs to the AgentSet's entry pod
+// through a single tunnel, so every pair lands on the same pod.
+func (w *When) forwardEntryPod(pairs ...PortPair) *When {
 	w.t.Helper()
 	if w.agentSet == nil {
 		w.t.Fatal("No AgentSet selected for port-forward")
@@ -159,11 +142,11 @@ func (w *When) AgentSetEntryPortForward(localPort int) *When {
 	if err != nil {
 		w.t.Fatalf("Failed to resolve entry pod: %v", err)
 	}
-	w.t.Logf("AgentSet entry POD name: %s", podName)
+	w.t.Logf("Port-forward %s: %v", podName, pairs)
 
 	stopCh := make(chan struct{}, 1)
-	if err := PodPortForward(w.restConfig, Namespace, podName, localPort, kmv1.AgentBrokerPort, stopCh); err != nil {
-		w.t.Fatalf("Failed to start entry port-forward: %v", err)
+	if err := PodPortForward(w.restConfig, Namespace, podName, pairs, stopCh); err != nil {
+		w.t.Fatalf("Failed to start port-forward to %s: %v", podName, err)
 	}
 	if w.portForwarderStopChannels == nil {
 		w.portForwarderStopChannels = make(map[string]chan struct{})

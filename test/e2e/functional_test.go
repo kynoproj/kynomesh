@@ -24,7 +24,6 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 	. "github.com/kynoproj/kynomesh/test/fixtures"
 )
 
@@ -76,10 +75,11 @@ func (s *FunctionalSuite) TestRateLimitShedsExcessLoad() {
 		AgentPodsRunning(2).
 		When().
 		WaitForAgentServicesReady().
-		// Forward the entry broker (8490) for load, and one pod's introspection
-		// port (8491) to scrape broker_rejected_total.
-		AgentSetEntryPortForward(entryPort).
-		AgentSetPodPortForward(introspectPort, kmv1.AgentBrokerIntrospectionPort).
+		// Forward the entry broker (8490) for load and its introspection port
+		// (8491) for the metrics scrape, both to the same entry pod through one
+		// tunnel — the port-forward is pod-direct, so metrics must observe the
+		// pod that receives the load.
+		AgentSetEntryPortForwardWithIntrospection(entryPort, introspectPort).
 		GenerateLoad(entryPort, concurrency).
 		Expect().
 		// The cap sheds the excess concurrent load: rejections must appear.
