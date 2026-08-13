@@ -89,22 +89,23 @@ func Exec(name string, args ...string) (string, error) {
 	return string(out), err
 }
 
-// EntryPodName returns the name of a running pod backing the AgentSet's entry
-// Service. Kubernetes port-forwarding is pod-level, so forwarding "to the entry
-// Service" means resolving one of its backing pods first, exactly as
-// `kubectl port-forward svc/<name>-ingress` does under the hood.
-func EntryPodName(ctx context.Context, kube kubernetes.Interface, namespace, agentSetName string) (string, error) {
-	selector := fmt.Sprintf("%s=%s,%s=true,%s=true",
-		kmv1.KeyAgentSetName, agentSetName, kmv1.KeyEntry, kmv1.KeyServing)
+// AgentDeployPodName returns the name of a running pod of the AgentSet's
+// AgentDeploy named agentName (a per-agent entry under spec.agents). Pods carry
+// KeyAgentDeployName = the agent's Spec.Name.
+func AgentDeployPodName(ctx context.Context, kube kubernetes.Interface, namespace, agentSetName, agentName string) (string, error) {
+	selector := fmt.Sprintf("%s=%s,%s=%s,%s=%s",
+		kmv1.KeyAgentSetName, agentSetName,
+		kmv1.KeyAgentDeployName, agentName,
+		kmv1.KeyComponent, kmv1.ComponentAgent)
 	podList, err := kube.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: selector,
 		FieldSelector: "status.phase=Running",
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to list entry pods for AgentSet %q: %w", agentSetName, err)
+		return "", fmt.Errorf("failed to list pods for AgentDeploy %q/%q: %w", agentSetName, agentName, err)
 	}
 	if len(podList.Items) == 0 {
-		return "", fmt.Errorf("no running entry pods found for AgentSet %q", agentSetName)
+		return "", fmt.Errorf("no running pods found for AgentDeploy %q/%q", agentSetName, agentName)
 	}
 	return podList.Items[0].Name, nil
 }
