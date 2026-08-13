@@ -12,7 +12,7 @@ resources:
 
 images:
   - name: quay.io/kynoproj/kynomesh
-    newTag: latest
+    newTag: v0.6.0
 
 patches:
   # For release scripts
