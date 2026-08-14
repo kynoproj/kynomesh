@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
@@ -205,4 +206,53 @@ func TestReconcileDaemon_RecreatesOnAgentDeploysChange(t *testing.T) {
 func TestAgentSet_DaemonName(t *testing.T) {
 	as := newAgentSet("my-set", "x")
 	assert.Equal(t, "my-set-daemon", as.DaemonName())
+}
+
+func TestNewDaemonDeployment_NilTemplates(t *testing.T) {
+	as := newAgentSet("hello", "alpha")
+	r, _ := newTestReconciler(t)
+
+	dep, err := r.newDaemonDeployment(as)
+	require.NoError(t, err)
+	assert.Equal(t, "test-image:latest", dep.Spec.Template.Spec.Containers[0].Image)
+}
+
+func TestNewDaemonDeployment_AppliesContainerTemplate(t *testing.T) {
+	as := newAgentSet("hello", "alpha")
+	as.Spec.Templates = &kmv1.Templates{
+		DaemonTemplate: &kmv1.DaemonTemplate{
+			Container: &kmv1.ContainerTemplate{
+				Env: []corev1.EnvVar{{Name: "EXTRA", Value: "1"}},
+				Resources: corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("1")},
+				},
+			},
+		},
+	}
+	r, _ := newTestReconciler(t)
+
+	dep, err := r.newDaemonDeployment(as)
+	require.NoError(t, err)
+	c := dep.Spec.Template.Spec.Containers[0]
+	env := envMap(c.Env)
+	assert.Equal(t, "1", env["EXTRA"].value)
+	assert.Equal(t, "1", c.Resources.Limits.Cpu().String())
+}
+
+func TestNewDaemonDeployment_AppliesPodTemplate(t *testing.T) {
+	as := newAgentSet("hello", "alpha")
+	as.Spec.Templates = &kmv1.Templates{
+		DaemonTemplate: &kmv1.DaemonTemplate{
+			AbstractPodTemplate: kmv1.AbstractPodTemplate{
+				NodeSelector:       map[string]string{"disk": "ssd"},
+				ServiceAccountName: "daemon-sa",
+			},
+		},
+	}
+	r, _ := newTestReconciler(t)
+
+	dep, err := r.newDaemonDeployment(as)
+	require.NoError(t, err)
+	assert.Equal(t, "ssd", dep.Spec.Template.Spec.NodeSelector["disk"])
+	assert.Equal(t, "daemon-sa", dep.Spec.Template.Spec.ServiceAccountName)
 }
