@@ -99,3 +99,62 @@ func TestApplyToPodSpec(t *testing.T) {
 	assert.Equal(t, podSpec.ServiceAccountName, "spec-sa")
 	assert.Equal(t, podSpec.ResourceClaims[0].Name, "template-resource-claim")
 }
+
+func TestApplyDefaultsFrom(t *testing.T) {
+	saTmpl := "tmpl-sa"
+	saOwn := "own-sa"
+
+	t.Run("fills unset fields from defaults", func(t *testing.T) {
+		own := &AbstractPodTemplate{}
+		defaults := &AbstractPodTemplate{
+			NodeSelector:       map[string]string{"disktype": "ssd"},
+			ServiceAccountName: saTmpl,
+			Metadata:           &Metadata{Labels: map[string]string{"team": "platform"}},
+		}
+		own.ApplyDefaultsFrom(defaults)
+		assert.Equal(t, "ssd", own.NodeSelector["disktype"])
+		assert.Equal(t, saTmpl, own.ServiceAccountName)
+		assert.Equal(t, "platform", own.Metadata.Labels["team"])
+	})
+
+	t.Run("own values win over defaults", func(t *testing.T) {
+		own := &AbstractPodTemplate{
+			NodeSelector:       map[string]string{"disktype": "nvme"},
+			ServiceAccountName: saOwn,
+		}
+		defaults := &AbstractPodTemplate{
+			NodeSelector:       map[string]string{"disktype": "ssd"},
+			ServiceAccountName: saTmpl,
+		}
+		own.ApplyDefaultsFrom(defaults)
+		assert.Equal(t, "nvme", own.NodeSelector["disktype"], "own map wins wholesale when set")
+		assert.Equal(t, saOwn, own.ServiceAccountName)
+	})
+
+	t.Run("labels and annotations merge additively with own keys winning", func(t *testing.T) {
+		own := &AbstractPodTemplate{
+			Metadata: &Metadata{
+				Labels:      map[string]string{"tier": "frontend", "extra": "yes"},
+				Annotations: map[string]string{"a": "own"},
+			},
+		}
+		defaults := &AbstractPodTemplate{
+			Metadata: &Metadata{
+				Labels:      map[string]string{"tier": "backend", "team": "platform"},
+				Annotations: map[string]string{"a": "tmpl", "b": "tmpl"},
+			},
+		}
+		own.ApplyDefaultsFrom(defaults)
+		assert.Equal(t, "frontend", own.Metadata.Labels["tier"], "own key wins")
+		assert.Equal(t, "yes", own.Metadata.Labels["extra"], "own-only kept")
+		assert.Equal(t, "platform", own.Metadata.Labels["team"], "defaults-only merged in")
+		assert.Equal(t, "own", own.Metadata.Annotations["a"], "own annotation wins")
+		assert.Equal(t, "tmpl", own.Metadata.Annotations["b"], "defaults-only annotation merged in")
+	})
+
+	t.Run("nil defaults is a no-op", func(t *testing.T) {
+		own := &AbstractPodTemplate{ServiceAccountName: saOwn}
+		own.ApplyDefaultsFrom(nil)
+		assert.Equal(t, saOwn, own.ServiceAccountName)
+	})
+}

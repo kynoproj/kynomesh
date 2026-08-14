@@ -122,7 +122,7 @@ Agent container, the user’s agent code runs here.
 
 <td>
 
-<code>brokerTemplate</code></br> <em>
+<code>brokerContainer</code></br> <em>
 <a href="#kynomesh.kyno.sh/v1alpha1.ContainerTemplate">
 ContainerTemplate </a> </em>
 </td>
@@ -1324,7 +1324,7 @@ type.)
 
 <td>
 
-<code>brokerTemplate</code></br> <em>
+<code>brokerContainer</code></br> <em>
 <a href="#kynomesh.kyno.sh/v1alpha1.ContainerTemplate">
 ContainerTemplate </a> </em>
 </td>

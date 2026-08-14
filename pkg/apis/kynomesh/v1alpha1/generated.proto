@@ -41,7 +41,7 @@ message AbstractAgentDeploy {
 
   // Container template for the broker container.
   // +optional
-  optional ContainerTemplate brokerTemplate = 4;
+  optional ContainerTemplate brokerContainer = 4;
 
   // +optional
   // +patchStrategy=merge
@@ -283,7 +283,7 @@ message AgentDeployTemplate {
 
   // Template for the AgentDeploy broker container
   // +optional
-  optional ContainerTemplate brokerTemplate = 2;
+  optional ContainerTemplate brokerContainer = 2;
 }
 
 // +genclient

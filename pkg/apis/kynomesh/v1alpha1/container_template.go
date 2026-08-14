@@ -59,6 +59,59 @@ func (ct *ContainerTemplate) ApplyToContainer(c *corev1.Container) {
 	}
 }
 
+// ApplyDefaultsFrom fills the receiver's unset fields from other, so other acts
+// as defaults that the receiver's own values override (fill-if-unset), field by
+// field.
+func (ct *ContainerTemplate) ApplyDefaultsFrom(other *ContainerTemplate) {
+	if other == nil {
+		return
+	}
+	ct.Resources.Requests = mergeResourceDefaults(ct.Resources.Requests, other.Resources.Requests)
+	ct.Resources.Limits = mergeResourceDefaults(ct.Resources.Limits, other.Resources.Limits)
+	if ct.ImagePullPolicy == "" {
+		ct.ImagePullPolicy = other.ImagePullPolicy
+	}
+	if ct.SecurityContext == nil {
+		ct.SecurityContext = other.SecurityContext
+	}
+	ct.Env = mergeEnvDefaults(ct.Env, other.Env)
+	if len(ct.EnvFrom) == 0 {
+		ct.EnvFrom = other.EnvFrom
+	}
+}
+
+// mergeResourceDefaults returns own with any key only present in defaults added
+// (own wins). Returns own unchanged when defaults is empty.
+func mergeResourceDefaults(own, defaults corev1.ResourceList) corev1.ResourceList {
+	if len(defaults) == 0 {
+		return own
+	}
+	out := make(corev1.ResourceList, len(own)+len(defaults))
+	maps.Copy(out, defaults)
+	maps.Copy(out, own) // own wins
+	return out
+}
+
+// mergeEnvDefaults returns own with any env var whose name is only present in
+// defaults appended (own wins on name collisions). Returns own unchanged when
+// defaults is empty.
+func mergeEnvDefaults(own, defaults []corev1.EnvVar) []corev1.EnvVar {
+	if len(defaults) == 0 {
+		return own
+	}
+	seen := make(map[string]struct{}, len(own))
+	for _, e := range own {
+		seen[e.Name] = struct{}{}
+	}
+	out := own
+	for _, e := range defaults {
+		if _, ok := seen[e.Name]; !ok {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
 // mergeResourceList returns base with override applied per-key. Returns
 // base unchanged when override is empty so a nil-template field doesn't
 // allocate an empty map onto the container.
