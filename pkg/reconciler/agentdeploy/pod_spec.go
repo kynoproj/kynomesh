@@ -55,22 +55,30 @@ func buildPodSpec(ad *kmv1.AgentDeploy, image string, imagePullPolicy corev1.Pul
 		ps.TerminationGracePeriodSeconds = &grace
 	}
 
-	// Only apply to built-in containers
 	const controllerOwnedContainerCount = 1 // broker
 	const controllerOwnedInitCount = 2      // init-runtime, agent
-	applyRuntimeBuiltins(ad, ps.Containers[:controllerOwnedContainerCount])
-	applyRuntimeBuiltins(ad, ps.InitContainers[:controllerOwnedInitCount])
+
+	// Common env goes on every container
+	applyCommonEnv(ad, ps.Containers)
+	applyCommonEnv(ad, ps.InitContainers)
+	// Vol mount only goes on built-in containers
+	applyRunMount(ps.Containers[:controllerOwnedContainerCount])
+	applyRunMount(ps.InitContainers[:controllerOwnedInitCount])
 	return ps
 }
 
-// applyRuntimeBuiltins injects the kynomesh built-in env and the kynomesh-run
-// mount onto every container in cs. Built-in env wins over user-supplied
-// entries with the same name (see mergeEnv).
-func applyRuntimeBuiltins(ad *kmv1.AgentDeploy, cs []corev1.Container) {
+// applyCommonEnv injects the kynomesh common env vars into each container in cs.
+func applyCommonEnv(ad *kmv1.AgentDeploy, cs []corev1.Container) {
 	env := commonEnv(ad)
-	mount := kynomeshRunMount()
 	for i := range cs {
 		cs[i].Env = mergeEnv(cs[i].Env, env)
+	}
+}
+
+// applyRunMount appends the kynomesh-run volume mount to each container in cs.
+func applyRunMount(cs []corev1.Container) {
+	mount := kynomeshRunMount()
+	for i := range cs {
 		cs[i].VolumeMounts = appendMountIfAbsent(cs[i].VolumeMounts, mount)
 	}
 }
