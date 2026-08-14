@@ -52,6 +52,15 @@ func (r *Reconciler) newDaemonDeployment(as *kmv1.AgentSet) (*appsv1.Deployment,
 
 	labels := daemonLabels(as)
 	podLabels := daemonLabels(as)
+	var tmpl *kmv1.DaemonTemplate
+	if t := as.Spec.Templates; t != nil {
+		tmpl = t.DaemonTemplate
+	}
+
+	var cTmpl *kmv1.ContainerTemplate
+	if tmpl != nil {
+		cTmpl = tmpl.Container
+	}
 
 	replicas := daemonReplicas
 	dep := &appsv1.Deployment{
@@ -71,11 +80,14 @@ func (r *Reconciler) newDaemonDeployment(as *kmv1.AgentSet) (*appsv1.Deployment,
 				ObjectMeta: metav1.ObjectMeta{Labels: podLabels},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
-						newDaemonContainer(r.image, r.imagePullPolicy, as, string(encodedAgents)),
+						newDaemonContainer(r.image, r.imagePullPolicy, as, string(encodedAgents), cTmpl),
 					},
 				},
 			},
 		},
+	}
+	if tmpl != nil {
+		tmpl.ApplyToPodTemplateSpec(&dep.Spec.Template)
 	}
 	if r.scheme != nil {
 		if err := ctrl.SetControllerReference(as, dep, r.scheme); err != nil {
@@ -129,7 +141,7 @@ func (r *Reconciler) newDaemonService(as *kmv1.AgentSet) (*corev1.Service, error
 
 // newDaemonContainer builds the single container that runs the
 // daemon binary.
-func newDaemonContainer(image string, pullPolicy corev1.PullPolicy, as *kmv1.AgentSet, encodedAgents string) corev1.Container {
+func newDaemonContainer(image string, pullPolicy corev1.PullPolicy, as *kmv1.AgentSet, encodedAgents string, tmpl *kmv1.ContainerTemplate) corev1.Container {
 	probe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -144,7 +156,7 @@ func newDaemonContainer(image string, pullPolicy corev1.PullPolicy, as *kmv1.Age
 		FailureThreshold:    3,
 		SuccessThreshold:    1,
 	}
-	return corev1.Container{
+	c := corev1.Container{
 		Name:            kmv1.ContainerNameDaemon,
 		Image:           image,
 		ImagePullPolicy: pullPolicy,
@@ -166,6 +178,10 @@ func newDaemonContainer(image string, pullPolicy corev1.PullPolicy, as *kmv1.Age
 		ReadinessProbe: probe,
 		LivenessProbe:  probe.DeepCopy(),
 	}
+	if tmpl != nil {
+		tmpl.ApplyToContainer(&c)
+	}
+	return c
 }
 
 // daemonLabels returns the labels common to the daemon's Deployment,

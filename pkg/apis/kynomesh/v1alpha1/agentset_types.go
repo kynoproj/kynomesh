@@ -101,6 +101,14 @@ const (
 
 type Templates struct {
 	AgentDeployTemplate *AgentDeployTemplate `json:"agent,omitempty" protobuf:"bytes,1,opt,name=agent"`
+	DaemonTemplate      *DaemonTemplate      `json:"daemon,omitempty" protobuf:"bytes,2,opt,name=daemon"`
+}
+
+// DaemonTemplate customizes the per-AgentSet daemon Deployment's pod.
+type DaemonTemplate struct {
+	AbstractPodTemplate `json:",inline" protobuf:"bytes,1,opt,name=abstractPodTemplate"`
+	// Container for the daemon container (resources, env, ...).
+	Container *ContainerTemplate `json:"container,omitempty" protobuf:"bytes,2,opt,name=container"`
 }
 
 type AgentSetStatus struct {
