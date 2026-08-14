@@ -1,12 +1,17 @@
 # Environment Variables
 
-In the agent container, some preset environment variables are injected by
-Kynomesh and can be used directly:
+Kynomesh injects a common set of preset environment variables into **every**
+container of an agent pod — the broker, the agent container, and any
+user-defined `sidecars` or `initContainers` — so any container can identify
+which pod, agent, and AgentSet it's running in:
 
 - `NAMESPACE` - Namespace the agent runs in.
 - `POD_NAME` - Pod name.
 - `KYNOMESH_AGENTSET_NAME` - Name of the AgentSet.
-- `KYNOMESH_AGENTDEPLOY_NAME` - Name of the agent short name.
+- `KYNOMESH_AGENTDEPLOY_NAME` - The agent short name.
+
+These are built-in and always win: if you set an env var with the same name in
+your own container spec, the injected value overrides it.
 
 For setting environment variables on pods not owned by an agent, see
 [AgentSet Customization](agentset-customization.md).
@@ -14,7 +19,8 @@ For setting environment variables on pods not owned by an agent, see
 ## Your Own Environment Variables
 
 To add your own environment variables to the agent container, set `env` on the
-agent's `container`:
+agent's `container`. The same applies to `sidecars` and `initContainers` — set
+`env`/`envFrom` directly on those container entries.
 
 ```yaml
 apiVersion: kynomesh.kyno.sh/v1alpha1
@@ -58,9 +64,6 @@ spec:
           - secretRef:
               name: my-secret
 ```
-
-The preset variables above take precedence: if you set an env var with the same
-name as a Kynomesh-injected one, the injected value wins.
 
 ## See Also
 

@@ -14,10 +14,11 @@ AgentSet, and override them per-agent under `spec.agents`.
 
 The `.spec.templates.agent` field and all fields directly under it are optional.
 
-Currently the shared template applies to the **broker container** of every
-agent, via `brokerTemplate`. To customize the agent pods themselves (labels,
-annotations, scheduling, etc.), set those fields on the individual agent under
-`spec.agents` — see [Labels And Annotations](labels-and-annotations.md).
+`.spec.templates.agent` sets pod-level defaults (`nodeSelector`, `tolerations`,
+`affinity`, `serviceAccountName`, etc.) shared by every agent pod, plus a
+`brokerContainer` template applied to every agent's **broker container**. Any of
+these fields set directly on an individual agent under `spec.agents` override
+the shared default for that agent.
 
 ```yaml
 apiVersion: kynomesh.kyno.sh/v1alpha1
@@ -29,8 +30,18 @@ spec:
   entry: coordinator
   templates:
     agent:
+      # Pod-level defaults shared by every agent's pod
+      metadata:
+        labels:
+          my-label-name: shared-label-value
+        annotations:
+          my-annotation-name: shared-annotation-value
+      nodeSelector:
+        my-node-label-name: my-node-label-value
+      serviceAccountName: my-service-account
+      terminationGracePeriodSeconds: 180
       # Broker container of every agent
-      brokerTemplate:
+      brokerContainer:
         env:
           - name: MY_ENV_NAME
             value: my-env-value
@@ -49,19 +60,8 @@ spec:
           my-annotation-name: my-annotation-value
       nodeSelector:
         my-node-label-name: my-node-label-value
-      tolerations:
-        - key: "my-example-key"
-          operator: "Exists"
-          effect: "NoSchedule"
-      securityContext: {}
       imagePullSecrets:
         - name: regcred
-      priorityClassName: my-priority-class-name
-      priority: 50
-      serviceAccountName: my-service-account
-      runtimeClassName: my-runtime-class
-      automountServiceAccountToken: false
-      dnsPolicy: ClusterFirst
       terminationGracePeriodSeconds: 120
       affinity:
         podAntiAffinity:
@@ -75,8 +75,49 @@ spec:
               topologyKey: kubernetes.io/hostname
 ```
 
-A `brokerTemplate` set on an individual agent (`spec.agents[].brokerTemplate`)
-overrides the shared template for that agent.
+## Daemon
+
+Use `.spec.templates.daemon` to customize the per-AgentSet daemon Deployment —
+the singleton pod that scrapes agent metrics and serves them to the autoscaler.
+All fields under `.spec.templates.daemon` are optional.
+
+`container` customizes the daemon's single container (resources, env, security
+context). The remaining fields (`nodeSelector`, `tolerations`, `affinity`,
+`serviceAccountName`, etc.) customize the daemon pod itself, the same pod-level
+fields available under `spec.agents[]`.
+
+```yaml
+apiVersion: kynomesh.kyno.sh/v1alpha1
+kind: AgentSet
+metadata:
+  name: my-agentset
+spec:
+  pattern: Supervisor
+  entry: coordinator
+  templates:
+    daemon:
+      container:
+        env:
+          - name: MY_ENV_NAME
+            value: my-env-value
+        resources:
+          limits:
+            memory: 200Mi
+      nodeSelector:
+        my-node-label-name: my-node-label-value
+      tolerations:
+        - key: "my-example-key"
+          operator: "Exists"
+          effect: "NoSchedule"
+      serviceAccountName: my-service-account
+  agents:
+    - name: coordinator
+      container:
+        image: example/coordinator:latest
+```
+
+Changing `.spec.templates.daemon` recreates the daemon Deployment's pod (the
+daemon is a Recreate-strategy singleton, not a rolling update).
 
 ## See Also
 
