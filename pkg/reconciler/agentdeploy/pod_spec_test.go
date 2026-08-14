@@ -81,9 +81,10 @@ func TestBuildPodSpec_AgentRunsAsSidecarInitContainer(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	ps := buildPodSpec(ad, testBrokerImage, "")
 
-	// Init containers: [init-runtime, agent (sidecar)]
+	// Init containers: [init-runtime, agent (sidecar)] — agent is last since
+	// no user init containers were configured.
 	require.GreaterOrEqual(t, len(ps.InitContainers), 2)
-	agent := ps.InitContainers[1]
+	agent := ps.InitContainers[len(ps.InitContainers)-1]
 	assert.Equal(t, kmv1.ContainerNameAgent, agent.Name)
 	require.NotNil(t, agent.RestartPolicy, "agent must carry an explicit RestartPolicy to be a sidecar")
 	assert.Equal(t, corev1.ContainerRestartPolicyAlways, *agent.RestartPolicy,
@@ -157,16 +158,17 @@ func TestBuildPodSpec_MountsKynomeshRunOnControllerOwnedContainersOnly(t *testin
 	checkMount(t, ps.Containers[0].VolumeMounts, kmv1.ContainerNameAgentBroker)
 	checkNoMount(t, ps.Containers[1].VolumeMounts, "user-sidecar")
 
-	// Init containers: [init-runtime, agent (sidecar), init-1].
+	// Init containers: [init-runtime, init-1, agent (sidecar)] — agent runs
+	// last so user init containers can prepare state before it starts.
 	require.Len(t, ps.InitContainers, 3)
 	assert.Equal(t, kmv1.ContainerNameInitRuntime, ps.InitContainers[0].Name)
 	checkMount(t, ps.InitContainers[0].VolumeMounts, kmv1.ContainerNameInitRuntime)
 
-	assert.Equal(t, kmv1.ContainerNameAgent, ps.InitContainers[1].Name)
-	checkMount(t, ps.InitContainers[1].VolumeMounts, kmv1.ContainerNameAgent)
+	assert.Equal(t, "init-1", ps.InitContainers[1].Name)
+	checkNoMount(t, ps.InitContainers[1].VolumeMounts, "user-init")
 
-	assert.Equal(t, "init-1", ps.InitContainers[2].Name)
-	checkNoMount(t, ps.InitContainers[2].VolumeMounts, "user-init")
+	assert.Equal(t, kmv1.ContainerNameAgent, ps.InitContainers[2].Name)
+	checkMount(t, ps.InitContainers[2].VolumeMounts, kmv1.ContainerNameAgent)
 }
 
 func TestBuildPodSpec_CommonEnvOnUserContainers(t *testing.T) {
@@ -178,7 +180,7 @@ func TestBuildPodSpec_CommonEnvOnUserContainers(t *testing.T) {
 
 	sidecar := ps.Containers[1]
 	require.Equal(t, "user-sidecar", sidecar.Name)
-	userInit := ps.InitContainers[2]
+	userInit := ps.InitContainers[1]
 	require.Equal(t, "user-init", userInit.Name)
 
 	for _, c := range []corev1.Container{sidecar, userInit} {
@@ -221,7 +223,9 @@ func TestBuildPodSpec_CommonEnvWinsOverUserEnvInUserContainers(t *testing.T) {
 }
 
 func TestBuildPodSpec_InitContainerOrder(t *testing.T) {
-	// Init containers come out as [init-runtime, agent (sidecar), ...user init containers].
+	// Init containers come out as [init-runtime, ...user init containers, agent (sidecar)].
+	// Agent runs last since it's a native sidecar that never completes — anything
+	// meant to prepare state for it must run before it starts, not after.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.InitContainers = []corev1.Container{{Name: "user-init", Image: "busybox"}}
 
@@ -236,12 +240,12 @@ func TestBuildPodSpec_InitContainerOrder(t *testing.T) {
 	assert.Equal(t, kmv1.VolumeNameKynomeshRun, initRuntime.VolumeMounts[0].Name)
 	assert.Equal(t, kmv1.KynomeshRunPath, initRuntime.VolumeMounts[0].MountPath)
 
-	agent := ps.InitContainers[1]
+	assert.Equal(t, "user-init", ps.InitContainers[1].Name)
+
+	agent := ps.InitContainers[2]
 	assert.Equal(t, kmv1.ContainerNameAgent, agent.Name)
 	require.NotNil(t, agent.RestartPolicy)
 	assert.Equal(t, corev1.ContainerRestartPolicyAlways, *agent.RestartPolicy)
-
-	assert.Equal(t, "user-init", ps.InitContainers[2].Name)
 }
 
 func TestBuildPodSpec_PreservesUserVolumesAlongsideKynomeshRun(t *testing.T) {
