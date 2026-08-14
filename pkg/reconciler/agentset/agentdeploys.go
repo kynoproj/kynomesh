@@ -191,9 +191,10 @@ func agentDeployTemplate(as *kmv1.AgentSet) *kmv1.AgentDeployTemplate {
 // applyTemplate fills unset fields of the per-agent spec from the
 // AgentSet-level template. Per-agent values always win.
 func applyTemplate(agent *kmv1.AbstractAgentDeploy, tmpl *kmv1.AgentDeployTemplate) {
-	if agent.BrokerTemplate == nil && tmpl.BrokerTemplate != nil {
-		ct := *tmpl.BrokerTemplate
-		agent.BrokerTemplate = &ct
+	agent.ApplyDefaultsFrom(&tmpl.AbstractPodTemplate)
+	if agent.BrokerContainer == nil && tmpl.BrokerContainer != nil {
+		ct := *tmpl.BrokerContainer
+		agent.BrokerContainer = &ct
 	}
 }
 

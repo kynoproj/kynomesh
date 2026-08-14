@@ -23527,7 +23527,7 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",
           "type": "boolean"
         },
-        "brokerTemplate": {
+        "brokerContainer": {
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ContainerTemplate",
           "description": "Container template for the broker container."
         },
@@ -23801,7 +23801,7 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",
           "type": "boolean"
         },
-        "brokerTemplate": {
+        "brokerContainer": {
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ContainerTemplate",
           "description": "Container template for the broker container."
         },
@@ -24018,7 +24018,7 @@
           "description": "AutomountServiceAccountToken indicates whether a service account token should be automatically mounted.",
           "type": "boolean"
         },
-        "brokerTemplate": {
+        "brokerContainer": {
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ContainerTemplate",
           "description": "Template for the AgentDeploy broker container"
         },

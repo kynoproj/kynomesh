@@ -34,7 +34,7 @@ func buildPodSpec(ad *kmv1.AgentDeploy, image string, imagePullPolicy corev1.Pul
 		grace = *ad.Spec.TerminationGracePeriodSeconds
 	}
 
-	containers := []corev1.Container{newBrokerContainer(image, imagePullPolicy, encodedAgentDeploy, ad.Spec.BrokerTemplate, grace)}
+	containers := []corev1.Container{newBrokerContainer(image, imagePullPolicy, encodedAgentDeploy, ad.Spec.BrokerContainer, grace)}
 	containers = append(containers, ad.Spec.Sidecars...)
 
 	initContainers := []corev1.Container{

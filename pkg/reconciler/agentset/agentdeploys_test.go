@@ -55,24 +55,81 @@ func TestBuildAgentDeploys_TemplateAppliedAsDefault(t *testing.T) {
 	as := newAgentSet("greeter", "alpha")
 	as.Spec.Templates = &kmv1.Templates{
 		AgentDeployTemplate: &kmv1.AgentDeployTemplate{
-			BrokerTemplate: &kmv1.ContainerTemplate{ImagePullPolicy: tmplPull},
+			BrokerContainer: &kmv1.ContainerTemplate{ImagePullPolicy: tmplPull},
 		},
 	}
 	out, err := r.buildDesired(as)
 	require.NoError(t, err)
 	ad := out["greeter-alpha"]
-	require.NotNil(t, ad.Spec.BrokerTemplate)
-	assert.Equal(t, tmplPull, ad.Spec.BrokerTemplate.ImagePullPolicy)
+	require.NotNil(t, ad.Spec.BrokerContainer)
+	assert.Equal(t, tmplPull, ad.Spec.BrokerContainer.ImagePullPolicy)
 
 	// Per-agent value wins over template.
 	perAgent := corev1.PullPolicy("IfNotPresent")
-	as.Spec.Agents[0].BrokerTemplate = &kmv1.ContainerTemplate{ImagePullPolicy: perAgent}
+	as.Spec.Agents[0].BrokerContainer = &kmv1.ContainerTemplate{ImagePullPolicy: perAgent}
 	out, err = r.buildDesired(as)
 	require.NoError(t, err)
 	ad = out["greeter-alpha"]
-	require.NotNil(t, ad.Spec.BrokerTemplate)
-	assert.Equal(t, perAgent, ad.Spec.BrokerTemplate.ImagePullPolicy,
+	require.NotNil(t, ad.Spec.BrokerContainer)
+	assert.Equal(t, perAgent, ad.Spec.BrokerContainer.ImagePullPolicy,
 		"per-agent value should beat the template default")
+}
+
+func TestBuildAgentDeploys_TemplatePodFieldsApplied(t *testing.T) {
+	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	as := newAgentSet("greeter", "alpha")
+	as.Spec.Templates = &kmv1.Templates{
+		AgentDeployTemplate: &kmv1.AgentDeployTemplate{
+			AbstractPodTemplate: kmv1.AbstractPodTemplate{
+				NodeSelector:       map[string]string{"disktype": "ssd"},
+				ServiceAccountName: "tmpl-sa",
+				Metadata: &kmv1.Metadata{
+					Labels: map[string]string{"team": "platform", "tier": "backend"},
+				},
+			},
+		},
+	}
+
+	out, err := r.buildDesired(as)
+	require.NoError(t, err)
+	ad := out["greeter-alpha"]
+
+	// Pod-level template fields are applied when the agent sets none.
+	assert.Equal(t, "ssd", ad.Spec.NodeSelector["disktype"])
+	assert.Equal(t, "tmpl-sa", ad.Spec.ServiceAccountName)
+	require.NotNil(t, ad.Spec.Metadata)
+	assert.Equal(t, "platform", ad.Spec.Metadata.Labels["team"])
+	assert.Equal(t, "backend", ad.Spec.Metadata.Labels["tier"])
+}
+
+func TestBuildAgentDeploys_PerAgentPodFieldsWinOverTemplate(t *testing.T) {
+	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	as := newAgentSet("greeter", "alpha")
+	as.Spec.Templates = &kmv1.Templates{
+		AgentDeployTemplate: &kmv1.AgentDeployTemplate{
+			AbstractPodTemplate: kmv1.AbstractPodTemplate{
+				ServiceAccountName: "tmpl-sa",
+				Metadata: &kmv1.Metadata{
+					Labels: map[string]string{"team": "platform", "tier": "backend"},
+				},
+			},
+		},
+	}
+	// Per-agent sets its own SA and a colliding + a new label.
+	as.Spec.Agents[0].ServiceAccountName = "agent-sa"
+	as.Spec.Agents[0].Metadata = &kmv1.Metadata{
+		Labels: map[string]string{"tier": "frontend", "extra": "yes"},
+	}
+
+	out, err := r.buildDesired(as)
+	require.NoError(t, err)
+	ad := out["greeter-alpha"]
+
+	assert.Equal(t, "agent-sa", ad.Spec.ServiceAccountName, "per-agent scalar wins")
+	require.NotNil(t, ad.Spec.Metadata)
+	assert.Equal(t, "frontend", ad.Spec.Metadata.Labels["tier"], "per-agent label key wins on collision")
+	assert.Equal(t, "yes", ad.Spec.Metadata.Labels["extra"], "per-agent-only label kept")
+	assert.Equal(t, "platform", ad.Spec.Metadata.Labels["team"], "template-only label merged in")
 }
 
 func TestComputeTopology(t *testing.T) {

@@ -180,9 +180,9 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x2a
 		}
 	}
-	if m.BrokerTemplate != nil {
+	if m.BrokerContainer != nil {
 		{
-			size, err := m.BrokerTemplate.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.BrokerContainer.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -665,9 +665,9 @@ func (m *AgentDeployTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.BrokerTemplate != nil {
+	if m.BrokerContainer != nil {
 		{
-			size, err := m.BrokerTemplate.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.BrokerContainer.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -1616,8 +1616,8 @@ func (m *AbstractAgentDeploy) Size() (n int) {
 		l = m.Container.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.BrokerTemplate != nil {
-		l = m.BrokerTemplate.Size()
+	if m.BrokerContainer != nil {
+		l = m.BrokerContainer.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
 	if len(m.Volumes) > 0 {
@@ -1810,8 +1810,8 @@ func (m *AgentDeployTemplate) Size() (n int) {
 	_ = l
 	l = m.AbstractPodTemplate.Size()
 	n += 1 + l + sovGenerated(uint64(l))
-	if m.BrokerTemplate != nil {
-		l = m.BrokerTemplate.Size()
+	if m.BrokerContainer != nil {
+		l = m.BrokerContainer.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
 	return n
@@ -2197,7 +2197,7 @@ func (this *AbstractAgentDeploy) String() string {
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`AbstractPodTemplate:` + strings.Replace(strings.Replace(this.AbstractPodTemplate.String(), "AbstractPodTemplate", "AbstractPodTemplate", 1), `&`, ``, 1) + `,`,
 		`Container:` + strings.Replace(this.Container.String(), "Container", "Container", 1) + `,`,
-		`BrokerTemplate:` + strings.Replace(this.BrokerTemplate.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
+		`BrokerContainer:` + strings.Replace(this.BrokerContainer.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
 		`Volumes:` + repeatedStringForVolumes + `,`,
 		`Scale:` + strings.Replace(strings.Replace(this.Scale.String(), "Scale", "Scale", 1), `&`, ``, 1) + `,`,
 		`RateLimit:` + strings.Replace(this.RateLimit.String(), "RateLimit", "RateLimit", 1) + `,`,
@@ -2328,7 +2328,7 @@ func (this *AgentDeployTemplate) String() string {
 	}
 	s := strings.Join([]string{`&AgentDeployTemplate{`,
 		`AbstractPodTemplate:` + strings.Replace(strings.Replace(this.AbstractPodTemplate.String(), "AbstractPodTemplate", "AbstractPodTemplate", 1), `&`, ``, 1) + `,`,
-		`BrokerTemplate:` + strings.Replace(this.BrokerTemplate.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
+		`BrokerContainer:` + strings.Replace(this.BrokerContainer.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2746,7 +2746,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BrokerTemplate", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field BrokerContainer", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -2773,10 +2773,10 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.BrokerTemplate == nil {
-				m.BrokerTemplate = &ContainerTemplate{}
+			if m.BrokerContainer == nil {
+				m.BrokerContainer = &ContainerTemplate{}
 			}
-			if err := m.BrokerTemplate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.BrokerContainer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4570,7 +4570,7 @@ func (m *AgentDeployTemplate) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BrokerTemplate", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field BrokerContainer", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -4597,10 +4597,10 @@ func (m *AgentDeployTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.BrokerTemplate == nil {
-				m.BrokerTemplate = &ContainerTemplate{}
+			if m.BrokerContainer == nil {
+				m.BrokerContainer = &ContainerTemplate{}
 			}
-			if err := m.BrokerTemplate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.BrokerContainer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

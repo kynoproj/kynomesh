@@ -151,6 +151,94 @@ func (apt *AbstractPodTemplate) ApplyToPodSpec(ps *corev1.PodSpec) {
 	}
 }
 
+// ApplyDefaultsFrom fills the receiver's unset fields from other, so other acts
+// as a set of defaults that the receiver's own values override (fill-if-unset).
+// Labels and annotations are merged additively — the receiver's keys win, and
+// keys only present in other are added. A nil other is a no-op.
+func (apt *AbstractPodTemplate) ApplyDefaultsFrom(other *AbstractPodTemplate) {
+	if other == nil {
+		return
+	}
+	if len(apt.NodeSelector) == 0 {
+		apt.NodeSelector = other.NodeSelector
+	}
+	if len(apt.Tolerations) == 0 {
+		apt.Tolerations = other.Tolerations
+	}
+	if apt.SecurityContext == nil {
+		apt.SecurityContext = other.SecurityContext
+	}
+	if len(apt.ImagePullSecrets) == 0 {
+		apt.ImagePullSecrets = other.ImagePullSecrets
+	}
+	if apt.PriorityClassName == "" {
+		apt.PriorityClassName = other.PriorityClassName
+	}
+	if apt.Priority == nil {
+		apt.Priority = other.Priority
+	}
+	if apt.Affinity == nil {
+		apt.Affinity = other.Affinity
+	}
+	if apt.ServiceAccountName == "" {
+		apt.ServiceAccountName = other.ServiceAccountName
+	}
+	if apt.RuntimeClassName == nil {
+		apt.RuntimeClassName = other.RuntimeClassName
+	}
+	if apt.AutomountServiceAccountToken == nil {
+		apt.AutomountServiceAccountToken = other.AutomountServiceAccountToken
+	}
+	if apt.DNSPolicy == "" {
+		apt.DNSPolicy = other.DNSPolicy
+	}
+	if apt.DNSConfig == nil {
+		apt.DNSConfig = other.DNSConfig
+	}
+	if len(apt.ResourceClaims) == 0 {
+		apt.ResourceClaims = other.ResourceClaims
+	}
+	if apt.TerminationGracePeriodSeconds == nil {
+		apt.TerminationGracePeriodSeconds = other.TerminationGracePeriodSeconds
+	}
+	apt.Metadata = mergeMetadataDefaults(apt.Metadata, other.Metadata)
+}
+
+// mergeMetadataDefaults returns metadata whose labels/annotations are own's,
+// with any key only present in defaults added (own wins). Returns nil when both
+// are empty.
+func mergeMetadataDefaults(own, defaults *Metadata) *Metadata {
+	if defaults == nil {
+		return own
+	}
+	if own == nil {
+		own = &Metadata{}
+	}
+	own.Labels = mergeStringMapDefaults(own.Labels, defaults.Labels)
+	own.Annotations = mergeStringMapDefaults(own.Annotations, defaults.Annotations)
+	if len(own.Labels) == 0 && len(own.Annotations) == 0 {
+		return nil
+	}
+	return own
+}
+
+// mergeStringMapDefaults returns own with any key only present in defaults added
+// (own wins). Returns nil when the result is empty.
+func mergeStringMapDefaults(own, defaults map[string]string) map[string]string {
+	if len(defaults) == 0 {
+		return own
+	}
+	if own == nil {
+		own = map[string]string{}
+	}
+	for k, v := range defaults {
+		if _, ok := own[k]; !ok {
+			own[k] = v
+		}
+	}
+	return own
+}
+
 // ApplyToPodTemplateSpec updates the PodTemplateSpec with the values in the AbstractPodTemplate
 // Labels and Annotations will be appended, individual labels or annotations in original PodTemplateSpec will not be overridden
 func (apt *AbstractPodTemplate) ApplyToPodTemplateSpec(p *corev1.PodTemplateSpec) {
