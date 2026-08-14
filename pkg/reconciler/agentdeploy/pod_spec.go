@@ -62,8 +62,8 @@ func buildPodSpec(ad *kmv1.AgentDeploy, image string, imagePullPolicy corev1.Pul
 	applyCommonEnv(ad, ps.Containers)
 	applyCommonEnv(ad, ps.InitContainers)
 	// Vol mount only goes on built-in containers
-	applyRunMount(ps.Containers[:controllerOwnedContainerCount])
-	applyRunMount(ps.InitContainers[:controllerOwnedInitCount])
+	applyRunVolMount(ps.Containers[:controllerOwnedContainerCount])
+	applyRunVolMount(ps.InitContainers[:controllerOwnedInitCount])
 	return ps
 }
 
@@ -75,8 +75,8 @@ func applyCommonEnv(ad *kmv1.AgentDeploy, cs []corev1.Container) {
 	}
 }
 
-// applyRunMount appends the kynomesh-run volume mount to each container in cs.
-func applyRunMount(cs []corev1.Container) {
+// applyRunVolMount appends the kynomesh-run volume mount to each container in cs.
+func applyRunVolMount(cs []corev1.Container) {
 	mount := kynomeshRunMount()
 	for i := range cs {
 		cs[i].VolumeMounts = appendMountIfAbsent(cs[i].VolumeMounts, mount)

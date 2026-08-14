@@ -169,7 +169,7 @@ func TestBuildPodSpec_MountsKynomeshRunOnControllerOwnedContainersOnly(t *testin
 	checkNoMount(t, ps.InitContainers[2].VolumeMounts, "user-init")
 }
 
-func TestBuildPodSpec_IdentityEnvOnUserContainers(t *testing.T) {
+func TestBuildPodSpec_CommonEnvOnUserContainers(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
 	ad.Spec.InitContainers = []corev1.Container{{Name: "user-init", Image: "busybox"}}
@@ -188,14 +188,14 @@ func TestBuildPodSpec_IdentityEnvOnUserContainers(t *testing.T) {
 		if e := findEnv(c.Env, kmv1.EnvAgentDeployName); assert.NotNil(t, e, "%s must get AGENTDEPLOY_NAME", c.Name) {
 			assert.Equal(t, ad.Spec.Name, e.Value)
 		}
-		// Identity env must NOT drag the kynomesh-run mount along.
+		// Common env must NOT drag the kynomesh-run mount along.
 		for _, m := range c.VolumeMounts {
 			assert.NotEqual(t, kmv1.VolumeNameKynomeshRun, m.Name, "%s must not get the kynomesh-run mount", c.Name)
 		}
 	}
 }
 
-func TestBuildPodSpec_IdentityEnvWinsOverUserEnvInUserContainers(t *testing.T) {
+func TestBuildPodSpec_CommonEnvWinsOverUserEnvInUserContainers(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Sidecars = []corev1.Container{{
 		Name:  "user-sidecar",
@@ -209,15 +209,15 @@ func TestBuildPodSpec_IdentityEnvWinsOverUserEnvInUserContainers(t *testing.T) {
 	e := findEnv(sidecar.Env, kmv1.EnvAgentSetName)
 	require.NotNil(t, e)
 	assert.Equal(t, ad.Spec.AgentSetName, e.Value,
-		"kynomesh identity env must override a user-supplied entry of the same name")
-	// The identity var appears exactly once (user entry replaced, not duplicated).
+		"kynomesh common env must override a user-supplied entry of the same name")
+	// The common env var appears exactly once (user entry replaced, not duplicated).
 	count := 0
 	for _, ev := range sidecar.Env {
 		if ev.Name == kmv1.EnvAgentSetName {
 			count++
 		}
 	}
-	assert.Equal(t, 1, count, "no duplicate identity env var")
+	assert.Equal(t, 1, count, "no duplicate common env var")
 }
 
 func TestBuildPodSpec_InitContainerOrder(t *testing.T) {
@@ -371,7 +371,7 @@ func TestBuildPodSpec_InjectsDownwardAPIEnv(t *testing.T) {
 	}
 
 	// Every container — controller-owned and user-supplied — receives the
-	// downward-API identity env (NAMESPACE, POD_NAME).
+	// downward-API common env (NAMESPACE, POD_NAME).
 	for _, c := range ps.Containers {
 		t.Run(c.Name, func(t *testing.T) { check(t, c) })
 	}
