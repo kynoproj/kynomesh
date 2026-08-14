@@ -68,6 +68,11 @@ spec:
             name: my-agent-data
 ```
 
+Init containers receive the same Kynomesh-injected
+[environment variables](environment-variables.md) as every other container in
+the pod, and `initContainers[*].resources` can be set like any other
+[container resources](container-resources.md).
+
 ## See Also
 
 - [Sidecar Containers](sidecar-containers.md) — add extra long-running
