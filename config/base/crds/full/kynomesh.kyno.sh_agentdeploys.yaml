@@ -493,7 +493,7 @@ spec:
                 type: string
               automountServiceAccountToken:
                 type: boolean
-              brokerTemplate:
+              brokerContainer:
                 properties:
                   env:
                     items:

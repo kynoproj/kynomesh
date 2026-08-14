@@ -41,7 +41,7 @@ message AbstractAgentDeploy {
 
   // Container template for the broker container.
   // +optional
-  optional ContainerTemplate brokerTemplate = 4;
+  optional ContainerTemplate brokerContainer = 4;
 
   // +optional
   // +patchStrategy=merge
@@ -283,7 +283,7 @@ message AgentDeployTemplate {
 
   // Template for the AgentDeploy broker container
   // +optional
-  optional ContainerTemplate brokerTemplate = 2;
+  optional ContainerTemplate brokerContainer = 2;
 }
 
 // +genclient
@@ -424,6 +424,14 @@ message ContainerTemplate {
   repeated .k8s.io.api.core.v1.EnvFromSource envFrom = 5;
 }
 
+// DaemonTemplate customizes the per-AgentSet daemon Deployment's pod.
+message DaemonTemplate {
+  optional AbstractPodTemplate abstractPodTemplate = 1;
+
+  // Container for the daemon container (resources, env, ...).
+  optional ContainerTemplate container = 2;
+}
+
 message Metadata {
   map<string, string> annotations = 1;
 
@@ -561,6 +569,8 @@ message Status {
 
 message Templates {
   optional AgentDeployTemplate agent = 1;
+
+  optional DaemonTemplate daemon = 2;
 }
 
 // Topology captures the information an agent needs to know about: the routing

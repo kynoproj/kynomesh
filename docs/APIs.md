@@ -122,7 +122,7 @@ Agent container, the user’s agent code runs here.
 
 <td>
 
-<code>brokerTemplate</code></br> <em>
+<code>brokerContainer</code></br> <em>
 <a href="#kynomesh.kyno.sh/v1alpha1.ContainerTemplate">
 ContainerTemplate </a> </em>
 </td>
@@ -298,7 +298,8 @@ AbstractPodTemplate
 
 (<em>Appears on:</em>
 <a href="#kynomesh.kyno.sh/v1alpha1.AbstractAgentDeploy">AbstractAgentDeploy</a>,
-<a href="#kynomesh.kyno.sh/v1alpha1.AgentDeployTemplate">AgentDeployTemplate</a>)
+<a href="#kynomesh.kyno.sh/v1alpha1.AgentDeployTemplate">AgentDeployTemplate</a>,
+<a href="#kynomesh.kyno.sh/v1alpha1.DaemonTemplate">DaemonTemplate</a>)
 </p>
 
 <p>
@@ -1324,7 +1325,7 @@ type.)
 
 <td>
 
-<code>brokerTemplate</code></br> <em>
+<code>brokerContainer</code></br> <em>
 <a href="#kynomesh.kyno.sh/v1alpha1.ContainerTemplate">
 ContainerTemplate </a> </em>
 </td>
@@ -2104,7 +2105,8 @@ ContainerTemplate
 
 (<em>Appears on:</em>
 <a href="#kynomesh.kyno.sh/v1alpha1.AbstractAgentDeploy">AbstractAgentDeploy</a>,
-<a href="#kynomesh.kyno.sh/v1alpha1.AgentDeployTemplate">AgentDeployTemplate</a>)
+<a href="#kynomesh.kyno.sh/v1alpha1.AgentDeployTemplate">AgentDeployTemplate</a>,
+<a href="#kynomesh.kyno.sh/v1alpha1.DaemonTemplate">DaemonTemplate</a>)
 </p>
 
 <p>
@@ -2214,6 +2216,93 @@ Kubernetes core/v1.SecurityContext </a> </em>
 <td>
 
 <em>(Optional)</em>
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="kynomesh.kyno.sh/v1alpha1.DaemonTemplate">
+
+DaemonTemplate
+</h3>
+
+<p>
+
+(<em>Appears on:</em>
+<a href="#kynomesh.kyno.sh/v1alpha1.Templates">Templates</a>)
+</p>
+
+<p>
+
+<p>
+
+DaemonTemplate customizes the per-AgentSet daemon Deployment’s pod.
+</p>
+
+</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>
+
+Field
+</th>
+
+<th>
+
+Description
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>
+
+<code>AbstractPodTemplate</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.AbstractPodTemplate">
+AbstractPodTemplate </a> </em>
+</td>
+
+<td>
+
+<p>
+
+(Members of <code>AbstractPodTemplate</code> are embedded into this
+type.)
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>container</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.ContainerTemplate">
+ContainerTemplate </a> </em>
+</td>
+
+<td>
+
+<p>
+
+Container for the daemon container (resources, env, …).
+</p>
+
 </td>
 
 </tr>
@@ -3033,6 +3122,21 @@ Description
 <code>agent</code></br> <em>
 <a href="#kynomesh.kyno.sh/v1alpha1.AgentDeployTemplate">
 AgentDeployTemplate </a> </em>
+</td>
+
+<td>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>daemon</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.DaemonTemplate"> DaemonTemplate </a>
+</em>
 </td>
 
 <td>

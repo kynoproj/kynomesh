@@ -61,6 +61,8 @@ func (m *Container) Reset() { *m = Container{} }
 
 func (m *ContainerTemplate) Reset() { *m = ContainerTemplate{} }
 
+func (m *DaemonTemplate) Reset() { *m = DaemonTemplate{} }
+
 func (m *Metadata) Reset() { *m = Metadata{} }
 
 func (m *Peer) Reset() { *m = Peer{} }
@@ -180,9 +182,9 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x2a
 		}
 	}
-	if m.BrokerTemplate != nil {
+	if m.BrokerContainer != nil {
 		{
-			size, err := m.BrokerTemplate.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.BrokerContainer.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -665,9 +667,9 @@ func (m *AgentDeployTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.BrokerTemplate != nil {
+	if m.BrokerContainer != nil {
 		{
-			size, err := m.BrokerTemplate.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.BrokerContainer.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -1143,6 +1145,51 @@ func (m *ContainerTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *DaemonTemplate) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DaemonTemplate) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DaemonTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Container != nil {
+		{
+			size, err := m.Container.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	{
+		size, err := m.AbstractPodTemplate.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenerated(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
 func (m *Metadata) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1486,6 +1533,18 @@ func (m *Templates) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.DaemonTemplate != nil {
+		{
+			size, err := m.DaemonTemplate.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
 	if m.AgentDeployTemplate != nil {
 		{
 			size, err := m.AgentDeployTemplate.MarshalToSizedBuffer(dAtA[:i])
@@ -1616,8 +1675,8 @@ func (m *AbstractAgentDeploy) Size() (n int) {
 		l = m.Container.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
-	if m.BrokerTemplate != nil {
-		l = m.BrokerTemplate.Size()
+	if m.BrokerContainer != nil {
+		l = m.BrokerContainer.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
 	if len(m.Volumes) > 0 {
@@ -1810,8 +1869,8 @@ func (m *AgentDeployTemplate) Size() (n int) {
 	_ = l
 	l = m.AbstractPodTemplate.Size()
 	n += 1 + l + sovGenerated(uint64(l))
-	if m.BrokerTemplate != nil {
-		l = m.BrokerTemplate.Size()
+	if m.BrokerContainer != nil {
+		l = m.BrokerContainer.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
 	return n
@@ -1987,6 +2046,21 @@ func (m *ContainerTemplate) Size() (n int) {
 	return n
 }
 
+func (m *DaemonTemplate) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.AbstractPodTemplate.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	if m.Container != nil {
+		l = m.Container.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	return n
+}
+
 func (m *Metadata) Size() (n int) {
 	if m == nil {
 		return 0
@@ -2132,6 +2206,10 @@ func (m *Templates) Size() (n int) {
 		l = m.AgentDeployTemplate.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	if m.DaemonTemplate != nil {
+		l = m.DaemonTemplate.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
 	return n
 }
 
@@ -2197,7 +2275,7 @@ func (this *AbstractAgentDeploy) String() string {
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`AbstractPodTemplate:` + strings.Replace(strings.Replace(this.AbstractPodTemplate.String(), "AbstractPodTemplate", "AbstractPodTemplate", 1), `&`, ``, 1) + `,`,
 		`Container:` + strings.Replace(this.Container.String(), "Container", "Container", 1) + `,`,
-		`BrokerTemplate:` + strings.Replace(this.BrokerTemplate.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
+		`BrokerContainer:` + strings.Replace(this.BrokerContainer.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
 		`Volumes:` + repeatedStringForVolumes + `,`,
 		`Scale:` + strings.Replace(strings.Replace(this.Scale.String(), "Scale", "Scale", 1), `&`, ``, 1) + `,`,
 		`RateLimit:` + strings.Replace(this.RateLimit.String(), "RateLimit", "RateLimit", 1) + `,`,
@@ -2328,7 +2406,7 @@ func (this *AgentDeployTemplate) String() string {
 	}
 	s := strings.Join([]string{`&AgentDeployTemplate{`,
 		`AbstractPodTemplate:` + strings.Replace(strings.Replace(this.AbstractPodTemplate.String(), "AbstractPodTemplate", "AbstractPodTemplate", 1), `&`, ``, 1) + `,`,
-		`BrokerTemplate:` + strings.Replace(this.BrokerTemplate.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
+		`BrokerContainer:` + strings.Replace(this.BrokerContainer.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2459,6 +2537,17 @@ func (this *ContainerTemplate) String() string {
 	}, "")
 	return s
 }
+func (this *DaemonTemplate) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DaemonTemplate{`,
+		`AbstractPodTemplate:` + strings.Replace(strings.Replace(this.AbstractPodTemplate.String(), "AbstractPodTemplate", "AbstractPodTemplate", 1), `&`, ``, 1) + `,`,
+		`Container:` + strings.Replace(this.Container.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *Metadata) String() string {
 	if this == nil {
 		return "nil"
@@ -2574,6 +2663,7 @@ func (this *Templates) String() string {
 	}
 	s := strings.Join([]string{`&Templates{`,
 		`AgentDeployTemplate:` + strings.Replace(this.AgentDeployTemplate.String(), "AgentDeployTemplate", "AgentDeployTemplate", 1) + `,`,
+		`DaemonTemplate:` + strings.Replace(this.DaemonTemplate.String(), "DaemonTemplate", "DaemonTemplate", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2746,7 +2836,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BrokerTemplate", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field BrokerContainer", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -2773,10 +2863,10 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.BrokerTemplate == nil {
-				m.BrokerTemplate = &ContainerTemplate{}
+			if m.BrokerContainer == nil {
+				m.BrokerContainer = &ContainerTemplate{}
 			}
-			if err := m.BrokerTemplate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.BrokerContainer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -4570,7 +4660,7 @@ func (m *AgentDeployTemplate) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BrokerTemplate", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field BrokerContainer", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -4597,10 +4687,10 @@ func (m *AgentDeployTemplate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.BrokerTemplate == nil {
-				m.BrokerTemplate = &ContainerTemplate{}
+			if m.BrokerContainer == nil {
+				m.BrokerContainer = &ContainerTemplate{}
 			}
-			if err := m.BrokerTemplate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.BrokerContainer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -5969,6 +6059,125 @@ func (m *ContainerTemplate) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *DaemonTemplate) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DaemonTemplate: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DaemonTemplate: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AbstractPodTemplate", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.AbstractPodTemplate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Container", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Container == nil {
+				m.Container = &ContainerTemplate{}
+			}
+			if err := m.Container.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *Metadata) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -7081,6 +7290,42 @@ func (m *Templates) Unmarshal(dAtA []byte) error {
 				m.AgentDeployTemplate = &AgentDeployTemplate{}
 			}
 			if err := m.AgentDeployTemplate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DaemonTemplate", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DaemonTemplate == nil {
+				m.DaemonTemplate = &DaemonTemplate{}
+			}
+			if err := m.DaemonTemplate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

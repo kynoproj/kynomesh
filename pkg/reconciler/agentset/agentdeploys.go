@@ -145,8 +145,8 @@ func (r *Reconciler) buildDesired(as *kmv1.AgentSet) (map[string]*kmv1.AgentDepl
 
 func (r *Reconciler) newAgentDeploy(as *kmv1.AgentSet, agent kmv1.AbstractAgentDeploy) (*kmv1.AgentDeploy, error) {
 	abstract := *agent.DeepCopy()
-	if tmpl := agentDeployTemplate(as); tmpl != nil {
-		applyTemplate(&abstract, tmpl)
+	if t := as.Spec.Templates; t != nil && t.AgentDeployTemplate != nil {
+		applyTemplate(&abstract, t.AgentDeployTemplate)
 	}
 	ad := &kmv1.AgentDeploy{
 		ObjectMeta: metav1.ObjectMeta{
@@ -179,21 +179,15 @@ func (r *Reconciler) newAgentDeploy(as *kmv1.AgentSet, agent kmv1.AbstractAgentD
 	return ad, nil
 }
 
-// agentDeployTemplate returns the AgentDeploy template configured on the
-// AgentSet, if any.
-func agentDeployTemplate(as *kmv1.AgentSet) *kmv1.AgentDeployTemplate {
-	if as.Spec.Templates == nil {
-		return nil
-	}
-	return as.Spec.Templates.AgentDeployTemplate
-}
-
 // applyTemplate fills unset fields of the per-agent spec from the
-// AgentSet-level template. Per-agent values always win.
+// AgentSet-level template, field by field, with per-agent values always winning.
 func applyTemplate(agent *kmv1.AbstractAgentDeploy, tmpl *kmv1.AgentDeployTemplate) {
-	if agent.BrokerTemplate == nil && tmpl.BrokerTemplate != nil {
-		ct := *tmpl.BrokerTemplate
-		agent.BrokerTemplate = &ct
+	agent.ApplyDefaultsFrom(&tmpl.AbstractPodTemplate)
+	if tmpl.BrokerContainer != nil {
+		if agent.BrokerContainer == nil {
+			agent.BrokerContainer = &kmv1.ContainerTemplate{}
+		}
+		agent.BrokerContainer.ApplyDefaultsFrom(tmpl.BrokerContainer)
 	}
 }
 

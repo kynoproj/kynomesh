@@ -169,6 +169,57 @@ func TestBuildPodSpec_MountsKynomeshRunOnControllerOwnedContainersOnly(t *testin
 	checkNoMount(t, ps.InitContainers[2].VolumeMounts, "user-init")
 }
 
+func TestBuildPodSpec_CommonEnvOnUserContainers(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
+	ad.Spec.InitContainers = []corev1.Container{{Name: "user-init", Image: "busybox"}}
+
+	ps := buildPodSpec(ad, testBrokerImage, "")
+
+	sidecar := ps.Containers[1]
+	require.Equal(t, "user-sidecar", sidecar.Name)
+	userInit := ps.InitContainers[2]
+	require.Equal(t, "user-init", userInit.Name)
+
+	for _, c := range []corev1.Container{sidecar, userInit} {
+		assert.NotNil(t, findEnv(c.Env, kmv1.EnvNamespace), "%s must get NAMESPACE", c.Name)
+		assert.NotNil(t, findEnv(c.Env, kmv1.EnvPodName), "%s must get POD_NAME", c.Name)
+		assert.NotNil(t, findEnv(c.Env, kmv1.EnvAgentSetName), "%s must get AGENTSET_NAME", c.Name)
+		if e := findEnv(c.Env, kmv1.EnvAgentDeployName); assert.NotNil(t, e, "%s must get AGENTDEPLOY_NAME", c.Name) {
+			assert.Equal(t, ad.Spec.Name, e.Value)
+		}
+		// Common env must NOT drag the kynomesh-run mount along.
+		for _, m := range c.VolumeMounts {
+			assert.NotEqual(t, kmv1.VolumeNameKynomeshRun, m.Name, "%s must not get the kynomesh-run mount", c.Name)
+		}
+	}
+}
+
+func TestBuildPodSpec_CommonEnvWinsOverUserEnvInUserContainers(t *testing.T) {
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.Sidecars = []corev1.Container{{
+		Name:  "user-sidecar",
+		Image: "busybox",
+		Env:   []corev1.EnvVar{{Name: kmv1.EnvAgentSetName, Value: "user-override"}},
+	}}
+
+	ps := buildPodSpec(ad, testBrokerImage, "")
+	sidecar := ps.Containers[1]
+
+	e := findEnv(sidecar.Env, kmv1.EnvAgentSetName)
+	require.NotNil(t, e)
+	assert.Equal(t, ad.Spec.AgentSetName, e.Value,
+		"kynomesh common env must override a user-supplied entry of the same name")
+	// The common env var appears exactly once (user entry replaced, not duplicated).
+	count := 0
+	for _, ev := range sidecar.Env {
+		if ev.Name == kmv1.EnvAgentSetName {
+			count++
+		}
+	}
+	assert.Equal(t, 1, count, "no duplicate common env var")
+}
+
 func TestBuildPodSpec_InitContainerOrder(t *testing.T) {
 	// Init containers come out as [init-runtime, agent (sidecar), ...user init containers].
 	ad := newAgentDeploy("greeter", 1)
@@ -319,24 +370,13 @@ func TestBuildPodSpec_InjectsDownwardAPIEnv(t *testing.T) {
 		assert.Equal(t, "metadata.name", pn.ValueFrom.FieldRef.FieldPath)
 	}
 
-	// Controller-owned containers only: broker, init-runtime, agent sidecar.
-	// User-supplied sidecars and init containers must not receive the built-in env.
+	// Every container — controller-owned and user-supplied — receives the
+	// downward-API common env (NAMESPACE, POD_NAME).
 	for _, c := range ps.Containers {
-		if c.Name == kmv1.ContainerNameAgentBroker {
-			t.Run(c.Name, func(t *testing.T) { check(t, c) })
-		} else {
-			t.Run(c.Name+"/no-builtin", func(t *testing.T) {
-				assert.Nil(t, findEnv(c.Env, kmv1.EnvNamespace),
-					"user sidecar %s must not receive built-in NAMESPACE env", c.Name)
-				assert.Nil(t, findEnv(c.Env, kmv1.EnvPodName),
-					"user sidecar %s must not receive built-in POD_NAME env", c.Name)
-			})
-		}
+		t.Run(c.Name, func(t *testing.T) { check(t, c) })
 	}
 	for _, c := range ps.InitContainers {
-		if c.Name == kmv1.ContainerNameAgent || c.Name == kmv1.ContainerNameInitRuntime {
-			t.Run("init/"+c.Name, func(t *testing.T) { check(t, c) })
-		}
+		t.Run("init/"+c.Name, func(t *testing.T) { check(t, c) })
 	}
 }
 
@@ -514,14 +554,14 @@ func TestBuildPodSpec_BrokerProbes(t *testing.T) {
 	assert.Equal(t, kmv1.DefaultBrokerLivenessSuccessThreshold, broker.LivenessProbe.SuccessThreshold)
 }
 
-func TestBuildPodSpec_BrokerTemplatePreservesProbes(t *testing.T) {
+func TestBuildPodSpec_BrokerContainerPreservesProbes(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Container = &kmv1.Container{Image: "user/agent:v1"}
-	ad.Spec.BrokerTemplate = &kmv1.ContainerTemplate{ImagePullPolicy: corev1.PullIfNotPresent}
+	ad.Spec.BrokerContainer = &kmv1.ContainerTemplate{ImagePullPolicy: corev1.PullIfNotPresent}
 
 	broker := buildPodSpec(ad, testBrokerImage, "").Containers[0]
 
-	require.NotNil(t, broker.ReadinessProbe, "BrokerTemplate must not clobber controller-owned probes")
+	require.NotNil(t, broker.ReadinessProbe, "BrokerContainer must not clobber controller-owned probes")
 	require.NotNil(t, broker.ReadinessProbe.HTTPGet)
 	require.NotNil(t, broker.LivenessProbe)
 	require.NotNil(t, broker.LivenessProbe.HTTPGet)
@@ -579,12 +619,12 @@ func TestBuildPodSpec_BrokerGraceEnvInjected(t *testing.T) {
 	})
 }
 
-func TestBuildPodSpec_BrokerTemplateAppliedAfterDefaults(t *testing.T) {
-	// BrokerTemplate is the user's knob for tuning the controller-owned
+func TestBuildPodSpec_BrokerContainerAppliedAfterDefaults(t *testing.T) {
+	// BrokerContainer is the user's knob for tuning the controller-owned
 	// broker container — resources, env, securityContext, etc. — without
 	// being able to override the broker's identity (name, image, args).
 	ad := newAgentDeploy("greeter", 1)
-	ad.Spec.BrokerTemplate = &kmv1.ContainerTemplate{
+	ad.Spec.BrokerContainer = &kmv1.ContainerTemplate{
 		ImagePullPolicy: corev1.PullIfNotPresent,
 		Env:             []corev1.EnvVar{{Name: "BROKER_DEBUG", Value: "1"}},
 	}
@@ -594,7 +634,7 @@ func TestBuildPodSpec_BrokerTemplateAppliedAfterDefaults(t *testing.T) {
 
 	// User-supplied tuning was applied...
 	assert.Equal(t, corev1.PullIfNotPresent, broker.ImagePullPolicy)
-	assert.NotNil(t, findEnv(broker.Env, "BROKER_DEBUG"), "BrokerTemplate.Env must be appended to the broker")
+	assert.NotNil(t, findEnv(broker.Env, "BROKER_DEBUG"), "BrokerContainer.Env must be appended to the broker")
 
 	// ...but the broker's infrastructure identity is untouched.
 	assert.Equal(t, kmv1.ContainerNameAgentBroker, broker.Name)
