@@ -153,8 +153,6 @@ func (apt *AbstractPodTemplate) ApplyToPodSpec(ps *corev1.PodSpec) {
 
 // ApplyDefaultsFrom fills the receiver's unset fields from other, so other acts
 // as a set of defaults that the receiver's own values override (fill-if-unset).
-// Labels and annotations are merged additively — the receiver's keys win, and
-// keys only present in other are added. A nil other is a no-op.
 func (apt *AbstractPodTemplate) ApplyDefaultsFrom(other *AbstractPodTemplate) {
 	if other == nil {
 		return

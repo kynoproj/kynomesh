@@ -75,6 +75,35 @@ func TestBuildAgentDeploys_TemplateAppliedAsDefault(t *testing.T) {
 		"per-agent value should beat the template default")
 }
 
+func TestBuildAgentDeploys_BrokerContainerFieldMerge(t *testing.T) {
+	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	as := newAgentSet("greeter", "alpha")
+	as.Spec.Templates = &kmv1.Templates{
+		AgentDeployTemplate: &kmv1.AgentDeployTemplate{
+			BrokerContainer: &kmv1.ContainerTemplate{
+				Env: []corev1.EnvVar{{Name: "FROM_TEMPLATE", Value: "t"}},
+			},
+		},
+	}
+	// The agent sets its own broker env; the template's env must still merge in
+	// rather than being dropped wholesale.
+	as.Spec.Agents[0].BrokerContainer = &kmv1.ContainerTemplate{
+		Env: []corev1.EnvVar{{Name: "FROM_AGENT", Value: "a"}},
+	}
+
+	out, err := r.buildDesired(as)
+	require.NoError(t, err)
+	ad := out["greeter-alpha"]
+
+	require.NotNil(t, ad.Spec.BrokerContainer)
+	names := map[string]string{}
+	for _, e := range ad.Spec.BrokerContainer.Env {
+		names[e.Name] = e.Value
+	}
+	assert.Equal(t, "a", names["FROM_AGENT"], "per-agent broker env kept")
+	assert.Equal(t, "t", names["FROM_TEMPLATE"], "template broker env merged in, not dropped")
+}
+
 func TestBuildAgentDeploys_TemplatePodFieldsApplied(t *testing.T) {
 	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	as := newAgentSet("greeter", "alpha")

@@ -353,3 +353,63 @@ func TestApplyToContainer_FullTemplate(t *testing.T) {
 	}, c.Env)
 	assert.Equal(t, template.EnvFrom, c.EnvFrom)
 }
+
+func TestContainerTemplate_ApplyDefaultsFrom(t *testing.T) {
+	t.Run("nil defaults is a no-op", func(t *testing.T) {
+		own := &ContainerTemplate{ImagePullPolicy: corev1.PullAlways}
+		own.ApplyDefaultsFrom(nil)
+		assert.Equal(t, corev1.PullAlways, own.ImagePullPolicy)
+	})
+
+	t.Run("fills unset fields from defaults", func(t *testing.T) {
+		own := &ContainerTemplate{}
+		defaults := &ContainerTemplate{
+			ImagePullPolicy: corev1.PullAlways,
+			SecurityContext: &corev1.SecurityContext{RunAsUser: ptr.To[int64](1000)},
+			Env:             []corev1.EnvVar{{Name: "FOO", Value: "tmpl"}},
+			EnvFrom:         []corev1.EnvFromSource{{ConfigMapRef: &corev1.ConfigMapEnvSource{LocalObjectReference: corev1.LocalObjectReference{Name: "cm"}}}},
+			Resources: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("500Mi")},
+			},
+		}
+		own.ApplyDefaultsFrom(defaults)
+		assert.Equal(t, corev1.PullAlways, own.ImagePullPolicy)
+		assert.NotNil(t, own.SecurityContext)
+		assert.Equal(t, "tmpl", own.Env[0].Value)
+		assert.Len(t, own.EnvFrom, 1)
+		assert.Equal(t, "500Mi", own.Resources.Limits.Memory().String())
+	})
+
+	t.Run("own values win; resources and env merge", func(t *testing.T) {
+		own := &ContainerTemplate{
+			ImagePullPolicy: corev1.PullNever,
+			Env:             []corev1.EnvVar{{Name: "FOO", Value: "own"}},
+			Resources: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("2")},
+			},
+		}
+		defaults := &ContainerTemplate{
+			ImagePullPolicy: corev1.PullAlways,
+			Env:             []corev1.EnvVar{{Name: "FOO", Value: "tmpl"}, {Name: "BAR", Value: "tmpl"}},
+			Resources: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{
+					corev1.ResourceCPU:    resource.MustParse("1"),
+					corev1.ResourceMemory: resource.MustParse("500Mi"),
+				},
+			},
+		}
+		own.ApplyDefaultsFrom(defaults)
+
+		assert.Equal(t, corev1.PullNever, own.ImagePullPolicy, "own pull policy wins")
+		// Env: FOO keeps own value, BAR merged in.
+		got := map[string]string{}
+		for _, e := range own.Env {
+			got[e.Name] = e.Value
+		}
+		assert.Equal(t, "own", got["FOO"], "own env var wins on name collision")
+		assert.Equal(t, "tmpl", got["BAR"], "defaults-only env var merged in")
+		// Resources: own CPU wins, defaults memory merged in.
+		assert.Equal(t, "2", own.Resources.Limits.Cpu().String(), "own resource key wins")
+		assert.Equal(t, "500Mi", own.Resources.Limits.Memory().String(), "defaults-only resource merged in")
+	})
+}
