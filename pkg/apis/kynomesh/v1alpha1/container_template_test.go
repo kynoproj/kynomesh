@@ -121,6 +121,51 @@ func TestApplyToContainer_ResourcesMergeWithOverride(t *testing.T) {
 	}
 }
 
+func TestApplyToContainer_ClaimsAppend(t *testing.T) {
+	tests := []struct {
+		name            string
+		templateClaims  []corev1.ResourceClaim
+		containerClaims []corev1.ResourceClaim
+		expected        []corev1.ResourceClaim
+	}{
+		{
+			name:            "template claim appended to container claims",
+			templateClaims:  []corev1.ResourceClaim{{Name: "gpu"}},
+			containerClaims: []corev1.ResourceClaim{{Name: "nic"}},
+			expected:        []corev1.ResourceClaim{{Name: "nic"}, {Name: "gpu"}},
+		},
+		{
+			name:            "empty template leaves container claims unchanged",
+			templateClaims:  nil,
+			containerClaims: []corev1.ResourceClaim{{Name: "nic"}},
+			expected:        []corev1.ResourceClaim{{Name: "nic"}},
+		},
+		{
+			name:            "template claim added to empty container",
+			templateClaims:  []corev1.ResourceClaim{{Name: "gpu"}},
+			containerClaims: nil,
+			expected:        []corev1.ResourceClaim{{Name: "gpu"}},
+		},
+		{
+			name:            "duplicate name from template is dropped",
+			templateClaims:  []corev1.ResourceClaim{{Name: "gpu"}},
+			containerClaims: []corev1.ResourceClaim{{Name: "gpu"}},
+			expected:        []corev1.ResourceClaim{{Name: "gpu"}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ct := &ContainerTemplate{Resources: corev1.ResourceRequirements{Claims: tt.templateClaims}}
+			c := &corev1.Container{Resources: corev1.ResourceRequirements{Claims: tt.containerClaims}}
+
+			ct.ApplyToContainer(c)
+
+			assert.Equal(t, tt.expected, c.Resources.Claims)
+		})
+	}
+}
+
 func TestApplyToContainer_SecurityContextUnconditionalReplace(t *testing.T) {
 	runAsNonRoot := true
 	templateCtx := &corev1.SecurityContext{
@@ -370,6 +415,7 @@ func TestContainerTemplate_ApplyDefaultsFrom(t *testing.T) {
 			EnvFrom:         []corev1.EnvFromSource{{ConfigMapRef: &corev1.ConfigMapEnvSource{LocalObjectReference: corev1.LocalObjectReference{Name: "cm"}}}},
 			Resources: corev1.ResourceRequirements{
 				Limits: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("500Mi")},
+				Claims: []corev1.ResourceClaim{{Name: "gpu"}},
 			},
 		}
 		own.ApplyDefaultsFrom(defaults)
@@ -378,6 +424,7 @@ func TestContainerTemplate_ApplyDefaultsFrom(t *testing.T) {
 		assert.Equal(t, "tmpl", own.Env[0].Value)
 		assert.Len(t, own.EnvFrom, 1)
 		assert.Equal(t, "500Mi", own.Resources.Limits.Memory().String())
+		assert.Equal(t, []corev1.ResourceClaim{{Name: "gpu"}}, own.Resources.Claims)
 	})
 
 	t.Run("own values win; resources and env merge", func(t *testing.T) {

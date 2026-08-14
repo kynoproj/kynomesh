@@ -37,11 +37,15 @@ func buildPodSpec(ad *kmv1.AgentDeploy, image string, imagePullPolicy corev1.Pul
 	containers := []corev1.Container{newBrokerContainer(image, imagePullPolicy, encodedAgentDeploy, ad.Spec.BrokerContainer, grace)}
 	containers = append(containers, ad.Spec.Sidecars...)
 
+	// init-runtime first, then the user's init containers, then agent last:
+	// agent runs as a native sidecar (restartPolicy: Always) and never
+	// completes, so anything meant to prepare state for it must run before
+	// it starts, not after.
 	initContainers := []corev1.Container{
 		newInitRuntimeContainer(image, imagePullPolicy, encodedAgentDeploy),
-		newAgentContainer(ad),
 	}
 	initContainers = append(initContainers, ad.Spec.InitContainers...)
+	initContainers = append(initContainers, newAgentContainer(ad))
 
 	ps := corev1.PodSpec{
 		Containers:     containers,
@@ -55,15 +59,15 @@ func buildPodSpec(ad *kmv1.AgentDeploy, image string, imagePullPolicy corev1.Pul
 		ps.TerminationGracePeriodSeconds = &grace
 	}
 
-	const controllerOwnedContainerCount = 1 // broker
-	const controllerOwnedInitCount = 2      // init-runtime, agent
-
 	// Common env goes on every container
 	applyCommonEnv(ad, ps.Containers)
 	applyCommonEnv(ad, ps.InitContainers)
-	// Vol mount only goes on built-in containers
-	applyRunVolMount(ps.Containers[:controllerOwnedContainerCount])
-	applyRunVolMount(ps.InitContainers[:controllerOwnedInitCount])
+	// Vol mount only goes on built-in containers:
+	// - Init Containers: init-runtime (index 0) and agent (last, after any user init containers)
+	// - Main container: broker
+	applyRunVolMount(ps.Containers[:1])
+	applyRunVolMount(ps.InitContainers[:1])
+	applyRunVolMount(ps.InitContainers[len(ps.InitContainers)-1:])
 	return ps
 }
 

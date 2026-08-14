@@ -41,6 +41,7 @@ type ContainerTemplate struct {
 func (ct *ContainerTemplate) ApplyToContainer(c *corev1.Container) {
 	c.Resources.Requests = mergeResourceList(c.Resources.Requests, ct.Resources.Requests)
 	c.Resources.Limits = mergeResourceList(c.Resources.Limits, ct.Resources.Limits)
+	c.Resources.Claims = mergeResourceClaims(c.Resources.Claims, ct.Resources.Claims)
 	c.SecurityContext = ct.SecurityContext
 	// ImagePullPolicy is intentionally container-wins (unlike the fields above,
 	// where the template overrides). The container's policy is stamped from
@@ -68,6 +69,7 @@ func (ct *ContainerTemplate) ApplyDefaultsFrom(other *ContainerTemplate) {
 	}
 	ct.Resources.Requests = mergeResourceDefaults(ct.Resources.Requests, other.Resources.Requests)
 	ct.Resources.Limits = mergeResourceDefaults(ct.Resources.Limits, other.Resources.Limits)
+	ct.Resources.Claims = mergeResourceClaims(ct.Resources.Claims, other.Resources.Claims)
 	if ct.ImagePullPolicy == "" {
 		ct.ImagePullPolicy = other.ImagePullPolicy
 	}
@@ -122,5 +124,25 @@ func mergeResourceList(base, override corev1.ResourceList) corev1.ResourceList {
 	out := make(corev1.ResourceList, len(base)+len(override))
 	maps.Copy(out, base)
 	maps.Copy(out, override)
+	return out
+}
+
+// mergeResourceClaims returns own with any claim whose name is only present in
+// other appended (own wins on name collisions). Returns own unchanged when
+// other is empty.
+func mergeResourceClaims(own, other []corev1.ResourceClaim) []corev1.ResourceClaim {
+	if len(other) == 0 {
+		return own
+	}
+	seen := make(map[string]struct{}, len(own))
+	for _, c := range own {
+		seen[c.Name] = struct{}{}
+	}
+	out := own
+	for _, c := range other {
+		if _, ok := seen[c.Name]; !ok {
+			out = append(out, c)
+		}
+	}
 	return out
 }

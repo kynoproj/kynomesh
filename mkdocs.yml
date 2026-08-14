@@ -61,6 +61,19 @@ nav:
       - Reference:
           - Autoscaling: "user-guide/reference/autoscaling.md"
           - Rate limiting: "user-guide/reference/rate-limiting.md"
+          - GPU: "user-guide/reference/gpu.md"
+          - Configuration:
+              - Labels And Annotations: "user-guide/reference/configuration/labels-and-annotations.md"
+              - Environment Variables: "user-guide/reference/configuration/environment-variables.md"
+              - Container Resources: "user-guide/reference/configuration/container-resources.md"
+              - Volumes: "user-guide/reference/configuration/volumes.md"
+              - Init Containers: "user-guide/reference/configuration/init-containers.md"
+              - Sidecar Containers: "user-guide/reference/configuration/sidecar-containers.md"
+              - Liveness And Readiness: "user-guide/reference/configuration/liveness-and-readiness.md"
+              - AgentSet Customization: "user-guide/reference/configuration/agentset-customization.md"
+              - Rolling Update: "user-guide/reference/configuration/rolling-update.md"
+              - Dynamic Resource Allocation: "user-guide/reference/configuration/dra.md"
+              - Running On Istio: "user-guide/reference/configuration/istio.md"
           - APIs.md
   - Operator Manual:
       - Releases ⧉: "operations/releases.md"
