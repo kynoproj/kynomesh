@@ -514,14 +514,14 @@ func TestBuildPodSpec_BrokerProbes(t *testing.T) {
 	assert.Equal(t, kmv1.DefaultBrokerLivenessSuccessThreshold, broker.LivenessProbe.SuccessThreshold)
 }
 
-func TestBuildPodSpec_BrokerTemplatePreservesProbes(t *testing.T) {
+func TestBuildPodSpec_BrokerContainerPreservesProbes(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Container = &kmv1.Container{Image: "user/agent:v1"}
-	ad.Spec.BrokerTemplate = &kmv1.ContainerTemplate{ImagePullPolicy: corev1.PullIfNotPresent}
+	ad.Spec.BrokerContainer = &kmv1.ContainerTemplate{ImagePullPolicy: corev1.PullIfNotPresent}
 
 	broker := buildPodSpec(ad, testBrokerImage, "").Containers[0]
 
-	require.NotNil(t, broker.ReadinessProbe, "BrokerTemplate must not clobber controller-owned probes")
+	require.NotNil(t, broker.ReadinessProbe, "BrokerContainer must not clobber controller-owned probes")
 	require.NotNil(t, broker.ReadinessProbe.HTTPGet)
 	require.NotNil(t, broker.LivenessProbe)
 	require.NotNil(t, broker.LivenessProbe.HTTPGet)
@@ -579,12 +579,12 @@ func TestBuildPodSpec_BrokerGraceEnvInjected(t *testing.T) {
 	})
 }
 
-func TestBuildPodSpec_BrokerTemplateAppliedAfterDefaults(t *testing.T) {
-	// BrokerTemplate is the user's knob for tuning the controller-owned
+func TestBuildPodSpec_BrokerContainerAppliedAfterDefaults(t *testing.T) {
+	// BrokerContainer is the user's knob for tuning the controller-owned
 	// broker container — resources, env, securityContext, etc. — without
 	// being able to override the broker's identity (name, image, args).
 	ad := newAgentDeploy("greeter", 1)
-	ad.Spec.BrokerTemplate = &kmv1.ContainerTemplate{
+	ad.Spec.BrokerContainer = &kmv1.ContainerTemplate{
 		ImagePullPolicy: corev1.PullIfNotPresent,
 		Env:             []corev1.EnvVar{{Name: "BROKER_DEBUG", Value: "1"}},
 	}
@@ -594,7 +594,7 @@ func TestBuildPodSpec_BrokerTemplateAppliedAfterDefaults(t *testing.T) {
 
 	// User-supplied tuning was applied...
 	assert.Equal(t, corev1.PullIfNotPresent, broker.ImagePullPolicy)
-	assert.NotNil(t, findEnv(broker.Env, "BROKER_DEBUG"), "BrokerTemplate.Env must be appended to the broker")
+	assert.NotNil(t, findEnv(broker.Env, "BROKER_DEBUG"), "BrokerContainer.Env must be appended to the broker")
 
 	// ...but the broker's infrastructure identity is untouched.
 	assert.Equal(t, kmv1.ContainerNameAgentBroker, broker.Name)

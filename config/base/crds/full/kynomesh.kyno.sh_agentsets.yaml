@@ -485,7 +485,7 @@ spec:
                       type: object
                     automountServiceAccountToken:
                       type: boolean
-                    brokerTemplate:
+                    brokerContainer:
                       properties:
                         env:
                           items:
@@ -3942,7 +3942,7 @@ spec:
                         type: object
                       automountServiceAccountToken:
                         type: boolean
-                      brokerTemplate:
+                      brokerContainer:
                         properties:
                           env:
                             items:

@@ -36,8 +36,8 @@ func (in *AbstractAgentDeploy) DeepCopyInto(out *AbstractAgentDeploy) {
 		*out = new(Container)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.BrokerTemplate != nil {
-		in, out := &in.BrokerTemplate, &out.BrokerTemplate
+	if in.BrokerContainer != nil {
+		in, out := &in.BrokerContainer, &out.BrokerContainer
 		*out = new(ContainerTemplate)
 		(*in).DeepCopyInto(*out)
 	}
@@ -270,8 +270,8 @@ func (in *AgentDeployStatus) DeepCopy() *AgentDeployStatus {
 func (in *AgentDeployTemplate) DeepCopyInto(out *AgentDeployTemplate) {
 	*out = *in
 	in.AbstractPodTemplate.DeepCopyInto(&out.AbstractPodTemplate)
-	if in.BrokerTemplate != nil {
-		in, out := &in.BrokerTemplate, &out.BrokerTemplate
+	if in.BrokerContainer != nil {
+		in, out := &in.BrokerContainer, &out.BrokerContainer
 		*out = new(ContainerTemplate)
 		(*in).DeepCopyInto(*out)
 	}

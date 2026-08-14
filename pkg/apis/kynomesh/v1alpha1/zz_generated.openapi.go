@@ -215,7 +215,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container"),
 						},
 					},
-					"brokerTemplate": {
+					"brokerContainer": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Container template for the broker container.",
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate"),
@@ -719,7 +719,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container"),
 						},
 					},
-					"brokerTemplate": {
+					"brokerContainer": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Container template for the broker container.",
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate"),
@@ -1105,7 +1105,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeployTemplate(ref common.ReferenceC
 							Format:      "int64",
 						},
 					},
-					"brokerTemplate": {
+					"brokerContainer": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Template for the AgentDeploy broker container",
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate"),

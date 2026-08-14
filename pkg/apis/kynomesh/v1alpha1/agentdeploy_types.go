@@ -128,7 +128,7 @@ type AbstractAgentDeploy struct {
 	Container *Container `json:"container" protobuf:"bytes,3,opt,name=container"`
 	// Container template for the broker container.
 	// +optional
-	BrokerTemplate *ContainerTemplate `json:"brokerTemplate,omitempty" protobuf:"bytes,4,opt,name=brokerTemplate"`
+	BrokerContainer *ContainerTemplate `json:"brokerContainer,omitempty" protobuf:"bytes,4,opt,name=brokerContainer"`
 	// +optional
 	// +patchStrategy=merge
 	// +patchMergeKey=name
@@ -237,5 +237,5 @@ type AgentDeployTemplate struct {
 	AbstractPodTemplate `json:",inline" protobuf:"bytes,1,opt,name=abstractPodTemplate"`
 	// Template for the AgentDeploy broker container
 	// +optional
-	BrokerTemplate *ContainerTemplate `json:"brokerTemplate,omitempty" protobuf:"bytes,2,opt,name=brokerTemplate"`
+	BrokerContainer *ContainerTemplate `json:"brokerContainer,omitempty" protobuf:"bytes,2,opt,name=brokerContainer"`
 }
