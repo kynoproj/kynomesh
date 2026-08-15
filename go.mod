@@ -7,7 +7,7 @@ require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/gavv/httpexpect/v2 v2.17.0
 	github.com/go-logr/zapr v1.3.0
-	github.com/go-swagger/go-swagger v0.36.1
+	github.com/go-swagger/go-swagger v0.36.2
 	github.com/gogo/protobuf v1.3.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0
 	github.com/prometheus/client_golang v1.24.1
@@ -54,7 +54,7 @@ require (
 	github.com/fxamacker/cbor/v2 v2.9.1 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-openapi/analysis v0.25.5 // indirect
-	github.com/go-openapi/codescan v0.36.2 // indirect
+	github.com/go-openapi/codescan v0.36.3 // indirect
 	github.com/go-openapi/errors v0.22.8 // indirect
 	github.com/go-openapi/inflect v1.0.0 // indirect
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
@@ -108,7 +108,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
-	github.com/rogpeppe/go-internal v1.15.0 // indirect
+	github.com/rogpeppe/go-internal v1.16.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/sanity-io/litter v1.5.5 // indirect
