@@ -78,6 +78,7 @@ nav:
   - Operator Manual:
       - Releases ⧉: "operations/releases.md"
       - operations/installation.md
+      - operations/metrics.md
   - Contributor Guide:
       - development/development.md
       - Specifications:

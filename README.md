@@ -50,6 +50,10 @@ implemented using any programming language.
 
 ## Resources
 
+- [Quick Start](docs/quick-start.md)
+- [Core Concepts: AgentSet](docs/core-concepts/agentset.md)
+- [Core Concepts: AgentDeploy](docs/core-concepts/agentdeploy.md)
+- [Autoscaling](docs/user-guide/reference/autoscaling.md)
 - [APIs](docs/APIs.md)
 - [Development](docs/development/development.md)
 - [Static code analysis](docs/development/static-code-analysis.md)
