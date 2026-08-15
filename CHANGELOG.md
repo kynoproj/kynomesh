@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.6.1 (2026-08-15)
+
+ * [5c12def](https://github.com/kynoproj/kynomesh/commit/5c12def761542fc2e08b29f340d848fbc878c3be) Update manifests to v0.6.1
+ * [451ee14](https://github.com/kynoproj/kynomesh/commit/451ee14aecb776f936ddda5c41e351b6fd3d4b4d) chore(deps): bump google.golang.org/protobuf from 1.36.12-0.20260120151049-f2248ac996af to 1.36.12 (#180)
+ * [e0ed41a](https://github.com/kynoproj/kynomesh/commit/e0ed41a0161f46271d87f634b06855aabfa067ac) chore(deps): bump github.com/go-swagger/go-swagger from 0.36.1 to 0.36.2 (#181)
+ * [3cdff45](https://github.com/kynoproj/kynomesh/commit/3cdff45d18e13b64798a6bcf57d99587316316e5) chore(deps): bump golang.org/x/net from 0.57.0 to 0.58.0 (#182)
+ * [eeafc30](https://github.com/kynoproj/kynomesh/commit/eeafc30a828a755615956c40ea5c472960f434ea) feat: add template for daemon deployment (#176)
+ * [9ffe263](https://github.com/kynoproj/kynomesh/commit/9ffe2639aafef956c931db5b62d32d03762e96ce) fix: agent pod template not honored (#174)
+
+### Contributors
+
+ * Derek Wang
+ * dependabot[bot]
+
 ## v0.6.0 (2026-08-13)
 
  * [ba3c493](https://github.com/kynoproj/kynomesh/commit/ba3c4933dbff28c3712ec29932f443ca4972765f) Update manifests to v0.6.0
