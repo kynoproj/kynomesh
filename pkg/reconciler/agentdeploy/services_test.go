@@ -54,6 +54,7 @@ func TestNewHeadlessService(t *testing.T) {
 	assert.Equal(t, "greeter", svc.Labels[kmv1.KeyAppName])
 	assert.Equal(t, "greeter", svc.Labels[kmv1.KeyAgentDeployName])
 	assert.Equal(t, ad.Spec.AgentSetName, svc.Labels[kmv1.KeyAgentSetName])
+	assert.Equal(t, kmv1.ServiceKindHeadless, svc.Labels[kmv1.KeyServiceKind])
 	require.Len(t, svc.OwnerReferences, 1)
 }
 
@@ -76,7 +77,21 @@ func TestNewClusterIPService(t *testing.T) {
 	assert.Equal(t, "broker", svc.Spec.Ports[0].Name)
 	assert.Equal(t, int32(kmv1.AgentBrokerPort), svc.Spec.Ports[0].Port)
 	assert.Equal(t, corev1.ProtocolTCP, svc.Spec.Ports[0].Protocol)
+	assert.Equal(t, kmv1.ServiceKindClusterIP, svc.Labels[kmv1.KeyServiceKind])
 	require.Len(t, svc.OwnerReferences, 1)
+}
+
+func TestHeadlessAndClusterIPServices_DistinguishableByLabel(t *testing.T) {
+	// Every other label on the two Services is identical, so KeyServiceKind
+	// is the only thing a ServiceMonitor/PodMonitor selector can use to
+	// target one without the other.
+	ad := newAgentDeploy("greeter", 1)
+	headless := newHeadlessService(ad)
+	clusterIP := newClusterIPService(ad)
+
+	assert.NotEqual(t, headless.Labels[kmv1.KeyServiceKind], clusterIP.Labels[kmv1.KeyServiceKind])
+	assert.Equal(t, kmv1.ServiceKindHeadless, headless.Labels[kmv1.KeyServiceKind])
+	assert.Equal(t, kmv1.ServiceKindClusterIP, clusterIP.Labels[kmv1.KeyServiceKind])
 }
 
 func TestNewHeadlessService_DoesNotGateOnServing(t *testing.T) {

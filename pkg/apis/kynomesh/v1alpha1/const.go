@@ -20,16 +20,17 @@ const (
 	Project = "kynomesh"
 
 	// label/annotation keys.
-	KeyHash             = "kynomesh.kyno.sh/hash" // hash of the object
 	KeyComponent        = "app.kubernetes.io/component"
 	KeyPartOf           = "app.kubernetes.io/part-of"
 	KeyManagedBy        = "app.kubernetes.io/managed-by"
 	KeyAppName          = "app.kubernetes.io/name"
+	KeyHash             = "kynomesh.kyno.sh/hash" // hash of the object
 	KeyAgentSetName     = "kynomesh.kyno.sh/agentset-name"
 	KeyAgentDeployName  = "kynomesh.kyno.sh/agentdeploy-name"
 	KeyReplica          = "kynomesh.kyno.sh/replica"
 	KeyServing          = "kynomesh.kyno.sh/serving"
 	KeyEntry            = "kynomesh.kyno.sh/entry"
+	KeyServiceKind      = "kynomesh.kyno.sh/service-kind"
 	KeyDefaultContainer = "kubectl.kubernetes.io/default-container"
 
 	// ENV vars
@@ -58,6 +59,10 @@ const (
 	ComponentAgent             = "agent"
 	ComponentControllerManager = "controller-manager"
 	ComponentDaemon            = "daemon"
+
+	// Service kind label values (for KeyServiceKind)
+	ServiceKindHeadless  = "headless"
+	ServiceKindClusterIP = "clusterip"
 
 	// Controller names
 	ControllerAgentDeploy = "agentdeploy-controller"
