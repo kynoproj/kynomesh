@@ -31,8 +31,8 @@ endif
 
 DOCKER_PUSH?=false
 IMAGE_NAMESPACE?=quay.io/kynoproj
-VERSION?=v0.6.0
-BASE_VERSION:=v0.6.0
+VERSION?=v0.6.1
+BASE_VERSION:=v0.6.1
 # a2acli is the A2A client the e2e tests shell out to for agent messaging.
 A2ACLI_VERSION?=latest
 
