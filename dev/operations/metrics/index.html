@@ -13,7 +13,7 @@
     
     
       
-        <title>Static Code Analysis - Kynomesh - Distributed multi-agent orchestration</title>
+        <title>Metrics - Kynomesh - Distributed multi-agent orchestration</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#static-code-analysis" class="md-skip">
+        <a href="#metrics" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Static Code Analysis
+              Metrics
             
           </span>
         </div>
@@ -255,13 +255,15 @@
         
   
   
+    
+  
 
 
   
   
   
     <li class="md-tabs__item">
-      <a href="../../operations/releases/" class="md-tabs__link">
+      <a href="../releases/" class="md-tabs__link md-tabs__link--active">
         Operator Manual
       </a>
     </li>
@@ -271,15 +273,13 @@
         
   
   
-    
-  
 
 
   
   
   
     <li class="md-tabs__item">
-      <a href="../development/" class="md-tabs__link md-tabs__link--active">
+      <a href="../../development/development/" class="md-tabs__link">
         Contributor Guide
       </a>
     </li>
@@ -789,12 +789,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
       
       
       
@@ -817,7 +819,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../operations/releases/" class="md-nav__link">
+      <a href="../releases/" class="md-nav__link">
         Releases ⧉
       </a>
     </li>
@@ -831,7 +833,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../operations/installation/" class="md-nav__link">
+      <a href="../installation/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -843,11 +845,73 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../operations/metrics/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Metrics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Metrics
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#broker-metrics" class="md-nav__link">
+    Broker Metrics
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#daemon-metrics" class="md-nav__link">
+    Daemon Metrics
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#autoscaler-metrics" class="md-nav__link">
+    Autoscaler Metrics
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prometheus-operator-integration" class="md-nav__link">
+    Prometheus Operator Integration
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -865,14 +929,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
       
       
       
@@ -895,7 +957,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../development/" class="md-nav__link">
+      <a href="../../development/development/" class="md-nav__link">
         Development
       </a>
     </li>
@@ -935,7 +997,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specifications/agent-discovery/" class="md-nav__link">
+      <a href="../../development/specifications/agent-discovery/" class="md-nav__link">
         Agent Discovery
       </a>
     </li>
@@ -954,21 +1016,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../development/static-code-analysis/" class="md-nav__link">
         Static Code Analysis
       </a>
-      
     </li>
   
 
@@ -1000,6 +1052,42 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#broker-metrics" class="md-nav__link">
+    Broker Metrics
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#daemon-metrics" class="md-nav__link">
+    Daemon Metrics
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#autoscaler-metrics" class="md-nav__link">
+    Autoscaler Metrics
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prometheus-operator-integration" class="md-nav__link">
+    Prometheus Operator Integration
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1010,20 +1098,265 @@
             <article class="md-content__inner md-typeset">
               
                 
-  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/development/static-code-analysis.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/operations/metrics.md" title="Edit this page" class="md-content__button md-icon">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
 
-<h1 id="static-code-analysis">Static Code Analysis<a class="headerlink" href="#static-code-analysis" title="Permanent link">&para;</a></h1>
-<p>We use the following static code analysis tools:</p>
-<ul>
-<li><code>golangci-lint</code> for compile time linting.</li>
-<li><a href="https://codeql.github.com/">CodeQL</a> for code analysis</li>
-<li><a href="https://app.snyk.io/org/kynoproj/projects">Snyk</a> for image scanning.</li>
-</ul>
-<p>These are at least run daily or on each pull request.</p>
+<h1 id="metrics">Metrics<a class="headerlink" href="#metrics" title="Permanent link">&para;</a></h1>
+<p>Kynomesh exposes Prometheus metrics from three components: the <strong>broker</strong>
+sidecar in every agent pod, the per-AgentSet <strong>daemon</strong>, and the
+<strong>controller-manager</strong> (the agentdeploy/agentset reconcilers, including the
+autoscaler).</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Port</th>
+<th>Path</th>
+<th>TLS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>broker</td>
+<td><code>8491</code> (<code>AgentBrokerIntrospectionPort</code>)</td>
+<td><code>/metrics</code></td>
+<td>yes, self-signed</td>
+</tr>
+<tr>
+<td>daemon</td>
+<td><code>9433</code> (<code>DaemonMetricsPort</code>)</td>
+<td><code>/metrics</code></td>
+<td>yes, self-signed</td>
+</tr>
+<tr>
+<td>controller-manager</td>
+<td><code>9090</code></td>
+<td><code>/metrics</code></td>
+<td>no</td>
+</tr>
+</tbody>
+</table>
+<p>The broker's and daemon's metrics endpoints are TLS-only, using a certificate
+generated fresh per process — Prometheus scrape configs need <code>scheme: https</code> and
+<code>insecure_skip_verify: true</code> (there's no shared CA to validate against). The
+controller-manager's endpoint is plain HTTP, served by controller-runtime's
+default metrics server.</p>
+<p>The controller-manager's endpoint also carries controller-runtime's own built-in
+metrics (reconcile counts/durations, workqueue depth, etc.) in addition to
+Kynomesh's custom autoscaler metrics below.</p>
+<h2 id="broker-metrics">Broker Metrics<a class="headerlink" href="#broker-metrics" title="Permanent link">&para;</a></h2>
+<p>Emitted by the broker sidecar in every agent pod. All are labeled by
+<code>transport</code>, one of <code>jsonrpc</code>, <code>rest</code>, <code>grpc</code>, or <code>passthrough</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>broker_inflight_requests</code></td>
+<td>Gauge</td>
+<td>Requests the broker is currently proxying. A streaming call holds its slot for the stream's whole lifetime, not per message.</td>
+</tr>
+<tr>
+<td><code>broker_requests_total</code></td>
+<td>Counter</td>
+<td>Requests handled, incremented once per HTTP request completion or gRPC stream close.</td>
+</tr>
+<tr>
+<td><code>broker_rejected_total</code></td>
+<td>Counter</td>
+<td>Requests rejected at admission because the max in-flight cap was reached (HTTP 429 / gRPC <code>RESOURCE_EXHAUSTED</code>).</td>
+</tr>
+<tr>
+<td><code>broker_stream_messages_total</code></td>
+<td>Counter</td>
+<td>Stream messages observed on the wire — SSE events for REST/passthrough, server→client frames for gRPC. Stays 0 for non-streaming responses.</td>
+</tr>
+<tr>
+<td><code>broker_request_duration_seconds</code></td>
+<td>Histogram</td>
+<td>Wall-clock duration of broker-handled requests, observed on completion.</td>
+</tr>
+<tr>
+<td><code>broker_agent_server_info</code></td>
+<td>Gauge, always <code>1</code></td>
+<td>Static info series labeled <code>protocol</code>, <code>language</code>, <code>version</code>, sourced from the agent's server-info file. Only present when the agent published one.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="daemon-metrics">Daemon Metrics<a class="headerlink" href="#daemon-metrics" title="Permanent link">&para;</a></h2>
+<p>Emitted by the per-AgentSet daemon, all labeled by <code>agentdeploy</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>daemon_scrape_success_total</code></td>
+<td>Counter</td>
+<td>Pod <code>/metrics</code> scrapes that completed without error.</td>
+</tr>
+<tr>
+<td><code>daemon_scrape_failures_total</code></td>
+<td>Counter</td>
+<td>Pod <code>/metrics</code> scrapes that failed (HTTP error, timeout, or parse error).</td>
+</tr>
+<tr>
+<td><code>daemon_discovery_failures_total</code></td>
+<td>Counter</td>
+<td>Headless-DNS lookup failures while discovering an AgentDeploy's pods.</td>
+</tr>
+<tr>
+<td><code>daemon_pods_observed</code></td>
+<td>Gauge</td>
+<td>Ready pods discovered for an AgentDeploy on the last scrape tick.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="autoscaler-metrics">Autoscaler Metrics<a class="headerlink" href="#autoscaler-metrics" title="Permanent link">&para;</a></h2>
+<p>Emitted by the AgentDeploy autoscaler, part of the controller-manager process.
+All are labeled by <code>namespace</code>, <code>agentSet</code>, <code>agentDeploy</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>autoscaler_knee_per_replica</code></td>
+<td>Gauge</td>
+<td>Learned per-replica saturation knee (in-flight requests) for an AgentDeploy.</td>
+</tr>
+<tr>
+<td><code>autoscaler_confidence</code></td>
+<td>Gauge, <code>0</code>–<code>1</code></td>
+<td>Confidence in the learned knee.</td>
+</tr>
+<tr>
+<td><code>autoscaler_desired_replicas</code></td>
+<td>Gauge</td>
+<td>Replica count the autoscaler last computed.</td>
+</tr>
+<tr>
+<td><code>autoscaler_current_replicas</code></td>
+<td>Gauge</td>
+<td>Replica count the autoscaler last scaled from (observed running replicas).</td>
+</tr>
+<tr>
+<td><code>autoscaler_samples_total</code></td>
+<td>Counter</td>
+<td>Load samples recorded.</td>
+</tr>
+<tr>
+<td><code>autoscaler_scale_events_total</code></td>
+<td>Counter, labeled additionally by <code>direction</code> (<code>up</code>/<code>down</code>)</td>
+<td>Replica scale operations applied.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="prometheus-operator-integration">Prometheus Operator Integration<a class="headerlink" href="#prometheus-operator-integration" title="Permanent link">&para;</a></h2>
+<p>Example <code>PodMonitor</code> for agent pods (broker metrics) — matched by the common
+labels every agent pod carries:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monitoring.coreos.com/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PodMonitor</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh-broker</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">agent</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/managed-by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">agentdeploy-controller</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/part-of</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh</span>
+<span class="w">  </span><span class="nt">podMetricsEndpoints</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">introspect</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/metrics</span>
+<span class="w">      </span><span class="nt">scheme</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https</span>
+<span class="w">      </span><span class="nt">tlsConfig</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">insecureSkipVerify</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p>Or equivalent <code>ServiceMonitor</code> for the broker:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monitoring.coreos.com/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceMonitor</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh-broker</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">agent</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/managed-by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">agentdeploy-controller</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/part-of</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh</span>
+<span class="w">      </span><span class="nt">kynomesh.kyno.sh/service-kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">headless</span>
+<span class="w">  </span><span class="nt">endpoints</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">introspect</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/metrics</span>
+<span class="w">      </span><span class="nt">scheme</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https</span>
+<span class="w">      </span><span class="nt">tlsConfig</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">insecureSkipVerify</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p>Example <code>PodMonitor</code> for the per-AgentSet daemon:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monitoring.coreos.com/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PodMonitor</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh-daemon</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">daemon</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/managed-by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">agentset-controller</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/part-of</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh</span>
+<span class="w">  </span><span class="nt">podMetricsEndpoints</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metrics</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/metrics</span>
+<span class="w">      </span><span class="nt">scheme</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https</span>
+<span class="w">      </span><span class="nt">tlsConfig</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">insecureSkipVerify</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p>Or equivalent <code>ServiceMonitor</code> for the daemon:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monitoring.coreos.com/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceMonitor</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh-daemon</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">daemon</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/managed-by</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">agentset-controller</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/part-of</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh</span>
+<span class="w">  </span><span class="nt">endpoints</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metrics</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/metrics</span>
+<span class="w">      </span><span class="nt">scheme</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https</span>
+<span class="w">      </span><span class="nt">tlsConfig</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">insecureSkipVerify</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p>Example <code>PodMonitor</code> for the controller-manager (plain HTTP, no TLS, served by
+controller-runtime's metrics server):</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monitoring.coreos.com/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PodMonitor</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh-controller-manager</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app.kubernetes.io/component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">controller-manager</span>
+<span class="w">  </span><span class="nt">podMetricsEndpoints</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metrics</span>
+<span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/metrics</span>
+</code></pre></div>
 
               
             </article>
@@ -1046,7 +1379,7 @@
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../specifications/agent-discovery/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Agent Discovery" rel="prev">
+        <a href="../installation/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Installation" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1055,11 +1388,26 @@
               <span class="md-footer__direction">
                 Previous
               </span>
-              Agent Discovery
+              Installation
             </div>
           </div>
         </a>
       
+      
+        
+        <a href="../../development/development/" class="md-footer__link md-footer__link--next" aria-label="Next: Development" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Development
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
       
     </nav>
   
