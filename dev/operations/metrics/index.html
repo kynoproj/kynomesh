@@ -1213,6 +1213,11 @@ Kynomesh's custom autoscaler metrics below.</p>
 <td>Wall-clock duration of broker-handled requests, observed on completion.</td>
 </tr>
 <tr>
+<td><code>broker_errors_total</code></td>
+<td>Counter</td>
+<td>Requests that completed with an error, additionally labeled by <code>code</code>: HTTP status class (<code>4xx</code>, <code>5xx</code>) or gRPC status code name (e.g. <code>Unavailable</code>, <code>Internal</code>). Never incremented for successful responses or admission rejections (those are <code>broker_rejected_total</code>).</td>
+</tr>
+<tr>
 <td><code>broker_agent_server_info</code></td>
 <td>Gauge, always <code>1</code></td>
 <td>Static info series labeled <code>protocol</code>, <code>language</code>, <code>version</code>, sourced from the agent's server-info file. Only present when the agent published one.</td>
