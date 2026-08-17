@@ -122,10 +122,7 @@ func (c *Metrics) Passthrough() prometheus.Gauge {
 // transportSet returns the per-transport handles needed by the
 // wrappers — inflight gauge, request/stream counters, and duration
 // histogram — bundled into one struct so call sites don't have to
-// thread four values manually. errors is kept as the raw CounterVec
-// (rather than pre-bound like the others) because its second label,
-// code, varies per request; use errorCounter to resolve a concrete
-// Counter once the response's outcome is known.
+// thread four values manually.
 type transportSet struct {
 	inflight       prometheus.Gauge
 	requests       prometheus.Counter
