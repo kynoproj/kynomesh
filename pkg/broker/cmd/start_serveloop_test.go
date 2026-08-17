@@ -58,7 +58,7 @@ func buildLoopStack(t *testing.T) *brokerStack {
 	require.NoError(t, err)
 
 	rt := &brokerRuntime{
-		counters:    &broker.Metrics{},
+		metrcis:     &broker.Metrics{},
 		enabled:     map[a2a.TransportProtocol]bool{},
 		httpProxies: map[a2a.TransportProtocol]http.Handler{},
 		passthrough: stubOKHandler("ok"),

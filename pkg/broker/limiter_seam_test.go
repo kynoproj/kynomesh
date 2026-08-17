@@ -79,6 +79,8 @@ func TestWrapHTTP_RejectsAtCapWith429AndRetryAfter(t *testing.T) {
 	assert.Equal(t, float64(1), testutil.ToFloat64(set.rejected), "rejection must be counted")
 	assert.Equal(t, inflightBefore, testutil.ToFloat64(set.inflight),
 		"a rejected request must not touch the inflight gauge")
+	assert.Equal(t, float64(0), testutil.ToFloat64(set.errorCounter("4xx")),
+		"an admission rejection is tracked by broker_rejected_total, not broker_errors_total")
 
 	close(block)
 }

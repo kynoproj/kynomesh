@@ -81,6 +81,57 @@ func TestWrapHTTP_DecrementsOnPanic(t *testing.T) {
 	wrapped.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil))
 }
 
+func TestWrapHTTP_RecordsErrorsByStatusClass(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		wantCode   string // "" means no error recorded
+	}{
+		{"200 is not an error", http.StatusOK, ""},
+		{"304 is not an error", http.StatusNotModified, ""},
+		{"400 is a 4xx error", http.StatusBadRequest, "4xx"},
+		{"404 is a 4xx error", http.StatusNotFound, "4xx"},
+		{"429 is a 4xx error", http.StatusTooManyRequests, "4xx"},
+		{"500 is a 5xx error", http.StatusInternalServerError, "5xx"},
+		{"503 is a 5xx error", http.StatusServiceUnavailable, "5xx"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := NewMetrics(prometheus.NewRegistry())
+			set := c.RESTSet()
+			wrapped := wrapHTTP(nil, set, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(tt.statusCode)
+			}))
+			wrapped.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil))
+
+			for _, code := range []string{"4xx", "5xx"} {
+				want := float64(0)
+				if code == tt.wantCode {
+					want = 1
+				}
+				assert.Equal(t, want, testutil.ToFloat64(c.errors.WithLabelValues(TransportREST, code)),
+					"code=%s", code)
+			}
+		})
+	}
+}
+
+func TestWrapHTTP_NoErrorRecordedWhenHandlerNeverCallsWriteHeader(t *testing.T) {
+	// net/http defaults to 200 if the handler only writes a body — the
+	// error classifier must match that default rather than treating an
+	// unset status as an error.
+	c := NewMetrics(prometheus.NewRegistry())
+	set := c.RESTSet()
+	wrapped := wrapHTTP(nil, set, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("ok"))
+	}))
+	wrapped.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil))
+
+	assert.Equal(t, float64(0), testutil.ToFloat64(c.errors.WithLabelValues(TransportREST, "4xx")))
+	assert.Equal(t, float64(0), testutil.ToFloat64(c.errors.WithLabelValues(TransportREST, "5xx")))
+}
+
 func TestWrapHTTP_ObservesDuration(t *testing.T) {
 	c := NewMetrics(prometheus.NewRegistry())
 	set := c.RESTSet()
@@ -92,6 +143,28 @@ func TestWrapHTTP_ObservesDuration(t *testing.T) {
 
 	count := histogramSampleCount(t, c.requestDuration, TransportREST)
 	assert.Equal(t, uint64(1), count, "exactly one duration observation per request")
+}
+
+func TestHTTPStatusClass(t *testing.T) {
+	tests := []struct {
+		code int
+		want string
+	}{
+		{199, ""},
+		{200, ""},
+		{299, ""},
+		{300, ""},
+		{399, ""},
+		{400, "4xx"},
+		{404, "4xx"},
+		{499, "4xx"},
+		{500, "5xx"},
+		{503, "5xx"},
+		{599, "5xx"},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.want, httpStatusClass(tt.code), "code=%d", tt.code)
+	}
 }
 
 // histogramSampleCount returns the sample count for a labeled

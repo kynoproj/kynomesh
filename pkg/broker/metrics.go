@@ -58,6 +58,7 @@ type Metrics struct {
 	rejected        *prometheus.CounterVec
 	streamMessages  *prometheus.CounterVec
 	requestDuration *prometheus.HistogramVec
+	errors          *prometheus.CounterVec
 }
 
 // NewMetrics registers all broker metrics on the supplied registry.
@@ -100,6 +101,13 @@ func NewMetrics(registry prometheus.Registerer) *Metrics {
 			},
 			[]string{"transport"},
 		),
+		errors: promauto.With(registry).NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "broker_errors_total",
+				Help: "Total number of requests the broker handled that completed with an error, by transport and code. HTTP responses are labeled by status class (4xx, 5xx); gRPC responses are labeled by status code name (e.g. Unavailable, Internal). Never incremented for successful responses.",
+			},
+			[]string{"transport", "code"},
+		),
 	}
 }
 
@@ -114,13 +122,18 @@ func (c *Metrics) Passthrough() prometheus.Gauge {
 // transportSet returns the per-transport handles needed by the
 // wrappers — inflight gauge, request/stream counters, and duration
 // histogram — bundled into one struct so call sites don't have to
-// thread four values manually.
+// thread four values manually. errors is kept as the raw CounterVec
+// (rather than pre-bound like the others) because its second label,
+// code, varies per request; use errorCounter to resolve a concrete
+// Counter once the response's outcome is known.
 type transportSet struct {
 	inflight       prometheus.Gauge
 	requests       prometheus.Counter
 	rejected       prometheus.Counter
 	streamMessages prometheus.Counter
 	duration       prometheus.Observer
+	transport      string
+	errors         *prometheus.CounterVec
 }
 
 func (c *Metrics) setFor(transport string) transportSet {
@@ -130,7 +143,15 @@ func (c *Metrics) setFor(transport string) transportSet {
 		rejected:       c.rejected.WithLabelValues(transport),
 		streamMessages: c.streamMessages.WithLabelValues(transport),
 		duration:       c.requestDuration.WithLabelValues(transport),
+		transport:      transport,
+		errors:         c.errors,
 	}
+}
+
+// errorCounter returns the Counter for this set's transport and the given
+// code (e.g. "4xx", "5xx", or a gRPC status code name).
+func (s transportSet) errorCounter(code string) prometheus.Counter {
+	return s.errors.WithLabelValues(s.transport, code)
 }
 
 // JSONRPCSet, RESTSet, GRPCSet, PassthroughSet return the full per-
@@ -168,8 +189,25 @@ func wrapHTTP(limiter ratelimit.Limiter, set transportSet, h http.Handler) http.
 			set.inflight.Dec()
 			set.requests.Inc()
 			set.duration.Observe(time.Since(start).Seconds())
+			if code := httpStatusClass(rec.StatusCode()); code != "" {
+				set.errorCounter(code).Inc()
+			}
 			rec.Flush()
 		}()
 		h.ServeHTTP(rec, r)
 	})
+}
+
+// httpStatusClass classifies an HTTP status code into an error class for
+// broker_errors_total. Returns "" for 2xx/3xx (not an error — nothing should
+// be recorded), "4xx" for client errors, "5xx" for server errors.
+func httpStatusClass(statusCode int) string {
+	switch {
+	case statusCode >= 500:
+		return "5xx"
+	case statusCode >= 400:
+		return "4xx"
+	default:
+		return ""
+	}
 }
