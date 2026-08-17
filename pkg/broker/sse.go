@@ -39,18 +39,22 @@ type streamRecorder struct {
 	counter    prometheus.Counter
 	headersSet bool
 	sse        bool
+	// statusCode is the response status, defaulting to 200 to match
+	// net/http's own behavior when a handler never calls WriteHeader.
+	statusCode int
 	// carry holds bytes from a previous Write that ended without a
 	// newline; SSE event boundaries can split across Write calls.
 	carry []byte
 }
 
 func newStreamRecorder(w http.ResponseWriter, counter prometheus.Counter) *streamRecorder {
-	return &streamRecorder{ResponseWriter: w, counter: counter}
+	return &streamRecorder{ResponseWriter: w, counter: counter, statusCode: http.StatusOK}
 }
 
 // WriteHeader is the earliest point we can read Content-Type set by
 // the upstream handler.
 func (r *streamRecorder) WriteHeader(statusCode int) {
+	r.statusCode = statusCode
 	r.detectSSE()
 	r.ResponseWriter.WriteHeader(statusCode)
 }
@@ -66,6 +70,12 @@ func (r *streamRecorder) Write(p []byte) (int, error) {
 		r.countEvents(p)
 	}
 	return r.ResponseWriter.Write(p)
+}
+
+// StatusCode returns the response status written so far — 200 if the
+// handler never called WriteHeader, matching net/http's own default.
+func (r *streamRecorder) StatusCode() int {
+	return r.statusCode
 }
 
 // Flush forwards the underlying flusher if present. Required for SSE

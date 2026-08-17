@@ -162,6 +162,30 @@ func TestGRPCPassthrough_UnknownMethodSurfacesBackendStatus(t *testing.T) {
 	// version (Unimplemented vs Unknown depending on path), so we settle
 	// for "not OK and not a transport-level read error".
 	assert.NotEqual(t, io.EOF, err)
+
+	// The non-OK status must be recorded on broker_errors_total, labeled by
+	// its actual code name (whatever the backend/proxy settled on).
+	code := status.Code(err)
+	require.NotEqual(t, codes.OK, code)
+	assert.Equal(t, float64(1), testutil.ToFloat64(pair.counters.errors.WithLabelValues(TransportGRPC, code.String())),
+		"non-OK gRPC status must be recorded under its code name")
+}
+
+func TestGRPCPassthrough_SuccessfulCallRecordsNoError(t *testing.T) {
+	pair := startGRPCPair(t)
+
+	conn, err := grpc.NewClient(pair.brokerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = conn.Close() })
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err = healthpb.NewHealthClient(conn).Check(ctx, &healthpb.HealthCheckRequest{})
+	require.NoError(t, err)
+
+	assert.Equal(t, float64(0), testutil.ToFloat64(pair.counters.errors.WithLabelValues(TransportGRPC, codes.OK.String())),
+		"a successful call must never be recorded on broker_errors_total")
 }
 
 func TestGRPCPassthrough_RejectsAtCapWithResourceExhausted(t *testing.T) {
@@ -191,6 +215,9 @@ func TestGRPCPassthrough_RejectsAtCapWithResourceExhausted(t *testing.T) {
 		"rejection must use RESOURCE_EXHAUSTED")
 	assert.Equal(t, float64(1), testutil.ToFloat64(pair.counters.rejected.WithLabelValues(TransportGRPC)),
 		"rejection must be counted")
+	assert.Equal(t, float64(0),
+		testutil.ToFloat64(pair.counters.errors.WithLabelValues(TransportGRPC, codes.ResourceExhausted.String())),
+		"an admission rejection is tracked by broker_rejected_total, not broker_errors_total")
 
 	// Releasing the slot (cancel the stream) must let a new call through.
 	cancel()

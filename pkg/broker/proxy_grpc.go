@@ -65,7 +65,7 @@ func GRPCPassthroughOptions(backendConn *grpc.ClientConn, metrics *Metrics, limi
 	set := metrics.GRPCSet()
 	return []grpc.ServerOption{
 		grpc.ForceServerCodec(rawCodec{}),
-		grpc.UnknownServiceHandler(func(_ any, ss grpc.ServerStream) error {
+		grpc.UnknownServiceHandler(func(_ any, ss grpc.ServerStream) (err error) {
 			if limiter != nil {
 				release, ok := limiter.Acquire()
 				if !ok {
@@ -80,8 +80,12 @@ func GRPCPassthroughOptions(backendConn *grpc.ClientConn, metrics *Metrics, limi
 				set.inflight.Dec()
 				set.requests.Inc()
 				set.duration.Observe(time.Since(start).Seconds())
+				if code := status.Code(err); code != codes.OK {
+					set.errorCounter(code.String()).Inc()
+				}
 			}()
-			return forwardGRPCStream(backendConn, ss, set.streamMessages)
+			err = forwardGRPCStream(backendConn, ss, set.streamMessages)
+			return err
 		}),
 	}
 }

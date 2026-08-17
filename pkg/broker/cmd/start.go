@@ -192,7 +192,7 @@ func advertiseHostFor(ad *kmv1.AgentDeploy) string {
 // brokerRuntime holds process-lifetime broker state.
 type brokerRuntime struct {
 	logger      *zap.SugaredLogger
-	counters    *broker.Metrics
+	metrcis     *broker.Metrics
 	agentDeploy *kmv1.AgentDeploy
 	enabled     map[a2a.TransportProtocol]bool
 	httpProxies map[a2a.TransportProtocol]http.Handler
@@ -426,7 +426,7 @@ func newIntrospectionServer(port int, handler http.Handler, cert *tls.Certificat
 // A nil card yields a passthrough-only runtime.
 func buildRuntime(ctx context.Context, registry *prometheus.Registry, agentTransport *http.Transport, card *a2a.AgentCard, agentDeploy *kmv1.AgentDeploy, dial agentDial) (*brokerRuntime, error) {
 	logger := logging.FromContext(ctx)
-	counters := broker.NewMetrics(registry)
+	metrcis := broker.NewMetrics(registry)
 
 	// One limiter shared across all A2A transports: the cap is per-agent, and a
 	// single broker serves JSON-RPC, REST and gRPC for that agent. Passthrough
@@ -435,11 +435,11 @@ func buildRuntime(ctx context.Context, registry *prometheus.Registry, agentTrans
 
 	rt := &brokerRuntime{
 		logger:      logger,
-		counters:    counters,
+		metrcis:     metrcis,
 		agentDeploy: agentDeploy,
 		enabled:     map[a2a.TransportProtocol]bool{},
 		httpProxies: map[a2a.TransportProtocol]http.Handler{},
-		passthrough: broker.NewPassthroughReverseProxy(agentTransport, counters),
+		passthrough: broker.NewPassthroughReverseProxy(agentTransport, metrcis),
 	}
 
 	if card == nil {
@@ -449,10 +449,10 @@ func buildRuntime(ctx context.Context, registry *prometheus.Registry, agentTrans
 	for _, iface := range card.SupportedInterfaces {
 		switch iface.ProtocolBinding {
 		case a2a.TransportProtocolJSONRPC:
-			rt.httpProxies[iface.ProtocolBinding] = broker.NewJSONRPCReverseProxy(agentTransport, rt.counters, limiter)
+			rt.httpProxies[iface.ProtocolBinding] = broker.NewJSONRPCReverseProxy(agentTransport, rt.metrcis, limiter)
 			rt.enabled[iface.ProtocolBinding] = true
 		case a2a.TransportProtocolHTTPJSON:
-			rt.httpProxies[iface.ProtocolBinding] = broker.NewRESTReverseProxy(agentTransport, rt.counters, limiter)
+			rt.httpProxies[iface.ProtocolBinding] = broker.NewRESTReverseProxy(agentTransport, rt.metrcis, limiter)
 			rt.enabled[iface.ProtocolBinding] = true
 		case a2a.TransportProtocolGRPC:
 			conn, err := dialAgentGRPC(dial)
@@ -460,7 +460,7 @@ func buildRuntime(ctx context.Context, registry *prometheus.Registry, agentTrans
 				return nil, fmt.Errorf("dial agent gRPC at %q: %w", dial.target(), err)
 			}
 			rt.grpcConn = conn
-			rt.grpcServer = grpc.NewServer(broker.GRPCPassthroughOptions(conn, rt.counters, limiter)...)
+			rt.grpcServer = grpc.NewServer(broker.GRPCPassthroughOptions(conn, rt.metrcis, limiter)...)
 			rt.enabled[iface.ProtocolBinding] = true
 		default:
 			logger.Warnw("Ignoring AgentCard interface with unsupported ProtocolBinding",
