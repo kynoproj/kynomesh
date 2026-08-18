@@ -172,9 +172,7 @@ external list in the spec is misleading.
   and host, via `net/url.Parse`) at admission time, rather than left fully
   opaque. A malformed URL can never be correct, so rejecting it at admission is
   strictly better than letting it surface later as a runtime call failure.
-- `Entry` must name an agent in `Agents`, never an `ExternalAgents` entry —
-  rejected with an explicit message ("entry must be a managed agent") rather
-  than falling through to the generic "entry does not name any agent" message.
+- `Entry` must name an agent in `Agents`, never an `ExternalAgents` entry.
 - `Sequential` requires `len(ExternalAgents) <= 1`.
 - `Handoff`'s and `Sequential`'s existing "requires at least 2 agents" checks
   count `len(Agents)` only, not `len(Agents) + len(ExternalAgents)`. An external
