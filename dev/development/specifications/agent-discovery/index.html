@@ -1034,6 +1034,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../external-agents/" class="md-nav__link">
+        External Agents
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1296,12 +1310,12 @@ per-child peer information into each AgentDeploy spec when it builds children.
 At pod startup, an init container materializes that payload into
 <code>/var/run/kynomesh/topology.json</code>, which the agent and broker read.</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;pattern&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Supervisor&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;isEntry&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;peers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"pattern"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Supervisor"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"isEntry"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"peers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;worker&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://greeter-worker.ns.svc.cluster.local:8490&quot;</span>
+<span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"worker"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://greeter-worker.ns.svc.cluster.local:8490"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">]</span>
 <span class="p">}</span>
@@ -1368,13 +1382,13 @@ load-balanced across the sibling's replicas and readiness-gated.</p>
       
       
         
-        <a href="../../debugging/" class="md-footer__link md-footer__link--next" aria-label="Next: How To Debug" rel="next">
+        <a href="../external-agents/" class="md-footer__link md-footer__link--next" aria-label="Next: External Agents" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              How To Debug
+              External Agents
             </div>
           </div>
           <div class="md-footer__button md-icon">

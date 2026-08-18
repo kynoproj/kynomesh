@@ -988,6 +988,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../development/specifications/external-agents/" class="md-nav__link">
+        External Agents
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1120,7 +1134,7 @@ agent starts:</p>
 <span class="w">      </span><span class="nt">initContainers</span><span class="p">:</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-init</span>
 <span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">busybox:latest</span>
-<span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;echo</span><span class="nv"> </span><span class="s">&quot;my-init</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">running!&quot;</span><span class="nv"> </span><span class="s">&amp;&amp;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">5&#39;</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"/bin/sh"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"-c"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">'echo</span><span class="nv"> </span><span class="s">"my-init</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">running!"</span><span class="nv"> </span><span class="s">&amp;&amp;</span><span class="nv"> </span><span class="s">sleep</span><span class="nv"> </span><span class="s">5'</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <p>The following example uses an init container together with a
 <a href="https://kubernetes.io/docs/concepts/storage/volumes/">volume</a> to provide the
@@ -1142,9 +1156,9 @@ agent container files on startup:</p>
 <span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">amazon/aws-cli:latest</span>
 <span class="w">          </span><span class="nt">command</span><span class="p">:</span>
 <span class="w">            </span><span class="p p-Indicator">[</span>
-<span class="w">              </span><span class="s">&quot;/bin/sh&quot;</span><span class="p p-Indicator">,</span>
-<span class="w">              </span><span class="s">&quot;-c&quot;</span><span class="p p-Indicator">,</span>
-<span class="w">              </span><span class="s">&quot;aws</span><span class="nv"> </span><span class="s">s3</span><span class="nv"> </span><span class="s">sync</span><span class="nv"> </span><span class="s">s3://path/to/my-s3-data</span><span class="nv"> </span><span class="s">/path/to/my-init-data&quot;</span><span class="p p-Indicator">,</span>
+<span class="w">              </span><span class="s">"/bin/sh"</span><span class="p p-Indicator">,</span>
+<span class="w">              </span><span class="s">"-c"</span><span class="p p-Indicator">,</span>
+<span class="w">              </span><span class="s">"aws</span><span class="nv"> </span><span class="s">s3</span><span class="nv"> </span><span class="s">sync</span><span class="nv"> </span><span class="s">s3://path/to/my-s3-data</span><span class="nv"> </span><span class="s">/path/to/my-init-data"</span><span class="p p-Indicator">,</span>
 <span class="w">            </span><span class="p p-Indicator">]</span>
 <span class="w">          </span><span class="nt">volumeMounts</span><span class="p">:</span>
 <span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/my-init-data</span>

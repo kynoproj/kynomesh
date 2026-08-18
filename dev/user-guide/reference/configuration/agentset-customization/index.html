@@ -1002,6 +1002,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../development/specifications/external-agents/" class="md-nav__link">
+        External Agents
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1146,7 +1160,7 @@ the shared default for that agent.</p>
 <span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coordinator</span>
 <span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">agent</span><span class="p">:</span>
-<span class="w">      </span><span class="c1"># Pod-level defaults shared by every agent&#39;s pod</span>
+<span class="w">      </span><span class="c1"># Pod-level defaults shared by every agent's pod</span>
 <span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">my-label-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shared-label-value</span>
@@ -1168,7 +1182,7 @@ the shared default for that agent.</p>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coordinator</span>
 <span class="w">      </span><span class="nt">container</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example/coordinator:latest</span>
-<span class="w">      </span><span class="c1"># Pod-level configuration for this agent&#39;s pods</span>
+<span class="w">      </span><span class="c1"># Pod-level configuration for this agent's pods</span>
 <span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">my-label-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-label-value</span>
@@ -1217,9 +1231,9 @@ fields available under <code>spec.agents[]</code>.</p>
 <span class="w">      </span><span class="nt">nodeSelector</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">my-node-label-name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-node-label-value</span>
 <span class="w">      </span><span class="nt">tolerations</span><span class="p">:</span>
-<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my-example-key&quot;</span>
-<span class="w">          </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Exists&quot;</span>
-<span class="w">          </span><span class="nt">effect</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;NoSchedule&quot;</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="s">"my-example-key"</span>
+<span class="w">          </span><span class="nt">operator</span><span class="p">:</span><span class="w"> </span><span class="s">"Exists"</span>
+<span class="w">          </span><span class="nt">effect</span><span class="p">:</span><span class="w"> </span><span class="s">"NoSchedule"</span>
 <span class="w">      </span><span class="nt">serviceAccountName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-service-account</span>
 <span class="w">  </span><span class="nt">agents</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coordinator</span>

@@ -1073,6 +1073,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/specifications/external-agents/" class="md-nav__link">
+        External Agents
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1328,7 +1342,7 @@ smallest example that shows one agent calling another.</p>
 </code></pre></div>
 <h3 id="verify-the-agentset-deployment">Verify the AgentSet deployment<a class="headerlink" href="#verify-the-agentset-deployment" title="Permanent link">&para;</a></h3>
 <p>To view the <code>AgentSet</code> you just created, use the following command:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>agentset<span class="w"> </span><span class="c1"># Or the short name &quot;as&quot;</span>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>agentset<span class="w"> </span><span class="c1"># Or the short name "as"</span>
 </code></pre></div>
 <p>You should see an output similar to this, where <code>AGE</code> indicates the time elapsed
 since the <code>AgentSet</code> was created:</p>
@@ -1337,7 +1351,7 @@ research-assistant   Running            83s
 </code></pre></div>
 <p>You can also list the <code>AgentDeploy</code> components orchestrated by the <code>AgentSet</code>.
 Each one represents a single agent deployment:</p>
-<div class="highlight"><pre><span></span><code>kubectl get agentdeploy # Or the short name &quot;ad&quot;
+<div class="highlight"><pre><span></span><code>kubectl get agentdeploy # Or the short name "ad"
 
 NAME                             PHASE     DESIRED   CURRENT   READY   AGE     REASON   MESSAGE
 research-assistant-coordinator   Running   1         1         1       2m27s
@@ -1357,18 +1371,18 @@ service. Port-forward it to your local machine:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/research-assistant-ingress<span class="w"> </span><span class="m">8490</span>
 </code></pre></div>
 <p>In another terminal, send a question with <code>a2acli</code>:</p>
-<div class="highlight"><pre><span></span><code>a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span>send<span class="w"> </span><span class="s1">&#39;tell me about kynomesh&#39;</span><span class="w"> </span>-o<span class="w"> </span>json
+<div class="highlight"><pre><span></span><code>a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span>send<span class="w"> </span><span class="s1">'tell me about kynomesh'</span><span class="w"> </span>-o<span class="w"> </span>json
 </code></pre></div>
 <p>The <code>coordinator</code> forwards your question to the <code>searcher</code>, wraps the result,
 and returns something like:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;messageId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;019ea01f-96ea-7590-963d-7fc6b05e569e&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;parts&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"messageId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"019ea01f-96ea-7590-963d-7fc6b05e569e"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"parts"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;coordinator: handled \&quot;tell me about kynomesh\&quot; via \&quot;searcher\&quot;\n---\nsearcher: 1 hit(s)\n- kynomesh: a Kubernetes-native orchestrator for AI agents.&quot;</span>
+<span class="w">      </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"coordinator: handled \"tell me about kynomesh\" via \"searcher\"\n---\nsearcher: 1 hit(s)\n- kynomesh: a Kubernetes-native orchestrator for AI agents."</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">],</span>
-<span class="w">  </span><span class="nt">&quot;role&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ROLE_AGENT&quot;</span>
+<span class="w">  </span><span class="nt">"role"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ROLE_AGENT"</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="clean-up">Clean up<a class="headerlink" href="#clean-up" title="Permanent link">&para;</a></h3>

@@ -988,6 +988,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../development/specifications/external-agents/" class="md-nav__link">
+        External Agents
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1113,9 +1127,9 @@ the Istio sidecar doesn't intercept in-mesh traffic meant for the broker.</p>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-agent</span>
 <span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">sidecar.istio.io/inject</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-<span class="w">          </span><span class="nt">traffic.sidecar.istio.io/excludeInboundPorts</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;8490,8491&quot;</span><span class="w"> </span><span class="c1"># broker + introspection</span>
-<span class="w">          </span><span class="nt">traffic.sidecar.istio.io/excludeOutboundPorts</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;8490&quot;</span><span class="w"> </span><span class="c1"># broker-to-broker (peer) traffic</span>
+<span class="w">          </span><span class="nt">sidecar.istio.io/inject</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
+<span class="w">          </span><span class="nt">traffic.sidecar.istio.io/excludeInboundPorts</span><span class="p">:</span><span class="w"> </span><span class="s">"8490,8491"</span><span class="w"> </span><span class="c1"># broker + introspection</span>
+<span class="w">          </span><span class="nt">traffic.sidecar.istio.io/excludeOutboundPorts</span><span class="p">:</span><span class="w"> </span><span class="s">"8490"</span><span class="w"> </span><span class="c1"># broker-to-broker (peer) traffic</span>
 <span class="w">      </span><span class="nt">container</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-agent:latest</span>
 </code></pre></div>
@@ -1140,9 +1154,9 @@ them once on the shared template instead, via
 <span class="w">    </span><span class="nt">agent</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">sidecar.istio.io/inject</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-<span class="w">          </span><span class="nt">traffic.sidecar.istio.io/excludeInboundPorts</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;8490,8491&quot;</span>
-<span class="w">          </span><span class="nt">traffic.sidecar.istio.io/excludeOutboundPorts</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;8490&quot;</span>
+<span class="w">          </span><span class="nt">sidecar.istio.io/inject</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
+<span class="w">          </span><span class="nt">traffic.sidecar.istio.io/excludeInboundPorts</span><span class="p">:</span><span class="w"> </span><span class="s">"8490,8491"</span>
+<span class="w">          </span><span class="nt">traffic.sidecar.istio.io/excludeOutboundPorts</span><span class="p">:</span><span class="w"> </span><span class="s">"8490"</span>
 <span class="w">  </span><span class="nt">agents</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coordinator</span>
 <span class="w">      </span><span class="nt">container</span><span class="p">:</span>
