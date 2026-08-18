@@ -228,6 +228,54 @@ func TestComputeTopology(t *testing.T) {
 	}
 }
 
+func TestComputeTopology_ExternalAgents(t *testing.T) {
+	mk := func(pattern kmv1.AgentPattern, entry string, names ...string) *kmv1.AgentSet {
+		as := newAgentSet("set", names...)
+		as.Spec.Pattern = pattern
+		as.Spec.Entry = entry
+		return as
+	}
+	ext := kmv1.ExternalAgentRef{Name: "ext", URL: "https://ext.example.com"}
+	extPeer := kmv1.Peer{Name: ext.Name, Kind: kmv1.PeerKindExternal, URL: ext.URL}
+
+	t.Run("handoff: external agent is a peer for everyone", func(t *testing.T) {
+		as := mk(kmv1.AgentPatternHandoff, "alpha", "alpha", "beta")
+		as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{ext}
+		got := computeTopology(as, "alpha")
+		assert.Contains(t, got.Peers, extPeer)
+		assert.Contains(t, got.Peers, kmv1.Peer{Name: "beta", Kind: kmv1.PeerKindManaged})
+	})
+
+	t.Run("supervisor: external agent is a peer only for entry", func(t *testing.T) {
+		as := mk(kmv1.AgentPatternSupervisor, "alpha", "alpha", "beta")
+		as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{ext}
+
+		entryTopo := computeTopology(as, "alpha")
+		assert.Contains(t, entryTopo.Peers, extPeer)
+
+		workerTopo := computeTopology(as, "beta")
+		assert.Empty(t, workerTopo.Peers, "non-entry agent must not see the external peer")
+	})
+
+	t.Run("sequential: external agent is the final hop after the last managed agent", func(t *testing.T) {
+		as := mk(kmv1.AgentPatternSequential, "alpha", "alpha", "beta")
+		as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{ext}
+
+		last := computeTopology(as, "beta")
+		assert.Equal(t, []kmv1.Peer{extPeer}, last.Peers, "last managed agent's next hop is the external agent")
+
+		first := computeTopology(as, "alpha")
+		assert.Equal(t, []kmv1.Peer{{Name: "beta", Kind: kmv1.PeerKindManaged}}, first.Peers,
+			"external agent must not be inserted before the last managed agent")
+	})
+
+	t.Run("sequential: no external agents leaves the last agent with no peers", func(t *testing.T) {
+		as := mk(kmv1.AgentPatternSequential, "alpha", "alpha", "beta")
+		got := computeTopology(as, "beta")
+		assert.Empty(t, got.Peers)
+	})
+}
+
 func TestNeedsUpdate(t *testing.T) {
 	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	desired, err := r.buildDesired(newAgentSet("greeter", "alpha"))

@@ -194,6 +194,135 @@ func TestValidateAgentSet_HandoffAndSequentialMultiAgent(t *testing.T) {
 	})
 }
 
+func TestValidateAgentSet_ExternalAgents(t *testing.T) {
+	tests := []struct {
+		name    string
+		mutate  func(as *kmv1.AgentSet)
+		wantErr string
+	}{
+		{
+			name: "valid external agent",
+			mutate: func(as *kmv1.AgentSet) {
+				as.Spec.Pattern = kmv1.AgentPatternHandoff
+				as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{{Name: "ext", URL: "https://ext.example.com"}}
+			},
+		},
+		{
+			name: "empty name rejected",
+			mutate: func(as *kmv1.AgentSet) {
+				as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{{Name: "", URL: "https://ext.example.com"}}
+			},
+			wantErr: "non-empty",
+		},
+		{
+			name: "invalid DNS-1035 name rejected",
+			mutate: func(as *kmv1.AgentSet) {
+				as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{{Name: "Ext", URL: "https://ext.example.com"}}
+			},
+			wantErr: "DNS-1035",
+		},
+		{
+			name: "reserved name rejected",
+			mutate: func(as *kmv1.AgentSet) {
+				as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{{Name: kmv1.DaemonSuffix, URL: "https://ext.example.com"}}
+			},
+			wantErr: "reserved",
+		},
+		{
+			name: "name colliding with a managed agent rejected",
+			mutate: func(as *kmv1.AgentSet) {
+				as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{{Name: "a", URL: "https://ext.example.com"}}
+			},
+			wantErr: "duplicate",
+		},
+		{
+			name: "duplicate external agent names rejected",
+			mutate: func(as *kmv1.AgentSet) {
+				as.Spec.Pattern = kmv1.AgentPatternHandoff
+				as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{
+					{Name: "ext", URL: "https://ext1.example.com"},
+					{Name: "ext", URL: "https://ext2.example.com"},
+				}
+			},
+			wantErr: "duplicate",
+		},
+		{
+			name: "empty URL rejected",
+			mutate: func(as *kmv1.AgentSet) {
+				as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{{Name: "ext", URL: ""}}
+			},
+			wantErr: "url must be non-empty",
+		},
+		{
+			name: "malformed URL rejected",
+			mutate: func(as *kmv1.AgentSet) {
+				as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{{Name: "ext", URL: "not-a-url"}}
+			},
+			wantErr: "absolute URL",
+		},
+		{
+			name: "URL without scheme rejected",
+			mutate: func(as *kmv1.AgentSet) {
+				as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{{Name: "ext", URL: "ext.example.com"}}
+			},
+			wantErr: "absolute URL",
+		},
+		{
+			name: "entry cannot be an external agent",
+			mutate: func(as *kmv1.AgentSet) {
+				as.Spec.Pattern = kmv1.AgentPatternHandoff
+				as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{{Name: "ext", URL: "https://ext.example.com"}}
+				as.Spec.Entry = "ext"
+			},
+			wantErr: "must be a managed agent",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			as := agentSet("a", "b")
+			tc.mutate(as)
+			err := ValidateAgentSet(as)
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.wantErr)
+		})
+	}
+}
+
+func TestValidateAgentSet_SequentialExternalAgentLimit(t *testing.T) {
+	t.Run("one external agent allowed", func(t *testing.T) {
+		as := agentSet("a", "b")
+		as.Spec.Pattern = kmv1.AgentPatternSequential
+		as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{{Name: "ext", URL: "https://ext.example.com"}}
+		assert.NoError(t, ValidateAgentSet(as))
+	})
+
+	t.Run("two external agents rejected", func(t *testing.T) {
+		as := agentSet("a", "b")
+		as.Spec.Pattern = kmv1.AgentPatternSequential
+		as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{
+			{Name: "ext1", URL: "https://ext1.example.com"},
+			{Name: "ext2", URL: "https://ext2.example.com"},
+		}
+		err := ValidateAgentSet(as)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "at most 1 external agent")
+	})
+
+	t.Run("two external agents allowed under Handoff", func(t *testing.T) {
+		as := agentSet("a", "b")
+		as.Spec.Pattern = kmv1.AgentPatternHandoff
+		as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{
+			{Name: "ext1", URL: "https://ext1.example.com"},
+			{Name: "ext2", URL: "https://ext2.example.com"},
+		}
+		assert.NoError(t, ValidateAgentSet(as))
+	})
+}
+
 func TestValidateAgentSet_TargetSaturationPercentage(t *testing.T) {
 	as := agentSet("a")
 	set := func(v *uint32) { as.Spec.Agents[0].Scale.TargetSaturationPercentage = v }

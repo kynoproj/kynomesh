@@ -80,9 +80,30 @@ type AgentSetSpec struct {
 	// +patchMergeKey=name
 	// +kubebuilder:validation:MinItems=1
 	Agents []AbstractAgentDeploy `json:"agents" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,3,rep,name=agents"`
+	// ExternalAgents references agents this AgentSet does not deploy, scale, or
+	// roll — no pod, Service, or broker is created for them. They participate in
+	// Pattern as peers, but can only ever be the target of a call, never
+	// originate one to a further peer: they may never be Entry, and under
+	// Sequential at most one is allowed, as the final hop in the chain.
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	// +optional
+	ExternalAgents []ExternalAgentRef `json:"externalAgents,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,5,rep,name=externalAgents"`
 	// Templates are used to customize additional kubernetes resources required for the Pipeline
 	// +optional
 	Templates *Templates `json:"templates,omitempty" protobuf:"bytes,4,opt,name=templates"`
+}
+
+// ExternalAgentRef is a reference to an existing agent this AgentSet does not
+// own — another AgentSet's agent, or any A2A endpoint reachable at a URL.
+type ExternalAgentRef struct {
+	// Name is the short agent name used for peer lookup and topology, matching
+	// how AbstractAgentDeploy.Name works for managed agents.
+	// +kubebuilder:validation:Required
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	// URL is the full URL of the external agent's broker/endpoint.
+	// +kubebuilder:validation:Required
+	URL string `json:"url" protobuf:"bytes,2,opt,name=url"`
 }
 
 // AgentPattern is the message-routing shape of an AgentSet.

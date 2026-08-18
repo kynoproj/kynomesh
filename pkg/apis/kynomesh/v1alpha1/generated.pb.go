@@ -63,6 +63,8 @@ func (m *ContainerTemplate) Reset() { *m = ContainerTemplate{} }
 
 func (m *DaemonTemplate) Reset() { *m = DaemonTemplate{} }
 
+func (m *ExternalAgentRef) Reset() { *m = ExternalAgentRef{} }
+
 func (m *Metadata) Reset() { *m = Metadata{} }
 
 func (m *Peer) Reset() { *m = Peer{} }
@@ -812,6 +814,20 @@ func (m *AgentSetSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.ExternalAgents) > 0 {
+		for iNdEx := len(m.ExternalAgents) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ExternalAgents[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenerated(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
 	if m.Templates != nil {
 		{
 			size, err := m.Templates.MarshalToSizedBuffer(dAtA[:i])
@@ -1185,6 +1201,39 @@ func (m *DaemonTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i -= size
 		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *ExternalAgentRef) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ExternalAgentRef) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ExternalAgentRef) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	i -= len(m.URL)
+	copy(dAtA[i:], m.URL)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.URL)))
+	i--
+	dAtA[i] = 0x12
+	i -= len(m.Name)
+	copy(dAtA[i:], m.Name)
+	i = encodeVarintGenerated(dAtA, i, uint64(len(m.Name)))
 	i--
 	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
@@ -1928,6 +1977,12 @@ func (m *AgentSetSpec) Size() (n int) {
 		l = m.Templates.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	if len(m.ExternalAgents) > 0 {
+		for _, e := range m.ExternalAgents {
+			l = e.Size()
+			n += 1 + l + sovGenerated(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -2058,6 +2113,19 @@ func (m *DaemonTemplate) Size() (n int) {
 		l = m.Container.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	return n
+}
+
+func (m *ExternalAgentRef) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.URL)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -2448,11 +2516,17 @@ func (this *AgentSetSpec) String() string {
 		repeatedStringForAgents += strings.Replace(strings.Replace(f.String(), "AbstractAgentDeploy", "AbstractAgentDeploy", 1), `&`, ``, 1) + ","
 	}
 	repeatedStringForAgents += "}"
+	repeatedStringForExternalAgents := "[]ExternalAgentRef{"
+	for _, f := range this.ExternalAgents {
+		repeatedStringForExternalAgents += strings.Replace(strings.Replace(f.String(), "ExternalAgentRef", "ExternalAgentRef", 1), `&`, ``, 1) + ","
+	}
+	repeatedStringForExternalAgents += "}"
 	s := strings.Join([]string{`&AgentSetSpec{`,
 		`Pattern:` + fmt.Sprintf("%v", this.Pattern) + `,`,
 		`Entry:` + fmt.Sprintf("%v", this.Entry) + `,`,
 		`Agents:` + repeatedStringForAgents + `,`,
 		`Templates:` + strings.Replace(this.Templates.String(), "Templates", "Templates", 1) + `,`,
+		`ExternalAgents:` + repeatedStringForExternalAgents + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2544,6 +2618,17 @@ func (this *DaemonTemplate) String() string {
 	s := strings.Join([]string{`&DaemonTemplate{`,
 		`AbstractPodTemplate:` + strings.Replace(strings.Replace(this.AbstractPodTemplate.String(), "AbstractPodTemplate", "AbstractPodTemplate", 1), `&`, ``, 1) + `,`,
 		`Container:` + strings.Replace(this.Container.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ExternalAgentRef) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ExternalAgentRef{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`URL:` + fmt.Sprintf("%v", this.URL) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5144,6 +5229,40 @@ func (m *AgentSetSpec) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExternalAgents", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ExternalAgents = append(m.ExternalAgents, ExternalAgentRef{})
+			if err := m.ExternalAgents[len(m.ExternalAgents)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -6156,6 +6275,120 @@ func (m *DaemonTemplate) Unmarshal(dAtA []byte) error {
 			if err := m.Container.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ExternalAgentRef) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExternalAgentRef: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExternalAgentRef: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field URL", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.URL = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

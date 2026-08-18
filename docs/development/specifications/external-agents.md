@@ -218,8 +218,19 @@ the friendlier reference is additive — it can be introduced later as a second,
 mutually-exclusive field on `ExternalAgentRef` (e.g.
 `AgentSetRef *LocalAgentSetRef`) without touching anything decided above.
 
-## Open questions
+## Resolved during implementation
 
-- URL validation strictness at admission time (parse-check vs. fully opaque).
-- Whether the Handoff/Sequential "≥2 agents" minimum should count
-  `ExternalAgents` toward the total.
+- **URL validation strictness**: validated as an absolute URL (non-empty
+  scheme and host via `net/url.Parse`) at admission time. A malformed URL
+  can never be correct, so rejecting it early is strictly better than
+  letting it surface as a runtime call failure.
+- **Whether the "≥2 agents" minimum counts `ExternalAgents`**: no —
+  `Handoff`'s and `Sequential`'s minimum-agent checks still count
+  `len(Agents)` only. An external agent can't originate a call, so it
+  doesn't change whether the managed agents have anyone to talk to among
+  themselves.
+
+Implemented in `pkg/apis/kynomesh/v1alpha1/agentset_types.go`
+(`ExternalAgentRef`), `pkg/reconciler/validator/agentset.go`, and
+`pkg/reconciler/agentset/agentdeploys.go` (`computeTopology`,
+`peersExcluding`, `nextAgent`).

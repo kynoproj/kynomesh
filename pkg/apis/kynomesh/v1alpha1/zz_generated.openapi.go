@@ -41,6 +41,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container":             schema_pkg_apis_kynomesh_v1alpha1_Container(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate":     schema_pkg_apis_kynomesh_v1alpha1_ContainerTemplate(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.DaemonTemplate":        schema_pkg_apis_kynomesh_v1alpha1_DaemonTemplate(ref),
+		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ExternalAgentRef":      schema_pkg_apis_kynomesh_v1alpha1_ExternalAgentRef(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata":              schema_pkg_apis_kynomesh_v1alpha1_Metadata(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Peer":                  schema_pkg_apis_kynomesh_v1alpha1_Peer(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Probe":                 schema_pkg_apis_kynomesh_v1alpha1_Probe(ref),
@@ -1256,6 +1257,26 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetSpec(ref common.ReferenceCallback
 							},
 						},
 					},
+					"externalAgents": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "name",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "ExternalAgents references agents this AgentSet does not deploy, scale, or roll — no pod, Service, or broker is created for them. They participate in Pattern as peers, but can only ever be the target of a call, never originate one to a further peer: they may never be Entry, and under Sequential at most one is allowed, as the final hop in the chain.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ExternalAgentRef"),
+									},
+								},
+							},
+						},
+					},
 					"templates": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Templates are used to customize additional kubernetes resources required for the Pipeline",
@@ -1267,7 +1288,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetSpec(ref common.ReferenceCallback
 			},
 		},
 		Dependencies: []string{
-			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AbstractAgentDeploy", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Templates"},
+			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AbstractAgentDeploy", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ExternalAgentRef", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Templates"},
 	}
 }
 
@@ -1698,6 +1719,36 @@ func schema_pkg_apis_kynomesh_v1alpha1_DaemonTemplate(ref common.ReferenceCallba
 		},
 		Dependencies: []string{
 			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration"},
+	}
+}
+
+func schema_pkg_apis_kynomesh_v1alpha1_ExternalAgentRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ExternalAgentRef is a reference to an existing agent this AgentSet does not own — another AgentSet's agent, or any A2A endpoint reachable at a URL.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name is the short agent name used for peer lookup and topology, matching how AbstractAgentDeploy.Name works for managed agents.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"url": {
+						SchemaProps: spec.SchemaProps{
+							Description: "URL is the full URL of the external agent's broker/endpoint.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"name", "url"},
+			},
+		},
 	}
 }
 
