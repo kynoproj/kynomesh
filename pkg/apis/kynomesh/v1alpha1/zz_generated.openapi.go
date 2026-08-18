@@ -1345,6 +1345,12 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetStatus(ref common.ReferenceCallba
 							Format: "int64",
 						},
 					},
+					"externalAgentCount": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
+						},
+					},
 					"observedGeneration": {
 						SchemaProps: spec.SchemaProps{
 							Description: "The generation observed by the controller.",

@@ -21,7 +21,10 @@ spec:
       name: Phase
       type: string
     - jsonPath: .status.AgentCount
-      name: Agents
+      name: Managed Agents
+      type: integer
+    - jsonPath: .status.ExternalAgentCount
+      name: External Agents
       type: integer
     - jsonPath: .metadata.creationTimestamp
       name: Age
@@ -5223,6 +5226,9 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              externalAgentCount:
+                format: int32
+                type: integer
               lastUpdated:
                 format: date-time
                 type: string

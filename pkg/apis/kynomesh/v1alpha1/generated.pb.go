@@ -889,7 +889,12 @@ func (m *AgentSetStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = l
 	i = encodeVarintGenerated(dAtA, i, uint64(m.ObservedGeneration))
 	i--
-	dAtA[i] = 0x30
+	dAtA[i] = 0x38
+	if m.ExternalAgentCount != nil {
+		i = encodeVarintGenerated(dAtA, i, uint64(*m.ExternalAgentCount))
+		i--
+		dAtA[i] = 0x30
+	}
 	if m.AgentCount != nil {
 		i = encodeVarintGenerated(dAtA, i, uint64(*m.AgentCount))
 		i--
@@ -2003,6 +2008,9 @@ func (m *AgentSetStatus) Size() (n int) {
 	if m.AgentCount != nil {
 		n += 1 + sovGenerated(uint64(*m.AgentCount))
 	}
+	if m.ExternalAgentCount != nil {
+		n += 1 + sovGenerated(uint64(*m.ExternalAgentCount))
+	}
 	n += 1 + sovGenerated(uint64(m.ObservedGeneration))
 	return n
 }
@@ -2541,6 +2549,7 @@ func (this *AgentSetStatus) String() string {
 		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
 		`LastUpdated:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.LastUpdated), "Time", "v11.Time", 1), `&`, ``, 1) + `,`,
 		`AgentCount:` + valueToStringGenerated(this.AgentCount) + `,`,
+		`ExternalAgentCount:` + valueToStringGenerated(this.ExternalAgentCount) + `,`,
 		`ObservedGeneration:` + fmt.Sprintf("%v", this.ObservedGeneration) + `,`,
 		`}`,
 	}, "")
@@ -5464,6 +5473,26 @@ func (m *AgentSetStatus) Unmarshal(dAtA []byte) error {
 			}
 			m.AgentCount = &v
 		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExternalAgentCount", wireType)
+			}
+			var v uint32
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.ExternalAgentCount = &v
+		case 7:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ObservedGeneration", wireType)
 			}

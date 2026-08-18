@@ -291,7 +291,8 @@ message AgentDeployTemplate {
 // +kubebuilder:resource:shortName=as
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`
-// +kubebuilder:printcolumn:name="Agents",type=integer,JSONPath=`.status.AgentCount`
+// +kubebuilder:printcolumn:name="Managed Agents",type=integer,JSONPath=`.status.AgentCount`
+// +kubebuilder:printcolumn:name="External Agents",type=integer,JSONPath=`.status.ExternalAgentCount`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +kubebuilder:printcolumn:name="Message",type=string,JSONPath=`.status.message`
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -364,9 +365,12 @@ message AgentSetStatus {
   // +optional
   optional uint32 agentCount = 5;
 
+  // +optional
+  optional uint32 externalAgentCount = 6;
+
   // The generation observed by the controller.
   // +optional
-  optional int64 observedGeneration = 6;
+  optional int64 observedGeneration = 7;
 }
 
 // Container is used to define the container properties for user agent.

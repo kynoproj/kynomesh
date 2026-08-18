@@ -1875,6 +1875,20 @@ Kubernetes meta/v1.Time </a> </em>
 
 <td>
 
+<code>externalAgentCount</code></br> <em> uint32 </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
 <code>observedGeneration</code></br> <em> int64 </em>
 </td>
 

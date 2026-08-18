@@ -18,7 +18,10 @@ spec:
       name: Phase
       type: string
     - jsonPath: .status.AgentCount
-      name: Agents
+      name: Managed Agents
+      type: integer
+    - jsonPath: .status.ExternalAgentCount
+      name: External Agents
       type: integer
     - jsonPath: .metadata.creationTimestamp
       name: Age
