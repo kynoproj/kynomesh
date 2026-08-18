@@ -7111,6 +7111,18 @@ spec:
                 type: array
               entry:
                 type: string
+              externalAgents:
+                items:
+                  properties:
+                    name:
+                      type: string
+                    url:
+                      type: string
+                  required:
+                  - name
+                  - url
+                  type: object
+                type: array
               pattern:
                 enum:
                 - Supervisor

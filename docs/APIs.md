@@ -1529,6 +1529,28 @@ for the Pipeline
 
 </tr>
 
+<tr>
+
+<td>
+
+<code>externalAgents</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.ExternalAgentRef">
+\[\]ExternalAgentRef </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+ExternalAgents references agents this AgentSet does not deploy, scale,
+or roll. They may never be Entry.
+</p>
+
+</td>
+
+</tr>
+
 </table>
 
 </td>
@@ -1701,6 +1723,28 @@ one of agents\[\].name. For Sequential it must be agents\[0\].
 
 Templates are used to customize additional kubernetes resources required
 for the Pipeline
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>externalAgents</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.ExternalAgentRef">
+\[\]ExternalAgentRef </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+ExternalAgents references agents this AgentSet does not deploy, scale,
+or roll. They may never be Entry.
 </p>
 
 </td>
@@ -2301,6 +2345,91 @@ ContainerTemplate </a> </em>
 <p>
 
 Container for the daemon container (resources, env, …).
+</p>
+
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="kynomesh.kyno.sh/v1alpha1.ExternalAgentRef">
+
+ExternalAgentRef
+</h3>
+
+<p>
+
+(<em>Appears on:</em>
+<a href="#kynomesh.kyno.sh/v1alpha1.AgentSetSpec">AgentSetSpec</a>)
+</p>
+
+<p>
+
+<p>
+
+ExternalAgentRef is a reference to an existing agent this AgentSet does
+not own — another AgentSet’s agent, or any A2A endpoint reachable at a
+URL.
+</p>
+
+</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>
+
+Field
+</th>
+
+<th>
+
+Description
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>
+
+<code>name</code></br> <em> string </em>
+</td>
+
+<td>
+
+<p>
+
+Name is the short agent name used for peer lookup and topology, matching
+how AbstractAgentDeploy.Name works for managed agents.
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>url</code></br> <em> string </em>
+</td>
+
+<td>
+
+<p>
+
+URL is the full URL of the external agent’s broker/endpoint.
 </p>
 
 </td>

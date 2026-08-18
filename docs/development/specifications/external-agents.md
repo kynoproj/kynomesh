@@ -1,9 +1,9 @@
 # External Agents
 
 > [!NOTE] This document is for Kynomesh contributors. It records the design
-> decisions for [#147](https://github.com/kynoproj/kynomesh/issues/147) —
+> decisions behind [#147](https://github.com/kynoproj/kynomesh/issues/147) —
 > referencing an existing/external agent as a peer, without the AgentSet
-> deploying a duplicate.
+> deploying a duplicate — and how the shipped implementation reflects them.
 
 ## Problem
 
@@ -161,47 +161,41 @@ external list in the spec is misleading.
 
 ## Validation additions
 
-`pkg/reconciler/validator/agentset.go` (`ValidateAgentSet`) needs:
+`pkg/reconciler/validator/agentset.go` (`ValidateAgentSet`) adds:
 
 - Each `ExternalAgentRef.Name`: non-empty, DNS-1035-valid (same rule as managed
   agent names, for consistency — it's a peer identity even though no Service is
   created for it), not colliding with reserved names, and unique across **both**
   `Agents` and `ExternalAgents` (one flat name namespace — an external agent
   named the same as a managed agent would be ambiguous in `topology.peers`).
-- Each `ExternalAgentRef.URL`: non-empty. Whether to additionally validate it
-  parses as an absolute URL (scheme + host) at admission time, versus leaving it
-  fully opaque and letting unreachable/malformed URLs surface as runtime call
-  failures, is still open — leaning toward validating parseability at minimum,
-  since that's a cheap, unambiguous check and a malformed URL can never be
-  correct.
-- `Entry` must name an agent in `Agents` — already true today structurally, but
-  should get an explicit rejection message ("entry must be a managed agent; got
-  external agent %q") if someone names an `ExternalAgents` entry, rather than
-  falling through to today's generic "entry does not name any agent" message.
+- Each `ExternalAgentRef.URL`: validated as an absolute URL (non-empty scheme
+  and host, via `net/url.Parse`) at admission time, rather than left fully
+  opaque. A malformed URL can never be correct, so rejecting it at admission is
+  strictly better than letting it surface later as a runtime call failure.
+- `Entry` must name an agent in `Agents`, never an `ExternalAgents` entry.
 - `Sequential` requires `len(ExternalAgents) <= 1`.
-- Still open: should `Handoff`'s and `Sequential`'s existing "requires at least
-  2 agents" checks count `len(Agents) + len(ExternalAgents)`, or strictly
-  `len(Agents)`? An external agent can't originate calls, so a Handoff of 1
-  managed + 1 external isn't obviously "2 agents talking to each other" in the
-  sense the current check protects against. Leaning toward counting `Agents`
-  only, but not yet decided.
+- `Handoff`'s and `Sequential`'s existing "requires at least 2 agents" checks
+  count `len(Agents)` only, not `len(Agents) + len(ExternalAgents)`. An external
+  agent can't originate a call, so it doesn't change whether the managed agents
+  have anyone to talk to among themselves.
 
 ## `computeTopology` changes
 
 `pkg/reconciler/agentset/agentdeploys.go`:
 
-- `peersExcluding` gains a second input (`as.Spec.ExternalAgents`) and appends
+- `peersExcluding` takes a second input (`as.Spec.ExternalAgents`) and appends
   `Peer{Name: e.Name, Kind: PeerKindExternal, URL: e.URL}` for each, in both the
   Handoff case and the Supervisor-entry case.
-- The Sequential branch (`nextAgent`) needs a new case: when `self` is the last
+- The Sequential branch (`nextAgent`) has a new case: when `self` is the last
   entry in `Agents` and `len(as.Spec.ExternalAgents) == 1`, the peer list
   becomes `[]Peer{{Name, Kind: PeerKindExternal, URL: ...}}` instead of `nil`.
 - No AgentDeploy is ever created for an `ExternalAgents` entry — the
   reconciler's `Agents`-only iteration for pod/Service/AgentDeploy creation is
   unaffected; only the peer-list computation reads `ExternalAgents`.
 
-Downstream (`resolvePeerURLs` in `cmd/commands/init_runtime.go`) needs no change
-— it already passes `Kind: PeerKindExternal` peers' `URL` through untouched.
+Downstream (`resolvePeerURLs` in `cmd/commands/init_runtime.go`) needed no
+change — it already passes `Kind: PeerKindExternal` peers' `URL` through
+untouched.
 
 ## Future: friendlier in-cluster reference
 
@@ -217,9 +211,3 @@ the issue's core gap (no user-facing field for external peers at all today), and
 the friendlier reference is additive — it can be introduced later as a second,
 mutually-exclusive field on `ExternalAgentRef` (e.g.
 `AgentSetRef *LocalAgentSetRef`) without touching anything decided above.
-
-## Open questions
-
-- URL validation strictness at admission time (parse-check vs. fully opaque).
-- Whether the Handoff/Sequential "≥2 agents" minimum should count
-  `ExternalAgents` toward the total.

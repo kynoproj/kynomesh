@@ -199,27 +199,31 @@ func computeTopology(as *kmv1.AgentSet, agentName string) kmv1.Topology {
 	}
 	switch as.Spec.Pattern {
 	case kmv1.AgentPatternHandoff:
-		t.Peers = peersExcluding(as.Spec.Agents, agentName)
+		t.Peers = peersExcluding(as.Spec.Agents, as.Spec.ExternalAgents, agentName)
 	case kmv1.AgentPatternSupervisor:
 		if t.IsEntry {
-			t.Peers = peersExcluding(as.Spec.Agents, agentName)
+			t.Peers = peersExcluding(as.Spec.Agents, as.Spec.ExternalAgents, agentName)
 		}
 	case kmv1.AgentPatternSequential:
-		if next, ok := nextAgent(as.Spec.Agents, agentName); ok {
-			t.Peers = []kmv1.Peer{{Name: next, Kind: kmv1.PeerKindManaged}}
+		if next, ok := nextAgent(as.Spec.Agents, as.Spec.ExternalAgents, agentName); ok {
+			t.Peers = []kmv1.Peer{next}
 		}
 	}
 	return t
 }
 
-// peersExcluding returns every agent except self as Managed peer entries.
-func peersExcluding(agents []kmv1.AbstractAgentDeploy, self string) []kmv1.Peer {
-	out := make([]kmv1.Peer, 0, len(agents)-1)
+// peersExcluding returns every managed agent except self, plus every
+// external agent, as Peer entries.
+func peersExcluding(agents []kmv1.AbstractAgentDeploy, externalAgents []kmv1.ExternalAgentRef, self string) []kmv1.Peer {
+	out := make([]kmv1.Peer, 0, len(agents)-1+len(externalAgents))
 	for _, a := range agents {
 		if a.Name == self {
 			continue
 		}
 		out = append(out, kmv1.Peer{Name: a.Name, Kind: kmv1.PeerKindManaged})
+	}
+	for _, e := range externalAgents {
+		out = append(out, kmv1.Peer{Name: e.Name, Kind: kmv1.PeerKindExternal, URL: e.URL})
 	}
 	if len(out) == 0 {
 		return nil
@@ -227,14 +231,26 @@ func peersExcluding(agents []kmv1.AbstractAgentDeploy, self string) []kmv1.Peer 
 	return out
 }
 
-// nextAgent returns the agent immediately after self in declaration order.
-func nextAgent(agents []kmv1.AbstractAgentDeploy, self string) (string, bool) {
+// nextAgent returns the peer immediately after self in the chain: the next
+// managed agent in declaration order, or — if self is the last managed
+// agent — the sole external agent, if one is configured.
+// Sequential allows at most one, enforced by the validator, and it may only
+// be the final hop.
+func nextAgent(agents []kmv1.AbstractAgentDeploy, externalAgents []kmv1.ExternalAgentRef, self string) (kmv1.Peer, bool) {
 	for i, a := range agents {
-		if a.Name == self && i+1 < len(agents) {
-			return agents[i+1].Name, true
+		if a.Name != self {
+			continue
 		}
+		if i+1 < len(agents) {
+			return kmv1.Peer{Name: agents[i+1].Name, Kind: kmv1.PeerKindManaged}, true
+		}
+		if len(externalAgents) > 0 {
+			e := externalAgents[0]
+			return kmv1.Peer{Name: e.Name, Kind: kmv1.PeerKindExternal, URL: e.URL}, true
+		}
+		return kmv1.Peer{}, false
 	}
-	return "", false
+	return kmv1.Peer{}, false
 }
 
 // needsUpdate compares two AgentDeploy objects to decide whether an Update

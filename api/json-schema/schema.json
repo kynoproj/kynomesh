@@ -24168,6 +24168,15 @@
           "description": "Entry is the name of the agent external callers reach first. Must match one of agents[].name. For Sequential it must be agents[0].",
           "type": "string"
         },
+        "externalAgents": {
+          "description": "ExternalAgents references agents this AgentSet does not deploy, scale, or roll. They may never be Entry.",
+          "items": {
+            "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ExternalAgentRef"
+          },
+          "type": "array",
+          "x-kubernetes-patch-merge-key": "name",
+          "x-kubernetes-patch-strategy": "merge"
+        },
         "pattern": {
           "description": "Pattern describes how the agents in this AgentSet are wired together.\n\n  - Supervisor: Entry sees every other agent; non-entry agents see\n    no peers. Aliases in the wider ecosystem include \"manager\",\n    \"orchestrator-worker\", and \"subagents\".\n  - Handoff: every agent sees every other agent. Aliases include\n    \"swarm\" and \"network\".\n  - Sequential: each agent sees only the next one in declaration\n    order; Entry must be agents[0].",
           "type": "string"
@@ -24400,6 +24409,24 @@
           "type": "array"
         }
       },
+      "type": "object"
+    },
+    "sh.kyno.kynomesh.v1alpha1.ExternalAgentRef": {
+      "description": "ExternalAgentRef is a reference to an existing agent this AgentSet does not own — another AgentSet's agent, or any A2A endpoint reachable at a URL.",
+      "properties": {
+        "name": {
+          "description": "Name is the short agent name used for peer lookup and topology, matching how AbstractAgentDeploy.Name works for managed agents.",
+          "type": "string"
+        },
+        "url": {
+          "description": "URL is the full URL of the external agent's broker/endpoint.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "url"
+      ],
       "type": "object"
     },
     "sh.kyno.kynomesh.v1alpha1.Metadata": {

@@ -83,6 +83,24 @@ type AgentSetSpec struct {
 	// Templates are used to customize additional kubernetes resources required for the Pipeline
 	// +optional
 	Templates *Templates `json:"templates,omitempty" protobuf:"bytes,4,opt,name=templates"`
+	// ExternalAgents references agents this AgentSet does not deploy, scale, or
+	// roll. They may never be Entry.
+	// +patchStrategy=merge
+	// +patchMergeKey=name
+	// +optional
+	ExternalAgents []ExternalAgentRef `json:"externalAgents,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,5,rep,name=externalAgents"`
+}
+
+// ExternalAgentRef is a reference to an existing agent this AgentSet does not
+// own — another AgentSet's agent, or any A2A endpoint reachable at a URL.
+type ExternalAgentRef struct {
+	// Name is the short agent name used for peer lookup and topology, matching
+	// how AbstractAgentDeploy.Name works for managed agents.
+	// +kubebuilder:validation:Required
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+	// URL is the full URL of the external agent's broker/endpoint.
+	// +kubebuilder:validation:Required
+	URL string `json:"url" protobuf:"bytes,2,opt,name=url"`
 }
 
 // AgentPattern is the message-routing shape of an AgentSet.

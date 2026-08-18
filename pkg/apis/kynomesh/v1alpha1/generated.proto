@@ -340,6 +340,13 @@ message AgentSetSpec {
   // Templates are used to customize additional kubernetes resources required for the Pipeline
   // +optional
   optional Templates templates = 4;
+
+  // ExternalAgents references agents this AgentSet does not deploy, scale, or
+  // roll. They may never be Entry.
+  // +patchStrategy=merge
+  // +patchMergeKey=name
+  // +optional
+  repeated ExternalAgentRef externalAgents = 5;
 }
 
 message AgentSetStatus {
@@ -430,6 +437,19 @@ message DaemonTemplate {
 
   // Container for the daemon container (resources, env, ...).
   optional ContainerTemplate container = 2;
+}
+
+// ExternalAgentRef is a reference to an existing agent this AgentSet does not
+// own — another AgentSet's agent, or any A2A endpoint reachable at a URL.
+message ExternalAgentRef {
+  // Name is the short agent name used for peer lookup and topology, matching
+  // how AbstractAgentDeploy.Name works for managed agents.
+  // +kubebuilder:validation:Required
+  optional string name = 1;
+
+  // URL is the full URL of the external agent's broker/endpoint.
+  // +kubebuilder:validation:Required
+  optional string url = 2;
 }
 
 message Metadata {

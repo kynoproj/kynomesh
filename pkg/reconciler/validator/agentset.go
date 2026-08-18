@@ -21,6 +21,7 @@ package validator
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -84,6 +85,40 @@ func ValidateAgentSet(as *kmv1.AgentSet) error {
 		}
 	}
 
+	for _, e := range as.Spec.ExternalAgents {
+		if e.Name == "" {
+			return errors.New("external agent name must be non-empty")
+		}
+		if errs := validation.IsDNS1035Label(e.Name); len(errs) > 0 {
+			return fmt.Errorf("invalid external agent name %q (must satisfy DNS-1035 for Service-name compatibility): %s",
+				e.Name, strings.Join(errs, "; "))
+		}
+		if collidesWith, ok := reservedAgentNames[e.Name]; ok {
+			return fmt.Errorf("external agent name %q is reserved; it collides with the %s", e.Name, collidesWith)
+		}
+		if _, dup := seen[e.Name]; dup {
+			return fmt.Errorf("duplicate agent name %q (external agents share a name namespace with spec.agents)", e.Name)
+		}
+		seen[e.Name] = struct{}{}
+		if e.URL == "" {
+			return fmt.Errorf("external agent %q: url must be non-empty", e.Name)
+		}
+		parsed, err := url.Parse(e.URL)
+		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+			return fmt.Errorf("external agent %q: url %q must be an absolute URL (scheme + host)", e.Name, e.URL)
+		}
+	}
+
+	entryIsExternal := false
+	for _, e := range as.Spec.ExternalAgents {
+		if e.Name == as.Spec.Entry {
+			entryIsExternal = true
+			break
+		}
+	}
+	if entryIsExternal {
+		return fmt.Errorf("entry %q must be a managed agent; external agents can only receive calls, never be Entry", as.Spec.Entry)
+	}
 	if _, ok := seen[as.Spec.Entry]; !ok {
 		return fmt.Errorf("entry %q does not name any agent in spec.agents", as.Spec.Entry)
 	}
@@ -105,6 +140,10 @@ func ValidateAgentSet(as *kmv1.AgentSet) error {
 		if as.Spec.Entry != as.Spec.Agents[0].Name {
 			return fmt.Errorf("pattern %q requires entry to be the first agent %q; got %q",
 				as.Spec.Pattern, as.Spec.Agents[0].Name, as.Spec.Entry)
+		}
+		if len(as.Spec.ExternalAgents) > 1 {
+			return fmt.Errorf("pattern %q supports at most 1 external agent (as the final hop); got %d",
+				as.Spec.Pattern, len(as.Spec.ExternalAgents))
 		}
 	default:
 		return fmt.Errorf("unsupported pattern %q (allowed: Supervisor, Handoff, Sequential)", as.Spec.Pattern)
