@@ -108,6 +108,39 @@ func TestReconcile_CreatesChildren(t *testing.T) {
 	assert.Equal(t, metav1.ConditionTrue, cond.Status)
 }
 
+func TestReconcile_StatusAgentCounts(t *testing.T) {
+	as := newAgentSet("greeter", "alpha", "beta")
+	as.Spec.Pattern = kmv1.AgentPatternHandoff
+	as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{
+		{Name: "ext1", URL: "https://ext1.example.com"},
+		{Name: "ext2", URL: "https://ext2.example.com"},
+	}
+	r, c := newTestReconciler(t, as)
+
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	var got kmv1.AgentSet
+	require.NoError(t, c.Get(context.Background(), types.NamespacedName{Namespace: testNamespace, Name: "greeter"}, &got))
+	require.NotNil(t, got.Status.AgentCount)
+	assert.Equal(t, uint32(2), *got.Status.AgentCount, "managed agents only")
+	require.NotNil(t, got.Status.ExternalAgentCount)
+	assert.Equal(t, uint32(2), *got.Status.ExternalAgentCount)
+}
+
+func TestReconcile_StatusExternalAgentCountZeroWhenUnset(t *testing.T) {
+	as := newAgentSet("greeter", "alpha")
+	r, c := newTestReconciler(t, as)
+
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	var got kmv1.AgentSet
+	require.NoError(t, c.Get(context.Background(), types.NamespacedName{Namespace: testNamespace, Name: "greeter"}, &got))
+	require.NotNil(t, got.Status.ExternalAgentCount)
+	assert.Equal(t, uint32(0), *got.Status.ExternalAgentCount)
+}
+
 func TestReconcile_DeletesOrphans(t *testing.T) {
 	as := newAgentSet("greeter", "alpha")
 	orphan := &kmv1.AgentDeploy{
