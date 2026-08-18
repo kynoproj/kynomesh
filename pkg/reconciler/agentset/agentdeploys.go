@@ -233,8 +233,9 @@ func peersExcluding(agents []kmv1.AbstractAgentDeploy, externalAgents []kmv1.Ext
 
 // nextAgent returns the peer immediately after self in the chain: the next
 // managed agent in declaration order, or — if self is the last managed
-// agent — the sole external agent, if one is configured (Sequential allows
-// at most one, enforced by the validator, and it may only be the final hop).
+// agent — the sole external agent, if one is configured.
+// Sequential allows at most one, enforced by the validator, and it may only
+// be the final hop.
 func nextAgent(agents []kmv1.AbstractAgentDeploy, externalAgents []kmv1.ExternalAgentRef, self string) (kmv1.Peer, bool) {
 	for i, a := range agents {
 		if a.Name != self {
