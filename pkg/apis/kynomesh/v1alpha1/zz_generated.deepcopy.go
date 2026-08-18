@@ -359,15 +359,15 @@ func (in *AgentSetSpec) DeepCopyInto(out *AgentSetSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	if in.ExternalAgents != nil {
-		in, out := &in.ExternalAgents, &out.ExternalAgents
-		*out = make([]ExternalAgentRef, len(*in))
-		copy(*out, *in)
-	}
 	if in.Templates != nil {
 		in, out := &in.Templates, &out.Templates
 		*out = new(Templates)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.ExternalAgents != nil {
+		in, out := &in.ExternalAgents, &out.ExternalAgents
+		*out = make([]ExternalAgentRef, len(*in))
+		copy(*out, *in)
 	}
 	return
 }

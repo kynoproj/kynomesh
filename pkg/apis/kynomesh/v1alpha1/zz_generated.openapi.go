@@ -1257,6 +1257,12 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetSpec(ref common.ReferenceCallback
 							},
 						},
 					},
+					"templates": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Templates are used to customize additional kubernetes resources required for the Pipeline",
+							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Templates"),
+						},
+					},
 					"externalAgents": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -1265,7 +1271,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetSpec(ref common.ReferenceCallback
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "ExternalAgents references agents this AgentSet does not deploy, scale, or roll — no pod, Service, or broker is created for them. They participate in Pattern as peers, but can only ever be the target of a call, never originate one to a further peer: they may never be Entry, and under Sequential at most one is allowed, as the final hop in the chain.",
+							Description: "ExternalAgents references agents this AgentSet does not deploy, scale, or roll. They may never be Entry.",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
@@ -1275,12 +1281,6 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetSpec(ref common.ReferenceCallback
 									},
 								},
 							},
-						},
-					},
-					"templates": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Templates are used to customize additional kubernetes resources required for the Pipeline",
-							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Templates"),
 						},
 					},
 				},

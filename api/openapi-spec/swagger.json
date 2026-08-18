@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "Kynomesh",
-    "version": "v0.0.0"
+    "version": "latest"
   },
   "paths": {},
   "definitions": {
@@ -24170,7 +24170,7 @@
           "type": "string"
         },
         "externalAgents": {
-          "description": "ExternalAgents references agents this AgentSet does not deploy, scale, or roll — no pod, Service, or broker is created for them. They participate in Pattern as peers, but can only ever be the target of a call, never originate one to a further peer: they may never be Entry, and under Sequential at most one is allowed, as the final hop in the chain.",
+          "description": "ExternalAgents references agents this AgentSet does not deploy, scale, or roll. They may never be Entry.",
           "type": "array",
           "items": {
             "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ExternalAgentRef"

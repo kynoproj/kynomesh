@@ -1512,32 +1512,6 @@ one of agents\[\].name. For Sequential it must be agents\[0\].
 
 <td>
 
-<code>externalAgents</code></br> <em>
-<a href="#kynomesh.kyno.sh/v1alpha1.ExternalAgentRef">
-\[\]ExternalAgentRef </a> </em>
-</td>
-
-<td>
-
-<em>(Optional)</em>
-<p>
-
-ExternalAgents references agents this AgentSet does not deploy, scale,
-or roll — no pod, Service, or broker is created for them. They
-participate in Pattern as peers, but can only ever be the target of a
-call, never originate one to a further peer: they may never be Entry,
-and under Sequential at most one is allowed, as the final hop in the
-chain.
-</p>
-
-</td>
-
-</tr>
-
-<tr>
-
-<td>
-
 <code>templates</code></br> <em>
 <a href="#kynomesh.kyno.sh/v1alpha1.Templates"> Templates </a> </em>
 </td>
@@ -1549,6 +1523,28 @@ chain.
 
 Templates are used to customize additional kubernetes resources required
 for the Pipeline
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>externalAgents</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.ExternalAgentRef">
+\[\]ExternalAgentRef </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+ExternalAgents references agents this AgentSet does not deploy, scale,
+or roll. They may never be Entry.
 </p>
 
 </td>
@@ -1716,32 +1712,6 @@ one of agents\[\].name. For Sequential it must be agents\[0\].
 
 <td>
 
-<code>externalAgents</code></br> <em>
-<a href="#kynomesh.kyno.sh/v1alpha1.ExternalAgentRef">
-\[\]ExternalAgentRef </a> </em>
-</td>
-
-<td>
-
-<em>(Optional)</em>
-<p>
-
-ExternalAgents references agents this AgentSet does not deploy, scale,
-or roll — no pod, Service, or broker is created for them. They
-participate in Pattern as peers, but can only ever be the target of a
-call, never originate one to a further peer: they may never be Entry,
-and under Sequential at most one is allowed, as the final hop in the
-chain.
-</p>
-
-</td>
-
-</tr>
-
-<tr>
-
-<td>
-
 <code>templates</code></br> <em>
 <a href="#kynomesh.kyno.sh/v1alpha1.Templates"> Templates </a> </em>
 </td>
@@ -1753,6 +1723,28 @@ chain.
 
 Templates are used to customize additional kubernetes resources required
 for the Pipeline
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>externalAgents</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.ExternalAgentRef">
+\[\]ExternalAgentRef </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+ExternalAgents references agents this AgentSet does not deploy, scale,
+or roll. They may never be Entry.
 </p>
 
 </td>
