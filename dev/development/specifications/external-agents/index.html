@@ -1074,13 +1074,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#open-questions" class="md-nav__link">
-    Open questions
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1247,13 +1240,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#open-questions" class="md-nav__link">
-    Open questions
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1275,9 +1261,9 @@
 <h1 id="external-agents">External Agents<a class="headerlink" href="#external-agents" title="Permanent link">&para;</a></h1>
 <blockquote>
 <p>[!NOTE] This document is for Kynomesh contributors. It records the design
-decisions for <a href="https://github.com/kynoproj/kynomesh/issues/147">#147</a> —
+decisions behind <a href="https://github.com/kynoproj/kynomesh/issues/147">#147</a> —
 referencing an existing/external agent as a peer, without the AgentSet
-deploying a duplicate.</p>
+deploying a duplicate — and how the shipped implementation reflects them.</p>
 </blockquote>
 <h2 id="problem">Problem<a class="headerlink" href="#problem" title="Permanent link">&para;</a></h2>
 <ul>
@@ -1420,46 +1406,40 @@ external list in the spec is misleading.</p>
   <code>len(externalAgents) &gt; 1</code> is a validation error under Sequential.</li>
 </ul>
 <h2 id="validation-additions">Validation additions<a class="headerlink" href="#validation-additions" title="Permanent link">&para;</a></h2>
-<p><code>pkg/reconciler/validator/agentset.go</code> (<code>ValidateAgentSet</code>) needs:</p>
+<p><code>pkg/reconciler/validator/agentset.go</code> (<code>ValidateAgentSet</code>) adds:</p>
 <ul>
 <li>Each <code>ExternalAgentRef.Name</code>: non-empty, DNS-1035-valid (same rule as managed
   agent names, for consistency — it's a peer identity even though no Service is
   created for it), not colliding with reserved names, and unique across <strong>both</strong>
   <code>Agents</code> and <code>ExternalAgents</code> (one flat name namespace — an external agent
   named the same as a managed agent would be ambiguous in <code>topology.peers</code>).</li>
-<li>Each <code>ExternalAgentRef.URL</code>: non-empty. Whether to additionally validate it
-  parses as an absolute URL (scheme + host) at admission time, versus leaving it
-  fully opaque and letting unreachable/malformed URLs surface as runtime call
-  failures, is still open — leaning toward validating parseability at minimum,
-  since that's a cheap, unambiguous check and a malformed URL can never be
-  correct.</li>
-<li><code>Entry</code> must name an agent in <code>Agents</code> — already true today structurally, but
-  should get an explicit rejection message ("entry must be a managed agent; got
-  external agent %q") if someone names an <code>ExternalAgents</code> entry, rather than
-  falling through to today's generic "entry does not name any agent" message.</li>
+<li>Each <code>ExternalAgentRef.URL</code>: validated as an absolute URL (non-empty scheme
+  and host, via <code>net/url.Parse</code>) at admission time, rather than left fully
+  opaque. A malformed URL can never be correct, so rejecting it at admission is
+  strictly better than letting it surface later as a runtime call failure.</li>
+<li><code>Entry</code> must name an agent in <code>Agents</code>, never an <code>ExternalAgents</code> entry.</li>
 <li><code>Sequential</code> requires <code>len(ExternalAgents) &lt;= 1</code>.</li>
-<li>Still open: should <code>Handoff</code>'s and <code>Sequential</code>'s existing "requires at least
-  2 agents" checks count <code>len(Agents) + len(ExternalAgents)</code>, or strictly
-  <code>len(Agents)</code>? An external agent can't originate calls, so a Handoff of 1
-  managed + 1 external isn't obviously "2 agents talking to each other" in the
-  sense the current check protects against. Leaning toward counting <code>Agents</code>
-  only, but not yet decided.</li>
+<li><code>Handoff</code>'s and <code>Sequential</code>'s existing "requires at least 2 agents" checks
+  count <code>len(Agents)</code> only, not <code>len(Agents) + len(ExternalAgents)</code>. An external
+  agent can't originate a call, so it doesn't change whether the managed agents
+  have anyone to talk to among themselves.</li>
 </ul>
 <h2 id="computetopology-changes"><code>computeTopology</code> changes<a class="headerlink" href="#computetopology-changes" title="Permanent link">&para;</a></h2>
 <p><code>pkg/reconciler/agentset/agentdeploys.go</code>:</p>
 <ul>
-<li><code>peersExcluding</code> gains a second input (<code>as.Spec.ExternalAgents</code>) and appends
+<li><code>peersExcluding</code> takes a second input (<code>as.Spec.ExternalAgents</code>) and appends
   <code>Peer{Name: e.Name, Kind: PeerKindExternal, URL: e.URL}</code> for each, in both the
   Handoff case and the Supervisor-entry case.</li>
-<li>The Sequential branch (<code>nextAgent</code>) needs a new case: when <code>self</code> is the last
+<li>The Sequential branch (<code>nextAgent</code>) has a new case: when <code>self</code> is the last
   entry in <code>Agents</code> and <code>len(as.Spec.ExternalAgents) == 1</code>, the peer list
   becomes <code>[]Peer{{Name, Kind: PeerKindExternal, URL: ...}}</code> instead of <code>nil</code>.</li>
 <li>No AgentDeploy is ever created for an <code>ExternalAgents</code> entry — the
   reconciler's <code>Agents</code>-only iteration for pod/Service/AgentDeploy creation is
   unaffected; only the peer-list computation reads <code>ExternalAgents</code>.</li>
 </ul>
-<p>Downstream (<code>resolvePeerURLs</code> in <code>cmd/commands/init_runtime.go</code>) needs no change
-— it already passes <code>Kind: PeerKindExternal</code> peers' <code>URL</code> through untouched.</p>
+<p>Downstream (<code>resolvePeerURLs</code> in <code>cmd/commands/init_runtime.go</code>) needed no
+change — it already passes <code>Kind: PeerKindExternal</code> peers' <code>URL</code> through
+untouched.</p>
 <h2 id="future-friendlier-in-cluster-reference">Future: friendlier in-cluster reference<a class="headerlink" href="#future-friendlier-in-cluster-reference" title="Permanent link">&para;</a></h2>
 <p>The original issue asks for two ways to point at a peer: a raw URL (for truly
 external endpoints), and a friendlier reference for an agent already known to
@@ -1472,12 +1452,6 @@ the issue's core gap (no user-facing field for external peers at all today), and
 the friendlier reference is additive — it can be introduced later as a second,
 mutually-exclusive field on <code>ExternalAgentRef</code> (e.g.
 <code>AgentSetRef *LocalAgentSetRef</code>) without touching anything decided above.</p>
-<h2 id="open-questions">Open questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
-<ul>
-<li>URL validation strictness at admission time (parse-check vs. fully opaque).</li>
-<li>Whether the Handoff/Sequential "≥2 agents" minimum should count
-  <code>ExternalAgents</code> toward the total.</li>
-</ul>
 
               
             </article>
