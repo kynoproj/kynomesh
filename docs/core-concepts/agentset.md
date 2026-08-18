@@ -63,6 +63,9 @@ Each agent sees only the next agent in declaration order. The entry must be
    alpha (entry) -> beta -> gamma -> delta
 ```
 
+Every pattern can also include agents this AgentSet doesn't deploy — see
+[External Agents](../user-guide/reference/configuration/external-agents.md).
+
 ## Kubectl
 
 To query `AgentSet` objects with `kubectl`:
@@ -74,4 +77,6 @@ kubectl get agentset # or "as" as a short name
 ## See Also
 
 - [AgentDeploy](./agentdeploy.md) — per-agent deployment and broker injection.
+- [External Agents](../user-guide/reference/configuration/external-agents.md) —
+  reference an agent this AgentSet doesn't deploy.
 - [APIs](../APIs.md) — full CRD reference.
