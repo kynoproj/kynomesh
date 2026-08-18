@@ -72,6 +72,7 @@ nav:
               - Liveness And Readiness: "user-guide/reference/configuration/liveness-and-readiness.md"
               - AgentSet Customization: "user-guide/reference/configuration/agentset-customization.md"
               - Rolling Update: "user-guide/reference/configuration/rolling-update.md"
+              - Graceful Termination: "user-guide/reference/configuration/graceful-termination.md"
               - Dynamic Resource Allocation: "user-guide/reference/configuration/dra.md"
               - Running On Istio: "user-guide/reference/configuration/istio.md"
           - APIs.md
