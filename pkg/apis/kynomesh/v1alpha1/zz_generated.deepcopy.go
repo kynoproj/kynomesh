@@ -392,6 +392,11 @@ func (in *AgentSetStatus) DeepCopyInto(out *AgentSetStatus) {
 		*out = new(uint32)
 		**out = **in
 	}
+	if in.ExternalAgentCount != nil {
+		in, out := &in.ExternalAgentCount, &out.ExternalAgentCount
+		*out = new(uint32)
+		**out = **in
+	}
 	return
 }
 

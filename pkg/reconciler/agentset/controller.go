@@ -155,6 +155,8 @@ func (r *Reconciler) reconcile(ctx context.Context, as *kmv1.AgentSet) error {
 	r.aggregateChildHealth(as, desired, existing)
 	count := uint32(len(desired))
 	as.Status.AgentCount = &count
+	externalCount := uint32(len(as.Spec.ExternalAgents))
+	as.Status.ExternalAgentCount = &externalCount
 	as.Status.LastUpdated = metav1.Now()
 	return nil
 }

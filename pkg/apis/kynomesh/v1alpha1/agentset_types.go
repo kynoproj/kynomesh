@@ -45,7 +45,8 @@ const (
 // +kubebuilder:resource:shortName=as
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`
-// +kubebuilder:printcolumn:name="Agents",type=integer,JSONPath=`.status.AgentCount`
+// +kubebuilder:printcolumn:name="Managed Agents",type=integer,JSONPath=`.status.agentCount`
+// +kubebuilder:printcolumn:name="External Agents",type=integer,JSONPath=`.status.externalAgentCount`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +kubebuilder:printcolumn:name="Message",type=string,JSONPath=`.status.message`
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -139,9 +140,11 @@ type AgentSetStatus struct {
 	LastUpdated metav1.Time `json:"lastUpdated,omitempty" protobuf:"bytes,4,opt,name=lastUpdated"`
 	// +optional
 	AgentCount *uint32 `json:"agentCount,omitempty" protobuf:"varint,5,opt,name=agentCount"`
+	// +optional
+	ExternalAgentCount *uint32 `json:"externalAgentCount,omitempty" protobuf:"varint,6,opt,name=externalAgentCount"`
 	// The generation observed by the controller.
 	// +optional
-	ObservedGeneration int64 `json:"observedGeneration,omitempty" protobuf:"varint,6,opt,name=observedGeneration"`
+	ObservedGeneration int64 `json:"observedGeneration,omitempty" protobuf:"varint,7,opt,name=observedGeneration"`
 }
 
 // +kubebuilder:object:root=true
