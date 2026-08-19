@@ -1,7 +1,7 @@
 # A2A Command-Line Client
 
 [`a2acli`](https://github.com/kynoproj/a2acli) is a general-purpose command-line
-client for the [A2A](https://a2a-protocol.org/) (Agent-to-Agent) protocol — it
+client for the [A2A](https://a2a-protocol.org/) (Agent-to-Agent) protocol - it
 works against **any** A2A-compliant server, not just Kynomesh. It fetches
 AgentCards, sends one-shot messages, streams events, and manages tasks over any
 of A2A's three transports (JSON-RPC, REST, gRPC), so it's a useful tool any time
@@ -68,7 +68,5 @@ kubectl debug -it some-pod --image=quay.io/kynoproj/a2acli:v0.1.3 -- bash
 
 ## See Also
 
-- [AgentSet](../../core-concepts/agentset.md) — the entry Service `a2acli` talks
-  to when used against Kynomesh.
 - [Quick Start](../../quick-start.md) — a full walkthrough using `a2acli`
   against a real AgentSet.
