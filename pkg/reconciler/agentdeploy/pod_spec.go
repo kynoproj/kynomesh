@@ -128,7 +128,7 @@ func agentProbeExec() []string {
 	return []string{
 		kmv1.ProbeBinaryPath,
 		"--mode=grpc",
-		"--socket=" + kmv1.BrokerSocketPath,
+		"--socket=" + kmv1.BrokerGRPCSocketPath,
 	}
 }
 
