@@ -79,19 +79,28 @@ const (
 
 const clusterDNSDomain = "cluster.local"
 
-// DefaultLocalAgentAddr is the default agent target in local-dev mode.
-const DefaultLocalAgentAddr = "127.0.0.1:8088"
+// DefaultLocalAgentHTTPAddr is the default agent HTTP target in local-dev mode.
+const DefaultLocalAgentHTTPAddr = "127.0.0.1:8088"
+
+// DefaultLocalAgentGRPCAddr is the default agent gRPC target in local-dev mode.
+const DefaultLocalAgentGRPCAddr = "127.0.0.1:8089"
 
 // inClusterFn is a test seam; production reads POD_NAME from the downward API.
 var inClusterFn = func() bool {
 	return os.Getenv(kmv1.EnvPodName) != ""
 }
 
-// udsAgentPath is a test seam; production uses kmv1.BrokerSocketPath.
-var udsAgentPath = kmv1.BrokerSocketPath
+// udsHTTPAgentPath is a test seam; production uses kmv1.BrokerHTTPSocketPath.
+var udsHTTPAgentPath = kmv1.BrokerHTTPSocketPath
 
-// tcpAgentAddr is a test seam; production uses DefaultLocalAgentAddr.
-var tcpAgentAddr = DefaultLocalAgentAddr
+// udsGRPCAgentPath is a test seam; production uses kmv1.BrokerGRPCSocketPath.
+var udsGRPCAgentPath = kmv1.BrokerGRPCSocketPath
+
+// tcpHTTPAgentAddr is a test seam; production uses DefaultLocalAgentHTTPAddr.
+var tcpHTTPAgentAddr = DefaultLocalAgentHTTPAddr
+
+// tcpGRPCAgentAddr is a test seam; production uses DefaultLocalAgentGRPCAddr.
+var tcpGRPCAgentAddr = DefaultLocalAgentGRPCAddr
 
 // serverInfoFilePath is a test seam; production uses kmv1.ServerInfoFilePath.
 var serverInfoFilePath = kmv1.ServerInfoFilePath
@@ -124,39 +133,54 @@ func publishAgentServerInfo(ctx context.Context, registry prometheus.Registerer)
 	serverinfo.RegisterMetric(registry, *info)
 }
 
-// agentDial holds either the in-pod UDS path or the local-dev TCP host:port.
-type agentDial struct {
+// agentTarget holds either the in-pod UDS path or the local-dev TCP host:port
+// for a single protocol (HTTP or gRPC).
+type agentTarget struct {
 	udsPath string
 	tcpAddr string
 }
 
-func (d agentDial) isUDS() bool { return d.udsPath != "" }
-func (d agentDial) target() string {
-	if d.isUDS() {
-		return d.udsPath
+func (t agentTarget) isUDS() bool { return t.udsPath != "" }
+func (t agentTarget) target() string {
+	if t.isUDS() {
+		return t.udsPath
 	}
-	return d.tcpAddr
+	return t.tcpAddr
+}
+
+// agentDial holds the agent's HTTP and gRPC dial targets. Some agent
+// runtimes (e.g. Python) cannot multiplex both protocols on a single
+// port or UDS socket, so each protocol gets its own independent target.
+type agentDial struct {
+	http agentTarget
+	grpc agentTarget
 }
 
 func resolveAgentDial() agentDial {
 	if inClusterFn() {
-		return agentDial{udsPath: udsAgentPath}
+		return agentDial{
+			http: agentTarget{udsPath: udsHTTPAgentPath},
+			grpc: agentTarget{udsPath: udsGRPCAgentPath},
+		}
 	}
-	return agentDial{tcpAddr: tcpAgentAddr}
+	return agentDial{
+		http: agentTarget{tcpAddr: tcpHTTPAgentAddr},
+		grpc: agentTarget{tcpAddr: tcpGRPCAgentAddr},
+	}
 }
 
 func newAgentHTTPClient(d agentDial) *http.Client {
-	if d.isUDS() {
-		return broker.NewUDSHTTPClient(d.udsPath)
+	if d.http.isUDS() {
+		return broker.NewUDSHTTPClient(d.http.udsPath)
 	}
-	return broker.NewTCPHTTPClient(d.tcpAddr)
+	return broker.NewTCPHTTPClient(d.http.tcpAddr)
 }
 
 // resolveAdvertiseHost returns the AgentCard host. In-cluster it must
 // come from the injected AgentDeploy; local-dev falls back to the default.
 func resolveAdvertiseHost(ctx context.Context, ad *kmv1.AgentDeploy, dial agentDial) (string, error) {
 	logger := logging.FromContext(ctx)
-	if dial.isUDS() {
+	if dial.http.isUDS() {
 		host := advertiseHostFor(ad)
 		if host == "" {
 			return "", fmt.Errorf("in-cluster broker requires %s; refusing to start", kmv1.EnvAgentDeployObject)
@@ -167,7 +191,7 @@ func resolveAdvertiseHost(ctx context.Context, ad *kmv1.AgentDeploy, dial agentD
 	}
 	logger.Infow("Local-dev mode: using default broker advertise host",
 		zap.String("advertiseHost", AdvertiseHostDefault),
-		zap.String("agent", dial.tcpAddr))
+		zap.String("agent", dial.http.tcpAddr))
 	return AdvertiseHostDefault, nil
 }
 
@@ -232,14 +256,14 @@ func assembleBroker(ctx context.Context, port, introspectionPort int) (*brokerSt
 	agentCard, err := probeAgentCard(probeCtx, agentHTTPClient, "http://"+broker.AgentBackendHost)
 	probeCancel()
 	if err != nil {
-		return nil, fmt.Errorf("fetch AgentCard from agent at %q: %w", dial.target(), err)
+		return nil, fmt.Errorf("fetch AgentCard from agent at %q: %w", dial.http.target(), err)
 	}
 	if agentCard == nil {
 		logger.Infow("Agent reachable but exposes no AgentCard — running passthrough-only",
-			zap.String("agent", dial.target()))
+			zap.String("agent", dial.http.target()))
 	} else {
 		logger.Infow("Agent reachable",
-			zap.String("agent", dial.target()),
+			zap.String("agent", dial.http.target()),
 			zap.String("agentName", agentCard.Name))
 	}
 
@@ -457,7 +481,7 @@ func buildRuntime(ctx context.Context, registry *prometheus.Registry, agentTrans
 		case a2a.TransportProtocolGRPC:
 			conn, err := dialAgentGRPC(dial)
 			if err != nil {
-				return nil, fmt.Errorf("dial agent gRPC at %q: %w", dial.target(), err)
+				return nil, fmt.Errorf("dial agent gRPC at %q: %w", dial.grpc.target(), err)
 			}
 			rt.grpcConn = conn
 			rt.grpcServer = grpc.NewServer(broker.GRPCPassthroughOptions(conn, rt.metrcis, limiter)...)
@@ -508,10 +532,10 @@ var dnsResolver discovery.Resolver = net.DefaultResolver
 var dialAgentGRPC = dialAgentGRPCDefault
 
 func dialAgentGRPCDefault(d agentDial) (*grpc.ClientConn, error) {
-	if d.isUDS() {
-		return grpcNewClient("unix://" + d.udsPath)
+	if d.grpc.isUDS() {
+		return grpcNewClient("unix://" + d.grpc.udsPath)
 	}
-	return grpcNewClient(d.tcpAddr)
+	return grpcNewClient(d.grpc.tcpAddr)
 }
 
 func grpcNewClient(target string) (*grpc.ClientConn, error) {

@@ -455,7 +455,7 @@ func TestBuildPodSpec_AgentProbes(t *testing.T) {
 	wantCmd := []string{
 		kmv1.ProbeBinaryPath,
 		"--mode=grpc",
-		"--socket=" + kmv1.BrokerSocketPath,
+		"--socket=" + kmv1.BrokerGRPCSocketPath,
 	}
 
 	t.Run("defaults_when_spec_has_no_probes", func(t *testing.T) {

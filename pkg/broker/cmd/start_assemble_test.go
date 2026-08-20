@@ -68,22 +68,22 @@ func startStubAgentUDS(t *testing.T, cardBody string, status int) string {
 }
 
 // withAgentSocket puts the broker into in-cluster mode and points the
-// UDS dial at the supplied test socket.
+// HTTP UDS dial at the supplied test socket.
 func withAgentSocket(t *testing.T, path string) {
 	t.Helper()
 	withInClusterMode(t, true)
-	prev := udsAgentPath
-	udsAgentPath = path
-	t.Cleanup(func() { udsAgentPath = prev })
+	prev := udsHTTPAgentPath
+	udsHTTPAgentPath = path
+	t.Cleanup(func() { udsHTTPAgentPath = prev })
 }
 
-// withAgentTCPAddr puts the broker into local-dev mode and pins the TCP dial target.
+// withAgentTCPAddr puts the broker into local-dev mode and pins the HTTP TCP dial target.
 func withAgentTCPAddr(t *testing.T, addr string) {
 	t.Helper()
 	withInClusterMode(t, false)
-	prev := tcpAgentAddr
-	tcpAgentAddr = addr
-	t.Cleanup(func() { tcpAgentAddr = prev })
+	prev := tcpHTTPAgentAddr
+	tcpHTTPAgentAddr = addr
+	t.Cleanup(func() { tcpHTTPAgentAddr = prev })
 }
 
 // withInClusterMode overrides inClusterFn for the duration of the test.
@@ -203,16 +203,20 @@ func TestAssembleBroker_LocalDevTCP(t *testing.T) {
 }
 
 func TestResolveAgentDial(t *testing.T) {
-	t.Run("in-cluster picks UDS at the production path", func(t *testing.T) {
+	t.Run("in-cluster picks UDS at the production paths", func(t *testing.T) {
 		withInClusterMode(t, true)
 		d := resolveAgentDial()
-		assert.True(t, d.isUDS())
-		assert.Equal(t, kmv1.BrokerSocketPath, d.udsPath)
+		assert.True(t, d.http.isUDS())
+		assert.Equal(t, kmv1.BrokerHTTPSocketPath, d.http.udsPath)
+		assert.True(t, d.grpc.isUDS())
+		assert.Equal(t, kmv1.BrokerGRPCSocketPath, d.grpc.udsPath)
 	})
-	t.Run("out-of-cluster uses default TCP addr", func(t *testing.T) {
+	t.Run("out-of-cluster uses default TCP addrs", func(t *testing.T) {
 		withInClusterMode(t, false)
 		d := resolveAgentDial()
-		assert.False(t, d.isUDS())
-		assert.Equal(t, DefaultLocalAgentAddr, d.tcpAddr)
+		assert.False(t, d.http.isUDS())
+		assert.Equal(t, DefaultLocalAgentHTTPAddr, d.http.tcpAddr)
+		assert.False(t, d.grpc.isUDS())
+		assert.Equal(t, DefaultLocalAgentGRPCAddr, d.grpc.tcpAddr)
 	})
 }

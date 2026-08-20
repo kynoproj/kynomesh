@@ -104,7 +104,7 @@ func TestBuildRuntime_CardBranches(t *testing.T) {
 				return grpc.NewClient("passthrough:///stub", grpc.WithTransportCredentials(insecure.NewCredentials()))
 			})
 
-			rt, err := buildRuntime(context.TODO(), prometheus.NewRegistry(), &http.Transport{}, tc.card, nil, agentDial{udsPath: "/tmp/stub"})
+			rt, err := buildRuntime(context.TODO(), prometheus.NewRegistry(), &http.Transport{}, tc.card, nil, agentDial{grpc: agentTarget{udsPath: "/tmp/stub"}})
 			require.NoError(t, err)
 			require.NotNil(t, rt)
 
@@ -142,7 +142,7 @@ func TestBuildRuntime_StashesAgentDeploy(t *testing.T) {
 	want.Namespace = "demo-ns"
 	want.Name = "demo-ad"
 
-	rt, err := buildRuntime(context.TODO(), prometheus.NewRegistry(), &http.Transport{}, nil, want, agentDial{udsPath: "/tmp/stub"})
+	rt, err := buildRuntime(context.TODO(), prometheus.NewRegistry(), &http.Transport{}, nil, want, agentDial{grpc: agentTarget{udsPath: "/tmp/stub"}})
 	require.NoError(t, err)
 	require.NotNil(t, rt)
 	assert.Same(t, want, rt.agentDeploy, "buildRuntime should stash the AgentDeploy pointer verbatim")
@@ -160,7 +160,7 @@ func TestBuildRuntime_GRPCDialError(t *testing.T) {
 	card := &a2a.AgentCard{SupportedInterfaces: []*a2a.AgentInterface{
 		{ProtocolBinding: a2a.TransportProtocolGRPC, URL: "x:50051"},
 	}}
-	rt, err := buildRuntime(context.TODO(), prometheus.NewRegistry(), &http.Transport{}, card, nil, agentDial{udsPath: "/tmp/stub"})
+	rt, err := buildRuntime(context.TODO(), prometheus.NewRegistry(), &http.Transport{}, card, nil, agentDial{grpc: agentTarget{udsPath: "/tmp/stub"}})
 	require.Error(t, err)
 	assert.Nil(t, rt)
 	assert.ErrorIs(t, err, sentinel)
@@ -169,14 +169,14 @@ func TestBuildRuntime_GRPCDialError(t *testing.T) {
 
 func TestDialAgentGRPCDefault_UDS(t *testing.T) {
 	sock := filepath.Join(t.TempDir(), "agent.sock")
-	conn, err := dialAgentGRPCDefault(agentDial{udsPath: sock})
+	conn, err := dialAgentGRPCDefault(agentDial{grpc: agentTarget{udsPath: sock}})
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = conn.Close() })
 	assert.Equal(t, "unix://"+sock, conn.Target())
 }
 
 func TestDialAgentGRPCDefault_TCP(t *testing.T) {
-	conn, err := dialAgentGRPCDefault(agentDial{tcpAddr: "127.0.0.1:8001"})
+	conn, err := dialAgentGRPCDefault(agentDial{grpc: agentTarget{tcpAddr: "127.0.0.1:8001"}})
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = conn.Close() })
 	assert.Equal(t, "127.0.0.1:8001", conn.Target())

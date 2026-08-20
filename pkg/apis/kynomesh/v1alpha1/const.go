@@ -87,14 +87,15 @@ const (
 	// /metrics endpoint.
 	DaemonMetricsPort = 9433
 
-	VolumeNameKynomeshRun = "kynomesh-run"                     // Volume name of /var/run/kynomesh
-	KynomeshRunPath       = "/var/run/kynomesh"                // Volume mount path
-	BrokerSocketPath      = KynomeshRunPath + "/broker.sock"   // UDS socket the agent listens on and the broker connects to
-	TopologyFilePath      = KynomeshRunPath + "/topology.json" // Topology file path
-	ServerInfoFilePath    = KynomeshRunPath + "/server-info"   // Agent server-info file (written by the agent at startup)
-	ProbeBinaryPath       = KynomeshRunPath + "/bin/kynoprobe" // Static probe binary copied by init-runtime; used by agent container probes
-	ProbeBinaryImagePath  = "/bin/kynoprobe"                   // The probe binary lives inside the kynomesh image
-	KynomeshBinaryPath    = "/bin/kynomesh"                    // The main binary lives inside the kynomesh image
+	VolumeNameKynomeshRun = "kynomesh-run"                        // Volume name of /var/run/kynomesh
+	KynomeshRunPath       = "/var/run/kynomesh"                   // Volume mount path
+	BrokerHTTPSocketPath  = KynomeshRunPath + "/broker-http.sock" // UDS socket the agent's HTTP server listens on and the broker connects to
+	BrokerGRPCSocketPath  = KynomeshRunPath + "/broker-grpc.sock" // UDS socket the agent's gRPC server listens on and the broker connects to
+	TopologyFilePath      = KynomeshRunPath + "/topology.json"    // Topology file path
+	ServerInfoFilePath    = KynomeshRunPath + "/server-info"      // Agent server-info file (written by the agent at startup)
+	ProbeBinaryPath       = KynomeshRunPath + "/bin/kynoprobe"    // Static probe binary copied by init-runtime; used by agent container probes
+	ProbeBinaryImagePath  = "/bin/kynoprobe"                      // The probe binary lives inside the kynomesh image
+	KynomeshBinaryPath    = "/bin/kynomesh"                       // The main binary lives inside the kynomesh image
 )
 
 // Agent container probe timing defaults.
