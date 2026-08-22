@@ -3,7 +3,7 @@ module github.com/kynoproj/kynomesh
 go 1.26.0
 
 require (
-	github.com/a2aproject/a2a-go/v2 v2.4.0
+	github.com/a2aproject/a2a-go/v2 v2.5.0
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/gavv/httpexpect/v2 v2.17.0
 	github.com/go-logr/zapr v1.3.0
