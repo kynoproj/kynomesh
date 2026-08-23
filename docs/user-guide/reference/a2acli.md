@@ -48,8 +48,7 @@ every flag — protocol selection (`--protocol jsonrpc|rest|grpc`), sending
 structured messages (`--json`, `--parts`, `-f/--file`), multi-tenant routing
 (`--tenant`), request tracing (`-v/--verbose`), bypassing AgentCard resolution
 with a direct `--endpoint`, and overriding the AgentCard's advertised host with
-`--override-host` (e.g. when you've port-forwarded an in-cluster agent
-locally).
+`--override-host` (e.g. when you've port-forwarded an in-cluster agent locally).
 
 ## Debugging inside the cluster
 
@@ -58,7 +57,7 @@ inside the cluster instead. Its image is meant for exactly this:
 
 ```shell
 kubectl run a2acli-debug --rm -it --restart=Never \
-  --image=quay.io/kynoproj/a2acli:v0.1.4 \
+  --image=quay.io/kynoproj/a2acli:latest \
   --command -- bash
 # then, inside the pod:
 a2acli card -u https://my-agentset-worker.my-namespace.svc.cluster.local:8490 -k
@@ -67,7 +66,7 @@ a2acli card -u https://my-agentset-worker.my-namespace.svc.cluster.local:8490 -k
 Or as an ephemeral debug container against an existing pod:
 
 ```shell
-kubectl debug -it some-pod --image=quay.io/kynoproj/a2acli:v0.1.4 -- bash
+kubectl debug -it some-pod --image=quay.io/kynoproj/a2acli:latest -- bash
 ```
 
 ## See Also
