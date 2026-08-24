@@ -23,12 +23,13 @@ Or via Go: `go install github.com/kynoproj/a2acli@latest`.
 Every command targets an A2A server via `-u/--url`:
 
 ```shell
-a2acli card -u http://127.0.0.1:9001                    # fetch and print the AgentCard
-a2acli send -u http://127.0.0.1:9001 "your message"      # one-shot message
-a2acli stream -u http://127.0.0.1:9001 "your message"    # stream events as they arrive
-a2acli task get -u http://127.0.0.1:9001 <task-id>       # fetch a task
-a2acli task list -u http://127.0.0.1:9001                # list tasks
-a2acli task cancel -u http://127.0.0.1:9001 <task-id>    # cancel a task
+a2acli card -u http://127.0.0.1:9001                        # fetch and print the AgentCard
+a2acli send -u http://127.0.0.1:9001 "your message"          # one-shot message
+a2acli send --stream -u http://127.0.0.1:9001 "your message" # stream events as they arrive
+a2acli task get -u http://127.0.0.1:9001 <task-id>           # fetch a task
+a2acli task list -u http://127.0.0.1:9001                    # list tasks
+a2acli task cancel -u http://127.0.0.1:9001 <task-id>        # cancel a task
+a2acli task subscribe -u http://127.0.0.1:9001 <task-id>     # re-subscribe and stream an existing task
 ```
 
 Continue a multi-turn conversation with the `taskId`/`contextId` from a prior
@@ -45,7 +46,9 @@ is more readable for interactive use.
 See the [full command reference](https://github.com/kynoproj/a2acli#usage) for
 every flag — protocol selection (`--protocol jsonrpc|rest|grpc`), sending
 structured messages (`--json`, `--parts`, `-f/--file`), multi-tenant routing
-(`--tenant`), and request tracing (`-v/--verbose`).
+(`--tenant`), request tracing (`-v/--verbose`), bypassing AgentCard resolution
+with a direct `--endpoint`, and overriding the AgentCard's advertised host with
+`--override-host` (e.g. when you've port-forwarded an in-cluster agent locally).
 
 ## Debugging inside the cluster
 
@@ -54,7 +57,7 @@ inside the cluster instead. Its image is meant for exactly this:
 
 ```shell
 kubectl run a2acli-debug --rm -it --restart=Never \
-  --image=quay.io/kynoproj/a2acli:v0.1.3 \
+  --image=quay.io/kynoproj/a2acli:latest \
   --command -- bash
 # then, inside the pod:
 a2acli card -u https://my-agentset-worker.my-namespace.svc.cluster.local:8490 -k
@@ -63,7 +66,7 @@ a2acli card -u https://my-agentset-worker.my-namespace.svc.cluster.local:8490 -k
 Or as an ephemeral debug container against an existing pod:
 
 ```shell
-kubectl debug -it some-pod --image=quay.io/kynoproj/a2acli:v0.1.3 -- bash
+kubectl debug -it some-pod --image=quay.io/kynoproj/a2acli:latest -- bash
 ```
 
 ## See Also
