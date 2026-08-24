@@ -1205,12 +1205,13 @@ throughout these docs.</p>
 <p>Or via Go: <code>go install github.com/kynoproj/a2acli@latest</code>.</p>
 <h2 id="basic-usage">Basic usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
 <p>Every command targets an A2A server via <code>-u/--url</code>:</p>
-<div class="highlight"><pre><span></span><code>a2acli<span class="w"> </span>card<span class="w"> </span>-u<span class="w"> </span>http://127.0.0.1:9001<span class="w">                    </span><span class="c1"># fetch and print the AgentCard</span>
-a2acli<span class="w"> </span>send<span class="w"> </span>-u<span class="w"> </span>http://127.0.0.1:9001<span class="w"> </span><span class="s2">"your message"</span><span class="w">      </span><span class="c1"># one-shot message</span>
-a2acli<span class="w"> </span>stream<span class="w"> </span>-u<span class="w"> </span>http://127.0.0.1:9001<span class="w"> </span><span class="s2">"your message"</span><span class="w">    </span><span class="c1"># stream events as they arrive</span>
-a2acli<span class="w"> </span>task<span class="w"> </span>get<span class="w"> </span>-u<span class="w"> </span>http://127.0.0.1:9001<span class="w"> </span>&lt;task-id&gt;<span class="w">       </span><span class="c1"># fetch a task</span>
-a2acli<span class="w"> </span>task<span class="w"> </span>list<span class="w"> </span>-u<span class="w"> </span>http://127.0.0.1:9001<span class="w">                </span><span class="c1"># list tasks</span>
-a2acli<span class="w"> </span>task<span class="w"> </span>cancel<span class="w"> </span>-u<span class="w"> </span>http://127.0.0.1:9001<span class="w"> </span>&lt;task-id&gt;<span class="w">    </span><span class="c1"># cancel a task</span>
+<div class="highlight"><pre><span></span><code>a2acli<span class="w"> </span>card<span class="w"> </span>-u<span class="w"> </span>http://127.0.0.1:9001<span class="w">                        </span><span class="c1"># fetch and print the AgentCard</span>
+a2acli<span class="w"> </span>send<span class="w"> </span>-u<span class="w"> </span>http://127.0.0.1:9001<span class="w"> </span><span class="s2">"your message"</span><span class="w">          </span><span class="c1"># one-shot message</span>
+a2acli<span class="w"> </span>send<span class="w"> </span>--stream<span class="w"> </span>-u<span class="w"> </span>http://127.0.0.1:9001<span class="w"> </span><span class="s2">"your message"</span><span class="w"> </span><span class="c1"># stream events as they arrive</span>
+a2acli<span class="w"> </span>task<span class="w"> </span>get<span class="w"> </span>-u<span class="w"> </span>http://127.0.0.1:9001<span class="w"> </span>&lt;task-id&gt;<span class="w">           </span><span class="c1"># fetch a task</span>
+a2acli<span class="w"> </span>task<span class="w"> </span>list<span class="w"> </span>-u<span class="w"> </span>http://127.0.0.1:9001<span class="w">                    </span><span class="c1"># list tasks</span>
+a2acli<span class="w"> </span>task<span class="w"> </span>cancel<span class="w"> </span>-u<span class="w"> </span>http://127.0.0.1:9001<span class="w"> </span>&lt;task-id&gt;<span class="w">        </span><span class="c1"># cancel a task</span>
+a2acli<span class="w"> </span>task<span class="w"> </span>subscribe<span class="w"> </span>-u<span class="w"> </span>http://127.0.0.1:9001<span class="w"> </span>&lt;task-id&gt;<span class="w">     </span><span class="c1"># re-subscribe and stream an existing task</span>
 </code></pre></div>
 <p>Continue a multi-turn conversation with the <code>taskId</code>/<code>contextId</code> from a prior
 response:</p>
@@ -1222,18 +1223,20 @@ is more readable for interactive use.</p>
 <p>See the <a href="https://github.com/kynoproj/a2acli#usage">full command reference</a> for
 every flag — protocol selection (<code>--protocol jsonrpc|rest|grpc</code>), sending
 structured messages (<code>--json</code>, <code>--parts</code>, <code>-f/--file</code>), multi-tenant routing
-(<code>--tenant</code>), and request tracing (<code>-v/--verbose</code>).</p>
+(<code>--tenant</code>), request tracing (<code>-v/--verbose</code>), bypassing AgentCard resolution
+with a direct <code>--endpoint</code>, and overriding the AgentCard's advertised host with
+<code>--override-host</code> (e.g. when you've port-forwarded an in-cluster agent locally).</p>
 <h2 id="debugging-inside-the-cluster">Debugging inside the cluster<a class="headerlink" href="#debugging-inside-the-cluster" title="Permanent link">&para;</a></h2>
 <p>When you want to reach an agent's in-cluster address directly, run <code>a2acli</code> from
 inside the cluster instead. Its image is meant for exactly this:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>run<span class="w"> </span>a2acli-debug<span class="w"> </span>--rm<span class="w"> </span>-it<span class="w"> </span>--restart<span class="o">=</span>Never<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--image<span class="o">=</span>quay.io/kynoproj/a2acli:v0.1.3<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--image<span class="o">=</span>quay.io/kynoproj/a2acli:latest<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--command<span class="w"> </span>--<span class="w"> </span>bash
 <span class="c1"># then, inside the pod:</span>
 a2acli<span class="w"> </span>card<span class="w"> </span>-u<span class="w"> </span>https://my-agentset-worker.my-namespace.svc.cluster.local:8490<span class="w"> </span>-k
 </code></pre></div>
 <p>Or as an ephemeral debug container against an existing pod:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>debug<span class="w"> </span>-it<span class="w"> </span>some-pod<span class="w"> </span>--image<span class="o">=</span>quay.io/kynoproj/a2acli:v0.1.3<span class="w"> </span>--<span class="w"> </span>bash
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>debug<span class="w"> </span>-it<span class="w"> </span>some-pod<span class="w"> </span>--image<span class="o">=</span>quay.io/kynoproj/a2acli:latest<span class="w"> </span>--<span class="w"> </span>bash
 </code></pre></div>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
