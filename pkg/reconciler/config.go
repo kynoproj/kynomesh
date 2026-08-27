@@ -85,7 +85,7 @@ func LoadConfig(onErrorReloading func(error)) (*GlobalConfig, error) {
 	v := viper.New()
 	v.SetConfigName("controller-config")
 	v.SetConfigType("yaml")
-	v.AddConfigPath("/etc/numaflow")
+	v.AddConfigPath("/etc/kynomesh")
 	err := v.ReadInConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load configuration file. %w", err)
