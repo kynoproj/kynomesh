@@ -26,7 +26,7 @@ import (
 )
 
 // buildPodSpec composes the corev1.PodSpec from the AgentDeploy spec.
-func buildPodSpec(ad *kmv1.AgentDeploy, image string, imagePullPolicy corev1.PullPolicy) corev1.PodSpec {
+func buildPodSpec(ad *kmv1.AgentDeploy, image string, imagePullPolicy corev1.PullPolicy, defaultResources corev1.ResourceRequirements) corev1.PodSpec {
 	encodedAgentDeploy := kmv1.EncodeAgentDeploy(ad)
 
 	grace := kmv1.DefaultTerminationGracePeriodSeconds
@@ -34,7 +34,7 @@ func buildPodSpec(ad *kmv1.AgentDeploy, image string, imagePullPolicy corev1.Pul
 		grace = *ad.Spec.TerminationGracePeriodSeconds
 	}
 
-	containers := []corev1.Container{newBrokerContainer(image, imagePullPolicy, encodedAgentDeploy, ad.Spec.BrokerContainer, grace)}
+	containers := []corev1.Container{newBrokerContainer(image, imagePullPolicy, encodedAgentDeploy, ad.Spec.BrokerContainer, grace, defaultResources)}
 	containers = append(containers, ad.Spec.Sidecars...)
 
 	// init-runtime first, then the user's init containers, then agent last:
@@ -42,7 +42,7 @@ func buildPodSpec(ad *kmv1.AgentDeploy, image string, imagePullPolicy corev1.Pul
 	// completes, so anything meant to prepare state for it must run before
 	// it starts, not after.
 	initContainers := []corev1.Container{
-		newInitRuntimeContainer(image, imagePullPolicy, encodedAgentDeploy),
+		newInitRuntimeContainer(image, imagePullPolicy, encodedAgentDeploy, defaultResources),
 	}
 	initContainers = append(initContainers, ad.Spec.InitContainers...)
 	initContainers = append(initContainers, newAgentContainer(ad))
@@ -238,7 +238,7 @@ func mergeEnv(existing, overrides []corev1.EnvVar) []corev1.EnvVar {
 }
 
 // newBrokerContainer builds the broker sidecar.
-func newBrokerContainer(image string, pullPolicy corev1.PullPolicy, encodedAgentDeploy string, tmpl *kmv1.ContainerTemplate, graceSeconds int64) corev1.Container {
+func newBrokerContainer(image string, pullPolicy corev1.PullPolicy, encodedAgentDeploy string, tmpl *kmv1.ContainerTemplate, graceSeconds int64, defaultResources corev1.ResourceRequirements) corev1.Container {
 	c := corev1.Container{
 		Name:            kmv1.ContainerNameAgentBroker,
 		Image:           image,
@@ -272,6 +272,7 @@ func newBrokerContainer(image string, pullPolicy corev1.PullPolicy, encodedAgent
 	if tmpl != nil {
 		tmpl.ApplyToContainer(&c)
 	}
+	kmv1.ApplyDefaultResources(&c, defaultResources)
 	return c
 }
 
@@ -312,8 +313,8 @@ func brokerLivenessProbe() *corev1.Probe {
 }
 
 // newInitRuntimeContainer builds the init container that prepares /var/run/kynomesh.
-func newInitRuntimeContainer(image string, pullPolicy corev1.PullPolicy, encodedAgentDeploy string) corev1.Container {
-	return corev1.Container{
+func newInitRuntimeContainer(image string, pullPolicy corev1.PullPolicy, encodedAgentDeploy string, defaultResources corev1.ResourceRequirements) corev1.Container {
+	c := corev1.Container{
 		Name:            kmv1.ContainerNameInitRuntime,
 		Image:           image,
 		ImagePullPolicy: pullPolicy,
@@ -322,4 +323,6 @@ func newInitRuntimeContainer(image string, pullPolicy corev1.PullPolicy, encoded
 			{Name: kmv1.EnvAgentDeployObject, Value: encodedAgentDeploy},
 		},
 	}
+	kmv1.ApplyDefaultResources(&c, defaultResources)
+	return c
 }

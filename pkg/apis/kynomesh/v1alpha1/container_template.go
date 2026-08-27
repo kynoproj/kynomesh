@@ -60,6 +60,15 @@ func (ct *ContainerTemplate) ApplyToContainer(c *corev1.Container) {
 	}
 }
 
+// ApplyDefaultResources fills any resource key not already set on c.Resources
+// from defaults, key by key. Used to apply the controller-wide default
+// container resources (from kynomesh-controller-config) to a kynomesh-managed
+// container that the user's spec (or template) left unset.
+func ApplyDefaultResources(c *corev1.Container, defaults corev1.ResourceRequirements) {
+	c.Resources.Requests = mergeResourceDefaults(c.Resources.Requests, defaults.Requests)
+	c.Resources.Limits = mergeResourceDefaults(c.Resources.Limits, defaults.Limits)
+}
+
 // ApplyDefaultsFrom fills the receiver's unset fields from other, so other acts
 // as defaults that the receiver's own values override (fill-if-unset), field by
 // field.

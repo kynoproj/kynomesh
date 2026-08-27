@@ -82,7 +82,8 @@ nav:
       - Releases ⧉: "operations/releases.md"
       - operations/installation.md
       - Validating Webhook: operations/validating-webhook.md
-      - operations/metrics.md
+      - Configuration:
+          - operations/metrics.md
   - Contributor Guide:
       - development/development.md
       - Specifications:

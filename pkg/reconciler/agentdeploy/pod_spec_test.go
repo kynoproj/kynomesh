@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/ptr"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
@@ -33,7 +34,7 @@ func TestBuildPodSpec_BrokerIsFirstMainContainer(t *testing.T) {
 	// Main containers are [broker, ...user sidecars]. The agent lives
 	// in init containers as a K8s-native sidecar (restartPolicy=Always).
 	ad := newAgentDeploy("greeter", 1)
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 
 	require.GreaterOrEqual(t, len(ps.Containers), 1)
 	broker := ps.Containers[0]
@@ -60,8 +61,8 @@ func TestBuildPodSpec_BrokerIsFirstMainContainer(t *testing.T) {
 
 func TestBuildPodSpec_BrokerImageInHash(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
-	a := buildPodSpec(ad, "image-a", "")
-	b := buildPodSpec(ad, "image-b", "")
+	a := buildPodSpec(ad, "image-a", "", corev1.ResourceRequirements{})
+	b := buildPodSpec(ad, "image-b", "", corev1.ResourceRequirements{})
 	// Different broker images must produce different pod specs so the
 	// hash-based drift detector rolls pods when the controller is upgraded.
 	assert.NotEqual(t, a, b)
@@ -70,7 +71,7 @@ func TestBuildPodSpec_BrokerImageInHash(t *testing.T) {
 func TestBuildPodSpec_PreservesUserSidecarsAfterBroker(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 
 	require.Len(t, ps.Containers, 2)
 	assert.Equal(t, kmv1.ContainerNameAgentBroker, ps.Containers[0].Name)
@@ -79,7 +80,7 @@ func TestBuildPodSpec_PreservesUserSidecarsAfterBroker(t *testing.T) {
 
 func TestBuildPodSpec_AgentRunsAsSidecarInitContainer(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 
 	// Init containers: [init-runtime, agent (sidecar)] — agent is last since
 	// no user init containers were configured.
@@ -108,7 +109,7 @@ func TestBuildPodSpec_InjectsKynomeshRunVolume(t *testing.T) {
 	// memory, not on disk. Exactly one copy must appear; appearing
 	// multiple times would fail pod admission.
 	ad := newAgentDeploy("greeter", 1)
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 
 	var got *corev1.Volume
 	matches := 0
@@ -131,7 +132,7 @@ func TestBuildPodSpec_MountsKynomeshRunOnControllerOwnedContainersOnly(t *testin
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
 	ad.Spec.InitContainers = []corev1.Container{{Name: "init-1", Image: "busybox"}}
 
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 
 	checkMount := func(t *testing.T, mounts []corev1.VolumeMount, owner string) {
 		t.Helper()
@@ -176,7 +177,7 @@ func TestBuildPodSpec_CommonEnvOnUserContainers(t *testing.T) {
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
 	ad.Spec.InitContainers = []corev1.Container{{Name: "user-init", Image: "busybox"}}
 
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 
 	sidecar := ps.Containers[1]
 	require.Equal(t, "user-sidecar", sidecar.Name)
@@ -205,7 +206,7 @@ func TestBuildPodSpec_CommonEnvWinsOverUserEnvInUserContainers(t *testing.T) {
 		Env:   []corev1.EnvVar{{Name: kmv1.EnvAgentSetName, Value: "user-override"}},
 	}}
 
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 	sidecar := ps.Containers[1]
 
 	e := findEnv(sidecar.Env, kmv1.EnvAgentSetName)
@@ -229,7 +230,7 @@ func TestBuildPodSpec_InitContainerOrder(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.InitContainers = []corev1.Container{{Name: "user-init", Image: "busybox"}}
 
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 	require.Len(t, ps.InitContainers, 3)
 
 	initRuntime := ps.InitContainers[0]
@@ -256,7 +257,7 @@ func TestBuildPodSpec_PreservesUserVolumesAlongsideKynomeshRun(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Volumes = []corev1.Volume{userVol}
 
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 
 	names := make(map[string]int, len(ps.Volumes))
 	for _, v := range ps.Volumes {
@@ -290,7 +291,7 @@ func brokerFromSpec(t *testing.T, ps corev1.PodSpec) corev1.Container {
 
 func TestBuildPodSpec_BrokerCarriesEncodedAgentDeployEnv(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 
 	broker := brokerFromSpec(t, ps)
 	env := findEnv(broker.Env, kmv1.EnvAgentDeployObject)
@@ -310,7 +311,7 @@ func TestBuildPodSpec_AgentDeployEnvOnlyOnBrokerAndInit(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
 	ad.Spec.InitContainers = []corev1.Container{{Name: "user-init", Image: "busybox"}}
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 
 	for i, c := range ps.Containers {
 		got := findEnv(c.Env, kmv1.EnvAgentDeployObject)
@@ -335,8 +336,8 @@ func TestBuildPodSpec_AgentNameChangeFlowsIntoBrokerEnv(t *testing.T) {
 	b := newAgentDeploy("greeter", 1)
 	b.Spec.Name = "renamed"
 
-	envA := findEnv(brokerFromSpec(t, buildPodSpec(a, testBrokerImage, "")).Env, kmv1.EnvAgentDeployObject)
-	envB := findEnv(brokerFromSpec(t, buildPodSpec(b, testBrokerImage, "")).Env, kmv1.EnvAgentDeployObject)
+	envA := findEnv(brokerFromSpec(t, buildPodSpec(a, testBrokerImage, "", corev1.ResourceRequirements{})).Env, kmv1.EnvAgentDeployObject)
+	envB := findEnv(brokerFromSpec(t, buildPodSpec(b, testBrokerImage, "", corev1.ResourceRequirements{})).Env, kmv1.EnvAgentDeployObject)
 	require.NotNil(t, envA)
 	require.NotNil(t, envB)
 	assert.NotEqual(t, envA.Value, envB.Value)
@@ -347,8 +348,8 @@ func TestBuildPodSpec_ReplicasChangeDoesNotAffectBrokerEnv(t *testing.T) {
 	b := newAgentDeploy("greeter", 1)
 	b.Spec.Replicas = ptr.To[int32](5)
 
-	envA := findEnv(brokerFromSpec(t, buildPodSpec(a, testBrokerImage, "")).Env, kmv1.EnvAgentDeployObject)
-	envB := findEnv(brokerFromSpec(t, buildPodSpec(b, testBrokerImage, "")).Env, kmv1.EnvAgentDeployObject)
+	envA := findEnv(brokerFromSpec(t, buildPodSpec(a, testBrokerImage, "", corev1.ResourceRequirements{})).Env, kmv1.EnvAgentDeployObject)
+	envB := findEnv(brokerFromSpec(t, buildPodSpec(b, testBrokerImage, "", corev1.ResourceRequirements{})).Env, kmv1.EnvAgentDeployObject)
 	require.NotNil(t, envA)
 	require.NotNil(t, envB)
 	assert.Equal(t, envA.Value, envB.Value)
@@ -357,7 +358,7 @@ func TestBuildPodSpec_ReplicasChangeDoesNotAffectBrokerEnv(t *testing.T) {
 func TestBuildPodSpec_InjectsDownwardAPIEnv(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 
 	check := func(t *testing.T, c corev1.Container) {
 		t.Helper()
@@ -389,7 +390,7 @@ func TestBuildPodSpec_BuiltinEnvWinsOnConflict(t *testing.T) {
 	ad.Spec.Container = &kmv1.Container{
 		Env: []corev1.EnvVar{{Name: kmv1.EnvNamespace, Value: "user-override"}},
 	}
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 
 	// Agent is the sidecar in init containers — find it by name.
 	var agent corev1.Container
@@ -435,7 +436,7 @@ func TestBuildPodSpec_AgentProjectsContainerFields(t *testing.T) {
 		Ports:           []corev1.ContainerPort{{Name: "user", ContainerPort: 7000}},
 	}
 
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 
 	agent := initContainerByName(ps, kmv1.ContainerNameAgent)
 	require.Equal(t, kmv1.ContainerNameAgent, agent.Name)
@@ -462,7 +463,7 @@ func TestBuildPodSpec_AgentProbes(t *testing.T) {
 		ad := newAgentDeploy("greeter", 1)
 		ad.Spec.Container = &kmv1.Container{Image: "user/agent:v1"}
 
-		agent := initContainerByName(buildPodSpec(ad, testBrokerImage, ""), kmv1.ContainerNameAgent)
+		agent := initContainerByName(buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{}), kmv1.ContainerNameAgent)
 
 		require.NotNil(t, agent.ReadinessProbe)
 		require.NotNil(t, agent.ReadinessProbe.Exec)
@@ -497,7 +498,7 @@ func TestBuildPodSpec_AgentProbes(t *testing.T) {
 			},
 		}
 
-		agent := initContainerByName(buildPodSpec(ad, testBrokerImage, ""), kmv1.ContainerNameAgent)
+		agent := initContainerByName(buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{}), kmv1.ContainerNameAgent)
 
 		require.NotNil(t, agent.ReadinessProbe)
 		require.NotNil(t, agent.ReadinessProbe.Exec)
@@ -532,7 +533,7 @@ func TestBuildPodSpec_BrokerProbes(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.Container = &kmv1.Container{Image: "user/agent:v1"}
 
-	broker := buildPodSpec(ad, testBrokerImage, "").Containers[0]
+	broker := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{}).Containers[0]
 	require.Equal(t, kmv1.ContainerNameAgentBroker, broker.Name)
 
 	require.NotNil(t, broker.ReadinessProbe)
@@ -563,7 +564,7 @@ func TestBuildPodSpec_BrokerContainerPreservesProbes(t *testing.T) {
 	ad.Spec.Container = &kmv1.Container{Image: "user/agent:v1"}
 	ad.Spec.BrokerContainer = &kmv1.ContainerTemplate{ImagePullPolicy: corev1.PullIfNotPresent}
 
-	broker := buildPodSpec(ad, testBrokerImage, "").Containers[0]
+	broker := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{}).Containers[0]
 
 	require.NotNil(t, broker.ReadinessProbe, "BrokerContainer must not clobber controller-owned probes")
 	require.NotNil(t, broker.ReadinessProbe.HTTPGet)
@@ -573,7 +574,7 @@ func TestBuildPodSpec_BrokerContainerPreservesProbes(t *testing.T) {
 
 func TestBuildPodSpec_BrokerPreStopDrain(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
-	broker := buildPodSpec(ad, testBrokerImage, "").Containers[0]
+	broker := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{}).Containers[0]
 
 	require.NotNil(t, broker.Lifecycle, "broker needs a preStop drain hook")
 	require.NotNil(t, broker.Lifecycle.PreStop)
@@ -584,7 +585,7 @@ func TestBuildPodSpec_BrokerPreStopDrain(t *testing.T) {
 func TestBuildPodSpec_TerminationGracePeriod(t *testing.T) {
 	t.Run("defaults when unset", func(t *testing.T) {
 		ad := newAgentDeploy("greeter", 1)
-		ps := buildPodSpec(ad, testBrokerImage, "")
+		ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 		require.NotNil(t, ps.TerminationGracePeriodSeconds, "grace period must be defaulted for agentic drains")
 		assert.Equal(t, kmv1.DefaultTerminationGracePeriodSeconds, *ps.TerminationGracePeriodSeconds)
 	})
@@ -593,7 +594,7 @@ func TestBuildPodSpec_TerminationGracePeriod(t *testing.T) {
 		ad := newAgentDeploy("greeter", 1)
 		custom := int64(300)
 		ad.Spec.TerminationGracePeriodSeconds = &custom
-		ps := buildPodSpec(ad, testBrokerImage, "")
+		ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 		require.NotNil(t, ps.TerminationGracePeriodSeconds)
 		assert.Equal(t, custom, *ps.TerminationGracePeriodSeconds, "a user-set grace period must win over the default")
 	})
@@ -601,7 +602,7 @@ func TestBuildPodSpec_TerminationGracePeriod(t *testing.T) {
 
 func TestBuildPodSpec_BrokerGraceEnvInjected(t *testing.T) {
 	brokerGraceEnv := func(ad *kmv1.AgentDeploy) string {
-		broker := buildPodSpec(ad, testBrokerImage, "").Containers[0]
+		broker := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{}).Containers[0]
 		for _, e := range broker.Env {
 			if e.Name == kmv1.EnvTerminationGraceSeconds {
 				return e.Value
@@ -633,7 +634,7 @@ func TestBuildPodSpec_BrokerContainerAppliedAfterDefaults(t *testing.T) {
 		Env:             []corev1.EnvVar{{Name: "BROKER_DEBUG", Value: "1"}},
 	}
 
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 	broker := brokerFromSpec(t, ps)
 
 	// User-supplied tuning was applied...
@@ -662,7 +663,7 @@ func TestBuildPodSpec_StampsBrokerPullPolicyOnControllerOwnedContainers(t *testi
 	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
 	ad.Spec.InitContainers = []corev1.Container{{Name: "user-init", Image: "busybox"}}
 
-	ps := buildPodSpec(ad, testBrokerImage, corev1.PullAlways)
+	ps := buildPodSpec(ad, testBrokerImage, corev1.PullAlways, corev1.ResourceRequirements{})
 
 	broker := brokerFromSpec(t, ps)
 	assert.Equal(t, corev1.PullAlways, broker.ImagePullPolicy, "broker must carry the configured pull policy")
@@ -684,9 +685,49 @@ func TestBuildPodSpec_StampsBrokerPullPolicyOnControllerOwnedContainers(t *testi
 	}
 }
 
+func TestBuildPodSpec_DefaultResourcesAppliedToControllerOwnedContainersOnly(t *testing.T) {
+	defaults := corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{"cpu": resource.MustParse("100m"), "memory": resource.MustParse("128Mi")},
+	}
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.Sidecars = []corev1.Container{{Name: "user-sidecar", Image: "busybox"}}
+	ad.Spec.InitContainers = []corev1.Container{{Name: "user-init", Image: "busybox"}}
+
+	ps := buildPodSpec(ad, testBrokerImage, "", defaults)
+
+	broker := brokerFromSpec(t, ps)
+	assert.Equal(t, defaults.Requests, broker.Resources.Requests, "broker must receive the default resources when unset")
+
+	initRuntime := initContainerByName(ps, kmv1.ContainerNameInitRuntime)
+	assert.Equal(t, defaults.Requests, initRuntime.Resources.Requests, "init-runtime must receive the default resources when unset")
+
+	sidecar := ps.Containers[1]
+	require.Equal(t, "user-sidecar", sidecar.Name)
+	assert.Empty(t, sidecar.Resources.Requests, "user sidecars must not receive the controller's default resources")
+
+	userInit := ps.InitContainers[1]
+	require.Equal(t, "user-init", userInit.Name)
+	assert.Empty(t, userInit.Resources.Requests, "user init containers must not receive the controller's default resources")
+}
+
+func TestBuildPodSpec_ExplicitBrokerResourcesWinOverDefaults(t *testing.T) {
+	defaults := corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{"cpu": resource.MustParse("100m")},
+	}
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.BrokerContainer = &kmv1.ContainerTemplate{
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{"cpu": resource.MustParse("500m")},
+		},
+	}
+
+	broker := buildPodSpec(ad, testBrokerImage, "", defaults).Containers[0]
+	assert.Equal(t, resource.MustParse("500m"), broker.Resources.Requests["cpu"], "explicit brokerContainer.resources must win over the controller default")
+}
+
 func TestBuildPodSpec_EmptyBrokerPullPolicyLeavesFieldUnset(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
-	ps := buildPodSpec(ad, testBrokerImage, "")
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 
 	broker := brokerFromSpec(t, ps)
 	assert.Empty(t, broker.ImagePullPolicy, "empty pull policy must leave kubelet default in effect")

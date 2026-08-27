@@ -79,7 +79,7 @@ func newTestReconciler(t *testing.T, objs ...client.Object) (*Reconciler, client
 		WithObjects(objs...).
 		WithStatusSubresource(&kmv1.AgentDeploy{}).
 		Build()
-	r := NewReconciler(c, scheme, nil, &events.FakeRecorder{}, testBrokerImage, "", nil)
+	r := NewReconciler(c, scheme, nil, nil, &events.FakeRecorder{}, testBrokerImage, "", nil)
 	return r, c
 }
 

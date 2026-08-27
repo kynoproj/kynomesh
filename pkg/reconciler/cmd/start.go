@@ -44,6 +44,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
+	"github.com/kynoproj/kynomesh/pkg/reconciler"
 	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy"
 	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling"
 	"github.com/kynoproj/kynomesh/pkg/reconciler/agentset"
@@ -92,6 +93,13 @@ func Start(namespaced bool, managedNamespace string) {
 		"goVersion", v.GoVersion,
 		"platform", v.Platform,
 	)
+
+	config, err := reconciler.LoadConfig(func(err error) {
+		logger.Errorw("Failed to reload global configuration file", zap.Error(err))
+	})
+	if err != nil {
+		logger.Fatalw("Failed to load global configuration file", zap.Error(err))
+	}
 
 	leaseDuration, renewDeadline, retryPeriod, err := resolveLeaderElectionTimings()
 	if err != nil {
@@ -142,7 +150,7 @@ func Start(namespaced bool, managedNamespace string) {
 		logger.Fatalw("Failed to register liveness check", zap.Error(err))
 	}
 
-	if err := registerAgentSetController(mgr, logger, image, brokerPullPolicy); err != nil {
+	if err := registerAgentSetController(mgr, config, logger, image, brokerPullPolicy); err != nil {
 		logger.Fatalw("Failed to register AgentSet controller", "err", err)
 	}
 
@@ -155,7 +163,7 @@ func Start(namespaced bool, managedNamespace string) {
 	autoscaler := scaling.NewAutoscaler(mgr.GetClient(), scalingWatch, scalingRegistry,
 		logger.Named("autoscaler"), scaling.WithAutoscalerMetrics(scalingMetrics))
 
-	if err := registerAgentDeployController(mgr, logger, image, brokerPullPolicy, scalingWatch); err != nil {
+	if err := registerAgentDeployController(mgr, config, logger, image, brokerPullPolicy, scalingWatch); err != nil {
 		logger.Fatalw("Failed to register AgentDeploy controller", zap.Error(err))
 	}
 	if err := mgr.Add(LeaderElectionRunner(sampler.Start)); err != nil {
@@ -249,10 +257,11 @@ func resolveBrokerPullPolicy() (corev1.PullPolicy, error) {
 //
 //   - Service (owned): enqueue the controlling AgentSet if the entry service
 //     is mutated or deleted out from under us.
-func registerAgentSetController(mgr manager.Manager, logger *zap.SugaredLogger, brokerImage string, brokerPullPolicy corev1.PullPolicy) error {
+func registerAgentSetController(mgr manager.Manager, config *reconciler.GlobalConfig, logger *zap.SugaredLogger, brokerImage string, brokerPullPolicy corev1.PullPolicy) error {
 	r := agentset.NewReconciler(
 		mgr.GetClient(),
 		mgr.GetScheme(),
+		config,
 		logger.Named(kmv1.ControllerAgentSet),
 		mgr.GetEventRecorder(kmv1.ControllerAgentSet),
 		brokerImage,
@@ -324,10 +333,11 @@ func registerAgentSetController(mgr manager.Manager, logger *zap.SugaredLogger, 
 //
 //   - Service (owned): enqueue the controlling AgentDeploy if the headless
 //     service is mutated or deleted out from under us.
-func registerAgentDeployController(mgr manager.Manager, logger *zap.SugaredLogger, brokerImage string, brokerPullPolicy corev1.PullPolicy, watch *scaling.WatchSet) error {
+func registerAgentDeployController(mgr manager.Manager, config *reconciler.GlobalConfig, logger *zap.SugaredLogger, brokerImage string, brokerPullPolicy corev1.PullPolicy, watch *scaling.WatchSet) error {
 	r := agentdeploy.NewReconciler(
 		mgr.GetClient(),
 		mgr.GetScheme(),
+		config,
 		logger.Named(kmv1.ControllerAgentDeploy),
 		mgr.GetEventRecorder(kmv1.ControllerAgentDeploy),
 		brokerImage,

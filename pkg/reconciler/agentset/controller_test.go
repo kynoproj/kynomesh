@@ -81,7 +81,7 @@ func newTestReconciler(t *testing.T, objs ...client.Object) (*Reconciler, client
 		WithObjects(objs...).
 		WithStatusSubresource(&kmv1.AgentSet{}, &kmv1.AgentDeploy{}).
 		Build()
-	r := NewReconciler(c, scheme, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	r := NewReconciler(c, scheme, nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	return r, c
 }
 
@@ -166,7 +166,7 @@ func TestReconcile_DeletesOrphans(t *testing.T) {
 
 func TestReconcile_UpdatesDriftedChild(t *testing.T) {
 	as := newAgentSet("greeter", "alpha")
-	r0 := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	r0 := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	desired, err := r0.buildDesired(as)
 	require.NoError(t, err)
 	stale := desired["greeter-alpha"].DeepCopy()
@@ -188,7 +188,7 @@ func TestReconcile_DeletionTimestampIsNoop(t *testing.T) {
 	as.DeletionTimestamp = &now
 	as.Finalizers = []string{"placeholder"}
 
-	r0 := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	r0 := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	desired, err := r0.buildDesired(as)
 	require.NoError(t, err)
 	child := desired["greeter-alpha"].DeepCopy()

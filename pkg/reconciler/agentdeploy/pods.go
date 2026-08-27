@@ -55,7 +55,7 @@ func (r *Reconciler) reconcilePods(ctx context.Context, ad *kmv1.AgentDeploy) er
 	}
 	ad.Status.DesiredReplicas = uint32(desired)
 
-	desiredPodSpec := buildPodSpec(ad, r.image, r.imagePullPolicy)
+	desiredPodSpec := buildPodSpec(ad, r.image, r.imagePullPolicy, r.config.GetDefaults().GetDefaultContainerResources())
 	desiredHash := sharedutil.MustHash(desiredPodSpec)
 
 	// Detect a spec change: reset the rollout cursor so a mid-rollout
