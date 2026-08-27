@@ -182,7 +182,7 @@ func newDaemonContainer(image string, pullPolicy corev1.PullPolicy, as *kmv1.Age
 	if tmpl != nil {
 		tmpl.ApplyToContainer(&c)
 	}
-	kmv1.ApplyDefaultResources(&c, defaultResources)
+	kmv1.ApplyDefaultResourcesIfMissing(&c, defaultResources)
 	return c
 }
 

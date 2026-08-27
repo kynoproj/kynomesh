@@ -272,7 +272,7 @@ func newBrokerContainer(image string, pullPolicy corev1.PullPolicy, encodedAgent
 	if tmpl != nil {
 		tmpl.ApplyToContainer(&c)
 	}
-	kmv1.ApplyDefaultResources(&c, defaultResources)
+	kmv1.ApplyDefaultResourcesIfMissing(&c, defaultResources)
 	return c
 }
 
@@ -323,6 +323,6 @@ func newInitRuntimeContainer(image string, pullPolicy corev1.PullPolicy, encoded
 			{Name: kmv1.EnvAgentDeployObject, Value: encodedAgentDeploy},
 		},
 	}
-	kmv1.ApplyDefaultResources(&c, defaultResources)
+	kmv1.ApplyDefaultResourcesIfMissing(&c, defaultResources)
 	return c
 }

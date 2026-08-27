@@ -725,6 +725,26 @@ func TestBuildPodSpec_ExplicitBrokerResourcesWinOverDefaults(t *testing.T) {
 	assert.Equal(t, resource.MustParse("500m"), broker.Resources.Requests["cpu"], "explicit brokerContainer.resources must win over the controller default")
 }
 
+func TestBuildPodSpec_BrokerContainerResourcesNotMergedWithDefaults(t *testing.T) {
+	// The controller default sets a cpu request; brokerContainer only sets a
+	// memory limit. All-or-nothing means the default's cpu request must NOT
+	// be merged in alongside the user's memory limit.
+	defaults := corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{"cpu": resource.MustParse("100m")},
+		Limits:   corev1.ResourceList{"memory": resource.MustParse("100Mi")},
+	}
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.BrokerContainer = &kmv1.ContainerTemplate{
+		Resources: corev1.ResourceRequirements{
+			Limits: corev1.ResourceList{"memory": resource.MustParse("200Mi")},
+		},
+	}
+
+	broker := buildPodSpec(ad, testBrokerImage, "", defaults).Containers[0]
+	assert.Equal(t, resource.MustParse("200Mi"), broker.Resources.Limits["memory"], "user-set limit must be preserved")
+	assert.Empty(t, broker.Resources.Requests, "default requests must not be merged in when the container already set any resource")
+}
+
 func TestBuildPodSpec_EmptyBrokerPullPolicyLeavesFieldUnset(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
