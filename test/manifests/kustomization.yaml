@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - ../../config/cluster-install
+  - ../../config/extensions/webhook
 
 patches:
   - patch: |-
@@ -22,6 +23,13 @@ patches:
     target:
       kind: Deployment
       name: kynomesh-controller
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
+    target:
+      kind: Deployment
+      name: kynomesh-webhook
   - patch: |
       apiVersion: v1
       kind: ConfigMap
