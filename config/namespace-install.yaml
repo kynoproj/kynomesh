@@ -8878,6 +8878,7 @@ kind: ServiceAccount
 metadata:
   name: kynomesh-sa
 ---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   labels:
@@ -8885,7 +8886,6 @@ metadata:
     app.kubernetes.io/name: kynomesh-controller-manager
     app.kubernetes.io/part-of: kynomesh
   name: kynomesh-role
-piVersion: rbac.authorization.k8s.io/v1
 rules:
 - apiGroups:
   - kynomesh.kyno.sh

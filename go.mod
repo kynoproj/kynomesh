@@ -7,6 +7,7 @@ require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/gavv/httpexpect/v2 v2.17.0
 	github.com/go-logr/zapr v1.3.0
+	github.com/go-openapi/inflect v1.0.0
 	github.com/go-swagger/go-swagger v0.36.4
 	github.com/gogo/protobuf v1.3.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.30.0
@@ -56,7 +57,6 @@ require (
 	github.com/go-openapi/analysis v0.26.0 // indirect
 	github.com/go-openapi/codescan v0.36.3 // indirect
 	github.com/go-openapi/errors v0.22.8 // indirect
-	github.com/go-openapi/inflect v1.0.0 // indirect
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
 	github.com/go-openapi/jsonreference v1.0.0 // indirect
 	github.com/go-openapi/loads v0.25.1 // indirect

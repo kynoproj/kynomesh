@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kynomesh-webhook
+spec:
+  ports:
+    - port: 443
+      targetPort: 443
+  selector:
+    app.kubernetes.io/name: kynomesh-webhook
+    app.kubernetes.io/part-of: kynomesh
+    app.kubernetes.io/component: kynomesh-webhook

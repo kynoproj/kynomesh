@@ -18,27 +18,17 @@ package commands
 
 import (
 	"github.com/spf13/cobra"
+
+	webhookcmd "github.com/kynoproj/kynomesh/pkg/webhook/cmd"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "kynomesh",
-	Short: "Kynomesh CLI",
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.HelpFunc()(cmd, args)
-	},
-}
-
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		panic(err)
+func NewWebhookCommand() *cobra.Command {
+	command := &cobra.Command{
+		Use:   "webhook",
+		Short: "Start the kynomesh validating admission webhook",
+		Run: func(cmd *cobra.Command, args []string) {
+			webhookcmd.Start()
+		},
 	}
-}
-
-func init() {
-	rootCmd.AddCommand(NewControllerCommand())
-	rootCmd.AddCommand(NewBrokerCommand())
-	rootCmd.AddCommand(NewDrainCommand())
-	rootCmd.AddCommand(NewDaemonCommand())
-	rootCmd.AddCommand(NewInitRuntimeCommand())
-	rootCmd.AddCommand(NewWebhookCommand())
+	return command
 }

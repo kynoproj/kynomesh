@@ -217,6 +217,7 @@ manifests: crds
 	kubectl kustomize config/namespace-install > config/namespace-install.yaml
 	kubectl kustomize config/advanced-install/namespaced-controller > config/advanced-install/namespaced-controller-wo-crds.yaml
 	kubectl kustomize config/advanced-install/minimal-crds > config/advanced-install/minimal-crds.yaml
+	kubectl kustomize config/extensions/webhook > config/validating-webhook-install.yaml
 
 $(GOPATH)/bin/golangci-lint:
 	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GOPATH)/bin v2.12.2
@@ -324,5 +325,9 @@ update-manifests-version:
 	mv /tmp/tmp_kustomization.yaml config/base/kustomization.yaml
 	cat config/advanced-install/namespaced-controller/kustomization.yaml | sed 's/newTag: .*/newTag: $(VERSION)/' | sed 's@value: quay.io/kynoproj/kynomesh:.*@value: quay.io/kynoproj/kynomesh:$(VERSION)@' > /tmp/tmp_kustomization.yaml
 	mv /tmp/tmp_kustomization.yaml config/advanced-install/namespaced-controller/kustomization.yaml
+	cat Makefile | sed 's/^VERSION?=.*/VERSION?=$(VERSION)/' | sed 's/^BASE_VERSION:=.*/BASE_VERSION:=$(VERSION)/' > /tmp/km_makefile
+	mv /tmp/km_makefile Makefile
+	cat config/extensions/webhook/kustomization.yaml | sed 's/newTag: .*/newTag: $(VERSION)/' | sed 's@value: quay.io/kynoproj/kynomesh:.*@value: quay.io/kynoproj/kynomesh:$(VERSION)@' > /tmp/tmp_kustomization.yaml
+	mv /tmp/tmp_kustomization.yaml config/extensions/webhook/kustomization.yaml
 	cat Makefile | sed 's/^VERSION?=.*/VERSION?=$(VERSION)/' | sed 's/^BASE_VERSION:=.*/BASE_VERSION:=$(VERSION)/' > /tmp/km_makefile
 	mv /tmp/km_makefile Makefile

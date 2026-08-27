@@ -63,6 +63,33 @@ func TestRootCmd_HasDrainSubcommand(t *testing.T) {
 	assert.True(t, found, "expected 'drain' subcommand to be registered on rootCmd")
 }
 
+func TestRootCmd_HasWebhookSubcommand(t *testing.T) {
+	var found bool
+	for _, sub := range rootCmd.Commands() {
+		if sub.Use == "webhook" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected 'webhook' subcommand to be registered on rootCmd")
+}
+
+func TestNewWebhookCommand_Metadata(t *testing.T) {
+	c := NewWebhookCommand()
+	require.NotNil(t, c)
+	assert.Equal(t, "webhook", c.Use)
+	assert.Equal(t, "Start the kynomesh validating admission webhook", c.Short)
+	assert.NotNil(t, c.Run, "webhook command should have a Run handler")
+}
+
+func TestNewWebhookCommand_ReturnsFreshInstance(t *testing.T) {
+	a := NewWebhookCommand()
+	b := NewWebhookCommand()
+	require.NotNil(t, a)
+	require.NotNil(t, b)
+	assert.NotSame(t, a, b, "each call should return a fresh *cobra.Command")
+}
+
 func TestNewDrainCommand_Metadata(t *testing.T) {
 	c := NewDrainCommand()
 	require.NotNil(t, c)

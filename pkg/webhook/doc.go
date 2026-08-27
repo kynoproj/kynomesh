@@ -14,31 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package commands
-
-import (
-	"github.com/spf13/cobra"
-)
-
-var rootCmd = &cobra.Command{
-	Use:   "kynomesh",
-	Short: "Kynomesh CLI",
-	Run: func(cmd *cobra.Command, args []string) {
-		cmd.HelpFunc()(cmd, args)
-	},
-}
-
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		panic(err)
-	}
-}
-
-func init() {
-	rootCmd.AddCommand(NewControllerCommand())
-	rootCmd.AddCommand(NewBrokerCommand())
-	rootCmd.AddCommand(NewDrainCommand())
-	rootCmd.AddCommand(NewDaemonCommand())
-	rootCmd.AddCommand(NewInitRuntimeCommand())
-	rootCmd.AddCommand(NewWebhookCommand())
-}
+// Package webhook is used for the validating admission webhook.
+package webhook
