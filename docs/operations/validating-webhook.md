@@ -1,10 +1,11 @@
 # Validating Admission Webhook
 
-This validating webhook rejects faulty `AgentSet` specs such as bad `pattern`,
-duplicate agent names, a reserved name collision, a malformed external-agent
-URL, etc. Instead of the object being persisted and only failing later during
-reconciliation, the API server rejects it immediately and `kubectl apply`
-returns the validation error right away.
+This validating webhook rejects faulty `AgentSet` specs such as duplicate agent
+names, a reserved name collision, a malformed external-agent URL, etc. — the
+cross-field rules the CRD's OpenAPI schema can't express on its own. Instead of
+the object being persisted and only failing later during reconciliation, the API
+server rejects it immediately and `kubectl apply` returns the validation error
+right away.
 
 ## Installation
 
@@ -16,7 +17,13 @@ kubectl apply -n kynomesh-system -f https://raw.githubusercontent.com/kynoproj/k
 
 ## Examples
 
-Given an `AgentSet` with an unsupported pattern:
+Note that some fields, such as `spec.pattern`'s allowed values and
+`spec.agents[].container` being required, are already enforced by the CRD's
+OpenAPI schema — the API server rejects those before any admission webhook runs,
+with a `"... is invalid"` style error. The validating webhook catches everything
+the schema can't express.
+
+For example, given an `AgentSet` with a duplicate agent name:
 
 ```yaml
 apiVersion: kynomesh.kyno.sh/v1alpha1
@@ -24,16 +31,19 @@ kind: AgentSet
 metadata:
   name: research-assistant
 spec:
-  pattern: Freeform # not a valid pattern
+  pattern: Supervisor
   entry: researcher
   agents:
     - name: researcher
+      container:
+        image: quay.io/kynoproj/research-assistant:latest
+    - name: researcher # duplicate
+      container:
+        image: quay.io/kynoproj/research-assistant:latest
 ```
 
 ```shell
-The AgentSet "research-assistant" is invalid:
-* spec.pattern: Unsupported value: "Freeform": supported values: "Supervisor", "Handoff", "Sequential"
-* spec.agents[0].container: Required value
+Error from server (BadRequest): error when creating "agentset.yaml": admission webhook "webhook.kynomesh.kyno.sh" denied the request: duplicate agent name "researcher"
 ```
 
 Other validations include:
