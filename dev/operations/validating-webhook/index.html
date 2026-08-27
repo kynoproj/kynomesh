@@ -8,19 +8,19 @@
       
       
       
-      <link rel="icon" href="../../../../assets/kyno04.svg">
+      <link rel="icon" href="../../assets/kyno04.svg">
       <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.3.9">
     
     
       
-        <title>Running On Istio - Kynomesh - Distributed multi-agent orchestration</title>
+        <title>Validating Webhook - Kynomesh - Distributed multi-agent orchestration</title>
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.1d29e8d0.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.1d29e8d0.min.css">
       
         
-        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.cbb835fc.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
         
       
       
@@ -36,9 +36,9 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/extra.css">
+      <link rel="stylesheet" href="../../assets/extra.css">
     
-    <script>__md_scope=new URL("../../../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
   
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#running-on-istio" class="md-skip">
+        <a href="#validating-admission-webhook" class="md-skip">
           Skip to content
         </a>
       
@@ -98,9 +98,9 @@
 
 <header class="md-header md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../../.." title="Kynomesh - Distributed multi-agent orchestration" class="md-header__button md-logo" aria-label="Kynomesh - Distributed multi-agent orchestration" data-md-component="logo">
+    <a href="../.." title="Kynomesh - Distributed multi-agent orchestration" class="md-header__button md-logo" aria-label="Kynomesh - Distributed multi-agent orchestration" data-md-component="logo">
       
-  <img src="../../../../assets/kyno04-white.svg" alt="logo">
+  <img src="../../assets/kyno04-white.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Running On Istio
+              Validating Webhook
             
           </span>
         </div>
@@ -207,7 +207,7 @@
 
 
   <li class="md-tabs__item">
-    <a href="../../../.." class="md-tabs__link">
+    <a href="../.." class="md-tabs__link">
       Home
     </a>
   </li>
@@ -222,7 +222,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../quick-start/" class="md-tabs__link">
+      <a href="../../quick-start/" class="md-tabs__link">
         Getting Started
       </a>
     </li>
@@ -231,8 +231,6 @@
       
         
   
-  
-    
   
 
 
@@ -245,7 +243,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../core-concepts/overview/" class="md-tabs__link md-tabs__link--active">
+      <a href="../../core-concepts/overview/" class="md-tabs__link">
         User Guide
       </a>
     </li>
@@ -257,13 +255,15 @@
         
   
   
+    
+  
 
 
   
   
   
     <li class="md-tabs__item">
-      <a href="../../../../operations/releases/" class="md-tabs__link">
+      <a href="../releases/" class="md-tabs__link md-tabs__link--active">
         Operator Manual
       </a>
     </li>
@@ -279,7 +279,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../development/development/" class="md-tabs__link">
+      <a href="../../development/development/" class="md-tabs__link">
         Contributor Guide
       </a>
     </li>
@@ -313,9 +313,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../../.." title="Kynomesh - Distributed multi-agent orchestration" class="md-nav__button md-logo" aria-label="Kynomesh - Distributed multi-agent orchestration" data-md-component="logo">
+    <a href="../.." title="Kynomesh - Distributed multi-agent orchestration" class="md-nav__button md-logo" aria-label="Kynomesh - Distributed multi-agent orchestration" data-md-component="logo">
       
-  <img src="../../../../assets/kyno04-white.svg" alt="logo">
+  <img src="../../assets/kyno04-white.svg" alt="logo">
 
     </a>
     Kynomesh - Distributed multi-agent orchestration
@@ -343,7 +343,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         Home
       </a>
     </li>
@@ -384,7 +384,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../quick-start/" class="md-nav__link">
+      <a href="../../quick-start/" class="md-nav__link">
         Quick Start
       </a>
     </li>
@@ -404,14 +404,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
       
       
       
@@ -460,7 +458,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../core-concepts/overview/" class="md-nav__link">
+      <a href="../../core-concepts/overview/" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -474,7 +472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../core-concepts/agentset/" class="md-nav__link">
+      <a href="../../core-concepts/agentset/" class="md-nav__link">
         AgentSet
       </a>
     </li>
@@ -488,7 +486,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../core-concepts/agentdeploy/" class="md-nav__link">
+      <a href="../../core-concepts/agentdeploy/" class="md-nav__link">
         AgentDeploy
       </a>
     </li>
@@ -507,14 +505,12 @@
               
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" >
       
       
       
@@ -537,7 +533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../autoscaling/" class="md-nav__link">
+      <a href="../../user-guide/reference/autoscaling/" class="md-nav__link">
         Autoscaling
       </a>
     </li>
@@ -551,7 +547,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rate-limiting/" class="md-nav__link">
+      <a href="../../user-guide/reference/rate-limiting/" class="md-nav__link">
         Rate limiting
       </a>
     </li>
@@ -565,7 +561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../gpu/" class="md-nav__link">
+      <a href="../../user-guide/reference/gpu/" class="md-nav__link">
         GPU
       </a>
     </li>
@@ -577,14 +573,12 @@
               
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2_4" type="checkbox" id="__nav_3_2_4" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2_4" type="checkbox" id="__nav_3_2_4" >
       
       
       
@@ -607,7 +601,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../labels-and-annotations/" class="md-nav__link">
+      <a href="../../user-guide/reference/configuration/labels-and-annotations/" class="md-nav__link">
         Labels And Annotations
       </a>
     </li>
@@ -621,7 +615,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../environment-variables/" class="md-nav__link">
+      <a href="../../user-guide/reference/configuration/environment-variables/" class="md-nav__link">
         Environment Variables
       </a>
     </li>
@@ -635,7 +629,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../container-resources/" class="md-nav__link">
+      <a href="../../user-guide/reference/configuration/container-resources/" class="md-nav__link">
         Container Resources
       </a>
     </li>
@@ -649,7 +643,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../volumes/" class="md-nav__link">
+      <a href="../../user-guide/reference/configuration/volumes/" class="md-nav__link">
         Volumes
       </a>
     </li>
@@ -663,7 +657,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../init-containers/" class="md-nav__link">
+      <a href="../../user-guide/reference/configuration/init-containers/" class="md-nav__link">
         Init Containers
       </a>
     </li>
@@ -677,7 +671,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../sidecar-containers/" class="md-nav__link">
+      <a href="../../user-guide/reference/configuration/sidecar-containers/" class="md-nav__link">
         Sidecar Containers
       </a>
     </li>
@@ -691,7 +685,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../liveness-and-readiness/" class="md-nav__link">
+      <a href="../../user-guide/reference/configuration/liveness-and-readiness/" class="md-nav__link">
         Liveness And Readiness
       </a>
     </li>
@@ -705,7 +699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../agentset-customization/" class="md-nav__link">
+      <a href="../../user-guide/reference/configuration/agentset-customization/" class="md-nav__link">
         AgentSet Customization
       </a>
     </li>
@@ -719,7 +713,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../external-agents/" class="md-nav__link">
+      <a href="../../user-guide/reference/configuration/external-agents/" class="md-nav__link">
         External Agents
       </a>
     </li>
@@ -733,7 +727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rolling-update/" class="md-nav__link">
+      <a href="../../user-guide/reference/configuration/rolling-update/" class="md-nav__link">
         Rolling Update
       </a>
     </li>
@@ -747,7 +741,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../graceful-termination/" class="md-nav__link">
+      <a href="../../user-guide/reference/configuration/graceful-termination/" class="md-nav__link">
         Graceful Termination
       </a>
     </li>
@@ -761,7 +755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dra/" class="md-nav__link">
+      <a href="../../user-guide/reference/configuration/dra/" class="md-nav__link">
         Dynamic Resource Allocation
       </a>
     </li>
@@ -773,52 +767,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Running On Istio
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../user-guide/reference/configuration/istio/" class="md-nav__link">
         Running On Istio
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    See Also
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -837,7 +790,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../a2acli/" class="md-nav__link">
+      <a href="../../user-guide/reference/a2acli/" class="md-nav__link">
         A2A CLI
       </a>
     </li>
@@ -851,7 +804,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../APIs/" class="md-nav__link">
+      <a href="../../APIs/" class="md-nav__link">
         APIs
       </a>
     </li>
@@ -878,12 +831,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
       
       
       
@@ -906,7 +861,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../operations/releases/" class="md-nav__link">
+      <a href="../releases/" class="md-nav__link">
         Releases ⧉
       </a>
     </li>
@@ -920,7 +875,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../operations/installation/" class="md-nav__link">
+      <a href="../installation/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -932,11 +887,59 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../../../operations/validating-webhook/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Validating Webhook
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Validating Webhook
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    Installation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -948,7 +951,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../operations/metrics/" class="md-nav__link">
+      <a href="../metrics/" class="md-nav__link">
         Metrics
       </a>
     </li>
@@ -996,7 +999,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../development/development/" class="md-nav__link">
+      <a href="../../development/development/" class="md-nav__link">
         Development
       </a>
     </li>
@@ -1036,7 +1039,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../development/specifications/agent-discovery/" class="md-nav__link">
+      <a href="../../development/specifications/agent-discovery/" class="md-nav__link">
         Agent Discovery
       </a>
     </li>
@@ -1050,7 +1053,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../development/specifications/external-agents/" class="md-nav__link">
+      <a href="../../development/specifications/external-agents/" class="md-nav__link">
         External Agents
       </a>
     </li>
@@ -1071,7 +1074,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../development/debugging/" class="md-nav__link">
+      <a href="../../development/debugging/" class="md-nav__link">
         How To Debug
       </a>
     </li>
@@ -1085,7 +1088,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../development/static-code-analysis/" class="md-nav__link">
+      <a href="../../development/static-code-analysis/" class="md-nav__link">
         Static Code Analysis
       </a>
     </li>
@@ -1099,7 +1102,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../development/releasing/" class="md-nav__link">
+      <a href="../../development/releasing/" class="md-nav__link">
         How To Release
       </a>
     </li>
@@ -1140,8 +1143,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    See Also
+  <a href="#installation" class="md-nav__link">
+    Installation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
   </a>
   
 </li>
@@ -1158,76 +1168,62 @@
             <article class="md-content__inner md-typeset">
               
                 
-  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/user-guide/reference/configuration/istio.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/operations/validating-webhook.md" title="Edit this page" class="md-content__button md-icon">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
 
-<h1 id="running-on-istio">Running On Istio<a class="headerlink" href="#running-on-istio" title="Permanent link">&para;</a></h1>
-<p>If you want an agent's pods to run with an Istio sidecar injected, so they can
-talk to other services with Istio enabled, whitelist the ports Kynomesh uses so
-the Istio sidecar doesn't intercept in-mesh traffic meant for the broker.</p>
-<p>Add <code>traffic.sidecar.istio.io/excludeInboundPorts</code> and
-<code>traffic.sidecar.istio.io/excludeOutboundPorts</code> annotations via
-<code>.spec.agents[*].metadata.annotations</code> (see
-<a href="../labels-and-annotations/">Labels And Annotations</a>):</p>
+<h1 id="validating-admission-webhook">Validating Admission Webhook<a class="headerlink" href="#validating-admission-webhook" title="Permanent link">&para;</a></h1>
+<p>This validating webhook rejects faulty <code>AgentSet</code> specs such as duplicate agent
+names, a reserved name collision, a malformed external-agent URL, etc. — the
+cross-field rules the CRD's OpenAPI schema can't express on its own. Instead of
+the object being persisted and only failing later during reconciliation, the API
+server rejects it immediately and <code>kubectl apply</code> returns the validation error
+right away.</p>
+<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<p>To install the validating webhook, run the following command line:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-n<span class="w"> </span>kynomesh-system<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/kynoproj/kynomesh/stable/config/validating-webhook-install.yaml
+</code></pre></div>
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<p>Note that some fields, such as <code>spec.pattern</code>'s allowed values and
+<code>spec.agents[].container</code> being required, are already enforced by the CRD's
+OpenAPI schema — the API server rejects those before any admission webhook runs,
+with a <code>"... is invalid"</code> style error. The validating webhook catches everything
+the schema can't express.</p>
+<p>For example, given an <code>AgentSet</code> with a duplicate agent name:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh.kyno.sh/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AgentSet</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-agentset</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">research-assistant</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Supervisor</span>
-<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-agent</span>
+<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">researcher</span>
 <span class="w">  </span><span class="nt">agents</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-agent</span>
-<span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">sidecar.istio.io/inject</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
-<span class="w">          </span><span class="nt">traffic.sidecar.istio.io/excludeInboundPorts</span><span class="p">:</span><span class="w"> </span><span class="s">"8490,8491"</span><span class="w"> </span><span class="c1"># broker + introspection</span>
-<span class="w">          </span><span class="nt">traffic.sidecar.istio.io/excludeOutboundPorts</span><span class="p">:</span><span class="w"> </span><span class="s">"8490"</span><span class="w"> </span><span class="c1"># broker-to-broker (peer) traffic</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">researcher</span>
 <span class="w">      </span><span class="nt">container</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-agent:latest</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quay.io/kynoproj/research-assistant:latest</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">researcher</span><span class="w"> </span><span class="c1"># duplicate</span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quay.io/kynoproj/research-assistant:latest</span>
 </code></pre></div>
-<ul>
-<li><code>8490</code> is <code>AgentBrokerPort</code> — the broker's <code>A2A</code> listener, used for both
-  inbound calls into this agent and outbound calls to peer agents' brokers.</li>
-<li><code>8491</code> is <code>AgentBrokerIntrospectionPort</code> — <code>/metrics</code>, <code>/healthz</code>, and
-  <code>/readyz</code>, scraped in-cluster (e.g. by the per-AgentSet daemon and kubelet
-  probes).</li>
-</ul>
-<p>If you want the same annotations applied to every agent in the AgentSet, set
-them once on the shared template instead, via
-<code>.spec.templates.agent.metadata.annotations</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh.kyno.sh/v1alpha1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AgentSet</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-agentset</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Supervisor</span>
-<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coordinator</span>
-<span class="w">  </span><span class="nt">templates</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">agent</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">metadata</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">sidecar.istio.io/inject</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
-<span class="w">          </span><span class="nt">traffic.sidecar.istio.io/excludeInboundPorts</span><span class="p">:</span><span class="w"> </span><span class="s">"8490,8491"</span>
-<span class="w">          </span><span class="nt">traffic.sidecar.istio.io/excludeOutboundPorts</span><span class="p">:</span><span class="w"> </span><span class="s">"8490"</span>
-<span class="w">  </span><span class="nt">agents</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coordinator</span>
-<span class="w">      </span><span class="nt">container</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example/coordinator:latest</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker</span>
-<span class="w">      </span><span class="nt">container</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example/worker:latest</span>
+<div class="highlight"><pre><span></span><code>Error<span class="w"> </span>from<span class="w"> </span>server<span class="w"> </span><span class="o">(</span>BadRequest<span class="o">)</span>:<span class="w"> </span>error<span class="w"> </span>when<span class="w"> </span>creating<span class="w"> </span><span class="s2">"agentset.yaml"</span>:<span class="w"> </span>admission<span class="w"> </span>webhook<span class="w"> </span><span class="s2">"webhook.kynomesh.kyno.sh"</span><span class="w"> </span>denied<span class="w"> </span>the<span class="w"> </span>request:<span class="w"> </span>duplicate<span class="w"> </span>agent<span class="w"> </span>name<span class="w"> </span><span class="s2">"researcher"</span>
 </code></pre></div>
-<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="../labels-and-annotations/">Labels And Annotations</a> — setting
-  <code>metadata.annotations</code> on agent and daemon pods.</li>
-<li><a href="../agentset-customization/">AgentSet Customization</a> — the <code>agent</code> and <code>daemon</code>
-  shared templates.</li>
-</ul>
+<p>Other validations include:</p>
+<ol>
+<li><code>spec.agents</code> must contain at least one agent</li>
+<li>agent and external-agent names must be valid DNS-1035 labels, must not
+   collide with each other, and must not collide with reserved names (<code>entry</code>'s
+   own service suffix, the daemon service suffix)</li>
+<li><code>spec.entry</code> must name an agent in <code>spec.agents</code>, and must not be an external
+   agent</li>
+<li>external agent URLs must be absolute (scheme + host)</li>
+<li><code>Handoff</code> and <code>Sequential</code> patterns require at least 2 agents</li>
+<li><code>Sequential</code> requires <code>spec.entry</code> to be <code>spec.agents[0]</code> and allows at most
+   one external agent, as the final hop</li>
+<li><code>agents[].scale.targetSaturationPercentage</code> must be in <code>[1, 100]</code></li>
+<li>etc.</li>
+</ol>
 
               
             </article>
@@ -1250,7 +1246,7 @@ them once on the shared template instead, via
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../dra/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Dynamic Resource Allocation" rel="prev">
+        <a href="../installation/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Installation" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1259,20 +1255,20 @@ them once on the shared template instead, via
               <span class="md-footer__direction">
                 Previous
               </span>
-              Dynamic Resource Allocation
+              Installation
             </div>
           </div>
         </a>
       
       
         
-        <a href="../../a2acli/" class="md-footer__link md-footer__link--next" aria-label="Next: A2A CLI" rel="next">
+        <a href="../metrics/" class="md-footer__link md-footer__link--next" aria-label="Next: Metrics" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              A2A CLI
+              Metrics
             </div>
           </div>
           <div class="md-footer__button md-icon">
@@ -1302,10 +1298,10 @@ them once on the shared template instead, via
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.tabs.link"], "search": "../../../../assets/javascripts/workers/search.b97dbffb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.b97dbffb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.6c7ad80a.min.js"></script>
+      <script src="../../assets/javascripts/bundle.6c7ad80a.min.js"></script>
       
     
   </body>
