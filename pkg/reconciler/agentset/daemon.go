@@ -63,6 +63,7 @@ func (r *Reconciler) newDaemonDeployment(as *kmv1.AgentSet) (*appsv1.Deployment,
 	}
 
 	replicas := daemonReplicas
+	defaultResources := r.config.GetDefaults().GetDefaultContainerResources()
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   as.Namespace,
@@ -80,7 +81,7 @@ func (r *Reconciler) newDaemonDeployment(as *kmv1.AgentSet) (*appsv1.Deployment,
 				ObjectMeta: metav1.ObjectMeta{Labels: podLabels},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
-						newDaemonContainer(r.image, r.imagePullPolicy, as, string(encodedAgents), cTmpl),
+						newDaemonContainer(r.image, r.imagePullPolicy, as, string(encodedAgents), cTmpl, defaultResources),
 					},
 				},
 			},
@@ -141,7 +142,7 @@ func (r *Reconciler) newDaemonService(as *kmv1.AgentSet) (*corev1.Service, error
 
 // newDaemonContainer builds the single container that runs the
 // daemon binary.
-func newDaemonContainer(image string, pullPolicy corev1.PullPolicy, as *kmv1.AgentSet, encodedAgents string, tmpl *kmv1.ContainerTemplate) corev1.Container {
+func newDaemonContainer(image string, pullPolicy corev1.PullPolicy, as *kmv1.AgentSet, encodedAgents string, tmpl *kmv1.ContainerTemplate, defaultResources corev1.ResourceRequirements) corev1.Container {
 	probe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -181,6 +182,7 @@ func newDaemonContainer(image string, pullPolicy corev1.PullPolicy, as *kmv1.Age
 	if tmpl != nil {
 		tmpl.ApplyToContainer(&c)
 	}
+	kmv1.ApplyDefaultResourcesIfMissing(&c, defaultResources)
 	return c
 }
 

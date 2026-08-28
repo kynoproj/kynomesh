@@ -28,7 +28,7 @@ import (
 )
 
 func TestBuildAgentDeploys(t *testing.T) {
-	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	as := newAgentSet("greeter", "alpha", "beta")
 	out, err := r.buildDesired(as)
 	require.NoError(t, err)
@@ -50,7 +50,7 @@ func TestBuildAgentDeploys(t *testing.T) {
 }
 
 func TestBuildAgentDeploys_TemplateAppliedAsDefault(t *testing.T) {
-	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	tmplPull := corev1.PullPolicy("Always")
 	as := newAgentSet("greeter", "alpha")
 	as.Spec.Templates = &kmv1.Templates{
@@ -76,7 +76,7 @@ func TestBuildAgentDeploys_TemplateAppliedAsDefault(t *testing.T) {
 }
 
 func TestBuildAgentDeploys_BrokerContainerFieldMerge(t *testing.T) {
-	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	as := newAgentSet("greeter", "alpha")
 	as.Spec.Templates = &kmv1.Templates{
 		AgentDeployTemplate: &kmv1.AgentDeployTemplate{
@@ -105,7 +105,7 @@ func TestBuildAgentDeploys_BrokerContainerFieldMerge(t *testing.T) {
 }
 
 func TestBuildAgentDeploys_TemplatePodFieldsApplied(t *testing.T) {
-	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	as := newAgentSet("greeter", "alpha")
 	as.Spec.Templates = &kmv1.Templates{
 		AgentDeployTemplate: &kmv1.AgentDeployTemplate{
@@ -132,7 +132,7 @@ func TestBuildAgentDeploys_TemplatePodFieldsApplied(t *testing.T) {
 }
 
 func TestBuildAgentDeploys_PerAgentPodFieldsWinOverTemplate(t *testing.T) {
-	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	as := newAgentSet("greeter", "alpha")
 	as.Spec.Templates = &kmv1.Templates{
 		AgentDeployTemplate: &kmv1.AgentDeployTemplate{
@@ -277,7 +277,7 @@ func TestComputeTopology_ExternalAgents(t *testing.T) {
 }
 
 func TestNeedsUpdate(t *testing.T) {
-	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	desired, err := r.buildDesired(newAgentSet("greeter", "alpha"))
 	require.NoError(t, err)
 	want := desired["greeter-alpha"]
@@ -290,7 +290,7 @@ func TestNeedsUpdate(t *testing.T) {
 }
 
 func TestAggregateChildHealth(t *testing.T) {
-	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	as := newAgentSet("greeter", "alpha")
 	desired, err := r.buildDesired(as)
 	require.NoError(t, err)

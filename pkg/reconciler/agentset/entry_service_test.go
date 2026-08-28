@@ -31,7 +31,7 @@ import (
 )
 
 func TestNewEntryService(t *testing.T) {
-	r := NewReconciler(nil, mustScheme(t), nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	as := newAgentSet("greeter", "alpha", "beta")
 
 	svc, err := r.newEntryService(as)

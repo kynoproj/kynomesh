@@ -60,6 +60,15 @@ func (ct *ContainerTemplate) ApplyToContainer(c *corev1.Container) {
 	}
 }
 
+// ApplyDefaultResourcesIfMissing sets c.Resources to defaults, but only if the
+// container has no resources of its own.
+func ApplyDefaultResourcesIfMissing(c *corev1.Container, defaults corev1.ResourceRequirements) {
+	if len(c.Resources.Requests) > 0 || len(c.Resources.Limits) > 0 {
+		return
+	}
+	c.Resources = defaults
+}
+
 // ApplyDefaultsFrom fills the receiver's unset fields from other, so other acts
 // as defaults that the receiver's own values override (fill-if-unset), field by
 // field.

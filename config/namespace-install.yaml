@@ -9005,8 +9005,6 @@ metadata:
 apiVersion: v1
 data:
   controller-config.yaml: |
-    # "instance" configuration can be used to run multiple controllers
-    instance: ""
     defaults:
       containerResources: |
         requests:

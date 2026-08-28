@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
+	"github.com/kynoproj/kynomesh/pkg/reconciler"
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 )
 
@@ -49,6 +50,7 @@ type scaleWatcher interface {
 type Reconciler struct {
 	client.Client
 	scheme          *runtime.Scheme
+	config          *reconciler.GlobalConfig
 	logger          *zap.SugaredLogger
 	recorder        events.EventRecorder
 	image           string
@@ -57,7 +59,7 @@ type Reconciler struct {
 }
 
 // NewReconciler returns a Reconciler bound to the supplied client and scheme.
-func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredLogger, recorder events.EventRecorder, image string, imagePullPolicy corev1.PullPolicy, scaler scaleWatcher) *Reconciler {
+func NewReconciler(c client.Client, scheme *runtime.Scheme, config *reconciler.GlobalConfig, logger *zap.SugaredLogger, recorder events.EventRecorder, image string, imagePullPolicy corev1.PullPolicy, scaler scaleWatcher) *Reconciler {
 	if logger == nil {
 		logger = logging.NewLogger().Named(kmv1.ControllerAgentDeploy)
 	}
@@ -70,6 +72,7 @@ func NewReconciler(c client.Client, scheme *runtime.Scheme, logger *zap.SugaredL
 	return &Reconciler{
 		Client:          c,
 		scheme:          scheme,
+		config:          config,
 		logger:          logger,
 		recorder:        recorder,
 		image:           image,

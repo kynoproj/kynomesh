@@ -460,3 +460,43 @@ func TestContainerTemplate_ApplyDefaultsFrom(t *testing.T) {
 		assert.Equal(t, "500Mi", own.Resources.Limits.Memory().String(), "defaults-only resource merged in")
 	})
 }
+
+func TestApplyDefaultResources(t *testing.T) {
+	defaults := corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("100m")},
+		Limits:   corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("100Mi")},
+	}
+
+	t.Run("empty resources get replaced wholesale", func(t *testing.T) {
+		c := &corev1.Container{}
+		ApplyDefaultResourcesIfMissing(c, defaults)
+		assert.Equal(t, defaults, c.Resources)
+	})
+
+	t.Run("any container-set resource key blocks defaults entirely", func(t *testing.T) {
+		// The container only set a memory limit; the default only sets a
+		// cpu request and a different memory limit. All-or-nothing means
+		// the default's cpu request must NOT be merged in alongside the
+		// container's own memory limit — that combination was never
+		// requested by either side.
+		c := &corev1.Container{
+			Resources: corev1.ResourceRequirements{
+				Limits: corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("200Mi")},
+			},
+		}
+		want := c.Resources.DeepCopy()
+		ApplyDefaultResourcesIfMissing(c, defaults)
+		assert.Equal(t, *want, c.Resources, "container-set resources must be left untouched, not merged with defaults")
+	})
+
+	t.Run("container-set requests alone also block defaults", func(t *testing.T) {
+		c := &corev1.Container{
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("250m")},
+			},
+		}
+		want := c.Resources.DeepCopy()
+		ApplyDefaultResourcesIfMissing(c, defaults)
+		assert.Equal(t, *want, c.Resources)
+	})
+}
