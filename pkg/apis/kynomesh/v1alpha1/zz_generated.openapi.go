@@ -217,6 +217,12 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container"),
 						},
 					},
+					"initContainer": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Container template for the init container.",
+							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate"),
+						},
+					},
 					"brokerContainer": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Container template for the broker container.",
@@ -721,6 +727,12 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container"),
 						},
 					},
+					"initContainer": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Container template for the init container.",
+							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate"),
+						},
+					},
 					"brokerContainer": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Container template for the broker container.",
@@ -1107,6 +1119,12 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeployTemplate(ref common.ReferenceC
 							Format:      "int64",
 						},
 					},
+					"initContainer": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Template for the AgentDeploy init container",
+							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate"),
+						},
+					},
 					"brokerContainer": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Template for the AgentDeploy broker container",
@@ -1259,7 +1277,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetSpec(ref common.ReferenceCallback
 					},
 					"templates": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Templates are used to customize additional kubernetes resources required for the Pipeline",
+							Description: "Templates are used to customize additional kubernetes resources required for the AgentSet",
 							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Templates"),
 						},
 					},

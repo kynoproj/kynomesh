@@ -1,0 +1,14 @@
+apiVersion: kynomesh.kyno.sh/v1alpha1
+kind: AgentSet
+metadata:
+  name: my-agentset
+spec:
+  pattern: Supervisor
+  entry: research
+  agents:
+    - name: researcher
+      container:
+        image: my-researcher-image:v0.1.2
+    - name: worker
+      container:
+        image: my-worker-image:v1.0.0

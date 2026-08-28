@@ -76,6 +76,7 @@ nav:
               - Graceful Termination: "user-guide/reference/configuration/graceful-termination.md"
               - Dynamic Resource Allocation: "user-guide/reference/configuration/dra.md"
               - Running On Istio: "user-guide/reference/configuration/istio.md"
+          - user-guide/reference/kustomize/kustomize.md
           - A2A CLI: "user-guide/reference/a2acli.md"
           - APIs.md
   - Operator Manual:

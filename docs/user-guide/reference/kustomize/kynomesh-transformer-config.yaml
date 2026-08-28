@@ -1,0 +1,184 @@
+# https://github.com/kubernetes-sigs/kustomize/blob/master/api/internal/konfig/builtinpluginconsts/images.go
+images:
+  - path: spec/agents/container/image
+    kind: AgentSet
+  - path: spec/agents/sidecars/image
+    kind: AgentSet
+  - path: spec/agents/initContainers/image
+    kind: AgentSet
+
+# https://github.com/kubernetes-sigs/kustomize/blob/master/api/internal/konfig/builtinpluginconsts/namereference.go
+nameReference:
+  - kind: ConfigMap
+    version: v1
+    fieldSpecs:
+      - path: spec/agents/volumes/configMap/name
+        kind: AgentSet
+      - path: spec/agents/volumes/projected/sources/configMap/name
+        kind: AgentSet
+      - path: spec/agents/brokerContainer/env/valueFrom/configMapKeyRef/name
+        kind: AgentSet
+      - path: spec/agents/brokerContainer/envFrom/configMapRef/name
+        kind: AgentSet
+      - path: spec/agents/initContainer/env/valueFrom/configMapKeyRef/name
+        kind: AgentSet
+      - path: spec/agents/initContainer/envFrom/configMapRef/name
+        kind: AgentSet
+      - path: spec/agents/initContainers/env/valueFrom/configMapKeyRef/name
+        kind: AgentSet
+      - path: spec/agents/initContainers/envFrom/configMapRef/name
+        kind: AgentSet
+      - path: spec/agents/sidecars/env/valueFrom/configMapKeyRef/name
+        kind: AgentSet
+      - path: spec/agents/sidecars/envFrom/configMapRef/name
+        kind: AgentSet
+      - path: spec/agents/container/env/valueFrom/configMapKeyRef/name
+        kind: AgentSet
+      - path: spec/agents/container/envFrom/configMapRef/name
+        kind: AgentSet
+      - path: spec/templates/daemon/container/env/valueFrom/configMapKeyRef/name
+        kind: AgentSet
+      - path: spec/templates/daemon/container/envFrom/configMapRef/name
+        kind: AgentSet
+      - path: spec/templates/agent/initContainer/env/valueFrom/configMapKeyRef/name
+        kind: AgentSet
+      - path: spec/templates/agent/initContainer/envFrom/configMapRef/name
+        kind: AgentSet
+      - path: spec/templates/agent/brokerContainer/env/valueFrom/configMapKeyRef/name
+        kind: AgentSet
+      - path: spec/templates/agent/brokerContainer/envFrom/configMapRef/name
+        kind: AgentSet
+
+  - kind: Secret
+    version: v1
+    fieldSpecs:
+      - path: spec/agents/volumes/secret/secretName
+        kind: AgentSet
+      - path: spec/agents/volumes/projected/sources/secret/name
+        kind: AgentSet
+      - path: spec/agents/brokerContainer/env/valueFrom/secretKeyRef/name
+        kind: AgentSet
+      - path: spec/agents/brokerContainer/envFrom/secretRef/name
+        kind: AgentSet
+      - path: spec/agents/initContainer/env/valueFrom/secretKeyRef/name
+        kind: AgentSet
+      - path: spec/agents/initContainer/envFrom/secretRef/name
+        kind: AgentSet
+      - path: spec/agents/initContainers/env/valueFrom/secretKeyRef/name
+        kind: AgentSet
+      - path: spec/agents/initContainers/envFrom/secretRef/name
+        kind: AgentSet
+      - path: spec/agents/sidecars/env/valueFrom/secretKeyRef/name
+        kind: AgentSet
+      - path: spec/agents/sidecars/envFrom/secretRef/name
+        kind: AgentSet
+      - path: spec/AgentSet/container/env/valueFrom/secretKeyRef/name
+        kind: AgentSet
+      - path: spec/AgentSet/container/envFrom/secretRef/name
+        kind: AgentSet
+      - path: spec/templates/daemon/container/env/valueFrom/secretKeyRef/name
+        kind: AgentSet
+      - path: spec/templates/daemon/container/envFrom/secretRef/name
+        kind: AgentSet
+      - path: spec/templates/agent/initContainer/env/valueFrom/secretKeyRef/name
+        kind: AgentSet
+      - path: spec/templates/agent/initContainer/envFrom/secretRef/name
+        kind: AgentSet
+      - path: spec/templates/agent/brokerContainer/env/valueFrom/secretKeyRef/name
+        kind: AgentSet
+      - path: spec/templates/agent/brokerContainer/envFrom/secretRef/name
+        kind: AgentSet
+      - path: spec/agents/imagePullSecrets/name
+        kind: AgentSet
+      - path: spec/templates/daemon/imagePullSecrets/name
+        kind: AgentSet
+      - path: spec/templates/agent/imagePullSecrets/name
+        kind: AgentSet
+
+  - kind: ServiceAccount
+    version: v1
+    fieldSpecs:
+      - path: spec/agents/serviceAccountName
+        kind: AgentSet
+      - path: spec/templates/daemon/serviceAccountName
+        kind: AgentSet
+      - path: spec/templates/agent/serviceAccountName
+        kind: AgentSet
+
+  - kind: PersistentVolumeClaim
+    version: v1
+    fieldSpecs:
+      - path: spec/agents/volumes/persistentVolumeClaim/claimName
+        kind: AgentSet
+
+  - kind: PriorityClass
+    version: v1
+    group: scheduling.k8s.io
+    fieldSpecs:
+      - path: spec/agents/priorityClassName
+        kind: AgentSet
+      - path: spec/templates/daemon/priorityClassName
+        kind: AgentSet
+      - path: spec/templates/agent/priorityClassName
+        kind: AgentSet
+
+# https://github.com/kubernetes-sigs/kustomize/blob/master/api/internal/konfig/builtinpluginconsts/commonlabels.go
+commonLabels:
+  - path: spec/agents/metadata/labels
+    create: true
+    kind: AgentSet
+  - path: spec/templates/daemon/metadata/labels
+    create: true
+    kind: AgentSet
+  - path: spec/templates/agent/metadata/labels
+    create: true
+    kind: AgentSet
+
+# https://github.com/kubernetes-sigs/kustomize/blob/master/api/internal/konfig/builtinpluginconsts/commonannotations.go
+commonAnnotations:
+  - path: spec/agents/metadata/annotations
+    create: true
+    kind: AgentSet
+  - path: spec/templates/daemon/metadata/annotations
+    create: true
+    kind: AgentSet
+  - path: spec/templates/agent/metadata/annotations
+    create: true
+    kind: AgentSet
+
+# https://github.com/kubernetes-sigs/kustomize/blob/master/api/internal/konfig/builtinpluginconsts/varreference.go
+varReference:
+  - path: spec/agents/container/args
+    kind: AgentSet
+  - path: spec/agents/container/command
+    kind: AgentSet
+  - path: spec/agents/container/env/value
+    kind: AgentSet
+  - path: spec/agents/brokerContainer/env/value
+    kind: AgentSet
+  - path: spec/agents/initContainer/env/value
+    kind: AgentSet
+  - path: spec/agents/sidecars/args
+    kind: AgentSet
+  - path: spec/agents/sidecars/command
+    kind: AgentSet
+  - path: spec/agents/sidecars/env/value
+    kind: AgentSet
+  - path: spec/agents/initContainers/args
+    kind: AgentSet
+  - path: spec/agents/initContainers/command
+    kind: AgentSet
+  - path: spec/agents/initContainers/env/value
+    kind: AgentSet
+  - path: spec/templates/daemon/container/env/value
+    kind: AgentSet
+  - path: spec/templates/agent/initContainer/env/value
+    kind: AgentSet
+  - path: spec/templates/agent/brokerContainer/env/value
+    kind: AgentSet
+  - path: spec/agents/container/volumeMounts/mountPath
+    kind: AgentSet
+  - path: spec/agents/sidecars/volumeMounts/mountPath
+    kind: AgentSet
+  - path: spec/agents/initContainers/volumeMounts/mountPath
+    kind: AgentSet

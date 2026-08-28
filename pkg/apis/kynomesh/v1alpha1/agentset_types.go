@@ -81,7 +81,7 @@ type AgentSetSpec struct {
 	// +patchMergeKey=name
 	// +kubebuilder:validation:MinItems=1
 	Agents []AbstractAgentDeploy `json:"agents" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,3,rep,name=agents"`
-	// Templates are used to customize additional kubernetes resources required for the Pipeline
+	// Templates are used to customize additional kubernetes resources required for the AgentSet
 	// +optional
 	Templates *Templates `json:"templates,omitempty" protobuf:"bytes,4,opt,name=templates"`
 	// ExternalAgents references agents this AgentSet does not deploy, scale, or

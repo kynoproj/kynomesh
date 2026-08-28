@@ -39,37 +39,41 @@ message AbstractAgentDeploy {
   // +kubebuilder:validation:Required
   optional Container container = 3;
 
+  // Container template for the init container.
+  // +optional
+  optional ContainerTemplate initContainer = 4;
+
   // Container template for the broker container.
   // +optional
-  optional ContainerTemplate brokerContainer = 4;
+  optional ContainerTemplate brokerContainer = 5;
 
   // +optional
   // +patchStrategy=merge
   // +patchMergeKey=name
-  repeated .k8s.io.api.core.v1.Volume volumes = 5;
+  repeated .k8s.io.api.core.v1.Volume volumes = 6;
 
   // Settings for autoscaling
   // +optional
-  optional Scale scale = 6;
+  optional Scale scale = 7;
 
   // RateLimit configures broker-side admission control. When unset, the
   // broker admits requests without limit.
   // +optional
-  optional RateLimit rateLimit = 7;
+  optional RateLimit rateLimit = 8;
 
   // List of customized init containers belonging to the pod.
   // More info: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
   // +optional
-  repeated .k8s.io.api.core.v1.Container initContainers = 8;
+  repeated .k8s.io.api.core.v1.Container initContainers = 9;
 
   // List of customized sidecar containers belonging to the pod.
   // +optional
-  repeated .k8s.io.api.core.v1.Container sidecars = 9;
+  repeated .k8s.io.api.core.v1.Container sidecars = 10;
 
   // The strategy to use to replace existing pods with new ones.
   // +kubebuilder:default={"type": "RollingUpdate", "rollingUpdate": {"maxUnavailable": "25%"}}
   // +optional
-  optional UpdateStrategy updateStrategy = 10;
+  optional UpdateStrategy updateStrategy = 11;
 
   // PublicBaseURL is the externally reachable base URL of this agent's
   // broker (e.g. https://agent.example.com). When set, the broker uses
@@ -77,7 +81,7 @@ message AbstractAgentDeploy {
   // can reach the agent through an ingress or gateway in front of the
   // cluster. If empty, the broker advertises its in-cluster address.
   // +optional
-  optional string publicBaseURL = 11;
+  optional string publicBaseURL = 12;
 }
 
 // AbstractPodTemplate provides a template for pod customization in vertices, daemon deployments and so on.
@@ -281,9 +285,13 @@ message AgentDeployTemplate {
   // +optional
   optional AbstractPodTemplate abstractPodTemplate = 1;
 
+  // Template for the AgentDeploy init container
+  // +optional
+  optional ContainerTemplate initContainer = 2;
+
   // Template for the AgentDeploy broker container
   // +optional
-  optional ContainerTemplate brokerContainer = 2;
+  optional ContainerTemplate brokerContainer = 3;
 }
 
 // +genclient
@@ -338,7 +346,7 @@ message AgentSetSpec {
   // +kubebuilder:validation:MinItems=1
   repeated AbstractAgentDeploy agents = 3;
 
-  // Templates are used to customize additional kubernetes resources required for the Pipeline
+  // Templates are used to customize additional kubernetes resources required for the AgentSet
   // +optional
   optional Templates templates = 4;
 

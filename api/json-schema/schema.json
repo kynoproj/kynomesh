@@ -23552,6 +23552,10 @@
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
         },
+        "initContainer": {
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ContainerTemplate",
+          "description": "Container template for the init container."
+        },
         "initContainers": {
           "description": "List of customized init containers belonging to the pod. More info: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/",
           "items": {
@@ -23826,6 +23830,10 @@
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
         },
+        "initContainer": {
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ContainerTemplate",
+          "description": "Container template for the init container."
+        },
         "initContainers": {
           "description": "List of customized init containers belonging to the pod. More info: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/",
           "items": {
@@ -24039,6 +24047,10 @@
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
         },
+        "initContainer": {
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.ContainerTemplate",
+          "description": "Template for the AgentDeploy init container"
+        },
         "metadata": {
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Metadata",
           "description": "Metadata sets the pods's metadata, i.e. annotations and labels"
@@ -24183,7 +24195,7 @@
         },
         "templates": {
           "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Templates",
-          "description": "Templates are used to customize additional kubernetes resources required for the Pipeline"
+          "description": "Templates are used to customize additional kubernetes resources required for the AgentSet"
         }
       },
       "required": [
