@@ -16,7 +16,7 @@ patches:
       spec:
         agents:
           - name: researcher
-            container::
+            container:
               imagePullPolicy: Never
           - name: worker
             container:

@@ -42,7 +42,7 @@ func buildPodSpec(ad *kmv1.AgentDeploy, image string, imagePullPolicy corev1.Pul
 	// completes, so anything meant to prepare state for it must run before
 	// it starts, not after.
 	initContainers := []corev1.Container{
-		newInitRuntimeContainer(image, imagePullPolicy, encodedAgentDeploy, defaultResources),
+		newInitRuntimeContainer(image, imagePullPolicy, encodedAgentDeploy, ad.Spec.InitContainer, defaultResources),
 	}
 	initContainers = append(initContainers, ad.Spec.InitContainers...)
 	initContainers = append(initContainers, newAgentContainer(ad))
@@ -313,7 +313,7 @@ func brokerLivenessProbe() *corev1.Probe {
 }
 
 // newInitRuntimeContainer builds the init container that prepares /var/run/kynomesh.
-func newInitRuntimeContainer(image string, pullPolicy corev1.PullPolicy, encodedAgentDeploy string, defaultResources corev1.ResourceRequirements) corev1.Container {
+func newInitRuntimeContainer(image string, pullPolicy corev1.PullPolicy, encodedAgentDeploy string, tmpl *kmv1.ContainerTemplate, defaultResources corev1.ResourceRequirements) corev1.Container {
 	c := corev1.Container{
 		Name:            kmv1.ContainerNameInitRuntime,
 		Image:           image,
@@ -322,6 +322,9 @@ func newInitRuntimeContainer(image string, pullPolicy corev1.PullPolicy, encoded
 		Env: []corev1.EnvVar{
 			{Name: kmv1.EnvAgentDeployObject, Value: encodedAgentDeploy},
 		},
+	}
+	if tmpl != nil {
+		tmpl.ApplyToContainer(&c)
 	}
 	kmv1.ApplyDefaultResourcesIfMissing(&c, defaultResources)
 	return c

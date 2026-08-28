@@ -183,6 +183,12 @@ func (r *Reconciler) newAgentDeploy(as *kmv1.AgentSet, agent kmv1.AbstractAgentD
 // AgentSet-level template, field by field, with per-agent values always winning.
 func applyTemplate(agent *kmv1.AbstractAgentDeploy, tmpl *kmv1.AgentDeployTemplate) {
 	agent.ApplyDefaultsFrom(&tmpl.AbstractPodTemplate)
+	if tmpl.InitContainer != nil {
+		if agent.InitContainer == nil {
+			agent.InitContainer = &kmv1.ContainerTemplate{}
+		}
+		agent.InitContainer.ApplyDefaultsFrom(tmpl.InitContainer)
+	}
 	if tmpl.BrokerContainer != nil {
 		if agent.BrokerContainer == nil {
 			agent.BrokerContainer = &kmv1.ContainerTemplate{}

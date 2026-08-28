@@ -572,6 +572,45 @@ func TestBuildPodSpec_BrokerContainerPreservesProbes(t *testing.T) {
 	require.NotNil(t, broker.LivenessProbe.HTTPGet)
 }
 
+func TestBuildPodSpec_InitContainerTemplateApplied(t *testing.T) {
+	// InitContainer is the user's knob for tuning the controller-owned
+	// init-runtime container — resources, env, securityContext, etc. —
+	// without being able to override its identity (name, image, args).
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.InitContainer = &kmv1.ContainerTemplate{
+		ImagePullPolicy: corev1.PullIfNotPresent,
+		Env:             []corev1.EnvVar{{Name: "INIT_DEBUG", Value: "1"}},
+	}
+
+	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
+	initRuntime := initContainerByName(ps, kmv1.ContainerNameInitRuntime)
+
+	assert.Equal(t, corev1.PullIfNotPresent, initRuntime.ImagePullPolicy)
+	assert.NotNil(t, findEnv(initRuntime.Env, "INIT_DEBUG"), "InitContainer.Env must be applied to init-runtime")
+
+	// Infrastructure identity is untouched.
+	assert.Equal(t, kmv1.ContainerNameInitRuntime, initRuntime.Name)
+	assert.Equal(t, testBrokerImage, initRuntime.Image)
+	assert.Equal(t, []string{"init-runtime"}, initRuntime.Args)
+	assert.NotNil(t, findEnv(initRuntime.Env, kmv1.EnvAgentDeployObject),
+		"controller-stamped env must survive template application")
+}
+
+func TestBuildPodSpec_InitContainerTemplateResourcesWinOverDefaults(t *testing.T) {
+	defaults := corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{"cpu": resource.MustParse("100m")},
+	}
+	ad := newAgentDeploy("greeter", 1)
+	ad.Spec.InitContainer = &kmv1.ContainerTemplate{
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{"cpu": resource.MustParse("500m")},
+		},
+	}
+
+	initRuntime := initContainerByName(buildPodSpec(ad, testBrokerImage, "", defaults), kmv1.ContainerNameInitRuntime)
+	assert.Equal(t, resource.MustParse("500m"), initRuntime.Resources.Requests["cpu"], "explicit InitContainer.resources must win over the controller default")
+}
+
 func TestBuildPodSpec_BrokerPreStopDrain(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	broker := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{}).Containers[0]

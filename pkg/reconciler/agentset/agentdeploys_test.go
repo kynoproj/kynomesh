@@ -104,6 +104,61 @@ func TestBuildAgentDeploys_BrokerContainerFieldMerge(t *testing.T) {
 	assert.Equal(t, "t", names["FROM_TEMPLATE"], "template broker env merged in, not dropped")
 }
 
+func TestBuildAgentDeploys_InitContainerTemplateAppliedAsDefault(t *testing.T) {
+	r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	tmplPull := corev1.PullPolicy("Always")
+	as := newAgentSet("greeter", "alpha")
+	as.Spec.Templates = &kmv1.Templates{
+		AgentDeployTemplate: &kmv1.AgentDeployTemplate{
+			InitContainer: &kmv1.ContainerTemplate{ImagePullPolicy: tmplPull},
+		},
+	}
+	out, err := r.buildDesired(as)
+	require.NoError(t, err)
+	ad := out["greeter-alpha"]
+	require.NotNil(t, ad.Spec.InitContainer)
+	assert.Equal(t, tmplPull, ad.Spec.InitContainer.ImagePullPolicy)
+
+	// Per-agent value wins over template.
+	perAgent := corev1.PullPolicy("IfNotPresent")
+	as.Spec.Agents[0].InitContainer = &kmv1.ContainerTemplate{ImagePullPolicy: perAgent}
+	out, err = r.buildDesired(as)
+	require.NoError(t, err)
+	ad = out["greeter-alpha"]
+	require.NotNil(t, ad.Spec.InitContainer)
+	assert.Equal(t, perAgent, ad.Spec.InitContainer.ImagePullPolicy,
+		"per-agent value should beat the template default")
+}
+
+func TestBuildAgentDeploys_InitContainerFieldMerge(t *testing.T) {
+	r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+	as := newAgentSet("greeter", "alpha")
+	as.Spec.Templates = &kmv1.Templates{
+		AgentDeployTemplate: &kmv1.AgentDeployTemplate{
+			InitContainer: &kmv1.ContainerTemplate{
+				Env: []corev1.EnvVar{{Name: "FROM_TEMPLATE", Value: "t"}},
+			},
+		},
+	}
+	// The agent sets its own init container env; the template's env must still
+	// merge in rather than being dropped wholesale.
+	as.Spec.Agents[0].InitContainer = &kmv1.ContainerTemplate{
+		Env: []corev1.EnvVar{{Name: "FROM_AGENT", Value: "a"}},
+	}
+
+	out, err := r.buildDesired(as)
+	require.NoError(t, err)
+	ad := out["greeter-alpha"]
+
+	require.NotNil(t, ad.Spec.InitContainer)
+	names := map[string]string{}
+	for _, e := range ad.Spec.InitContainer.Env {
+		names[e.Name] = e.Value
+	}
+	assert.Equal(t, "a", names["FROM_AGENT"], "per-agent init container env kept")
+	assert.Equal(t, "t", names["FROM_TEMPLATE"], "template init container env merged in, not dropped")
+}
+
 func TestBuildAgentDeploys_TemplatePodFieldsApplied(t *testing.T) {
 	r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	as := newAgentSet("greeter", "alpha")
