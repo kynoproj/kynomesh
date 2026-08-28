@@ -122,6 +122,27 @@ Agent container, the user’s agent code runs here.
 
 <td>
 
+<code>initContainer</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.ContainerTemplate">
+ContainerTemplate </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+Container template for the init container.
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
 <code>brokerContainer</code></br> <em>
 <a href="#kynomesh.kyno.sh/v1alpha1.ContainerTemplate">
 ContainerTemplate </a> </em>
@@ -1325,6 +1346,27 @@ type.)
 
 <td>
 
+<code>initContainer</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.ContainerTemplate">
+ContainerTemplate </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+Template for the AgentDeploy init container
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
 <code>brokerContainer</code></br> <em>
 <a href="#kynomesh.kyno.sh/v1alpha1.ContainerTemplate">
 ContainerTemplate </a> </em>
@@ -1522,7 +1564,7 @@ one of agents\[\].name. For Sequential it must be agents\[0\].
 <p>
 
 Templates are used to customize additional kubernetes resources required
-for the Pipeline
+for the AgentSet
 </p>
 
 </td>
@@ -1722,7 +1764,7 @@ one of agents\[\].name. For Sequential it must be agents\[0\].
 <p>
 
 Templates are used to customize additional kubernetes resources required
-for the Pipeline
+for the AgentSet
 </p>
 
 </td>

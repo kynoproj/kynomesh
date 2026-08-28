@@ -109,7 +109,7 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	copy(dAtA[i:], m.PublicBaseURL)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.PublicBaseURL)))
 	i--
-	dAtA[i] = 0x5a
+	dAtA[i] = 0x62
 	{
 		size, err := m.UpdateStrategy.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
@@ -119,7 +119,7 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
 	i--
-	dAtA[i] = 0x52
+	dAtA[i] = 0x5a
 	if len(m.Sidecars) > 0 {
 		for iNdEx := len(m.Sidecars) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -131,7 +131,7 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintGenerated(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x4a
+			dAtA[i] = 0x52
 		}
 	}
 	if len(m.InitContainers) > 0 {
@@ -145,7 +145,7 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintGenerated(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x42
+			dAtA[i] = 0x4a
 		}
 	}
 	if m.RateLimit != nil {
@@ -158,7 +158,7 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintGenerated(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x3a
+		dAtA[i] = 0x42
 	}
 	{
 		size, err := m.Scale.MarshalToSizedBuffer(dAtA[:i])
@@ -169,7 +169,7 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintGenerated(dAtA, i, uint64(size))
 	}
 	i--
-	dAtA[i] = 0x32
+	dAtA[i] = 0x3a
 	if len(m.Volumes) > 0 {
 		for iNdEx := len(m.Volumes) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -181,12 +181,24 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintGenerated(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x2a
+			dAtA[i] = 0x32
 		}
 	}
 	if m.BrokerContainer != nil {
 		{
 			size, err := m.BrokerContainer.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x2a
+	}
+	if m.InitContainer != nil {
+		{
+			size, err := m.InitContainer.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -672,6 +684,18 @@ func (m *AgentDeployTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	if m.BrokerContainer != nil {
 		{
 			size, err := m.BrokerContainer.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.InitContainer != nil {
+		{
+			size, err := m.InitContainer.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -1729,6 +1753,10 @@ func (m *AbstractAgentDeploy) Size() (n int) {
 		l = m.Container.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	if m.InitContainer != nil {
+		l = m.InitContainer.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
 	if m.BrokerContainer != nil {
 		l = m.BrokerContainer.Size()
 		n += 1 + l + sovGenerated(uint64(l))
@@ -1923,6 +1951,10 @@ func (m *AgentDeployTemplate) Size() (n int) {
 	_ = l
 	l = m.AbstractPodTemplate.Size()
 	n += 1 + l + sovGenerated(uint64(l))
+	if m.InitContainer != nil {
+		l = m.InitContainer.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
 	if m.BrokerContainer != nil {
 		l = m.BrokerContainer.Size()
 		n += 1 + l + sovGenerated(uint64(l))
@@ -2351,6 +2383,7 @@ func (this *AbstractAgentDeploy) String() string {
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`AbstractPodTemplate:` + strings.Replace(strings.Replace(this.AbstractPodTemplate.String(), "AbstractPodTemplate", "AbstractPodTemplate", 1), `&`, ``, 1) + `,`,
 		`Container:` + strings.Replace(this.Container.String(), "Container", "Container", 1) + `,`,
+		`InitContainer:` + strings.Replace(this.InitContainer.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
 		`BrokerContainer:` + strings.Replace(this.BrokerContainer.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
 		`Volumes:` + repeatedStringForVolumes + `,`,
 		`Scale:` + strings.Replace(strings.Replace(this.Scale.String(), "Scale", "Scale", 1), `&`, ``, 1) + `,`,
@@ -2482,6 +2515,7 @@ func (this *AgentDeployTemplate) String() string {
 	}
 	s := strings.Join([]string{`&AgentDeployTemplate{`,
 		`AbstractPodTemplate:` + strings.Replace(strings.Replace(this.AbstractPodTemplate.String(), "AbstractPodTemplate", "AbstractPodTemplate", 1), `&`, ``, 1) + `,`,
+		`InitContainer:` + strings.Replace(this.InitContainer.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
 		`BrokerContainer:` + strings.Replace(this.BrokerContainer.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
 		`}`,
 	}, "")
@@ -2930,6 +2964,42 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InitContainer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.InitContainer == nil {
+				m.InitContainer = &ContainerTemplate{}
+			}
+			if err := m.InitContainer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field BrokerContainer", wireType)
 			}
 			var msglen int
@@ -2964,7 +3034,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 5:
+		case 6:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Volumes", wireType)
 			}
@@ -2998,7 +3068,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 6:
+		case 7:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Scale", wireType)
 			}
@@ -3031,7 +3101,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 7:
+		case 8:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RateLimit", wireType)
 			}
@@ -3067,7 +3137,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 8:
+		case 9:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field InitContainers", wireType)
 			}
@@ -3101,7 +3171,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 9:
+		case 10:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Sidecars", wireType)
 			}
@@ -3135,7 +3205,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 10:
+		case 11:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field UpdateStrategy", wireType)
 			}
@@ -3168,7 +3238,7 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 11:
+		case 12:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field PublicBaseURL", wireType)
 			}
@@ -4753,6 +4823,42 @@ func (m *AgentDeployTemplate) Unmarshal(dAtA []byte) error {
 			}
 			iNdEx = postIndex
 		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field InitContainer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.InitContainer == nil {
+				m.InitContainer = &ContainerTemplate{}
+			}
+			if err := m.InitContainer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field BrokerContainer", wireType)
 			}
