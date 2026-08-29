@@ -72,5 +72,8 @@ slow requests more room before that happens.
 
 - [Rolling Update](rolling-update.md) — how `terminationGracePeriodSeconds`
   interacts with the batched pod replacement during a spec change.
+- [Zero-Downtime Pod Replacement](../zero-downtime-pod-replacement.md) — how
+  draining outgoing pods combines with rolling update batching and readiness
+  gating on incoming pods.
 - [Metrics](../../../operations/metrics.md) — `broker_inflight_requests` and the
   other broker metrics the drain hook itself scrapes.
