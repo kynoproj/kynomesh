@@ -565,6 +565,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../zero-downtime-pod-replacement/" class="md-nav__link">
+        Zero-Downtime Pod Replacement
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../gpu/" class="md-nav__link">
         GPU
       </a>
@@ -584,18 +598,18 @@
     <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2_4" type="checkbox" id="__nav_3_2_4" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2_5" type="checkbox" id="__nav_3_2_5" checked>
       
       
       
       
-        <label class="md-nav__link" for="__nav_3_2_4">
+        <label class="md-nav__link" for="__nav_3_2_5">
           Configuration
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Configuration" data-md-level="3">
-        <label class="md-nav__title" for="__nav_3_2_4">
+        <label class="md-nav__title" for="__nav_3_2_5">
           <span class="md-nav__icon md-icon"></span>
           Configuration
         </label>
@@ -1224,6 +1238,10 @@ over the shared Unix Domain Socket — but the timing can be, via
 <span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">120</span>
 <span class="w">          </span><span class="nt">failureThreshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
 </code></pre></div>
+<p>By default, the SDK reports the agent as healthy as soon as the process starts,
+whether or not it has actually finished initializing (loading a model,
+connecting to a dependency, etc.). If that's not accurate for your agent,
+customize the health check in your SDK — see each SDK's README.</p>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../init-containers/">Init Containers</a> — the <code>agent</code> container's start order
@@ -1232,6 +1250,8 @@ over the shared Unix Domain Socket — but the timing can be, via
   order relative to sidecars.</li>
 <li><a href="../container-resources/">Container Resources</a> — set <code>resources</code> on any
   container.</li>
+<li><a href="../../zero-downtime-pod-replacement/">Zero-Downtime Pod Replacement</a> — how
+  readiness timing affects when a rollout starts routing traffic to a new pod.</li>
 </ul>
 
               
