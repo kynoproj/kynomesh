@@ -65,7 +65,7 @@ kind: ConfigMap
 metadata:
   name: kynomesh-cmd-params-config
 data:
-  ### Whether to run the controller and the UX server in namespaced scope, defaults to false.
+  ### Whether to run the controller in namespaced scope, defaults to false.
   # namespaced: "false"
   #
   ### The namespace that the controller watches when "namespaced" is true.
