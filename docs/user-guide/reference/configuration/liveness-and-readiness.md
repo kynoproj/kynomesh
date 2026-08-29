@@ -33,6 +33,11 @@ spec:
           failureThreshold: 5
 ```
 
+By default, the SDK reports the agent as healthy as soon as the process starts,
+whether or not it has actually finished initializing (loading a model,
+connecting to a dependency, etc.). If that's not accurate for your agent,
+customize the health check in your SDK — see each SDK's README.
+
 ## See Also
 
 - [Init Containers](init-containers.md) — the `agent` container's start order
@@ -41,3 +46,5 @@ spec:
   order relative to sidecars.
 - [Container Resources](container-resources.md) — set `resources` on any
   container.
+- [Zero-Downtime Pod Replacement](../zero-downtime-pod-replacement.md) — how
+  readiness timing affects when a rollout starts routing traffic to a new pod.

@@ -64,5 +64,8 @@ spec:
 
 ## See Also
 
+- [Zero-Downtime Pod Replacement](../zero-downtime-pod-replacement.md) — how
+  `maxUnavailable` combines with readiness and graceful termination so a
+  rollout doesn't drop traffic.
 - [AgentSet Customization](agentset-customization.md) — other per-agent
   settings.
