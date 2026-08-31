@@ -1,8 +1,8 @@
 # Kynomesh
 
-Welcome to Kynomesh! A Kubernetes-native **Agent Mesh** for orchestrating
-distributed multi-agent systems. Kynomesh lets you declare a group of
-cooperating AI agents as a single Kubernetes resource and takes care of
+Welcome to Kynomesh! A Kubernetes-native **Agent Mesh** platform for
+orchestrating distributed multi-agent systems. Kynomesh lets you declare a group
+of cooperating AI agents as a single Kubernetes resource and takes care of
 placement, peer discovery, and agent-to-agent ([A2A](https://a2a-protocol.org/))
 traffic — so you can focus on the agent logic instead of the wiring.
 
