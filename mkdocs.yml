@@ -62,7 +62,7 @@ nav:
           - Autoscaling: "user-guide/reference/autoscaling.md"
           - Rate limiting: "user-guide/reference/rate-limiting.md"
           - Zero-Downtime Pod Replacement: "user-guide/reference/zero-downtime-pod-replacement.md"
-          - GPU: "user-guide/reference/gpu.md"
+          - Running On GPU: "user-guide/reference/gpu.md"
           - Configuration:
               - Labels And Annotations: "user-guide/reference/configuration/labels-and-annotations.md"
               - Environment Variables: "user-guide/reference/configuration/environment-variables.md"

@@ -1,6 +1,6 @@
 # Controller Configuration
 
-There are 2 ConfigMaps are used for controller-wide settings.
+There are 2 ConfigMaps used for controller-wide settings.
 
 - [kynomesh-controller-config.yaml](https://github.com/kynoproj/kynomesh/blob/main/config/base/controller-manager/kynomesh-controller-config.yaml)
 - [kynomesh-cmd-params-config.yaml](https://github.com/kynoproj/kynomesh/blob/main/config/base/shared-config/kynomesh-cmd-params-config.yaml)
