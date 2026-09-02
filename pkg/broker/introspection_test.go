@@ -85,32 +85,44 @@ func TestIntrospectionHandler_MetricsExposesCounters(t *testing.T) {
 	assert.Contains(t, s, `broker_inflight_requests{transport="passthrough"} 11`)
 }
 
-func TestIntrospectionHandler_PeerHashes(t *testing.T) {
-	t.Run("missing file returns empty map", func(t *testing.T) {
+func TestIntrospectionHandler_Introspect(t *testing.T) {
+	t.Run("missing peer-hashes file reports empty map", func(t *testing.T) {
 		orig := peerHashesFilePath
 		peerHashesFilePath = filepath.Join(t.TempDir(), "does-not-exist.json")
 		t.Cleanup(func() { peerHashesFilePath = orig })
 
 		h := NewIntrospectionHandler(context.TODO(), prometheus.NewRegistry(), func() error { return nil })
 		rec := httptest.NewRecorder()
-		h.ServeHTTP(rec, httptest.NewRequest("GET", "/peer-hashes", nil))
+		h.ServeHTTP(rec, httptest.NewRequest("GET", "/introspect", nil))
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.JSONEq(t, "{}", rec.Body.String())
+		assert.JSONEq(t, `{"peerHashes":{}}`, rec.Body.String())
 	})
 
-	t.Run("existing file served verbatim", func(t *testing.T) {
+	t.Run("existing peer-hashes file surfaced under peerHashes", func(t *testing.T) {
 		orig := peerHashesFilePath
 		path := filepath.Join(t.TempDir(), "peer-hashes.json")
-		content := `{"worker":"abc123"}`
-		require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
+		require.NoError(t, os.WriteFile(path, []byte(`{"worker":"abc123"}`), 0o600))
 		peerHashesFilePath = path
 		t.Cleanup(func() { peerHashesFilePath = orig })
 
 		h := NewIntrospectionHandler(context.TODO(), prometheus.NewRegistry(), func() error { return nil })
 		rec := httptest.NewRecorder()
-		h.ServeHTTP(rec, httptest.NewRequest("GET", "/peer-hashes", nil))
+		h.ServeHTTP(rec, httptest.NewRequest("GET", "/introspect", nil))
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.JSONEq(t, content, rec.Body.String())
+		assert.JSONEq(t, `{"peerHashes":{"worker":"abc123"}}`, rec.Body.String())
+	})
+
+	t.Run("malformed peer-hashes file returns 500", func(t *testing.T) {
+		orig := peerHashesFilePath
+		path := filepath.Join(t.TempDir(), "peer-hashes.json")
+		require.NoError(t, os.WriteFile(path, []byte(`not-json`), 0o600))
+		peerHashesFilePath = path
+		t.Cleanup(func() { peerHashesFilePath = orig })
+
+		h := NewIntrospectionHandler(context.TODO(), prometheus.NewRegistry(), func() error { return nil })
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("GET", "/introspect", nil))
+		assert.Equal(t, http.StatusInternalServerError, rec.Code)
 	})
 }
 

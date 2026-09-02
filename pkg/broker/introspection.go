@@ -18,6 +18,7 @@ package broker
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -34,8 +35,19 @@ import (
 // peerHashesFilePath is a test seam; production uses kmv1.PeerHashesFilePath.
 var peerHashesFilePath = kmv1.PeerHashesFilePath
 
+// introspectResponse is the structured payload served by /introspect. It's
+// deliberately a grab-bag of independent sections rather than one endpoint
+// per topic, so new pod-internal insight can be added as another field here
+// without introducing another endpoint.
+type introspectResponse struct {
+	// PeerHashes is the peer-name-keyed AgentCard hash map the agent SDK
+	// writes on first resolving each peer client, or an empty map if the
+	// agent hasn't resolved any peer clients since last restart.
+	PeerHashes map[string]string `json:"peerHashes"`
+}
+
 // NewIntrospectionHandler serves /metrics, /healthz (liveness), /readyz, and
-// /peer-hashes.
+// /introspect.
 func NewIntrospectionHandler(ctx context.Context, registry *prometheus.Registry, ready func() error) http.Handler {
 	logger := logging.FromContext(ctx)
 	mux := http.NewServeMux()
@@ -53,26 +65,15 @@ func NewIntrospectionHandler(ctx context.Context, registry *prometheus.Registry,
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ready"))
 	})
-	mux.HandleFunc("/peer-hashes", func(w http.ResponseWriter, _ *http.Request) {
-		body, err := os.ReadFile(peerHashesFilePath)
-		if os.IsNotExist(err) {
-			// The agent hasn't resolved any peer clients since last restart —
-			// an empty map, not an error.
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte("{}"))
-			return
-		}
+	mux.HandleFunc("/introspect", func(w http.ResponseWriter, _ *http.Request) {
+		peerHashes, err := readPeerHashes(logger)
 		if err != nil {
-			logger.Errorw("Failed to read peer-hashes file",
-				zap.String("path", peerHashesFilePath),
-				zap.Error(err))
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(body)
+		_ = json.NewEncoder(w).Encode(introspectResponse{PeerHashes: peerHashes})
 	})
 	pprofEnabled := sharedutil.LookupEnvBoolOr(kmv1.EnvPPROFEnabled, false)
 	if pprofEnabled {
@@ -85,4 +86,28 @@ func NewIntrospectionHandler(ctx context.Context, registry *prometheus.Registry,
 		logger.Info("Not enabling pprof debug endpoints")
 	}
 	return mux
+}
+
+// readPeerHashes returns the peer-hashes file's contents, or an empty map if
+// the file doesn't exist yet — the agent hasn't resolved any peer clients
+// since last restart, not an error.
+func readPeerHashes(logger *zap.SugaredLogger) (map[string]string, error) {
+	raw, err := os.ReadFile(peerHashesFilePath)
+	if os.IsNotExist(err) {
+		return map[string]string{}, nil
+	}
+	if err != nil {
+		logger.Errorw("Failed to read peer-hashes file",
+			zap.String("path", peerHashesFilePath),
+			zap.Error(err))
+		return nil, err
+	}
+	hashes := map[string]string{}
+	if err := json.Unmarshal(raw, &hashes); err != nil {
+		logger.Errorw("Failed to decode peer-hashes file",
+			zap.String("path", peerHashesFilePath),
+			zap.Error(err))
+		return nil, err
+	}
+	return hashes, nil
 }
