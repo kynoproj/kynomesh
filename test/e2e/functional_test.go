@@ -19,6 +19,7 @@ limitations under the License.
 package e2e
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -35,26 +36,34 @@ type FunctionalSuite struct {
 // sends a message to the entry (coordinator) agent via a2acli over a
 // port-forward, and asserts the coordinator delegated to the searcher peer.
 func (s *FunctionalSuite) TestResearchAssistant() {
-	const localPort = 8490
+	const entryPort = 8490
+	const introspectPort = 8491
 
-	s.Given().AgentSet("@testdata/research-assistant.yaml").
+	w := s.Given().AgentSet("@testdata/research-assistant.yaml").
 		When().
 		CreateAgentSetAndWait().
 		Expect().
 		AgentSetRunning().
 		AgentPodsRunning(2).
 		When().
-		WaitForAgentServicesReady().
-		AgentSetEntryPortForward(localPort).
-		Wait(2*time.Second).
-		SendA2AMessage(localPort, "Hello, what can you do?").
+		WaitForAgentServicesReady()
+
+	defer func() {
+		w.DeleteAgentSetAndWait().
+			Expect().
+			AgentSetDeleted(2 * time.Minute)
+	}()
+
+	defer w.AgentSetEntryPortForwardWithIntrospection(entryPort, introspectPort).
+		Wait(2 * time.Second).TerminateAllPodPortForwards()
+
+	w.SendA2AMessage(entryPort, "Hello, what can you do?").
 		Expect().
-		AgentResponseContains(`via "searcher"`).
-		When().
-		TerminateAllPodPortForwards().
-		DeleteAgentSetAndWait().
+		AgentResponseContains(`via "searcher"`)
+
+	HTTPExpect(s.T(), fmt.Sprintf("https://localhost:%d", introspectPort)).GET("/introspect").
 		Expect().
-		AgentSetDeleted(2 * time.Minute)
+		Status(200).Body().Contains("host").Contains("peerHashes").Contains("searcher")
 }
 
 // TestRateLimitShedsExcessLoad verifies broker-side max-in-flight enforcement
