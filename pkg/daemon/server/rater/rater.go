@@ -68,7 +68,7 @@ type Scraper interface {
 
 // DiscoverFunc resolves the live pod DNS hostnames for an
 // AgentDeploy.
-type DiscoverFunc func(ctx context.Context, agentDeploy string) ([]string, error)
+type DiscoverFunc func(ctx context.Context, agentSet, agentDeploy string) ([]string, error)
 
 // Clock is a test seam. Production passes time.Now.
 type Clock func() time.Time
@@ -178,7 +178,7 @@ func (r *Rater) scrapeAllOnce(ctx context.Context) {
 // the rater happened to be on when the tick started.
 func (r *Rater) scrapeOneAgentDeploy(ctx context.Context, ad string) {
 	log := r.opts.Logger.With(zap.String("agentDeploy", ad))
-	hosts, err := r.opts.Discover(ctx, ad)
+	hosts, err := r.opts.Discover(ctx, r.opts.AgentSet, ad)
 	if err != nil {
 		log.Warnw("Pod discovery failed", zap.Error(err))
 		if r.selfMetrics != nil {

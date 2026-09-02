@@ -34,14 +34,14 @@ type Resolver interface {
 	LookupHost(ctx context.Context, host string) ([]string, error)
 }
 
-// HeadlessHost returns the DNS name of the AgentDeploy's headless
+// headlessHost returns the DNS name of the AgentDeploy's headless
 // Service.
-func HeadlessHost(agentSet, agentDeploy, namespace string) string {
+func headlessHost(agentSet, agentDeploy, namespace string) string {
 	return fmt.Sprintf("%s-%s%s.%s.svc.cluster.local", agentSet, agentDeploy, HeadlessSuffix, namespace)
 }
 
-// PodHost returns the DNS name of the i-th replica's pod.
-func PodHost(agentSet, agentDeploy, namespace string, replica int) string {
+// podHost returns the DNS name of the i-th replica's pod.
+func podHost(agentSet, agentDeploy, namespace string, replica int) string {
 	return fmt.Sprintf("%s-%s-%d.%s-%s%s.%s.svc.cluster.local", agentSet, agentDeploy, replica, agentSet, agentDeploy, HeadlessSuffix, namespace)
 }
 
@@ -49,7 +49,7 @@ func PodHost(agentSet, agentDeploy, namespace string, replica int) string {
 // AgentDeploy, identified by its AgentSet and its short (Spec.Name) agent
 // name — the same two values an AgentSet's Spec.Agents entry carries.
 func Discover(ctx context.Context, r Resolver, as, ad, namespace string) ([]string, error) {
-	host := HeadlessHost(as, ad, namespace)
+	host := headlessHost(as, ad, namespace)
 	ips, err := r.LookupHost(ctx, host)
 	if err != nil {
 		// NXDOMAIN means the headless Service exists but no pods are
@@ -63,7 +63,7 @@ func Discover(ctx context.Context, r Resolver, as, ad, namespace string) ([]stri
 	n := len(ips)
 	out := make([]string, n)
 	for i := range n {
-		out[i] = PodHost(as, ad, namespace, i)
+		out[i] = podHost(as, ad, namespace, i)
 	}
 	return out, nil
 }
