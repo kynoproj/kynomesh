@@ -19,11 +19,13 @@ package service
 import (
 	"context"
 	"errors"
+	"os"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 	pb "github.com/kynoproj/kynomesh/pkg/apis/proto/daemon"
 	"github.com/kynoproj/kynomesh/pkg/daemon/server/rater"
 )
@@ -73,7 +75,8 @@ func (s *Service) GetAgentDeployMetrics(_ context.Context, req *pb.GetAgentDeplo
 
 	return &pb.GetAgentDeployMetricsResponse{
 		Metrics: &pb.AgentDeployMetrics{
-			Agentdeploy:                  req.GetName(),
+			AgentSet:                     os.Getenv(kmv1.EnvAgentSetName),
+			AgentDeploy:                  req.GetName(),
 			ProcessingRates:              mapFloatToDV(res.Total.ProcessingRates),
 			StreamMessageRates:           mapFloatToDV(res.Total.StreamMessageRates),
 			Inflights:                    mapFloatToDV(res.Total.Inflights),

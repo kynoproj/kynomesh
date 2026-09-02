@@ -89,7 +89,7 @@ func TestGetAgentDeployMetrics_PopulatesAllWindows(t *testing.T) {
 	require.NoError(t, err)
 	m := resp.GetMetrics()
 	require.NotNil(t, m)
-	assert.Equal(t, "a", m.GetAgentdeploy())
+	assert.Equal(t, "a", m.GetAgentDeploy())
 	assert.Equal(t, 1.0, m.GetProcessingRates()[rater.WindowKey1m].GetValue())
 	assert.Equal(t, 0.5, m.GetProcessingRates()[rater.WindowKey5m].GetValue())
 	assert.Equal(t, 0.3, m.GetProcessingRates()[rater.WindowKey15m].GetValue())

@@ -81,7 +81,8 @@ func TestGRPCClient_GetAgentDeployMetrics_HappyPath(t *testing.T) {
 	srv := &fakeServer{
 		resp: &pb.GetAgentDeployMetricsResponse{
 			Metrics: &pb.AgentDeployMetrics{
-				Agentdeploy: "greeter",
+				AgentSet:    "hello",
+				AgentDeploy: "greeter",
 				ProcessingRates: map[string]*wrapperspb.DoubleValue{
 					"1m": wrapperspb.Double(2.5),
 				},
@@ -102,7 +103,8 @@ func TestGRPCClient_GetAgentDeployMetrics_HappyPath(t *testing.T) {
 	defer cancel()
 	m, err := c.GetAgentDeployMetrics(ctx, "greeter", 120)
 	require.NoError(t, err)
-	assert.Equal(t, "greeter", m.GetAgentdeploy())
+	assert.Equal(t, "hello", m.GetAgentSet())
+	assert.Equal(t, "greeter", m.GetAgentDeploy())
 	assert.Equal(t, 2.5, m.GetProcessingRates()["1m"].GetValue())
 	assert.Equal(t, float64(4), m.GetInflights()["1m"].GetValue())
 
@@ -252,7 +254,7 @@ func startGRPCServerImpl(t *testing.T, impl pb.DaemonServiceServer) (string, fun
 // against the daemon's self-signed cert.
 func TestGRPCClient_AcceptsSelfSignedCert(t *testing.T) {
 	srv := &fakeServer{resp: &pb.GetAgentDeployMetricsResponse{
-		Metrics: &pb.AgentDeployMetrics{Agentdeploy: "ok"},
+		Metrics: &pb.AgentDeployMetrics{AgentSet: "hello", AgentDeploy: "ok"},
 	}}
 	addr, stop := startGRPCServer(t, srv)
 	defer stop()
@@ -264,7 +266,8 @@ func TestGRPCClient_AcceptsSelfSignedCert(t *testing.T) {
 	defer cancel()
 	m, err := c.GetAgentDeployMetrics(ctx, "ok", 0)
 	require.NoError(t, err)
-	assert.Equal(t, "ok", m.GetAgentdeploy())
+	assert.Equal(t, "hello", m.GetAgentSet())
+	assert.Equal(t, "ok", m.GetAgentDeploy())
 }
 
 func TestGRPCClient_TimeoutInformsServerThroughContext(t *testing.T) {

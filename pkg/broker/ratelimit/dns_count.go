@@ -45,6 +45,7 @@ type dnsCountLimiter struct {
 	sem *semaphore
 
 	maxInFlight int
+	agentSet    string
 	agentDeploy string
 	namespace   string
 	resolver    discovery.Resolver
@@ -55,12 +56,13 @@ type dnsCountLimiter struct {
 // runs start in its own goroutine (`go start(ctx)`); the limiter is usable
 // immediately, enforcing the whole cap locally until the first successful DNS
 // read narrows it to this replica's slice.
-func NewDNSCountLimiter(maxInFlight int, agentDeploy, namespace string, resolver discovery.Resolver) (Limiter, func(ctx context.Context)) {
+func NewDNSCountLimiter(maxInFlight int, agentSet, agentDeploy, namespace string, resolver discovery.Resolver) (Limiter, func(ctx context.Context)) {
 	l := &dnsCountLimiter{
 		// Start at the full cap: before the first DNS read we don't yet know the
 		// replica count, so admit up to the global cap rather than reject.
 		sem:         newSemaphore(maxInFlight),
 		maxInFlight: maxInFlight,
+		agentSet:    agentSet,
 		agentDeploy: agentDeploy,
 		namespace:   namespace,
 		resolver:    resolver,
@@ -90,7 +92,7 @@ func (l *dnsCountLimiter) run(ctx context.Context) {
 // error it keeps the current slice.
 func (l *dnsCountLimiter) recount(ctx context.Context) {
 	logger := logging.FromContext(ctx)
-	hosts, err := discovery.Discover(ctx, l.resolver, l.agentDeploy, l.namespace)
+	hosts, err := discovery.Discover(ctx, l.resolver, l.agentSet, l.agentDeploy, l.namespace)
 	if err != nil {
 		logger.Warnw("Rate-limit replica recount failed; keeping current slice",
 			zap.Int("slice", l.sem.limitValue()),

@@ -120,7 +120,7 @@ func TestServer_RoundTripGRPCAndREST(t *testing.T) {
 		resp, err := c.GetAgentDeployMetrics(callCtx, &pb.GetAgentDeployMetricsRequest{Name: "greeter"})
 		require.NoError(t, err)
 		assert.Equal(t, 2.5, resp.GetMetrics().GetProcessingRates()[rater.WindowKey1m].GetValue())
-		assert.Equal(t, "greeter", resp.GetMetrics().GetAgentdeploy())
+		assert.Equal(t, "greeter", resp.GetMetrics().GetAgentDeploy())
 	})
 
 	t.Run("rest", func(t *testing.T) {
@@ -142,7 +142,7 @@ func TestServer_RoundTripGRPCAndREST(t *testing.T) {
 		// grpc-gateway nests the response under "metrics".
 		metrics, ok := payload["metrics"].(map[string]any)
 		require.True(t, ok, "missing metrics: %s", string(body))
-		assert.Equal(t, "greeter", metrics["agentdeploy"])
+		assert.Equal(t, "greeter", metrics["agentDeploy"])
 	})
 
 	t.Run("metrics endpoint", func(t *testing.T) {

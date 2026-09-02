@@ -72,7 +72,8 @@ func canonicalBody(t *testing.T, m *pb.AgentDeployMetrics) string {
 func TestRESTClient_GetAgentDeployMetrics_HappyPath(t *testing.T) {
 	st := &restServerState{status: http.StatusOK}
 	st.body = canonicalBody(t, &pb.AgentDeployMetrics{
-		Agentdeploy: "greeter",
+		AgentSet:    "hello",
+		AgentDeploy: "greeter",
 		ProcessingRates: map[string]*wrapperspb.DoubleValue{
 			"1m": wrapperspb.Double(2.5),
 		},
@@ -89,7 +90,8 @@ func TestRESTClient_GetAgentDeployMetrics_HappyPath(t *testing.T) {
 	defer cancel()
 	m, err := c.GetAgentDeployMetrics(ctx, "greeter", 120)
 	require.NoError(t, err)
-	assert.Equal(t, "greeter", m.GetAgentdeploy())
+	assert.Equal(t, "hello", m.GetAgentSet())
+	assert.Equal(t, "greeter", m.GetAgentDeploy())
 	assert.Equal(t, 2.5, m.GetProcessingRates()["1m"].GetValue())
 	assert.Equal(t, float64(4), m.GetInflights()["1m"].GetValue())
 	assert.Equal(t, "/api/v1/agentdeploys/greeter/metrics", st.lastPath)
@@ -98,7 +100,7 @@ func TestRESTClient_GetAgentDeployMetrics_HappyPath(t *testing.T) {
 
 func TestRESTClient_ZeroLookbackOmitsQueryParam(t *testing.T) {
 	st := &restServerState{status: http.StatusOK}
-	st.body = canonicalBody(t, &pb.AgentDeployMetrics{Agentdeploy: "x"})
+	st.body = canonicalBody(t, &pb.AgentDeployMetrics{AgentDeploy: "x"})
 	srv := startRESTServer(t, st)
 	c, err := NewRESTClient(srv.URL)
 	require.NoError(t, err)
@@ -113,7 +115,7 @@ func TestRESTClient_ZeroLookbackOmitsQueryParam(t *testing.T) {
 
 func TestRESTClient_AddressWithoutSchemeAssumedHTTPS(t *testing.T) {
 	st := &restServerState{status: http.StatusOK}
-	st.body = canonicalBody(t, &pb.AgentDeployMetrics{Agentdeploy: "x"})
+	st.body = canonicalBody(t, &pb.AgentDeployMetrics{AgentDeploy: "x"})
 	srv := startRESTServer(t, st)
 	// Strip "https://" so we can verify the client adds it back.
 	bare := strings.TrimPrefix(srv.URL, "https://")
@@ -157,7 +159,7 @@ func TestRESTClient_503SurfacesAsError(t *testing.T) {
 
 func TestRESTClient_NameIsPathEscaped(t *testing.T) {
 	st := &restServerState{status: http.StatusOK}
-	st.body = canonicalBody(t, &pb.AgentDeployMetrics{Agentdeploy: "x"})
+	st.body = canonicalBody(t, &pb.AgentDeployMetrics{AgentDeploy: "x"})
 	srv := startRESTServer(t, st)
 	c, err := NewRESTClient(srv.URL)
 	require.NoError(t, err)
@@ -225,7 +227,7 @@ func TestRESTClient_ContextCancellation(t *testing.T) {
 // through, trailing slash is trimmed.
 func TestRESTClient_TrailingSlashTrimmed(t *testing.T) {
 	st := &restServerState{status: http.StatusOK}
-	st.body = canonicalBody(t, &pb.AgentDeployMetrics{Agentdeploy: "x"})
+	st.body = canonicalBody(t, &pb.AgentDeployMetrics{AgentDeploy: "x"})
 	srv := startRESTServer(t, st)
 	c, err := NewRESTClient(srv.URL + "/")
 	require.NoError(t, err)

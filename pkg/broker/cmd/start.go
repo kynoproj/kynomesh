@@ -517,7 +517,7 @@ func buildLimiter(ctx context.Context, ad *kmv1.AgentDeploy) ratelimit.Limiter {
 		return ratelimit.NewLimiter(maxInFlight)
 	}
 
-	limiter, start := ratelimit.NewDNSCountLimiter(maxInFlight, ad.Name, ad.Namespace, dnsResolver)
+	limiter, start := ratelimit.NewDNSCountLimiter(maxInFlight, ad.Spec.AgentSetName, ad.Spec.Name, ad.Namespace, dnsResolver)
 	go start(ctx)
 	logger.Infow("Broker rate limiting enabled (fleet, DNS-count)",
 		zap.Int("maxInFlight", maxInFlight))

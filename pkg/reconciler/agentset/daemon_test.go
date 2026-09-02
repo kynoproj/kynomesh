@@ -98,7 +98,7 @@ func TestNewDaemonDeployment_AgentDeploysEnvVar(t *testing.T) {
 	// reconciler will create (ChildAgentDeployName: "<set>-<agent>").
 	var names []string
 	require.NoError(t, json.Unmarshal([]byte(env[kmv1.EnvAgentSetAgentDeploys].value), &names))
-	assert.Equal(t, []string{"hello-alpha", "hello-beta"}, names)
+	assert.Equal(t, []string{"alpha", "beta"}, names)
 }
 
 type envEntry struct {
@@ -197,7 +197,7 @@ func TestReconcileDaemon_RecreatesOnAgentDeploysChange(t *testing.T) {
 	// Pod template was rewritten — which is what a real-cluster
 	// Recreate strategy would translate to a Pod rollover.)
 	env := envMap(dep1.Spec.Template.Spec.Containers[0].Env)
-	assert.Contains(t, env[kmv1.EnvAgentSetAgentDeploys].value, "hello-beta",
+	assert.Contains(t, env[kmv1.EnvAgentSetAgentDeploys].value, "beta",
 		"new agent must appear in the AgentDeploys env after spec change")
 }
 
