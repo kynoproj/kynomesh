@@ -94,6 +94,35 @@ The broker's introspection endpoints are TLS-only with a self-signed certificate
 `pprof` is only wired up on the broker today — the daemon and controller-manager
 don't expose `/debug/pprof/*`.
 
+## Pod-Internal Insight
+
+The broker's introspection port also serves `/introspect`, a single structured
+JSON endpoint for pod-internal state.
+
+```sh
+curl -sk https://localhost:8491/introspect
+```
+
+```json
+{
+  "host": "my-agent-0",
+  "peerHashes": {
+    "worker-a": "3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1"
+  }
+}
+```
+
+Today it carries:
+
+- **`host`** — the pod name..
+- **`peerHashes`** — the peer-hashes file the agent's SDK writes to the shared
+  `kynomesh-run` volume (`/var/run/kynomesh/peer-hashes.json`): a
+  peer-name-keyed map of the `AgentCard` hash behind each peer client the agent
+  process has resolved (see
+  [AgentCard Drift Detection and Dependent Reload](specifications/agentcard-drift-reload.md)).
+  An empty object if the agent hasn't resolved any peer clients since last
+  restart, not an error.
+
 ## Debug Inside The Container
 
 When doing local [development](development.md) using `make image`, the built
