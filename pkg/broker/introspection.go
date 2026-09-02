@@ -55,10 +55,7 @@ func resetPeerHashesCache() {
 	peerHashesCache.hashes = nil
 }
 
-// introspectResponse is the structured payload served by /introspect. It's
-// deliberately a grab-bag of independent sections rather than one endpoint
-// per topic, so new pod-internal insight can be added as another field here
-// without introducing another endpoint.
+// introspectResponse is the structured payload served by /introspect.
 type introspectResponse struct {
 	// Host is the pod name.
 	Host string `json:"host"`
