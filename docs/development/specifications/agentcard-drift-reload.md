@@ -74,7 +74,7 @@ and force those callers' pods to restart.
    moment the SDK actually knows which `AgentCard` it resolved and is now using.
    At that point, the SDK hashes the resolved card and records it — keyed by
    peer name — in a file on the shared `kynomesh-run` volume (e.g.
-   `/var/run/kynomesh/peer-card-hashes.json`), updated incrementally as new
+   `/var/run/kynomesh/peer-hashes.json`), updated incrementally as new
    peers are first resolved over the process's lifetime, not rewritten wholesale
    each time.
 
@@ -97,7 +97,7 @@ and force those callers' pods to restart.
 2. **Broker: expose the file.** The broker already shares the pod's volume and
    already serves introspection data (`/metrics`, `/healthz`, `/readyz`) on its
    introspection port (`pkg/broker/introspection.go`). It reads the
-   peer-card-hash file and serves its contents on a small new endpoint,
+   peer-hashes file and serves its contents on a small new endpoint,
    analogous to the existing ones.
 
 3. **Daemon: do both halves of the comparison, expose one decision-ready API.**
@@ -119,7 +119,7 @@ and force those callers' pods to restart.
    The daemon, not the controller, fetches each managed peer's live `AgentCard`
    and hashes it (the same way it already reaches managed agents for metrics
    scraping), and separately scrapes each dependent pod's broker-exposed
-   peer-card-hash file. `reported_hashes` is plural because different replicas
+   peer-hashes file. `reported_hashes` is plural because different replicas
    of the same AgentDeploy can legitimately be mid-transition — one pod may have
    already restarted and re-resolved, another may not have. The controller needs
    to know if _any_ live pod is still on a stale hash, not get a single

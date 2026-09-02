@@ -22,6 +22,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -81,6 +83,35 @@ func TestIntrospectionHandler_MetricsExposesCounters(t *testing.T) {
 	assert.Contains(t, s, `broker_inflight_requests{transport="rest"} 7`)
 	assert.Contains(t, s, `broker_inflight_requests{transport="grpc"} 2`)
 	assert.Contains(t, s, `broker_inflight_requests{transport="passthrough"} 11`)
+}
+
+func TestIntrospectionHandler_PeerHashes(t *testing.T) {
+	t.Run("missing file returns empty map", func(t *testing.T) {
+		orig := peerHashesFilePath
+		peerHashesFilePath = filepath.Join(t.TempDir(), "does-not-exist.json")
+		t.Cleanup(func() { peerHashesFilePath = orig })
+
+		h := NewIntrospectionHandler(context.TODO(), prometheus.NewRegistry(), func() error { return nil })
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("GET", "/peer-hashes", nil))
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.JSONEq(t, "{}", rec.Body.String())
+	})
+
+	t.Run("existing file served verbatim", func(t *testing.T) {
+		orig := peerHashesFilePath
+		path := filepath.Join(t.TempDir(), "peer-hashes.json")
+		content := `{"worker":"abc123"}`
+		require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
+		peerHashesFilePath = path
+		t.Cleanup(func() { peerHashesFilePath = orig })
+
+		h := NewIntrospectionHandler(context.TODO(), prometheus.NewRegistry(), func() error { return nil })
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("GET", "/peer-hashes", nil))
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.JSONEq(t, content, rec.Body.String())
+	})
 }
 
 func TestIntrospectionHandler_UnknownPath404(t *testing.T) {

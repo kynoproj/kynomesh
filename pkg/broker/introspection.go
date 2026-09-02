@@ -20,16 +20,22 @@ import (
 	"context"
 	"net/http"
 	"net/http/pprof"
+	"os"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 	sharedutil "github.com/kynoproj/kynomesh/pkg/shared/util"
 )
 
-// NewIntrospectionHandler serves /metrics, /healthz (liveness), and /readyz.
+// peerHashesFilePath is a test seam; production uses kmv1.PeerHashesFilePath.
+var peerHashesFilePath = kmv1.PeerHashesFilePath
+
+// NewIntrospectionHandler serves /metrics, /healthz (liveness), /readyz, and
+// /peer-hashes.
 func NewIntrospectionHandler(ctx context.Context, registry *prometheus.Registry, ready func() error) http.Handler {
 	logger := logging.FromContext(ctx)
 	mux := http.NewServeMux()
@@ -46,6 +52,27 @@ func NewIntrospectionHandler(ctx context.Context, registry *prometheus.Registry,
 		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ready"))
+	})
+	mux.HandleFunc("/peer-hashes", func(w http.ResponseWriter, _ *http.Request) {
+		body, err := os.ReadFile(peerHashesFilePath)
+		if os.IsNotExist(err) {
+			// The agent hasn't resolved any peer clients since last restart —
+			// an empty map, not an error.
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("{}"))
+			return
+		}
+		if err != nil {
+			logger.Errorw("Failed to read peer-hashes file",
+				zap.String("path", peerHashesFilePath),
+				zap.Error(err))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(body)
 	})
 	pprofEnabled := sharedutil.LookupEnvBoolOr(kmv1.EnvPPROFEnabled, false)
 	if pprofEnabled {

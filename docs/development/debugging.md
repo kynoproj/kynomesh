@@ -94,6 +94,21 @@ The broker's introspection endpoints are TLS-only with a self-signed certificate
 `pprof` is only wired up on the broker today — the daemon and controller-manager
 don't expose `/debug/pprof/*`.
 
+## Peer AgentCard Hashes
+
+The broker's introspection port also serves `/peer-hashes`, the contents of
+the peer-hashes file the agent's SDK writes to the shared `kynomesh-run`
+volume (`/var/run/kynomesh/peer-hashes.json`) — a peer-name-keyed map of the
+`AgentCard` hash behind each peer client the agent process has resolved (see
+[AgentCard Drift Detection and Dependent Reload](specifications/agentcard-drift-reload.md)).
+The broker serves the file's contents verbatim and doesn't interpret them; if
+the file doesn't exist yet (no peer clients resolved since the last agent
+restart), the endpoint returns an empty JSON object rather than an error.
+
+```sh
+curl -sk https://localhost:8491/peer-hashes
+```
+
 ## Debug Inside The Container
 
 When doing local [development](development.md) using `make image`, the built
