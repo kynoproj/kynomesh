@@ -22,6 +22,8 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -34,6 +36,24 @@ import (
 
 // peerHashesFilePath is a test seam; production uses kmv1.PeerHashesFilePath.
 var peerHashesFilePath = kmv1.PeerHashesFilePath
+
+// peerHashesCache caches the peer-hashes file's parsed contents, keyed by the
+// file's mtime, so a burst of /introspect requests doesn't re-read and
+// re-parse the file on every call — it's only re-read when the agent SDK has
+// actually written a new version of it.
+var peerHashesCache struct {
+	mu      sync.Mutex
+	modTime time.Time
+	hashes  map[string]string
+}
+
+// resetPeerHashesCache clears the cache. Test-only.
+func resetPeerHashesCache() {
+	peerHashesCache.mu.Lock()
+	defer peerHashesCache.mu.Unlock()
+	peerHashesCache.modTime = time.Time{}
+	peerHashesCache.hashes = nil
+}
 
 // introspectResponse is the structured payload served by /introspect. It's
 // deliberately a grab-bag of independent sections rather than one endpoint
@@ -96,8 +116,27 @@ func NewIntrospectionHandler(ctx context.Context, registry *prometheus.Registry,
 
 // readPeerHashes returns the peer-hashes file's contents, or an empty map if
 // the file doesn't exist yet — the agent hasn't resolved any peer clients
-// since last restart, not an error.
+// since last restart, not an error. The parsed result is cached by the
+// file's mtime so repeated calls only re-read and re-parse the file when its
+// contents have actually changed.
 func readPeerHashes(logger *zap.SugaredLogger) (map[string]string, error) {
+	info, err := os.Stat(peerHashesFilePath)
+	if os.IsNotExist(err) {
+		return map[string]string{}, nil
+	}
+	if err != nil {
+		logger.Errorw("Failed to stat peer-hashes file",
+			zap.String("path", peerHashesFilePath),
+			zap.Error(err))
+		return nil, err
+	}
+
+	peerHashesCache.mu.Lock()
+	defer peerHashesCache.mu.Unlock()
+	if info.ModTime().Equal(peerHashesCache.modTime) && peerHashesCache.hashes != nil {
+		return peerHashesCache.hashes, nil
+	}
+
 	raw, err := os.ReadFile(peerHashesFilePath)
 	if os.IsNotExist(err) {
 		return map[string]string{}, nil
@@ -115,5 +154,8 @@ func readPeerHashes(logger *zap.SugaredLogger) (map[string]string, error) {
 			zap.Error(err))
 		return nil, err
 	}
+
+	peerHashesCache.modTime = info.ModTime()
+	peerHashesCache.hashes = hashes
 	return hashes, nil
 }

@@ -25,10 +25,13 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 )
 
 func TestIntrospectionHandler_Healthz(t *testing.T) {
@@ -89,7 +92,8 @@ func TestIntrospectionHandler_Introspect(t *testing.T) {
 	t.Run("missing peer-hashes file reports empty map", func(t *testing.T) {
 		orig := peerHashesFilePath
 		peerHashesFilePath = filepath.Join(t.TempDir(), "does-not-exist.json")
-		t.Cleanup(func() { peerHashesFilePath = orig })
+		resetPeerHashesCache()
+		t.Cleanup(func() { peerHashesFilePath = orig; resetPeerHashesCache() })
 		t.Setenv("POD_NAME", "my-agent-0")
 
 		h := NewIntrospectionHandler(context.TODO(), prometheus.NewRegistry(), func() error { return nil })
@@ -104,7 +108,8 @@ func TestIntrospectionHandler_Introspect(t *testing.T) {
 		path := filepath.Join(t.TempDir(), "peer-hashes.json")
 		require.NoError(t, os.WriteFile(path, []byte(`{"worker":"abc123"}`), 0o600))
 		peerHashesFilePath = path
-		t.Cleanup(func() { peerHashesFilePath = orig })
+		resetPeerHashesCache()
+		t.Cleanup(func() { peerHashesFilePath = orig; resetPeerHashesCache() })
 		t.Setenv("POD_NAME", "my-agent-0")
 
 		h := NewIntrospectionHandler(context.TODO(), prometheus.NewRegistry(), func() error { return nil })
@@ -119,12 +124,44 @@ func TestIntrospectionHandler_Introspect(t *testing.T) {
 		path := filepath.Join(t.TempDir(), "peer-hashes.json")
 		require.NoError(t, os.WriteFile(path, []byte(`not-json`), 0o600))
 		peerHashesFilePath = path
-		t.Cleanup(func() { peerHashesFilePath = orig })
+		resetPeerHashesCache()
+		t.Cleanup(func() { peerHashesFilePath = orig; resetPeerHashesCache() })
 
 		h := NewIntrospectionHandler(context.TODO(), prometheus.NewRegistry(), func() error { return nil })
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequest("GET", "/introspect", nil))
 		assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	})
+
+	t.Run("cached result served until mtime changes", func(t *testing.T) {
+		logger := logging.FromContext(context.TODO())
+		orig := peerHashesFilePath
+		path := filepath.Join(t.TempDir(), "peer-hashes.json")
+		require.NoError(t, os.WriteFile(path, []byte(`{"worker":"abc123"}`), 0o600))
+		peerHashesFilePath = path
+		resetPeerHashesCache()
+		t.Cleanup(func() { peerHashesFilePath = orig; resetPeerHashesCache() })
+
+		hashes, err := readPeerHashes(logger)
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{"worker": "abc123"}, hashes)
+
+		// Overwrite the file on disk without bumping its mtime: the cache
+		// must keep serving the previously parsed contents.
+		info, err := os.Stat(path)
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(path, []byte(`{"worker":"changed"}`), 0o600))
+		require.NoError(t, os.Chtimes(path, info.ModTime(), info.ModTime()))
+
+		hashes, err = readPeerHashes(logger)
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{"worker": "abc123"}, hashes, "stale cache should still be served when mtime is unchanged")
+
+		// Bumping the mtime must invalidate the cache.
+		require.NoError(t, os.Chtimes(path, info.ModTime().Add(time.Second), info.ModTime().Add(time.Second)))
+		hashes, err = readPeerHashes(logger)
+		require.NoError(t, err)
+		assert.Equal(t, map[string]string{"worker": "changed"}, hashes)
 	})
 }
 
