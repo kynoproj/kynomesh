@@ -90,12 +90,13 @@ func TestIntrospectionHandler_Introspect(t *testing.T) {
 		orig := peerHashesFilePath
 		peerHashesFilePath = filepath.Join(t.TempDir(), "does-not-exist.json")
 		t.Cleanup(func() { peerHashesFilePath = orig })
+		t.Setenv("POD_NAME", "my-agent-0")
 
 		h := NewIntrospectionHandler(context.TODO(), prometheus.NewRegistry(), func() error { return nil })
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequest("GET", "/introspect", nil))
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.JSONEq(t, `{"peerHashes":{}}`, rec.Body.String())
+		assert.JSONEq(t, `{"host":"my-agent-0","peerHashes":{}}`, rec.Body.String())
 	})
 
 	t.Run("existing peer-hashes file surfaced under peerHashes", func(t *testing.T) {
@@ -104,12 +105,13 @@ func TestIntrospectionHandler_Introspect(t *testing.T) {
 		require.NoError(t, os.WriteFile(path, []byte(`{"worker":"abc123"}`), 0o600))
 		peerHashesFilePath = path
 		t.Cleanup(func() { peerHashesFilePath = orig })
+		t.Setenv("POD_NAME", "my-agent-0")
 
 		h := NewIntrospectionHandler(context.TODO(), prometheus.NewRegistry(), func() error { return nil })
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequest("GET", "/introspect", nil))
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.JSONEq(t, `{"peerHashes":{"worker":"abc123"}}`, rec.Body.String())
+		assert.JSONEq(t, `{"host":"my-agent-0","peerHashes":{"worker":"abc123"}}`, rec.Body.String())
 	})
 
 	t.Run("malformed peer-hashes file returns 500", func(t *testing.T) {

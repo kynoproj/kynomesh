@@ -97,9 +97,7 @@ don't expose `/debug/pprof/*`.
 ## Pod-Internal Insight
 
 The broker's introspection port also serves `/introspect`, a single structured
-JSON endpoint for pod-internal state that doesn't fit `/metrics`' time-series
-model — a grab-bag of independent, named sections rather than one endpoint per
-topic, so new insight can be added as another field without a new endpoint.
+JSON endpoint for pod-internal state.
 
 ```sh
 curl -sk https://localhost:8491/introspect
@@ -107,14 +105,16 @@ curl -sk https://localhost:8491/introspect
 
 ```json
 {
+  "host": "my-agent-0",
   "peerHashes": {
     "worker-a": "3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1"
   }
 }
 ```
 
-Today it carries one section:
+Today it carries:
 
+- **`host`** — the pod name..
 - **`peerHashes`** — the peer-hashes file the agent's SDK writes to the shared
   `kynomesh-run` volume (`/var/run/kynomesh/peer-hashes.json`): a
   peer-name-keyed map of the `AgentCard` hash behind each peer client the agent

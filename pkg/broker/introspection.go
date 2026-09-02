@@ -40,6 +40,9 @@ var peerHashesFilePath = kmv1.PeerHashesFilePath
 // per topic, so new pod-internal insight can be added as another field here
 // without introducing another endpoint.
 type introspectResponse struct {
+	// Host is the pod name (from the POD_NAME env var), so responses can be
+	// told apart across an AgentDeploy's replicas.
+	Host string `json:"host"`
 	// PeerHashes is the peer-name-keyed AgentCard hash map the agent SDK
 	// writes on first resolving each peer client, or an empty map if the
 	// agent hasn't resolved any peer clients since last restart.
@@ -73,7 +76,10 @@ func NewIntrospectionHandler(ctx context.Context, registry *prometheus.Registry,
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(introspectResponse{PeerHashes: peerHashes})
+		_ = json.NewEncoder(w).Encode(introspectResponse{
+			Host:       os.Getenv(kmv1.EnvPodName),
+			PeerHashes: peerHashes,
+		})
 	})
 	pprofEnabled := sharedutil.LookupEnvBoolOr(kmv1.EnvPPROFEnabled, false)
 	if pprofEnabled {
