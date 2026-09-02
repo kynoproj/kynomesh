@@ -96,9 +96,9 @@ don't expose `/debug/pprof/*`.
 
 ## Peer AgentCard Hashes
 
-The broker's introspection port also serves `/peer-hashes`, the contents of
-the peer-hashes file the agent's SDK writes to the shared `kynomesh-run`
-volume (`/var/run/kynomesh/peer-hashes.json`) — a peer-name-keyed map of the
+The broker's introspection port also serves `/peer-hashes`, the contents of the
+peer-hashes file the agent's SDK writes to the shared `kynomesh-run` volume
+(`/var/run/kynomesh/peer-hashes.json`) — a peer-name-keyed map of the
 `AgentCard` hash behind each peer client the agent process has resolved (see
 [AgentCard Drift Detection and Dependent Reload](specifications/agentcard-drift-reload.md)).
 The broker serves the file's contents verbatim and doesn't interpret them; if
