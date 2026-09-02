@@ -60,12 +60,9 @@ func resetPeerHashesCache() {
 // per topic, so new pod-internal insight can be added as another field here
 // without introducing another endpoint.
 type introspectResponse struct {
-	// Host is the pod name (from the POD_NAME env var), so responses can be
-	// told apart across an AgentDeploy's replicas.
+	// Host is the pod name.
 	Host string `json:"host"`
-	// PeerHashes is the peer-name-keyed AgentCard hash map the agent SDK
-	// writes on first resolving each peer client, or an empty map if the
-	// agent hasn't resolved any peer clients since last restart.
+	// PeerHashes is the peer-name-keyed AgentCard hash map.
 	PeerHashes map[string]string `json:"peerHashes"`
 }
 
