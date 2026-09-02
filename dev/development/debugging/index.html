@@ -1130,6 +1130,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#pod-internal-insight" class="md-nav__link">
+    Pod-Internal Insight
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#debug-inside-the-container" class="md-nav__link">
     Debug Inside The Container
   </a>
@@ -1215,6 +1222,13 @@
         <li class="md-nav__item">
   <a href="#profiling" class="md-nav__link">
     Profiling
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pod-internal-insight" class="md-nav__link">
+    Pod-Internal Insight
   </a>
   
 </li>
@@ -1318,6 +1332,29 @@ go<span class="w"> </span>tool<span class="w"> </span>trace<span class="w"> </sp
 <code>https+insecure://</code> / <code>curl -k</code>.</p>
 <p><code>pprof</code> is only wired up on the broker today — the daemon and controller-manager
 don't expose <code>/debug/pprof/*</code>.</p>
+<h2 id="pod-internal-insight">Pod-Internal Insight<a class="headerlink" href="#pod-internal-insight" title="Permanent link">&para;</a></h2>
+<p>The broker's introspection port also serves <code>/introspect</code>, a single structured
+JSON endpoint for pod-internal state.</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-sk<span class="w"> </span>https://localhost:8491/introspect
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"host"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-agent-0"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"peerHashes"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"worker-a"</span><span class="p">:</span><span class="w"> </span><span class="s2">"3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Today it carries:</p>
+<ul>
+<li><strong><code>host</code></strong> — the pod name..</li>
+<li><strong><code>peerHashes</code></strong> — the peer-hashes file the agent's SDK writes to the shared
+  <code>kynomesh-run</code> volume (<code>/var/run/kynomesh/peer-hashes.json</code>): a
+  peer-name-keyed map of the <code>AgentCard</code> hash behind each peer client the agent
+  process has resolved (see
+  <a href="../specifications/agentcard-drift-reload/">AgentCard Drift Detection and Dependent Reload</a>).
+  An empty object if the agent hasn't resolved any peer clients since last
+  restart, not an error.</li>
+</ul>
 <h2 id="debug-inside-the-container">Debug Inside The Container<a class="headerlink" href="#debug-inside-the-container" title="Permanent link">&para;</a></h2>
 <p>When doing local <a href="../development/">development</a> using <code>make image</code>, the built
 <code>kynomesh</code> image is based on <code>alpine</code> (the Makefile's <code>DEV_BASE_IMAGE</code>), which

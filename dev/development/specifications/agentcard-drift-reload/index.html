@@ -1408,7 +1408,7 @@ and force those callers' pods to restart.</p>
    moment the SDK actually knows which <code>AgentCard</code> it resolved and is now using.
    At that point, the SDK hashes the resolved card and records it — keyed by
    peer name — in a file on the shared <code>kynomesh-run</code> volume (e.g.
-   <code>/var/run/kynomesh/peer-card-hashes.json</code>), updated incrementally as new
+   <code>/var/run/kynomesh/peer-hashes.json</code>), updated incrementally as new
    peers are first resolved over the process's lifetime, not rewritten wholesale
    each time.</li>
 </ol>
@@ -1431,7 +1431,7 @@ and force those callers' pods to restart.</p>
 <p><strong>Broker: expose the file.</strong> The broker already shares the pod's volume and
    already serves introspection data (<code>/metrics</code>, <code>/healthz</code>, <code>/readyz</code>) on its
    introspection port (<code>pkg/broker/introspection.go</code>). It reads the
-   peer-card-hash file and serves its contents on a small new endpoint,
+   peer-hashes file and serves its contents on a small new endpoint,
    analogous to the existing ones.</p>
 </li>
 <li>
@@ -1453,7 +1453,7 @@ and force those callers' pods to restart.</p>
 <p>The daemon, not the controller, fetches each managed peer's live <code>AgentCard</code>
    and hashes it (the same way it already reaches managed agents for metrics
    scraping), and separately scrapes each dependent pod's broker-exposed
-   peer-card-hash file. <code>reported_hashes</code> is plural because different replicas
+   peer-hashes file. <code>reported_hashes</code> is plural because different replicas
    of the same AgentDeploy can legitimately be mid-transition — one pod may have
    already restarted and re-resolved, another may not have. The controller needs
    to know if <em>any</em> live pod is still on a stale hash, not get a single
