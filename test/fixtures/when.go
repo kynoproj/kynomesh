@@ -113,18 +113,10 @@ func (w *When) UpdateAgentSet(mutate func(*kmv1.AgentSet)) *When {
 	return w
 }
 
-// AgentDeployPortForward forwards arbitrary port pairs to a pod of the
-// AgentDeploy named agentName, through a single tunnel so every pair lands on
-// the same pod. The fully generic escape hatch; the broker/introspection helpers
-// below are conveniences over it.
-func (w *When) AgentDeployPortForward(agentName string, pairs ...PortPair) *When {
-	return w.forwardAgentDeployPod(agentName, pairs...)
-}
-
 // AgentDeployBrokerPortForward forwards localPort to the broker port (8490) on a
 // pod of the AgentDeploy named agentName.
 func (w *When) AgentDeployBrokerPortForward(agentName string, localPort int) *When {
-	return w.forwardAgentDeployPod(agentName, PortPair{Local: localPort, Remote: kmv1.AgentBrokerPort})
+	return w.AgentDeployPortForward(agentName, PortPair{Local: localPort, Remote: kmv1.AgentBrokerPort})
 }
 
 // AgentDeployPortForwardWithIntrospection forwards both the broker port (8490)
@@ -132,7 +124,7 @@ func (w *When) AgentDeployBrokerPortForward(agentName string, localPort int) *Wh
 // to the SAME pod — so a metrics scrape on 8491 observes the pod receiving 8490
 // load.
 func (w *When) AgentDeployPortForwardWithIntrospection(agentName string, brokerLocalPort, introspectLocalPort int) *When {
-	return w.forwardAgentDeployPod(agentName,
+	return w.AgentDeployPortForward(agentName,
 		PortPair{Local: brokerLocalPort, Remote: kmv1.AgentBrokerPort},
 		PortPair{Local: introspectLocalPort, Remote: kmv1.AgentBrokerIntrospectionPort},
 	)
@@ -161,9 +153,9 @@ func (w *When) entryAgentName() string {
 	return w.agentSet.Spec.Entry
 }
 
-// forwardAgentDeployPod forwards all given port pairs to a pod of the AgentDeploy
+// AgentDeployPortForward forwards all given port pairs to a pod of the AgentDeploy
 // named agentName through a single tunnel, so every pair lands on the same pod.
-func (w *When) forwardAgentDeployPod(agentName string, pairs ...PortPair) *When {
+func (w *When) AgentDeployPortForward(agentName string, pairs ...PortPair) *When {
 	w.t.Helper()
 	if w.agentSet == nil {
 		w.t.Fatal("No AgentSet selected for port-forward")
