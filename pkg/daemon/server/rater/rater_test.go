@@ -66,7 +66,7 @@ func (s *stubScraper) Scrape(_ context.Context, host string) (*PodSample, error)
 }
 
 func stubDiscover(hosts map[string][]string) DiscoverFunc {
-	return func(_ context.Context, ad string) ([]string, error) {
+	return func(_ context.Context, as, ad string) ([]string, error) {
 		return hosts[ad], nil
 	}
 }
@@ -235,7 +235,7 @@ func TestScrapeAllOnce_DiscoveryFailureSkipsAD(t *testing.T) {
 	}
 	r := NewRater(Options{
 		AgentDeploys: []string{"a"},
-		Discover: func(_ context.Context, _ string) ([]string, error) {
+		Discover: func(_ context.Context, _, _ string) ([]string, error) {
 			called.Add(1)
 			return nil, errors.New("dns down")
 		},

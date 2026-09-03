@@ -54,7 +54,7 @@ type MetricsSource interface {
 // than treat it as a failure. The caller is responsible for recording the
 // returned Sample.
 func collectSample(ctx context.Context, src MetricsSource, ad *kmv1.AgentDeploy, now time.Time, lookback int64) (Sample, bool, error) {
-	m, err := src.GetAgentDeployMetrics(ctx, ad.Name, lookback)
+	m, err := src.GetAgentDeployMetrics(ctx, ad.Spec.Name, lookback)
 	if err != nil {
 		switch status.Code(err) {
 		case codes.Unavailable, codes.NotFound:

@@ -67,7 +67,7 @@ func TestSliceFor(t *testing.T) {
 }
 
 func TestDNSCountLimiter_StartsAtFullCapBeforeFirstRead(t *testing.T) {
-	l, _ := NewDNSCountLimiter(3, "greeter", "default", stubResolver{ips: ips(3)})
+	l, _ := NewDNSCountLimiter(3, "my-agentset", "greeter", "default", stubResolver{ips: ips(3)})
 	// No recount yet: the whole cap is enforceable locally.
 	releases := make([]func(), 0, 3)
 	for range 3 {
@@ -83,7 +83,7 @@ func TestDNSCountLimiter_StartsAtFullCapBeforeFirstRead(t *testing.T) {
 }
 
 func TestDNSCountLimiter_RecountNarrowsSlice(t *testing.T) {
-	l, _ := NewDNSCountLimiter(12, "greeter", "default", stubResolver{ips: ips(4)})
+	l, _ := NewDNSCountLimiter(12, "my-agentset", "greeter", "default", stubResolver{ips: ips(4)})
 	dl := l.(*dnsCountLimiter)
 
 	dl.recount(context.Background())
@@ -104,7 +104,7 @@ func TestDNSCountLimiter_RecountNarrowsSlice(t *testing.T) {
 
 func TestDNSCountLimiter_RebalancesOnScale(t *testing.T) {
 	res := &mutableResolver{ips: ips(2)}
-	l, _ := NewDNSCountLimiter(12, "greeter", "default", res)
+	l, _ := NewDNSCountLimiter(12, "my-agentset", "greeter", "default", res)
 	dl := l.(*dnsCountLimiter)
 
 	dl.recount(context.Background())
@@ -121,7 +121,7 @@ func TestDNSCountLimiter_RebalancesOnScale(t *testing.T) {
 
 func TestDNSCountLimiter_KeepsSliceOnDNSError(t *testing.T) {
 	res := &mutableResolver{ips: ips(4)}
-	l, _ := NewDNSCountLimiter(12, "greeter", "default", res)
+	l, _ := NewDNSCountLimiter(12, "my-agentset", "greeter", "default", res)
 	dl := l.(*dnsCountLimiter)
 
 	dl.recount(context.Background())
@@ -135,7 +135,7 @@ func TestDNSCountLimiter_KeepsSliceOnDNSError(t *testing.T) {
 func TestDNSCountLimiter_NoReadyPodsLeavesFullCap(t *testing.T) {
 	// NXDOMAIN (no ready pods) is treated as zero replicas -> full cap kept.
 	res := stubResolver{err: &net.DNSError{Err: "no such host", IsNotFound: true}}
-	l, _ := NewDNSCountLimiter(9, "greeter", "default", res)
+	l, _ := NewDNSCountLimiter(9, "my-agentset", "greeter", "default", res)
 	dl := l.(*dnsCountLimiter)
 
 	dl.recount(context.Background())
@@ -143,7 +143,7 @@ func TestDNSCountLimiter_NoReadyPodsLeavesFullCap(t *testing.T) {
 }
 
 func TestDNSCountLimiter_RunDoesImmediateRecountThenStopsOnCancel(t *testing.T) {
-	l, start := NewDNSCountLimiter(12, "greeter", "default", stubResolver{ips: ips(4)})
+	l, start := NewDNSCountLimiter(12, "my-agentset", "greeter", "default", stubResolver{ips: ips(4)})
 	dl := l.(*dnsCountLimiter)
 
 	ctx, cancel := context.WithCancel(context.Background())

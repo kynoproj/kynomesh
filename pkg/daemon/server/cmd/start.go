@@ -124,8 +124,8 @@ func run(ctx context.Context, cfg *daemonConfig, logger *zap.SugaredLogger) erro
 	selfMetrics := rater.NewSelfMetrics(registry)
 
 	scr := scraper.New(rater.DefaultScrapeTimeout)
-	discoverFn := func(ctx context.Context, ad string) ([]string, error) {
-		return discovery.Discover(ctx, net.DefaultResolver, ad, cfg.Namespace)
+	discoverFn := func(ctx context.Context, as, ad string) ([]string, error) {
+		return discovery.Discover(ctx, net.DefaultResolver, as, ad, cfg.Namespace)
 	}
 
 	r := rater.NewRater(rater.Options{

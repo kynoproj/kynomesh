@@ -24,6 +24,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
 type stubResolver struct {
@@ -36,41 +39,47 @@ func (s stubResolver) LookupHost(_ context.Context, _ string) ([]string, error) 
 }
 
 func TestHeadlessHost(t *testing.T) {
-	assert.Equal(t, "greeter-headless.default.svc.cluster.local", HeadlessHost("greeter", "default"))
+	assert.Equal(t, "my-agentset-greeter-headless.default.svc.cluster.local", headlessHost("my-agentset", "greeter", "default"))
 }
 
 func TestPodHost(t *testing.T) {
-	assert.Equal(t, "greeter-0.greeter-headless.default.svc.cluster.local", PodHost("greeter", "default", 0))
-	assert.Equal(t, "greeter-7.greeter-headless.ns.svc.cluster.local", PodHost("greeter", "ns", 7))
+	assert.Equal(t, "my-agentset-greeter-0.my-agentset-greeter-headless.default.svc.cluster.local", podHost("my-agentset", "greeter", "default", 0))
+	assert.Equal(t, "my-agentset-greeter-7.my-agentset-greeter-headless.ns.svc.cluster.local", podHost("my-agentset", "greeter", "ns", 7))
 }
 
 func TestDiscover_NormalCase(t *testing.T) {
 	r := stubResolver{ips: []string{"10.0.0.1", "10.0.0.2", "10.0.0.3"}}
-	hosts, err := Discover(context.Background(), r, "greeter", "default")
+	hosts, err := Discover(context.Background(), r, "my-agentset", "greeter", "default")
 	require.NoError(t, err)
 	assert.Equal(t, []string{
-		"greeter-0.greeter-headless.default.svc.cluster.local",
-		"greeter-1.greeter-headless.default.svc.cluster.local",
-		"greeter-2.greeter-headless.default.svc.cluster.local",
+		"my-agentset-greeter-0.my-agentset-greeter-headless.default.svc.cluster.local",
+		"my-agentset-greeter-1.my-agentset-greeter-headless.default.svc.cluster.local",
+		"my-agentset-greeter-2.my-agentset-greeter-headless.default.svc.cluster.local",
 	}, hosts)
+}
+
+func TestHeadlessHost_MatchesAPIPackageChildName(t *testing.T) {
+	as := &kmv1.AgentSet{ObjectMeta: metav1.ObjectMeta{Name: "my-agentset"}}
+	ad := &kmv1.AgentDeploy{ObjectMeta: metav1.ObjectMeta{Name: as.ChildAgentDeployName("greeter")}}
+	assert.Equal(t, ad.HeadlessServiceName()+".default.svc.cluster.local", headlessHost("my-agentset", "greeter", "default"))
 }
 
 func TestDiscover_NoReadyPods_NotAnError(t *testing.T) {
 	r := stubResolver{err: &net.DNSError{Err: "no such host", IsNotFound: true}}
-	hosts, err := Discover(context.Background(), r, "greeter", "default")
+	hosts, err := Discover(context.Background(), r, "my-agentset", "greeter", "default")
 	require.NoError(t, err)
 	assert.Empty(t, hosts)
 }
 
 func TestDiscover_GenuineError(t *testing.T) {
 	r := stubResolver{err: errors.New("network unreachable")}
-	_, err := Discover(context.Background(), r, "greeter", "default")
+	_, err := Discover(context.Background(), r, "my-agentset", "greeter", "default")
 	require.Error(t, err)
 }
 
 func TestDiscover_EmptyResultNoError(t *testing.T) {
 	r := stubResolver{ips: nil}
-	hosts, err := Discover(context.Background(), r, "greeter", "default")
+	hosts, err := Discover(context.Background(), r, "my-agentset", "greeter", "default")
 	require.NoError(t, err)
 	assert.Empty(t, hosts)
 }
