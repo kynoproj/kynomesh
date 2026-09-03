@@ -38,6 +38,7 @@ type FunctionalSuite struct {
 func (s *FunctionalSuite) TestResearchAssistant() {
 	const entryPort = 8490
 	const introspectPort = 8491
+	const daemonPort = 9432
 
 	w := s.Given().AgentSet("@testdata/research-assistant.yaml").
 		When().
@@ -45,8 +46,9 @@ func (s *FunctionalSuite) TestResearchAssistant() {
 		Expect().
 		AgentSetRunning().
 		AgentPodsRunning(2).
-		When().
-		WaitForAgentServicesReady()
+		DaemonPodsRunning().
+		AgentServicesReady().
+		When()
 
 	defer func() {
 		w.DeleteAgentSetAndWait().
@@ -55,6 +57,7 @@ func (s *FunctionalSuite) TestResearchAssistant() {
 	}()
 
 	defer w.AgentSetEntryPortForwardWithIntrospection(entryPort, introspectPort).
+		DaemonPortForward(PortPair{Local: daemonPort, Remote: daemonPort}).
 		Wait(2 * time.Second).TerminateAllPodPortForwards()
 
 	w.SendA2AMessage(entryPort, "Hello, what can you do?").
@@ -63,7 +66,18 @@ func (s *FunctionalSuite) TestResearchAssistant() {
 
 	HTTPExpect(s.T(), fmt.Sprintf("https://localhost:%d", introspectPort)).GET("/introspect").
 		Expect().
-		Status(200).Body().Contains("host").Contains("peerHashes").Contains("searcher")
+		Status(200).Body().
+		Contains("host").
+		Contains("peerHashes").
+		Contains("searcher")
+
+	HTTPExpect(s.T(), fmt.Sprintf("https://localhost:%d", daemonPort)).
+		GET("/api/v1/agentdeploys/searcher/metrics").
+		Expect().
+		Status(200).Body().Contains(`"metrics"`).
+		Contains(`"agentSet":"research-assistant"`).
+		Contains("streamMessageRates").
+		Contains(`"customWindowEffectiveSeconds"`)
 }
 
 // TestRateLimitShedsExcessLoad verifies broker-side max-in-flight enforcement
@@ -82,8 +96,9 @@ func (s *FunctionalSuite) TestRateLimitShedsExcessLoad() {
 		Expect().
 		AgentSetRunning().
 		AgentPodsRunning(2).
+		DaemonPodsRunning().
+		AgentServicesReady().
 		When().
-		WaitForAgentServicesReady().
 		AgentSetEntryPortForwardWithIntrospection(entryPort, introspectPort).
 		GenerateLoad(entryPort, concurrency).
 		Expect().

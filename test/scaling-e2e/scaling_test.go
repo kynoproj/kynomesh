@@ -54,8 +54,8 @@ func (s *ScalingSuite) TestAutoscalingUpAndDown() {
 		Expect().
 		AgentSetRunning().
 		AgentPodsRunning(1).
+		AgentServicesReady().
 		When().
-		WaitForAgentServicesReady().
 		AgentSetEntryPortForward(localPort).
 		GenerateLoad(localPort, concurrency).
 		Expect().
