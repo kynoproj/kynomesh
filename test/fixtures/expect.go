@@ -85,6 +85,17 @@ func (e *Expect) AgentSetExists() *Expect {
 	return e
 }
 
+// AgentPodsRunning asserts the daemon pod running.
+func (e *Expect) DaemonPodsRunning() *Expect {
+	e.t.Helper()
+	ctx := context.Background()
+	timeout := 2 * time.Minute
+	if err := WaitForDaemonPodsRunning(ctx, e.kubeClient, Namespace, e.agentSet.Name, timeout); err != nil {
+		e.t.Fatalf("Expected daemon pods of AgentSet %q running: %v", e.agentSet.Name, err)
+	}
+	return e
+}
+
 // AgentPodsRunning asserts that at least minReady pods backing the AgentSet
 // are in the Running phase. Pass the expected pod count for the AgentSet
 // (typically the sum of agent replicas).
@@ -94,6 +105,26 @@ func (e *Expect) AgentPodsRunning(minReady int) *Expect {
 	if err := WaitForAgentSetPodsRunning(ctx, e.kubeClient, Namespace, e.agentSet.Name, minReady, defaultTimeout); err != nil {
 		e.t.Fatalf("Expected %d pods running for AgentSet %q: %v", minReady, e.agentSet.Name, err)
 	}
+	return e
+}
+
+// WaitForAgentServicesReady blocks until every per-agent ClusterIP Service and
+// the entry (ingress) Service has a ready endpoint.
+func (e *Expect) AgentServicesReady() *Expect {
+	e.t.Helper()
+	if e.agentSet == nil {
+		e.t.Fatal("No AgentSet selected")
+	}
+	services := make([]string, 0, len(e.agentSet.Spec.Agents)+1)
+	for _, a := range e.agentSet.Spec.Agents {
+		services = append(services, e.agentSet.ChildAgentDeployName(a.Name))
+	}
+	services = append(services, e.agentSet.EntryServiceName())
+	ctx := context.Background()
+	if err := WaitForServicesReady(ctx, e.kubeClient, Namespace, services, defaultTimeout); err != nil {
+		e.t.Fatalf("Timeout waiting for Services %v to have ready endpoints: %v", services, err)
+	}
+	e.t.Logf("Confirmed ready endpoints for Services %v", services)
 	return e
 }
 

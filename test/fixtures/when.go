@@ -178,23 +178,27 @@ func (w *When) AgentDeployPortForward(agentName string, pairs ...PortPair) *When
 	return w
 }
 
-// WaitForAgentServicesReady blocks until every per-agent ClusterIP Service and
-// the entry (ingress) Service has a ready endpoint.
-func (w *When) WaitForAgentServicesReady() *When {
+// DaemonPortForward forwards all given port pairs to a the daemon pod.
+func (w *When) DaemonPortForward(pairs ...PortPair) *When {
 	w.t.Helper()
 	if w.agentSet == nil {
-		w.t.Fatal("No AgentSet selected")
+		w.t.Fatal("No AgentSet selected for port-forward")
 	}
-	services := make([]string, 0, len(w.agentSet.Spec.Agents)+1)
-	for _, a := range w.agentSet.Spec.Agents {
-		services = append(services, w.agentSet.ChildAgentDeployName(a.Name))
-	}
-	services = append(services, w.agentSet.EntryServiceName())
 	ctx := context.Background()
-	if err := WaitForServicesReady(ctx, w.kubeClient, Namespace, services, defaultTimeout); err != nil {
-		w.t.Fatalf("Timeout waiting for Services %v to have ready endpoints: %v", services, err)
+	podName, err := DaemonPodName(ctx, w.kubeClient, Namespace, w.agentSet.Name)
+	if err != nil {
+		w.t.Fatalf("Failed to resolve daemon pod for AgentSet %q: %v", w.agentSet.Name, err)
 	}
-	w.t.Logf("Confirmed ready endpoints for Services %v", services)
+	w.t.Logf("Port-forward %s: %v", podName, pairs)
+
+	stopCh := make(chan struct{}, 1)
+	if err := PodPortForward(w.restConfig, Namespace, podName, pairs, stopCh); err != nil {
+		w.t.Fatalf("Failed to start port-forward to %s: %v", podName, err)
+	}
+	if w.portForwarderStopChannels == nil {
+		w.portForwarderStopChannels = make(map[string]chan struct{})
+	}
+	w.portForwarderStopChannels[podName] = stopCh
 	return w
 }
 

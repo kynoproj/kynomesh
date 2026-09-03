@@ -110,6 +110,37 @@ func AgentDeployPodName(ctx context.Context, kube kubernetes.Interface, namespac
 	return podList.Items[0].Name, nil
 }
 
+// DaemonPodName returns the name of the daemon pod of the AgentSet.
+func DaemonPodName(ctx context.Context, kube kubernetes.Interface, namespace, agentSetName string) (string, error) {
+	selector := fmt.Sprintf("%s=%s,%s=%s",
+		kmv1.KeyAgentSetName, agentSetName,
+		kmv1.KeyComponent, kmv1.ComponentDaemon)
+	podList, err := kube.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: selector,
+		FieldSelector: "status.phase=Running",
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to list daemon pods for AgentSet %q: %w", agentSetName, err)
+	}
+	if len(podList.Items) == 0 {
+		return "", fmt.Errorf("no running pods found for daemon of %q", agentSetName)
+	}
+	return podList.Items[0].Name, nil
+}
+
+// WaitForDaemonPodsRunning blocks until the Daemon pod reaches the Running phase
+// or timeout elapses.
+func WaitForDaemonPodsRunning(ctx context.Context, kubeClient kubernetes.Interface, namespace, agentSet string, timeout time.Duration) error {
+	selector := fmt.Sprintf("%s=%s,%s=%s", kmv1.KeyAgentSetName, agentSet, kmv1.KeyComponent, kmv1.ComponentDaemon)
+	return wait.PollUntilContextTimeout(ctx, pollInterval, timeout, true, func(ctx context.Context) (bool, error) {
+		podList, err := kubeClient.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector, FieldSelector: "status.phase=Running"})
+		if err != nil {
+			return false, fmt.Errorf("failed to list AgentSet daemon pods: %w", err)
+		}
+		return len(podList.Items) >= 1, nil
+	})
+}
+
 // WaitForAgentSetRunning blocks until the AgentSet reaches the Running phase
 // or timeout elapses.
 func WaitForAgentSetRunning(ctx context.Context, c flowpkg.AgentSetInterface, name string, timeout time.Duration) error {
@@ -144,17 +175,11 @@ func WaitForAgentSetDeleted(ctx context.Context, c flowpkg.AgentSetInterface, na
 func WaitForAgentSetPodsRunning(ctx context.Context, kube kubernetes.Interface, namespace, agentSetName string, minReady int, timeout time.Duration) error {
 	selector := fmt.Sprintf("%s=%s,%s=%s", kmv1.KeyAgentSetName, agentSetName, kmv1.KeyComponent, kmv1.ComponentAgent)
 	return wait.PollUntilContextTimeout(ctx, pollInterval, timeout, true, func(ctx context.Context) (bool, error) {
-		podList, err := kube.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
+		podList, err := kube.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector, FieldSelector: "status.phase=Running"})
 		if err != nil {
 			return false, fmt.Errorf("failed to list AgentSet pods: %w", err)
 		}
-		running := 0
-		for _, p := range podList.Items {
-			if p.Status.Phase == corev1.PodRunning {
-				running++
-			}
-		}
-		return running >= minReady, nil
+		return len(podList.Items) >= minReady, nil
 	})
 }
 
