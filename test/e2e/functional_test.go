@@ -58,7 +58,9 @@ func (s *FunctionalSuite) TestResearchAssistant() {
 
 	defer w.AgentSetEntryPortForwardWithIntrospection(entryPort, introspectPort).
 		DaemonPortForward(PortPair{Local: daemonPort, Remote: daemonPort}).
-		Wait(2 * time.Second).TerminateAllPodPortForwards()
+		// The daemon metrics check below needs at least one completed scrape
+		// samples for "searcher", or it 503s with "no samples yet".
+		Wait(7 * time.Second).TerminateAllPodPortForwards()
 
 	w.SendA2AMessage(entryPort, "Hello, what can you do?").
 		Expect().
@@ -73,11 +75,12 @@ func (s *FunctionalSuite) TestResearchAssistant() {
 
 	HTTPExpect(s.T(), fmt.Sprintf("https://localhost:%d", daemonPort)).
 		GET("/api/v1/agentdeploys/searcher/metrics").
+		WithQuery("lookbackSeconds", 30).
 		Expect().
 		Status(200).Body().Contains(`"metrics"`).
 		Contains(`"agentSet":"research-assistant"`).
 		Contains("streamMessageRates").
-		Contains(`"customWindowEffectiveSeconds"`)
+		Contains(`"customWindowEffectiveSeconds":"30"`)
 }
 
 // TestRateLimitShedsExcessLoad verifies broker-side max-in-flight enforcement
