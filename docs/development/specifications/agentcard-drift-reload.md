@@ -67,38 +67,38 @@ and force those callers' pods to restart.
 
 ## Proposed direction
 
-1. **SDK: report the hash behind the cached client.** The first successful
-   construction of a peer's client
+1. **SDK: report the hash behind the cached client, and when it was recorded.**
+   The first successful construction of a peer's client
    ([kynomesh-go#31](https://github.com/kynoproj/kynomesh-go/issues/31),
    [kynomesh-py#6](https://github.com/kynoproj/kynomesh-py/issues/6)) is the one
    moment the SDK actually knows which `AgentCard` it resolved and is now using.
-   At that point, the SDK hashes the resolved card and records it — keyed by
-   peer name — in a file on the shared `kynomesh-run` volume (e.g.
-   `/var/run/kynomesh/peer-hashes.json`), updated incrementally as new
-   peers are first resolved over the process's lifetime, not rewritten wholesale
-   each time.
+   At that point, the SDK hashes the resolved card and records both the hash and
+   the current time — keyed by peer name — in a file on the shared
+   `kynomesh-run` volume (e.g. `/var/run/kynomesh/peer-hashes.json`), updated
+   incrementally as new peers are first resolved over the process's lifetime,
+   not rewritten wholesale each time:
 
-   A plain file rather than a `/metrics` gauge: the data is a small
-   peer-name-keyed map of string hashes, not a numeric time series — encoding it
-   as Prometheus labels would mean one gauge series per peer per pod, a
-   cardinality/format mismatch for what's really just "current state of a small
-   map." A file matches the pattern already used for `topology.json` (written
-   once by an init container, read by another sidecar) and needs no new metrics
-   wiring.
+   ```json
+   {
+     "searcher": {
+       "hash": "c0e81e18b0d9276e...",
+       "observedAt": "2026-09-08T22:10:00Z"
+     }
+   }
+   ```
 
    The file must be cleared/truncated at process start, before any peer client
    is constructed, so a stale entry from a previous process incarnation (e.g. a
    peer removed from the topology and no longer called) never lingers. The file
-   only ever contains hashes for peers the process actually resolved a client
+   only ever contains entries for peers the process actually resolved a client
    for — a peer listed in `topology.json` that the agent's code never calls
    simply has no entry, which the consuming side must treat as "unknown," not
    "drifted."
 
 2. **Broker: expose the file.** The broker already shares the pod's volume and
    already serves introspection data (`/metrics`, `/healthz`, `/readyz`) on its
-   introspection port (`pkg/broker/introspection.go`). It reads the
-   peer-hashes file and serves its contents on a small new endpoint,
-   analogous to the existing ones.
+   introspection port (`pkg/broker/introspection.go`). It reads the peer-hashes
+   file and serves its contents.
 
 3. **Daemon: do both halves of the comparison, expose one decision-ready API.**
    The daemon already runs a per-pod scrape loop (`pkg/daemon/server/scraper`,
@@ -110,8 +110,13 @@ and force those callers' pods to restart.
    ```
    GetPeerCardDrift(AgentDeployName) -> {
      peer_name: {
-       latest_hash: string        // daemon's own polled, stability-gated hash for that peer
-       reported_hashes: []string  // distinct hash(es) currently reported across this AgentDeploy's live pods
+       latest_hash: string                    // daemon's own polled, stability-gated hash for that peer
+       latest_hash_observed_at: timestamp      // when the stability gate last accepted latest_hash
+       reported_hashes: map<pod, {
+         hash: string                          // that pod's currently-reported hash for this peer
+         observed_at: timestamp                // when that pod's SDK recorded this hash (see step 1) — echoed
+                                                // through from peer-hashes.json verbatim, not a scrape time
+       }>
      }
    }
    ```
@@ -119,11 +124,11 @@ and force those callers' pods to restart.
    The daemon, not the controller, fetches each managed peer's live `AgentCard`
    and hashes it (the same way it already reaches managed agents for metrics
    scraping), and separately scrapes each dependent pod's broker-exposed
-   peer-hashes file. `reported_hashes` is plural because different replicas
-   of the same AgentDeploy can legitimately be mid-transition — one pod may have
-   already restarted and re-resolved, another may not have. The controller needs
-   to know if _any_ live pod is still on a stale hash, not get a single
-   collapsed value.
+   peer-hashes file. `reported_hashes` is keyed by pod name, not deduplicated to
+   a set of distinct values, because the controller acts per pod (see step 4):
+   it needs to know exactly _which_ live pods are still on a stale hash so it
+   can terminate only those. A pod with no entry for a given peer hasn't
+   reported a hash for it yet — "unknown," not "drifted."
 
    The daemon owns the **stability gate**: don't treat a newly-observed
    server-side hash change as "the latest hash" until it's held steady across N
@@ -136,9 +141,17 @@ and force those callers' pods to restart.
    consistent with the daemon owning all pod/agent introspection and the
    controller staying focused on infrastructure reconciliation.
 
-4. **Controller: sole owner of the decision to reload.** For each dependent
-   AgentDeploy, the controller calls the daemon's new API, compares
-   `latest_hash` against every entry in `reported_hashes` per peer, and:
+4. **Controller: sole owner of the decision to reload, and only touches the
+   stale pods.** For each dependent AgentDeploy, the controller calls the
+   daemon's new API and, per peer, compares `latest_hash` against each entry in
+   `reported_hashes`. A pod is stale if its reported hash for that peer differs
+   from `latest_hash`; a pod with no entry for that peer is "unknown" and left
+   alone (see step 3). The set of pods to act on is the union of stale pods
+   across all of an AgentDeploy's peers.
+   - **Terminates only the stale pods.** The controller deletes exactly the
+     stale pods identified above (still respecting `maxUnavailable` as a
+     concurrency cap on how many stale pods are deleted at once, for the same
+     blast-radius reasons as spec-drift rollout).
    - **Defers to any active rollout.** Before acting, the controller checks
      `AgentDeploy.Status.UpdateHash != CurrentHash` — the exact same gate the
      autoscaler already applies before scaling
@@ -150,19 +163,14 @@ and force those callers' pods to restart.
      the controller stays the only place rollout state and reload decisions are
      made.
    - **Never blocks a subsequent spec change.** If a card-drift reload is
-     already rolling and the user pushes an unrelated spec change to the same
-     AgentDeploy mid-rollout, the spec change wins with no special handling
-     needed: a card-drift reload recreates pods on the _same_ desired hash (just
-     forcing a restart), while a spec change recreates pods on a _new_ desired
-     hash. The existing hash-comparison reconcile loop
+     already in progress and the user pushes an unrelated spec change to the
+     same AgentDeploy mid-rollout, the spec change wins with no special handling
+     needed: a card-drift delete recreates a pod on the _same_ desired hash
+     (just forcing a restart), while a spec change recreates pods on a _new_
+     desired hash. The existing hash-comparison reconcile loop
      (`pkg/reconciler/agentdeploy/pods.go`) naturally converges on whatever the
      current desired hash is on the next pass — there is nothing to cancel or
      preempt.
-   - **Reloads via the existing machinery.** If clear to act, the controller
-     recreates the affected pods using the same hash-annotation-driven
-     rolling-recreate path already used for pod-spec drift
-     (`pkg/reconciler/agentdeploy/pods.go`), batched by `maxUnavailable` rather
-     than recreating every dependent pod at once.
 
 ## Enabling this: `peerWatch`
 

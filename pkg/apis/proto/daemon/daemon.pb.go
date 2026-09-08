@@ -25,6 +25,7 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
@@ -321,11 +322,228 @@ func (x *GetAgentDeployMetricsResponse) GetMetrics() *AgentDeployMetrics {
 	return nil
 }
 
+// PeerCardDrift carries one peer's drift-comparison state for a single
+// dependent AgentDeploy.
+type PeerCardDrift struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// latestHash is the daemon's own polled, stability-gated AgentCard hash
+	// for this peer. Empty when the daemon has not yet completed a stable
+	// poll for this peer.
+	LatestHash string `protobuf:"bytes,1,opt,name=latestHash,proto3" json:"latestHash,omitempty"`
+	// latestHashObservedAt is when the daemon's stability gate last accepted
+	// latestHash.
+	LatestHashObservedAt *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=latestHashObservedAt,proto3" json:"latestHashObservedAt,omitempty"`
+	// reportedHashes is keyed by pod name, holding what that pod currently
+	// reports for this peer (via its broker-exposed peer-hashes endpoint).
+	// A pod with no entry has not reported a hash for this peer yet —
+	// "unknown," not "drifted."
+	ReportedHashes map[string]*ReportedHash `protobuf:"bytes,2,rep,name=reportedHashes,proto3" json:"reportedHashes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *PeerCardDrift) Reset() {
+	*x = PeerCardDrift{}
+	mi := &file_pkg_apis_proto_daemon_daemon_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PeerCardDrift) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PeerCardDrift) ProtoMessage() {}
+
+func (x *PeerCardDrift) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_apis_proto_daemon_daemon_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PeerCardDrift.ProtoReflect.Descriptor instead.
+func (*PeerCardDrift) Descriptor() ([]byte, []int) {
+	return file_pkg_apis_proto_daemon_daemon_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *PeerCardDrift) GetLatestHash() string {
+	if x != nil {
+		return x.LatestHash
+	}
+	return ""
+}
+
+func (x *PeerCardDrift) GetLatestHashObservedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LatestHashObservedAt
+	}
+	return nil
+}
+
+func (x *PeerCardDrift) GetReportedHashes() map[string]*ReportedHash {
+	if x != nil {
+		return x.ReportedHashes
+	}
+	return nil
+}
+
+// ReportedHash is a single pod's self-reported AgentCard hash for one peer.
+type ReportedHash struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// hash is that pod's currently-reported AgentCard hash for this peer.
+	Hash string `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
+	// observedAt is when that pod's agent SDK recorded this hash.
+	ObservedAt    *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=observedAt,proto3" json:"observedAt,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReportedHash) Reset() {
+	*x = ReportedHash{}
+	mi := &file_pkg_apis_proto_daemon_daemon_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReportedHash) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReportedHash) ProtoMessage() {}
+
+func (x *ReportedHash) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_apis_proto_daemon_daemon_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReportedHash.ProtoReflect.Descriptor instead.
+func (*ReportedHash) Descriptor() ([]byte, []int) {
+	return file_pkg_apis_proto_daemon_daemon_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ReportedHash) GetHash() string {
+	if x != nil {
+		return x.Hash
+	}
+	return ""
+}
+
+func (x *ReportedHash) GetObservedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ObservedAt
+	}
+	return nil
+}
+
+type GetPeerCardDriftRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// AgentDeploy name. Must be one of the AgentDeploys this daemon is
+	// configured to track. Returns NotFound otherwise.
+	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPeerCardDriftRequest) Reset() {
+	*x = GetPeerCardDriftRequest{}
+	mi := &file_pkg_apis_proto_daemon_daemon_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPeerCardDriftRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPeerCardDriftRequest) ProtoMessage() {}
+
+func (x *GetPeerCardDriftRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_apis_proto_daemon_daemon_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPeerCardDriftRequest.ProtoReflect.Descriptor instead.
+func (*GetPeerCardDriftRequest) Descriptor() ([]byte, []int) {
+	return file_pkg_apis_proto_daemon_daemon_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *GetPeerCardDriftRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type GetPeerCardDriftResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Keyed by peer name (as it appears in the AgentDeploy's topology).
+	Peers         map[string]*PeerCardDrift `protobuf:"bytes,1,rep,name=peers,proto3" json:"peers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPeerCardDriftResponse) Reset() {
+	*x = GetPeerCardDriftResponse{}
+	mi := &file_pkg_apis_proto_daemon_daemon_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPeerCardDriftResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPeerCardDriftResponse) ProtoMessage() {}
+
+func (x *GetPeerCardDriftResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_apis_proto_daemon_daemon_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPeerCardDriftResponse.ProtoReflect.Descriptor instead.
+func (*GetPeerCardDriftResponse) Descriptor() ([]byte, []int) {
+	return file_pkg_apis_proto_daemon_daemon_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *GetPeerCardDriftResponse) GetPeers() map[string]*PeerCardDrift {
+	if x != nil {
+		return x.Peers
+	}
+	return nil
+}
+
 var File_pkg_apis_proto_daemon_daemon_proto protoreflect.FileDescriptor
 
 const file_pkg_apis_proto_daemon_daemon_proto_rawDesc = "" +
 	"\n" +
-	"\"pkg/apis/proto/daemon/daemon.proto\x12\x12kynomesh.daemon.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xfb\x04\n" +
+	"\"pkg/apis/proto/daemon/daemon.proto\x12\x12kynomesh.daemon.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xfb\x04\n" +
 	"\x18TransportWindowedMetrics\x12k\n" +
 	"\x0fprocessingRates\x18\x01 \x03(\v2A.kynomesh.daemon.v1.TransportWindowedMetrics.ProcessingRatesEntryR\x0fprocessingRates\x12Y\n" +
 	"\tinflights\x18\x02 \x03(\v2;.kynomesh.daemon.v1.TransportWindowedMetrics.InflightsEntryR\tinflights\x12t\n" +
@@ -363,9 +581,32 @@ const file_pkg_apis_proto_daemon_daemon_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x0flookbackSeconds\x18\x02 \x01(\x03R\x0flookbackSeconds\"a\n" +
 	"\x1dGetAgentDeployMetricsResponse\x12@\n" +
-	"\ametrics\x18\x01 \x01(\v2&.kynomesh.daemon.v1.AgentDeployMetricsR\ametrics2\xbb\x01\n" +
+	"\ametrics\x18\x01 \x01(\v2&.kynomesh.daemon.v1.AgentDeployMetricsR\ametrics\"\xc3\x02\n" +
+	"\rPeerCardDrift\x12\x1e\n" +
+	"\n" +
+	"latestHash\x18\x01 \x01(\tR\n" +
+	"latestHash\x12N\n" +
+	"\x14latestHashObservedAt\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x14latestHashObservedAt\x12]\n" +
+	"\x0ereportedHashes\x18\x02 \x03(\v25.kynomesh.daemon.v1.PeerCardDrift.ReportedHashesEntryR\x0ereportedHashes\x1ac\n" +
+	"\x13ReportedHashesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x126\n" +
+	"\x05value\x18\x02 \x01(\v2 .kynomesh.daemon.v1.ReportedHashR\x05value:\x028\x01\"^\n" +
+	"\fReportedHash\x12\x12\n" +
+	"\x04hash\x18\x01 \x01(\tR\x04hash\x12:\n" +
+	"\n" +
+	"observedAt\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"observedAt\"-\n" +
+	"\x17GetPeerCardDriftRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"\xc6\x01\n" +
+	"\x18GetPeerCardDriftResponse\x12M\n" +
+	"\x05peers\x18\x01 \x03(\v27.kynomesh.daemon.v1.GetPeerCardDriftResponse.PeersEntryR\x05peers\x1a[\n" +
+	"\n" +
+	"PeersEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x127\n" +
+	"\x05value\x18\x02 \x01(\v2!.kynomesh.daemon.v1.PeerCardDriftR\x05value:\x028\x012\xe0\x02\n" +
 	"\rDaemonService\x12\xa9\x01\n" +
-	"\x15GetAgentDeployMetrics\x120.kynomesh.daemon.v1.GetAgentDeployMetricsRequest\x1a1.kynomesh.daemon.v1.GetAgentDeployMetricsResponse\"+\x82\xd3\xe4\x93\x02%\x12#/api/v1/agentdeploys/{name}/metricsB4Z2github.com/kynoproj/kynomesh/pkg/apis/proto/daemonb\x06proto3"
+	"\x15GetAgentDeployMetrics\x120.kynomesh.daemon.v1.GetAgentDeployMetricsRequest\x1a1.kynomesh.daemon.v1.GetAgentDeployMetricsResponse\"+\x82\xd3\xe4\x93\x02%\x12#/api/v1/agentdeploys/{name}/metrics\x12\xa2\x01\n" +
+	"\x10GetPeerCardDrift\x12+.kynomesh.daemon.v1.GetPeerCardDriftRequest\x1a,.kynomesh.daemon.v1.GetPeerCardDriftResponse\"3\x82\xd3\xe4\x93\x02-\x12+/api/v1/agentdeploys/{name}/peer-card-driftB4Z2github.com/kynoproj/kynomesh/pkg/apis/proto/daemonb\x06proto3"
 
 var (
 	file_pkg_apis_proto_daemon_daemon_proto_rawDescOnce sync.Once
@@ -379,46 +620,61 @@ func file_pkg_apis_proto_daemon_daemon_proto_rawDescGZIP() []byte {
 	return file_pkg_apis_proto_daemon_daemon_proto_rawDescData
 }
 
-var file_pkg_apis_proto_daemon_daemon_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_pkg_apis_proto_daemon_daemon_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_pkg_apis_proto_daemon_daemon_proto_goTypes = []any{
 	(*TransportWindowedMetrics)(nil),      // 0: kynomesh.daemon.v1.TransportWindowedMetrics
 	(*AgentDeployMetrics)(nil),            // 1: kynomesh.daemon.v1.AgentDeployMetrics
 	(*GetAgentDeployMetricsRequest)(nil),  // 2: kynomesh.daemon.v1.GetAgentDeployMetricsRequest
 	(*GetAgentDeployMetricsResponse)(nil), // 3: kynomesh.daemon.v1.GetAgentDeployMetricsResponse
-	nil,                                   // 4: kynomesh.daemon.v1.TransportWindowedMetrics.ProcessingRatesEntry
-	nil,                                   // 5: kynomesh.daemon.v1.TransportWindowedMetrics.InflightsEntry
-	nil,                                   // 6: kynomesh.daemon.v1.TransportWindowedMetrics.StreamMessageRatesEntry
-	nil,                                   // 7: kynomesh.daemon.v1.AgentDeployMetrics.ProcessingRatesEntry
-	nil,                                   // 8: kynomesh.daemon.v1.AgentDeployMetrics.StreamMessageRatesEntry
-	nil,                                   // 9: kynomesh.daemon.v1.AgentDeployMetrics.InflightsEntry
-	nil,                                   // 10: kynomesh.daemon.v1.AgentDeployMetrics.ByTransportEntry
-	(*wrapperspb.Int64Value)(nil),         // 11: google.protobuf.Int64Value
-	(*wrapperspb.DoubleValue)(nil),        // 12: google.protobuf.DoubleValue
+	(*PeerCardDrift)(nil),                 // 4: kynomesh.daemon.v1.PeerCardDrift
+	(*ReportedHash)(nil),                  // 5: kynomesh.daemon.v1.ReportedHash
+	(*GetPeerCardDriftRequest)(nil),       // 6: kynomesh.daemon.v1.GetPeerCardDriftRequest
+	(*GetPeerCardDriftResponse)(nil),      // 7: kynomesh.daemon.v1.GetPeerCardDriftResponse
+	nil,                                   // 8: kynomesh.daemon.v1.TransportWindowedMetrics.ProcessingRatesEntry
+	nil,                                   // 9: kynomesh.daemon.v1.TransportWindowedMetrics.InflightsEntry
+	nil,                                   // 10: kynomesh.daemon.v1.TransportWindowedMetrics.StreamMessageRatesEntry
+	nil,                                   // 11: kynomesh.daemon.v1.AgentDeployMetrics.ProcessingRatesEntry
+	nil,                                   // 12: kynomesh.daemon.v1.AgentDeployMetrics.StreamMessageRatesEntry
+	nil,                                   // 13: kynomesh.daemon.v1.AgentDeployMetrics.InflightsEntry
+	nil,                                   // 14: kynomesh.daemon.v1.AgentDeployMetrics.ByTransportEntry
+	nil,                                   // 15: kynomesh.daemon.v1.PeerCardDrift.ReportedHashesEntry
+	nil,                                   // 16: kynomesh.daemon.v1.GetPeerCardDriftResponse.PeersEntry
+	(*wrapperspb.Int64Value)(nil),         // 17: google.protobuf.Int64Value
+	(*timestamppb.Timestamp)(nil),         // 18: google.protobuf.Timestamp
+	(*wrapperspb.DoubleValue)(nil),        // 19: google.protobuf.DoubleValue
 }
 var file_pkg_apis_proto_daemon_daemon_proto_depIdxs = []int32{
-	4,  // 0: kynomesh.daemon.v1.TransportWindowedMetrics.processingRates:type_name -> kynomesh.daemon.v1.TransportWindowedMetrics.ProcessingRatesEntry
-	5,  // 1: kynomesh.daemon.v1.TransportWindowedMetrics.inflights:type_name -> kynomesh.daemon.v1.TransportWindowedMetrics.InflightsEntry
-	6,  // 2: kynomesh.daemon.v1.TransportWindowedMetrics.streamMessageRates:type_name -> kynomesh.daemon.v1.TransportWindowedMetrics.StreamMessageRatesEntry
-	7,  // 3: kynomesh.daemon.v1.AgentDeployMetrics.processingRates:type_name -> kynomesh.daemon.v1.AgentDeployMetrics.ProcessingRatesEntry
-	8,  // 4: kynomesh.daemon.v1.AgentDeployMetrics.streamMessageRates:type_name -> kynomesh.daemon.v1.AgentDeployMetrics.StreamMessageRatesEntry
-	9,  // 5: kynomesh.daemon.v1.AgentDeployMetrics.inflights:type_name -> kynomesh.daemon.v1.AgentDeployMetrics.InflightsEntry
-	10, // 6: kynomesh.daemon.v1.AgentDeployMetrics.byTransport:type_name -> kynomesh.daemon.v1.AgentDeployMetrics.ByTransportEntry
-	11, // 7: kynomesh.daemon.v1.AgentDeployMetrics.customWindowEffectiveSeconds:type_name -> google.protobuf.Int64Value
+	8,  // 0: kynomesh.daemon.v1.TransportWindowedMetrics.processingRates:type_name -> kynomesh.daemon.v1.TransportWindowedMetrics.ProcessingRatesEntry
+	9,  // 1: kynomesh.daemon.v1.TransportWindowedMetrics.inflights:type_name -> kynomesh.daemon.v1.TransportWindowedMetrics.InflightsEntry
+	10, // 2: kynomesh.daemon.v1.TransportWindowedMetrics.streamMessageRates:type_name -> kynomesh.daemon.v1.TransportWindowedMetrics.StreamMessageRatesEntry
+	11, // 3: kynomesh.daemon.v1.AgentDeployMetrics.processingRates:type_name -> kynomesh.daemon.v1.AgentDeployMetrics.ProcessingRatesEntry
+	12, // 4: kynomesh.daemon.v1.AgentDeployMetrics.streamMessageRates:type_name -> kynomesh.daemon.v1.AgentDeployMetrics.StreamMessageRatesEntry
+	13, // 5: kynomesh.daemon.v1.AgentDeployMetrics.inflights:type_name -> kynomesh.daemon.v1.AgentDeployMetrics.InflightsEntry
+	14, // 6: kynomesh.daemon.v1.AgentDeployMetrics.byTransport:type_name -> kynomesh.daemon.v1.AgentDeployMetrics.ByTransportEntry
+	17, // 7: kynomesh.daemon.v1.AgentDeployMetrics.customWindowEffectiveSeconds:type_name -> google.protobuf.Int64Value
 	1,  // 8: kynomesh.daemon.v1.GetAgentDeployMetricsResponse.metrics:type_name -> kynomesh.daemon.v1.AgentDeployMetrics
-	12, // 9: kynomesh.daemon.v1.TransportWindowedMetrics.ProcessingRatesEntry.value:type_name -> google.protobuf.DoubleValue
-	12, // 10: kynomesh.daemon.v1.TransportWindowedMetrics.InflightsEntry.value:type_name -> google.protobuf.DoubleValue
-	12, // 11: kynomesh.daemon.v1.TransportWindowedMetrics.StreamMessageRatesEntry.value:type_name -> google.protobuf.DoubleValue
-	12, // 12: kynomesh.daemon.v1.AgentDeployMetrics.ProcessingRatesEntry.value:type_name -> google.protobuf.DoubleValue
-	12, // 13: kynomesh.daemon.v1.AgentDeployMetrics.StreamMessageRatesEntry.value:type_name -> google.protobuf.DoubleValue
-	12, // 14: kynomesh.daemon.v1.AgentDeployMetrics.InflightsEntry.value:type_name -> google.protobuf.DoubleValue
-	0,  // 15: kynomesh.daemon.v1.AgentDeployMetrics.ByTransportEntry.value:type_name -> kynomesh.daemon.v1.TransportWindowedMetrics
-	2,  // 16: kynomesh.daemon.v1.DaemonService.GetAgentDeployMetrics:input_type -> kynomesh.daemon.v1.GetAgentDeployMetricsRequest
-	3,  // 17: kynomesh.daemon.v1.DaemonService.GetAgentDeployMetrics:output_type -> kynomesh.daemon.v1.GetAgentDeployMetricsResponse
-	17, // [17:18] is the sub-list for method output_type
-	16, // [16:17] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	18, // 9: kynomesh.daemon.v1.PeerCardDrift.latestHashObservedAt:type_name -> google.protobuf.Timestamp
+	15, // 10: kynomesh.daemon.v1.PeerCardDrift.reportedHashes:type_name -> kynomesh.daemon.v1.PeerCardDrift.ReportedHashesEntry
+	18, // 11: kynomesh.daemon.v1.ReportedHash.observedAt:type_name -> google.protobuf.Timestamp
+	16, // 12: kynomesh.daemon.v1.GetPeerCardDriftResponse.peers:type_name -> kynomesh.daemon.v1.GetPeerCardDriftResponse.PeersEntry
+	19, // 13: kynomesh.daemon.v1.TransportWindowedMetrics.ProcessingRatesEntry.value:type_name -> google.protobuf.DoubleValue
+	19, // 14: kynomesh.daemon.v1.TransportWindowedMetrics.InflightsEntry.value:type_name -> google.protobuf.DoubleValue
+	19, // 15: kynomesh.daemon.v1.TransportWindowedMetrics.StreamMessageRatesEntry.value:type_name -> google.protobuf.DoubleValue
+	19, // 16: kynomesh.daemon.v1.AgentDeployMetrics.ProcessingRatesEntry.value:type_name -> google.protobuf.DoubleValue
+	19, // 17: kynomesh.daemon.v1.AgentDeployMetrics.StreamMessageRatesEntry.value:type_name -> google.protobuf.DoubleValue
+	19, // 18: kynomesh.daemon.v1.AgentDeployMetrics.InflightsEntry.value:type_name -> google.protobuf.DoubleValue
+	0,  // 19: kynomesh.daemon.v1.AgentDeployMetrics.ByTransportEntry.value:type_name -> kynomesh.daemon.v1.TransportWindowedMetrics
+	5,  // 20: kynomesh.daemon.v1.PeerCardDrift.ReportedHashesEntry.value:type_name -> kynomesh.daemon.v1.ReportedHash
+	4,  // 21: kynomesh.daemon.v1.GetPeerCardDriftResponse.PeersEntry.value:type_name -> kynomesh.daemon.v1.PeerCardDrift
+	2,  // 22: kynomesh.daemon.v1.DaemonService.GetAgentDeployMetrics:input_type -> kynomesh.daemon.v1.GetAgentDeployMetricsRequest
+	6,  // 23: kynomesh.daemon.v1.DaemonService.GetPeerCardDrift:input_type -> kynomesh.daemon.v1.GetPeerCardDriftRequest
+	3,  // 24: kynomesh.daemon.v1.DaemonService.GetAgentDeployMetrics:output_type -> kynomesh.daemon.v1.GetAgentDeployMetricsResponse
+	7,  // 25: kynomesh.daemon.v1.DaemonService.GetPeerCardDrift:output_type -> kynomesh.daemon.v1.GetPeerCardDriftResponse
+	24, // [24:26] is the sub-list for method output_type
+	22, // [22:24] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_pkg_apis_proto_daemon_daemon_proto_init() }
@@ -432,7 +688,7 @@ func file_pkg_apis_proto_daemon_daemon_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_apis_proto_daemon_daemon_proto_rawDesc), len(file_pkg_apis_proto_daemon_daemon_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -35,6 +35,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	DaemonService_GetAgentDeployMetrics_FullMethodName = "/kynomesh.daemon.v1.DaemonService/GetAgentDeployMetrics"
+	DaemonService_GetPeerCardDrift_FullMethodName      = "/kynomesh.daemon.v1.DaemonService/GetPeerCardDrift"
 )
 
 // DaemonServiceClient is the client API for DaemonService service.
@@ -45,6 +46,12 @@ const (
 // near-realtime metrics for AgentDeploys belonging to a single AgentSet.
 type DaemonServiceClient interface {
 	GetAgentDeployMetrics(ctx context.Context, in *GetAgentDeployMetricsRequest, opts ...grpc.CallOption) (*GetAgentDeployMetricsResponse, error)
+	// GetPeerCardDrift returns, for each of the named AgentDeploy's peers,
+	// the daemon's own latest (stability-gated) AgentCard hash alongside the
+	// hash(es) that AgentDeploy's live pods currently report for that peer —
+	// a decision-ready comparison so the controller never has to fetch a
+	// peer's AgentCard or read a pod's exposed hash file itself.
+	GetPeerCardDrift(ctx context.Context, in *GetPeerCardDriftRequest, opts ...grpc.CallOption) (*GetPeerCardDriftResponse, error)
 }
 
 type daemonServiceClient struct {
@@ -65,6 +72,16 @@ func (c *daemonServiceClient) GetAgentDeployMetrics(ctx context.Context, in *Get
 	return out, nil
 }
 
+func (c *daemonServiceClient) GetPeerCardDrift(ctx context.Context, in *GetPeerCardDriftRequest, opts ...grpc.CallOption) (*GetPeerCardDriftResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPeerCardDriftResponse)
+	err := c.cc.Invoke(ctx, DaemonService_GetPeerCardDrift_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DaemonServiceServer is the server API for DaemonService service.
 // All implementations must embed UnimplementedDaemonServiceServer
 // for forward compatibility.
@@ -73,6 +90,12 @@ func (c *daemonServiceClient) GetAgentDeployMetrics(ctx context.Context, in *Get
 // near-realtime metrics for AgentDeploys belonging to a single AgentSet.
 type DaemonServiceServer interface {
 	GetAgentDeployMetrics(context.Context, *GetAgentDeployMetricsRequest) (*GetAgentDeployMetricsResponse, error)
+	// GetPeerCardDrift returns, for each of the named AgentDeploy's peers,
+	// the daemon's own latest (stability-gated) AgentCard hash alongside the
+	// hash(es) that AgentDeploy's live pods currently report for that peer —
+	// a decision-ready comparison so the controller never has to fetch a
+	// peer's AgentCard or read a pod's exposed hash file itself.
+	GetPeerCardDrift(context.Context, *GetPeerCardDriftRequest) (*GetPeerCardDriftResponse, error)
 	mustEmbedUnimplementedDaemonServiceServer()
 }
 
@@ -85,6 +108,9 @@ type UnimplementedDaemonServiceServer struct{}
 
 func (UnimplementedDaemonServiceServer) GetAgentDeployMetrics(context.Context, *GetAgentDeployMetricsRequest) (*GetAgentDeployMetricsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetAgentDeployMetrics not implemented")
+}
+func (UnimplementedDaemonServiceServer) GetPeerCardDrift(context.Context, *GetPeerCardDriftRequest) (*GetPeerCardDriftResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPeerCardDrift not implemented")
 }
 func (UnimplementedDaemonServiceServer) mustEmbedUnimplementedDaemonServiceServer() {}
 func (UnimplementedDaemonServiceServer) testEmbeddedByValue()                       {}
@@ -125,6 +151,24 @@ func _DaemonService_GetAgentDeployMetrics_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DaemonService_GetPeerCardDrift_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPeerCardDriftRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DaemonServiceServer).GetPeerCardDrift(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DaemonService_GetPeerCardDrift_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DaemonServiceServer).GetPeerCardDrift(ctx, req.(*GetPeerCardDriftRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DaemonService_ServiceDesc is the grpc.ServiceDesc for DaemonService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -135,6 +179,10 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAgentDeployMetrics",
 			Handler:    _DaemonService_GetAgentDeployMetrics_Handler,
+		},
+		{
+			MethodName: "GetPeerCardDrift",
+			Handler:    _DaemonService_GetPeerCardDrift_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
