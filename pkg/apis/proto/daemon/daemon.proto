@@ -21,6 +21,7 @@ package kynomesh.daemon.v1;
 option go_package = "github.com/kynoproj/kynomesh/pkg/apis/proto/daemon";
 
 import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
 // TransportWindowedMetrics carries per-window aggregations for a single
@@ -87,10 +88,58 @@ message GetAgentDeployMetricsResponse {
   AgentDeployMetrics metrics = 1;
 }
 
+// PeerCardDrift carries one peer's drift-comparison state for a single
+// dependent AgentDeploy.
+message PeerCardDrift {
+  // latestHash is the daemon's own polled, stability-gated AgentCard hash
+  // for this peer. Empty when the daemon has not yet completed a stable 
+  // poll for this peer.
+  string latestHash = 1;
+
+  // latestHashObservedAt is when the daemon's stability gate last accepted
+  // latestHash.
+  google.protobuf.Timestamp latestHashObservedAt = 3;
+
+  // reportedHashes is keyed by pod name, holding what that pod currently
+  // reports for this peer (via its broker-exposed peer-hashes endpoint).
+  // A pod with no entry has not reported a hash for this peer yet — 
+  // "unknown," not "drifted."
+  map<string, ReportedHash> reportedHashes = 2;
+}
+
+// ReportedHash is a single pod's self-reported AgentCard hash for one peer.
+message ReportedHash {
+  // hash is that pod's currently-reported AgentCard hash for this peer.
+  string hash = 1;
+
+  // observedAt is when that pod's agent SDK recorded this hash.
+  google.protobuf.Timestamp observedAt = 2;
+}
+
+message GetPeerCardDriftRequest {
+  // AgentDeploy name. Must be one of the AgentDeploys this daemon is
+  // configured to track. Returns NotFound otherwise.
+  string name = 1;
+}
+
+message GetPeerCardDriftResponse {
+  // Keyed by peer name (as it appears in the AgentDeploy's topology).
+  map<string, PeerCardDrift> peers = 1;
+}
+
 // DaemonService is the gRPC + REST surface the controller calls to read
 // near-realtime metrics for AgentDeploys belonging to a single AgentSet.
 service DaemonService {
   rpc GetAgentDeployMetrics(GetAgentDeployMetricsRequest) returns (GetAgentDeployMetricsResponse) {
     option (google.api.http).get = "/api/v1/agentdeploys/{name}/metrics";
+  };
+
+  // GetPeerCardDrift returns, for each of the named AgentDeploy's peers,
+  // the daemon's own latest (stability-gated) AgentCard hash alongside the
+  // hash(es) that AgentDeploy's live pods currently report for that peer —
+  // a decision-ready comparison so the controller never has to fetch a
+  // peer's AgentCard or read a pod's exposed hash file itself.
+  rpc GetPeerCardDrift(GetPeerCardDriftRequest) returns (GetPeerCardDriftResponse) {
+    option (google.api.http).get = "/api/v1/agentdeploys/{name}/peer-card-drift";
   };
 }
