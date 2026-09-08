@@ -1401,28 +1401,28 @@ callers, short of an upstream SDK change, is for Kynomesh to detect the change
 and force those callers' pods to restart.</p>
 <h2 id="proposed-direction">Proposed direction<a class="headerlink" href="#proposed-direction" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>SDK: report the hash behind the cached client.</strong> The first successful
-   construction of a peer's client
+<li><strong>SDK: report the hash behind the cached client, and when it was recorded.</strong>
+   The first successful construction of a peer's client
    (<a href="https://github.com/kynoproj/kynomesh-go/issues/31">kynomesh-go#31</a>,
    <a href="https://github.com/kynoproj/kynomesh-py/issues/6">kynomesh-py#6</a>) is the one
    moment the SDK actually knows which <code>AgentCard</code> it resolved and is now using.
-   At that point, the SDK hashes the resolved card and records it — keyed by
-   peer name — in a file on the shared <code>kynomesh-run</code> volume (e.g.
-   <code>/var/run/kynomesh/peer-hashes.json</code>), updated incrementally as new
-   peers are first resolved over the process's lifetime, not rewritten wholesale
-   each time.</li>
+   At that point, the SDK hashes the resolved card and records both the hash and
+   the current time — keyed by peer name — in a file on the shared
+   <code>kynomesh-run</code> volume (e.g. <code>/var/run/kynomesh/peer-hashes.json</code>), updated
+   incrementally as new peers are first resolved over the process's lifetime,
+   not rewritten wholesale each time:</li>
 </ol>
-<p>A plain file rather than a <code>/metrics</code> gauge: the data is a small
-   peer-name-keyed map of string hashes, not a numeric time series — encoding it
-   as Prometheus labels would mean one gauge series per peer per pod, a
-   cardinality/format mismatch for what's really just "current state of a small
-   map." A file matches the pattern already used for <code>topology.json</code> (written
-   once by an init container, read by another sidecar) and needs no new metrics
-   wiring.</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"searcher"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"c0e81e18b0d9276e..."</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"observedAt"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-09-08T22:10:00Z"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <p>The file must be cleared/truncated at process start, before any peer client
    is constructed, so a stale entry from a previous process incarnation (e.g. a
    peer removed from the topology and no longer called) never lingers. The file
-   only ever contains hashes for peers the process actually resolved a client
+   only ever contains entries for peers the process actually resolved a client
    for — a peer listed in <code>topology.json</code> that the agent's code never calls
    simply has no entry, which the consuming side must treat as "unknown," not
    "drifted."</p>
@@ -1430,9 +1430,8 @@ and force those callers' pods to restart.</p>
 <li>
 <p><strong>Broker: expose the file.</strong> The broker already shares the pod's volume and
    already serves introspection data (<code>/metrics</code>, <code>/healthz</code>, <code>/readyz</code>) on its
-   introspection port (<code>pkg/broker/introspection.go</code>). It reads the
-   peer-hashes file and serves its contents on a small new endpoint,
-   analogous to the existing ones.</p>
+   introspection port (<code>pkg/broker/introspection.go</code>). It reads the peer-hashes
+   file and serves its contents.</p>
 </li>
 <li>
 <p><strong>Daemon: do both halves of the comparison, expose one decision-ready API.</strong>
@@ -1445,19 +1444,24 @@ and force those callers' pods to restart.</p>
 </ol>
 <div class="highlight"><pre><span></span><code>GetPeerCardDrift(AgentDeployName) -&gt; {
   peer_name: {
-    latest_hash: string        // daemon's own polled, stability-gated hash for that peer
-    reported_hashes: []string  // distinct hash(es) currently reported across this AgentDeploy's live pods
+    latest_hash: string                    // daemon's own polled, stability-gated hash for that peer
+    latest_hash_observed_at: timestamp      // when the stability gate last accepted latest_hash
+    reported_hashes: map&lt;pod, {
+      hash: string                          // that pod's currently-reported hash for this peer
+      observed_at: timestamp                // when that pod's SDK recorded this hash (see step 1) — echoed
+                                             // through from peer-hashes.json verbatim, not a scrape time
+    }&gt;
   }
 }
 </code></pre></div>
 <p>The daemon, not the controller, fetches each managed peer's live <code>AgentCard</code>
    and hashes it (the same way it already reaches managed agents for metrics
    scraping), and separately scrapes each dependent pod's broker-exposed
-   peer-hashes file. <code>reported_hashes</code> is plural because different replicas
-   of the same AgentDeploy can legitimately be mid-transition — one pod may have
-   already restarted and re-resolved, another may not have. The controller needs
-   to know if <em>any</em> live pod is still on a stale hash, not get a single
-   collapsed value.</p>
+   peer-hashes file. <code>reported_hashes</code> is keyed by pod name, not deduplicated to
+   a set of distinct values, because the controller acts per pod (see step 4):
+   it needs to know exactly <em>which</em> live pods are still on a stale hash so it
+   can terminate only those. A pod with no entry for a given peer hasn't
+   reported a hash for it yet — "unknown," not "drifted."</p>
 <p>The daemon owns the <strong>stability gate</strong>: don't treat a newly-observed
    server-side hash change as "the latest hash" until it's held steady across N
    consecutive polls (or a minimum duration) — a peer mid-rollout can briefly
@@ -1468,9 +1472,17 @@ and force those callers' pods to restart.</p>
    consistent with the daemon owning all pod/agent introspection and the
    controller staying focused on infrastructure reconciliation.</p>
 <ol>
-<li><strong>Controller: sole owner of the decision to reload.</strong> For each dependent
-   AgentDeploy, the controller calls the daemon's new API, compares
-   <code>latest_hash</code> against every entry in <code>reported_hashes</code> per peer, and:</li>
+<li><strong>Controller: sole owner of the decision to reload, and only touches the
+   stale pods.</strong> For each dependent AgentDeploy, the controller calls the
+   daemon's new API and, per peer, compares <code>latest_hash</code> against each entry in
+   <code>reported_hashes</code>. A pod is stale if its reported hash for that peer differs
+   from <code>latest_hash</code>; a pod with no entry for that peer is "unknown" and left
+   alone (see step 3). The set of pods to act on is the union of stale pods
+   across all of an AgentDeploy's peers.</li>
+<li><strong>Terminates only the stale pods.</strong> The controller deletes exactly the
+     stale pods identified above (still respecting <code>maxUnavailable</code> as a
+     concurrency cap on how many stale pods are deleted at once, for the same
+     blast-radius reasons as spec-drift rollout).</li>
 <li><strong>Defers to any active rollout.</strong> Before acting, the controller checks
      <code>AgentDeploy.Status.UpdateHash != CurrentHash</code> — the exact same gate the
      autoscaler already applies before scaling
@@ -1482,19 +1494,14 @@ and force those callers' pods to restart.</p>
      the controller stays the only place rollout state and reload decisions are
      made.</li>
 <li><strong>Never blocks a subsequent spec change.</strong> If a card-drift reload is
-     already rolling and the user pushes an unrelated spec change to the same
-     AgentDeploy mid-rollout, the spec change wins with no special handling
-     needed: a card-drift reload recreates pods on the <em>same</em> desired hash (just
-     forcing a restart), while a spec change recreates pods on a <em>new</em> desired
-     hash. The existing hash-comparison reconcile loop
+     already in progress and the user pushes an unrelated spec change to the
+     same AgentDeploy mid-rollout, the spec change wins with no special handling
+     needed: a card-drift delete recreates a pod on the <em>same</em> desired hash
+     (just forcing a restart), while a spec change recreates pods on a <em>new</em>
+     desired hash. The existing hash-comparison reconcile loop
      (<code>pkg/reconciler/agentdeploy/pods.go</code>) naturally converges on whatever the
      current desired hash is on the next pass — there is nothing to cancel or
      preempt.</li>
-<li><strong>Reloads via the existing machinery.</strong> If clear to act, the controller
-     recreates the affected pods using the same hash-annotation-driven
-     rolling-recreate path already used for pod-spec drift
-     (<code>pkg/reconciler/agentdeploy/pods.go</code>), batched by <code>maxUnavailable</code> rather
-     than recreating every dependent pod at once.</li>
 </ol>
 <h2 id="enabling-this-peerwatch">Enabling this: <code>peerWatch</code><a class="headerlink" href="#enabling-this-peerwatch" title="Permanent link">&para;</a></h2>
 <p>This must be opt-in/opt-out, not always-on — for some deployments,
