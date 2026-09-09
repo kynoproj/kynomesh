@@ -1340,20 +1340,25 @@ JSON endpoint for pod-internal state.</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"host"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-agent-0"</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"peerHashes"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"worker-a"</span><span class="p">:</span><span class="w"> </span><span class="s2">"3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1"</span>
+<span class="w">    </span><span class="nt">"worker-a"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"observedAt"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-09-09T06:34:29Z"</span>
+<span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Today it carries:</p>
 <ul>
-<li><strong><code>host</code></strong> — the pod name..</li>
+<li><strong><code>host</code></strong> — the pod name.</li>
 <li><strong><code>peerHashes</code></strong> — the peer-hashes file the agent's SDK writes to the shared
   <code>kynomesh-run</code> volume (<code>/var/run/kynomesh/peer-hashes.json</code>): a
-  peer-name-keyed map of the <code>AgentCard</code> hash behind each peer client the agent
-  process has resolved (see
+  peer-name-keyed map of each peer client the agent process has resolved (see
   <a href="../specifications/agentcard-drift-reload/">AgentCard Drift Detection and Dependent Reload</a>).
   An empty object if the agent hasn't resolved any peer clients since last
-  restart, not an error.</li>
+  restart, not an error. Each entry carries:</li>
+<li><strong><code>hash</code></strong> — the <code>AgentCard</code> hash behind that peer's cached client.</li>
+<li><strong><code>observedAt</code></strong> — an RFC3339 timestamp (fractional seconds optional) for
+    when the SDK recorded this hash.</li>
 </ul>
 <h2 id="debug-inside-the-container">Debug Inside The Container<a class="headerlink" href="#debug-inside-the-container" title="Permanent link">&para;</a></h2>
 <p>When doing local <a href="../development/">development</a> using <code>make image</code>, the built
