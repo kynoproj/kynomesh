@@ -107,21 +107,26 @@ curl -sk https://localhost:8491/introspect
 {
   "host": "my-agent-0",
   "peerHashes": {
-    "worker-a": "3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1"
+    "worker-a": {
+      "hash": "3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1",
+      "observedAt": "2026-09-09T06:34:29Z"
+    }
   }
 }
 ```
 
 Today it carries:
 
-- **`host`** — the pod name..
+- **`host`** — the pod name.
 - **`peerHashes`** — the peer-hashes file the agent's SDK writes to the shared
   `kynomesh-run` volume (`/var/run/kynomesh/peer-hashes.json`): a
-  peer-name-keyed map of the `AgentCard` hash behind each peer client the agent
-  process has resolved (see
+  peer-name-keyed map of each peer client the agent process has resolved (see
   [AgentCard Drift Detection and Dependent Reload](specifications/agentcard-drift-reload.md)).
   An empty object if the agent hasn't resolved any peer clients since last
-  restart, not an error.
+  restart, not an error. Each entry carries:
+  - **`hash`** — the `AgentCard` hash behind that peer's cached client.
+  - **`observedAt`** — an RFC3339 timestamp (fractional seconds optional) for
+    when the SDK recorded this hash.
 
 ## Debug Inside The Container
 
