@@ -106,7 +106,7 @@ func TestIntrospectionHandler_Introspect(t *testing.T) {
 	t.Run("existing peer-hashes file surfaced under peerHashes", func(t *testing.T) {
 		orig := peerHashesFilePath
 		path := filepath.Join(t.TempDir(), "peer-hashes.json")
-		require.NoError(t, os.WriteFile(path, []byte(`{"worker":"abc123"}`), 0o600))
+		require.NoError(t, os.WriteFile(path, []byte(`{"worker":{"hash":"abc123","observedAt":"2026-09-09T06:34:29Z"}}`), 0o600))
 		peerHashesFilePath = path
 		resetPeerHashesCache()
 		t.Cleanup(func() { peerHashesFilePath = orig; resetPeerHashesCache() })
@@ -116,7 +116,7 @@ func TestIntrospectionHandler_Introspect(t *testing.T) {
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, httptest.NewRequest("GET", "/introspect", nil))
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.JSONEq(t, `{"host":"my-agent-0","peerHashes":{"worker":"abc123"}}`, rec.Body.String())
+		assert.JSONEq(t, `{"host":"my-agent-0","peerHashes":{"worker":{"hash":"abc123","observedAt":"2026-09-09T06:34:29Z"}}}`, rec.Body.String())
 	})
 
 	t.Run("malformed peer-hashes file returns 500", func(t *testing.T) {
@@ -137,31 +137,31 @@ func TestIntrospectionHandler_Introspect(t *testing.T) {
 		logger := logging.FromContext(context.TODO())
 		orig := peerHashesFilePath
 		path := filepath.Join(t.TempDir(), "peer-hashes.json")
-		require.NoError(t, os.WriteFile(path, []byte(`{"worker":"abc123"}`), 0o600))
+		require.NoError(t, os.WriteFile(path, []byte(`{"worker":{"hash":"abc123","observedAt":"2026-09-09T06:34:29Z"}}`), 0o600))
 		peerHashesFilePath = path
 		resetPeerHashesCache()
 		t.Cleanup(func() { peerHashesFilePath = orig; resetPeerHashesCache() })
 
 		hashes, err := readPeerHashes(logger)
 		require.NoError(t, err)
-		assert.Equal(t, map[string]string{"worker": "abc123"}, hashes)
+		assert.Equal(t, map[string]PeerHashEntry{"worker": {Hash: "abc123", ObservedAt: "2026-09-09T06:34:29Z"}}, hashes)
 
 		// Overwrite the file on disk without bumping its mtime: the cache
 		// must keep serving the previously parsed contents.
 		info, err := os.Stat(path)
 		require.NoError(t, err)
-		require.NoError(t, os.WriteFile(path, []byte(`{"worker":"changed"}`), 0o600))
+		require.NoError(t, os.WriteFile(path, []byte(`{"worker":{"hash":"changed","observedAt":"2026-09-09T06:35:12.483Z"}}`), 0o600))
 		require.NoError(t, os.Chtimes(path, info.ModTime(), info.ModTime()))
 
 		hashes, err = readPeerHashes(logger)
 		require.NoError(t, err)
-		assert.Equal(t, map[string]string{"worker": "abc123"}, hashes, "stale cache should still be served when mtime is unchanged")
+		assert.Equal(t, map[string]PeerHashEntry{"worker": {Hash: "abc123", ObservedAt: "2026-09-09T06:34:29Z"}}, hashes, "stale cache should still be served when mtime is unchanged")
 
 		// Bumping the mtime must invalidate the cache.
 		require.NoError(t, os.Chtimes(path, info.ModTime().Add(time.Second), info.ModTime().Add(time.Second)))
 		hashes, err = readPeerHashes(logger)
 		require.NoError(t, err)
-		assert.Equal(t, map[string]string{"worker": "changed"}, hashes)
+		assert.Equal(t, map[string]PeerHashEntry{"worker": {Hash: "changed", ObservedAt: "2026-09-09T06:35:12.483Z"}}, hashes)
 	})
 }
 

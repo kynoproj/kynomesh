@@ -44,7 +44,7 @@ var peerHashesFilePath = kmv1.PeerHashesFilePath
 var peerHashesCache struct {
 	mu      sync.Mutex
 	modTime time.Time
-	hashes  map[string]string
+	hashes  map[string]PeerHashEntry
 }
 
 // resetPeerHashesCache clears the cache. Test-only.
@@ -55,12 +55,20 @@ func resetPeerHashesCache() {
 	peerHashesCache.hashes = nil
 }
 
+// PeerHashEntry is one peer's entry in the peer-hashes file.
+// ObservedAt is served verbatim as the SDK wrote it (RFC3339) — the broker does
+// not parse or reformat it.
+type PeerHashEntry struct {
+	Hash       string `json:"hash"`
+	ObservedAt string `json:"observedAt"`
+}
+
 // introspectResponse is the structured payload served by /introspect.
 type introspectResponse struct {
 	// Host is the pod name.
 	Host string `json:"host"`
 	// PeerHashes is the peer-name-keyed AgentCard hash map.
-	PeerHashes map[string]string `json:"peerHashes"`
+	PeerHashes map[string]PeerHashEntry `json:"peerHashes"`
 }
 
 // NewIntrospectionHandler serves /metrics, /healthz (liveness), /readyz, and
@@ -113,10 +121,10 @@ func NewIntrospectionHandler(ctx context.Context, registry *prometheus.Registry,
 // since last restart, not an error. The parsed result is cached by the
 // file's mtime so repeated calls only re-read and re-parse the file when its
 // contents have actually changed.
-func readPeerHashes(logger *zap.SugaredLogger) (map[string]string, error) {
+func readPeerHashes(logger *zap.SugaredLogger) (map[string]PeerHashEntry, error) {
 	info, err := os.Stat(peerHashesFilePath)
 	if os.IsNotExist(err) {
-		return map[string]string{}, nil
+		return map[string]PeerHashEntry{}, nil
 	}
 	if err != nil {
 		logger.Errorw("Failed to stat peer-hashes file",
@@ -133,7 +141,7 @@ func readPeerHashes(logger *zap.SugaredLogger) (map[string]string, error) {
 
 	raw, err := os.ReadFile(peerHashesFilePath)
 	if os.IsNotExist(err) {
-		return map[string]string{}, nil
+		return map[string]PeerHashEntry{}, nil
 	}
 	if err != nil {
 		logger.Errorw("Failed to read peer-hashes file",
@@ -141,7 +149,7 @@ func readPeerHashes(logger *zap.SugaredLogger) (map[string]string, error) {
 			zap.Error(err))
 		return nil, err
 	}
-	hashes := map[string]string{}
+	hashes := map[string]PeerHashEntry{}
 	if err := json.Unmarshal(raw, &hashes); err != nil {
 		logger.Errorw("Failed to decode peer-hashes file",
 			zap.String("path", peerHashesFilePath),
