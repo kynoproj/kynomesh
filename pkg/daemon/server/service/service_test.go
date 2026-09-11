@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,10 +34,17 @@ import (
 type stubQuerier struct {
 	res *rater.WindowedResult
 	err error
+
+	drift    map[string]rater.PeerCardDrift
+	driftErr error
 }
 
 func (s stubQuerier) GetMetrics(string, int64) (*rater.WindowedResult, error) {
 	return s.res, s.err
+}
+
+func (s stubQuerier) GetPeerCardDrift(string) (map[string]rater.PeerCardDrift, error) {
+	return s.drift, s.driftErr
 }
 
 func TestGetAgentDeployMetrics_NotFound(t *testing.T) {
@@ -102,6 +110,55 @@ func TestGetAgentDeployMetrics_PopulatesAllWindows(t *testing.T) {
 	assert.Equal(t, float64(11), m.GetByTransport()["rest"].GetStreamMessageRates()[rater.WindowKey1m].GetValue())
 	// CustomWindowEffectiveSeconds is unset when caller didn't request one.
 	assert.Nil(t, m.GetCustomWindowEffectiveSeconds())
+}
+
+func TestGetPeerCardDrift_NotFound(t *testing.T) {
+	svc := NewService(stubQuerier{driftErr: rater.ErrUnknownAgentDeploy})
+	_, err := svc.GetPeerCardDrift(context.Background(), &pb.GetPeerCardDriftRequest{Name: "missing"})
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	assert.Equal(t, codes.NotFound, st.Code())
+}
+
+func TestGetPeerCardDrift_InternalForUnknownError(t *testing.T) {
+	svc := NewService(stubQuerier{driftErr: errors.New("boom")})
+	_, err := svc.GetPeerCardDrift(context.Background(), &pb.GetPeerCardDriftRequest{Name: "a"})
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	assert.Equal(t, codes.Internal, st.Code())
+}
+
+func TestGetPeerCardDrift_PopulatesPeersAndPods(t *testing.T) {
+	latestObserved := time.Date(2026, 9, 9, 6, 34, 29, 0, time.UTC)
+	podObserved := time.Date(2026, 9, 7, 9, 2, 11, 0, time.UTC)
+	drift := map[string]rater.PeerCardDrift{
+		"searcher": {
+			LatestHash:           "c0e81e18b0d9276e",
+			LatestHashObservedAt: latestObserved,
+			ReportedHashes: map[string]rater.ReportedHash{
+				"coordinator-0": {Hash: "3a7bd3e2360a3d29", ObservedAt: podObserved},
+			},
+		},
+		"unpolled-peer": {}, // no stable poll yet, no pods reporting
+	}
+	svc := NewService(stubQuerier{drift: drift})
+	resp, err := svc.GetPeerCardDrift(context.Background(), &pb.GetPeerCardDriftRequest{Name: "coordinator"})
+	require.NoError(t, err)
+
+	searcher := resp.GetPeers()["searcher"]
+	require.NotNil(t, searcher)
+	assert.Equal(t, "c0e81e18b0d9276e", searcher.GetLatestHash())
+	assert.True(t, latestObserved.Equal(searcher.GetLatestHashObservedAt().AsTime()))
+	pod := searcher.GetReportedHashes()["coordinator-0"]
+	require.NotNil(t, pod)
+	assert.Equal(t, "3a7bd3e2360a3d29", pod.GetHash())
+	assert.True(t, podObserved.Equal(pod.GetObservedAt().AsTime()))
+
+	unpolled := resp.GetPeers()["unpolled-peer"]
+	require.NotNil(t, unpolled)
+	assert.Empty(t, unpolled.GetLatestHash())
+	assert.Nil(t, unpolled.GetLatestHashObservedAt())
+	assert.Empty(t, unpolled.GetReportedHashes())
 }
 
 func TestGetAgentDeployMetrics_CustomWindowEchoed(t *testing.T) {

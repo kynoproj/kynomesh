@@ -129,6 +129,54 @@ func TestRESTClient_AddressWithoutSchemeAssumedHTTPS(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// canonicalDriftBody returns the JSON wire form grpc-gateway would
+// produce for a GetPeerCardDriftResponse containing the given peers.
+func canonicalDriftBody(t *testing.T, peers map[string]*pb.PeerCardDrift) string {
+	t.Helper()
+	b, err := jsonMarshaller.Marshal(&pb.GetPeerCardDriftResponse{Peers: peers})
+	require.NoError(t, err)
+	return string(b)
+}
+
+func TestRESTClient_GetPeerCardDrift_HappyPath(t *testing.T) {
+	st := &restServerState{status: http.StatusOK}
+	st.body = canonicalDriftBody(t, map[string]*pb.PeerCardDrift{
+		"searcher": {
+			LatestHash: "c0e81e18b0d9276e",
+			ReportedHashes: map[string]*pb.ReportedHash{
+				"coordinator-0": {Hash: "3a7bd3e2360a3d29"},
+			},
+		},
+	})
+	srv := startRESTServer(t, st)
+	c, err := NewRESTClient(srv.URL)
+	require.NoError(t, err)
+	defer func() { _ = c.Close() }()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+	peers, err := c.GetPeerCardDrift(ctx, "coordinator")
+	require.NoError(t, err)
+	require.Contains(t, peers, "searcher")
+	assert.Equal(t, "c0e81e18b0d9276e", peers["searcher"].GetLatestHash())
+	assert.Equal(t, "3a7bd3e2360a3d29", peers["searcher"].GetReportedHashes()["coordinator-0"].GetHash())
+	assert.Equal(t, "/api/v1/agentdeploys/coordinator/peer-card-drift", st.lastPath)
+}
+
+func TestRESTClient_GetPeerCardDrift_404SurfacesAsError(t *testing.T) {
+	st := &restServerState{status: http.StatusNotFound, body: `{"code":5,"message":"unknown AgentDeploy"}`}
+	srv := startRESTServer(t, st)
+	c, err := NewRESTClient(srv.URL)
+	require.NoError(t, err)
+	defer func() { _ = c.Close() }()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+	_, err = c.GetPeerCardDrift(ctx, "missing")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "404")
+}
+
 func TestRESTClient_404SurfacesAsError(t *testing.T) {
 	st := &restServerState{status: http.StatusNotFound, body: `{"code":5,"message":"unknown AgentDeploy"}`}
 	srv := startRESTServer(t, st)

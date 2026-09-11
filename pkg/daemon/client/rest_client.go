@@ -93,6 +93,24 @@ func (c *restClient) GetAgentDeployMetrics(ctx context.Context, name string, loo
 	return out.GetMetrics(), nil
 }
 
+func (c *restClient) GetPeerCardDrift(ctx context.Context, name string) (map[string]*pb.PeerCardDrift, error) {
+	u := fmt.Sprintf("%s/api/v1/agentdeploys/%s/peer-card-drift", c.baseURL, url.PathEscape(name))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return nil, fmt.Errorf("build request: %w", err)
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("get peer card drift: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	out, err := unmarshalResponse[pb.GetPeerCardDriftResponse](resp)
+	if err != nil {
+		return nil, err
+	}
+	return out.GetPeers(), nil
+}
+
 // unmarshalResponse decodes a 2xx JSON response into a value of type
 // T using grpc-gateway's protobuf-aware JSON marshaller. Non-2xx
 // status codes surface as errors carrying the body for debug.

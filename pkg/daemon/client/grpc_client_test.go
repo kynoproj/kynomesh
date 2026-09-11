@@ -46,6 +46,10 @@ type fakeServer struct {
 	err  error
 
 	lastReq *pb.GetAgentDeployMetricsRequest
+
+	driftResp    *pb.GetPeerCardDriftResponse
+	driftErr     error
+	lastDriftReq *pb.GetPeerCardDriftRequest
 }
 
 func (f *fakeServer) GetAgentDeployMetrics(_ context.Context, req *pb.GetAgentDeployMetricsRequest) (*pb.GetAgentDeployMetricsResponse, error) {
@@ -54,6 +58,14 @@ func (f *fakeServer) GetAgentDeployMetrics(_ context.Context, req *pb.GetAgentDe
 		return nil, f.err
 	}
 	return f.resp, nil
+}
+
+func (f *fakeServer) GetPeerCardDrift(_ context.Context, req *pb.GetPeerCardDriftRequest) (*pb.GetPeerCardDriftResponse, error) {
+	f.lastDriftReq = req
+	if f.driftErr != nil {
+		return nil, f.driftErr
+	}
+	return f.driftResp, nil
 }
 
 // startGRPCServer brings up a TLS gRPC server on a random port,
@@ -146,6 +158,54 @@ func TestGRPCClient_GetAgentDeployMetrics_UnavailablePropagates(t *testing.T) {
 	require.Error(t, err)
 	st, _ := status.FromError(err)
 	assert.Equal(t, codes.Unavailable, st.Code())
+}
+
+func TestGRPCClient_GetPeerCardDrift_HappyPath(t *testing.T) {
+	srv := &fakeServer{
+		driftResp: &pb.GetPeerCardDriftResponse{
+			Peers: map[string]*pb.PeerCardDrift{
+				"searcher": {
+					LatestHash: "c0e81e18b0d9276e",
+					ReportedHashes: map[string]*pb.ReportedHash{
+						"coordinator-0": {Hash: "3a7bd3e2360a3d29"},
+					},
+				},
+			},
+		},
+	}
+	addr, stop := startGRPCServer(t, srv)
+	defer stop()
+
+	c, err := NewGRPCClient(addr)
+	require.NoError(t, err)
+	defer func() { _ = c.Close() }()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+	peers, err := c.GetPeerCardDrift(ctx, "coordinator")
+	require.NoError(t, err)
+	require.Contains(t, peers, "searcher")
+	assert.Equal(t, "c0e81e18b0d9276e", peers["searcher"].GetLatestHash())
+	assert.Equal(t, "3a7bd3e2360a3d29", peers["searcher"].GetReportedHashes()["coordinator-0"].GetHash())
+	assert.Equal(t, "coordinator", srv.lastDriftReq.GetName())
+}
+
+func TestGRPCClient_GetPeerCardDrift_PropagatesStatus(t *testing.T) {
+	srv := &fakeServer{driftErr: status.Error(codes.NotFound, "unknown AgentDeploy \"missing\"")}
+	addr, stop := startGRPCServer(t, srv)
+	defer stop()
+
+	c, err := NewGRPCClient(addr)
+	require.NoError(t, err)
+	defer func() { _ = c.Close() }()
+
+	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+	_, err = c.GetPeerCardDrift(ctx, "missing")
+	require.Error(t, err)
+	st, ok := status.FromError(err)
+	require.True(t, ok)
+	assert.Equal(t, codes.NotFound, st.Code())
 }
 
 func TestGRPCClient_DialFailureReturnsErrorOnCall(t *testing.T) {

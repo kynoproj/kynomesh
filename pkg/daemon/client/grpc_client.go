@@ -68,3 +68,11 @@ func (c *grpcClient) GetAgentDeployMetrics(ctx context.Context, name string, loo
 	}
 	return resp.GetMetrics(), nil
 }
+
+func (c *grpcClient) GetPeerCardDrift(ctx context.Context, name string) (map[string]*pb.PeerCardDrift, error) {
+	resp, err := c.client.GetPeerCardDrift(ctx, &pb.GetPeerCardDriftRequest{Name: name})
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetPeers(), nil
+}

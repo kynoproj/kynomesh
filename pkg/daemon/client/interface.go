@@ -34,4 +34,8 @@ type DaemonClient interface {
 	// "custom" window in the response (clamped to the daemon's
 	// retention).
 	GetAgentDeployMetrics(ctx context.Context, name string, lookbackSeconds int64) (*pb.AgentDeployMetrics, error)
+
+	// GetPeerCardDrift fetches the current AgentCard drift-comparison
+	// state for the named AgentDeploy's peers, keyed by peer name.
+	GetPeerCardDrift(ctx context.Context, name string) (map[string]*pb.PeerCardDrift, error)
 }

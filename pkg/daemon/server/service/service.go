@@ -20,9 +20,11 @@ import (
 	"context"
 	"errors"
 	"os"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
@@ -35,6 +37,12 @@ import (
 // rater.
 type Querier interface {
 	GetMetrics(name string, lookbackSeconds int64) (*rater.WindowedResult, error)
+
+	// GetPeerCardDrift returns the current drift-comparison state for
+	// name's peers: for each peer, the daemon's own stability-gated
+	// AgentCard hash alongside what each of name's live pods currently
+	// reports for that peer. See rater.PeerCardDrift.
+	GetPeerCardDrift(name string) (map[string]rater.PeerCardDrift, error)
 }
 
 // Service implements pb.DaemonServiceServer over a Querier.
@@ -42,6 +50,8 @@ type Service struct {
 	pb.UnimplementedDaemonServiceServer
 	q Querier
 }
+
+var _ pb.DaemonServiceServer = (*Service)(nil)
 
 func NewService(q Querier) *Service { return &Service{q: q} }
 
@@ -86,6 +96,40 @@ func (s *Service) GetAgentDeployMetrics(_ context.Context, req *pb.GetAgentDeplo
 	}, nil
 }
 
+// GetPeerCardDrift translates a Querier result into the protobuf
+// response shape:
+//
+//   - NotFound when the AgentDeploy is unknown.
+//   - OK with a populated GetPeerCardDriftResponse otherwise. A peer with
+//     no reported hashes from any pod is still present in the map (empty
+//     ReportedHashes) — see rater.PeerCardDrift.
+func (s *Service) GetPeerCardDrift(_ context.Context, req *pb.GetPeerCardDriftRequest) (*pb.GetPeerCardDriftResponse, error) {
+	res, err := s.q.GetPeerCardDrift(req.GetName())
+	switch {
+	case errors.Is(err, rater.ErrUnknownAgentDeploy):
+		return nil, status.Errorf(codes.NotFound, "unknown AgentDeploy %q", req.GetName())
+	case err != nil:
+		return nil, status.Errorf(codes.Internal, "compute peer card drift: %v", err)
+	}
+
+	peers := make(map[string]*pb.PeerCardDrift, len(res))
+	for peer, drift := range res {
+		reported := make(map[string]*pb.ReportedHash, len(drift.ReportedHashes))
+		for pod, rh := range drift.ReportedHashes {
+			reported[pod] = &pb.ReportedHash{
+				Hash:       rh.Hash,
+				ObservedAt: optionalTimestamp(rh.ObservedAt),
+			}
+		}
+		peers[peer] = &pb.PeerCardDrift{
+			LatestHash:           drift.LatestHash,
+			LatestHashObservedAt: optionalTimestamp(drift.LatestHashObservedAt),
+			ReportedHashes:       reported,
+		}
+	}
+	return &pb.GetPeerCardDriftResponse{Peers: peers}, nil
+}
+
 // mapFloatToDV wraps each value in DoubleValue. A nil input yields a
 // nil map, distinguishing "no data computed" from "empty map written."
 func mapFloatToDV(m map[string]float64) map[string]*wrapperspb.DoubleValue {
@@ -106,4 +150,14 @@ func optionalInt64(v int64) *wrapperspb.Int64Value {
 		return nil
 	}
 	return wrapperspb.Int64(v)
+}
+
+// optionalTimestamp returns nil for the zero time so the gRPC client sees
+// an explicitly-absent field ("not yet observed") rather than the Unix
+// epoch.
+func optionalTimestamp(t time.Time) *timestamppb.Timestamp {
+	if t.IsZero() {
+		return nil
+	}
+	return timestamppb.New(t)
 }
