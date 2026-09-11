@@ -16,13 +16,7 @@ limitations under the License.
 
 package v1alpha1
 
-// ComputeTopology derives agentName's topology view from as: the routing
-// pattern, whether agentName is the entry, and the peers agentName is
-// allowed to discover. Shared by the AgentSet controller (which stamps this
-// onto each AgentDeploy it creates) and the daemon (which receives a
-// slimmed-down AgentSet, see EncodeAgentSet / AgentSet.SimpleCopy, and needs
-// the exact same derivation to know which peers to track for AgentCard
-// drift).
+// ComputeTopology derives the per-agent topology view from the AgentSet pattern.
 func ComputeTopology(as *AgentSet, agentName string) Topology {
 	if as == nil {
 		return Topology{}

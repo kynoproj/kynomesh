@@ -48,14 +48,7 @@ const shutdownTimeout = 10 * time.Second
 // provisions the daemon Deployment.
 type daemonConfig struct {
 	Namespace string
-	// AgentSet is the slimmed-down AgentSet (see kmv1.AgentSet.SimpleCopy,
-	// kmv1.EncodeAgentSet) the controller encoded: name plus the
-	// topology-relevant subset of its spec (pattern, entry, agent names,
-	// external agents). It's the daemon's only source of "who depends on
-	// whom" — the daemon derives both the AgentDeploy name list (metrics
-	// scraping) and each AgentDeploy's peers (drift detection) from it via
-	// kmv1.ComputeTopology and AgentSet-level methods (ChildAgentDeployName,
-	// etc.), the same ones the controller itself uses.
+	// AgentSet is the slimmed-down AgentSet.
 	AgentSet    *kmv1.AgentSet
 	APIPort     int
 	MetricsPort int
