@@ -45,7 +45,7 @@ type stubScraper struct {
 	failure error
 }
 
-func (s *stubScraper) Scrape(_ context.Context, host string) (*PodSample, error) {
+func (s *stubScraper) ScrapeMetrics(_ context.Context, host string) (*PodSample, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.failure != nil {
@@ -89,7 +89,7 @@ func TestGetMetrics_UnknownAgentDeploy(t *testing.T) {
 	r := NewRater(Options{
 		AgentSetObject: agentSetWithDeploys("a"),
 		Discover:       stubDiscover(map[string][]string{}),
-		Scraper:        &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
+		MetricsScraper: &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
 	})
 	_, err := r.GetMetrics("nope", 0)
 	require.ErrorIs(t, err, ErrUnknownAgentDeploy)
@@ -99,7 +99,7 @@ func TestGetMetrics_NoDataYet(t *testing.T) {
 	r := NewRater(Options{
 		AgentSetObject: agentSetWithDeploys("a"),
 		Discover:       stubDiscover(map[string][]string{}),
-		Scraper:        &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
+		MetricsScraper: &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
 	})
 	_, err := r.GetMetrics("a", 0)
 	require.ErrorIs(t, err, ErrNoData)
@@ -149,7 +149,7 @@ func TestGetMetrics_HappyPath_SingleTransport(t *testing.T) {
 	r := NewRater(Options{
 		AgentSetObject: agentSetWithDeploys("greeter"),
 		Discover:       stubDiscover(map[string][]string{"greeter": {"greeter-0"}}),
-		Scraper:        &stubScraper{samples: map[string][]*PodSample{"greeter-0": samples}, idx: map[string]int{}},
+		MetricsScraper: &stubScraper{samples: map[string][]*PodSample{"greeter-0": samples}, idx: map[string]int{}},
 		Clock:          fc.Now,
 	})
 
@@ -178,7 +178,7 @@ func TestGetMetrics_CustomWindowClampedToRetention(t *testing.T) {
 	r := NewRater(Options{
 		AgentSetObject: agentSetWithDeploys("a"),
 		Discover:       stubDiscover(map[string][]string{"a": {"a-0"}}),
-		Scraper:        &stubScraper{samples: map[string][]*PodSample{"a-0": {sample, sample}}, idx: map[string]int{}},
+		MetricsScraper: &stubScraper{samples: map[string][]*PodSample{"a-0": {sample, sample}}, idx: map[string]int{}},
 		Clock:          fc.Now,
 	})
 	driveScrapes(t, r, fc, 3)
@@ -199,7 +199,7 @@ func TestGetMetrics_NoCustomWindowWhenLookbackZero(t *testing.T) {
 	r := NewRater(Options{
 		AgentSetObject: agentSetWithDeploys("a"),
 		Discover:       stubDiscover(map[string][]string{"a": {"a-0"}}),
-		Scraper:        &stubScraper{samples: map[string][]*PodSample{"a-0": {sample, sample}}, idx: map[string]int{}},
+		MetricsScraper: &stubScraper{samples: map[string][]*PodSample{"a-0": {sample, sample}}, idx: map[string]int{}},
 		Clock:          fc.Now,
 	})
 	driveScrapes(t, r, fc, 3)
@@ -224,7 +224,7 @@ func TestGetMetrics_MultipleTransports(t *testing.T) {
 	r := NewRater(Options{
 		AgentSetObject: agentSetWithDeploys("a"),
 		Discover:       stubDiscover(map[string][]string{"a": {"a-0"}}),
-		Scraper:        &stubScraper{samples: map[string][]*PodSample{"a-0": samples}, idx: map[string]int{}},
+		MetricsScraper: &stubScraper{samples: map[string][]*PodSample{"a-0": samples}, idx: map[string]int{}},
 		Clock:          fc.Now,
 	})
 	driveScrapes(t, r, fc, 4)
@@ -250,7 +250,7 @@ func TestScrapeAllOnce_DiscoveryFailureSkipsAD(t *testing.T) {
 			called.Add(1)
 			return nil, errors.New("dns down")
 		},
-		Scraper: scr,
+		MetricsScraper: scr,
 	})
 	r.scrapeAllOnce(context.Background())
 	assert.Equal(t, int32(1), called.Load())
@@ -270,7 +270,7 @@ func TestScrapeOneAgentDeploy_ScrapeFailureKeepsPreviousValue(t *testing.T) {
 	r := NewRater(Options{
 		AgentSetObject: agentSetWithDeploys("a"),
 		Discover:       stubDiscover(map[string][]string{"a": {"a-0"}}),
-		Scraper:        scr,
+		MetricsScraper: scr,
 		Clock:          fc.Now,
 	})
 	// 1st pass: successful scrape stores 100.
@@ -297,7 +297,7 @@ type clockAdvancingScraper struct {
 	sample      *PodSample
 }
 
-func (s *clockAdvancingScraper) Scrape(_ context.Context, host string) (*PodSample, error) {
+func (s *clockAdvancingScraper) ScrapeMetrics(_ context.Context, host string) (*PodSample, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if d, ok := s.perHostSkew[host]; ok {
@@ -334,7 +334,7 @@ func TestScrape_PerPodTimestamping(t *testing.T) {
 	r := NewRater(Options{
 		AgentSetObject: agentSetWithDeploys("a"),
 		Discover:       stubDiscover(map[string][]string{"a": {"pod-0", "pod-1"}}),
-		Scraper:        scr,
+		MetricsScraper: scr,
 		Clock:          fc.Now,
 		// Serialize: pod-0 finishes before pod-1 starts, so pod-1's
 		// clock advance can't affect pod-0's timestamp.
@@ -356,7 +356,7 @@ func TestStart_ShutsDownOnContextCancel(t *testing.T) {
 	r := NewRater(Options{
 		AgentSetObject: agentSetWithDeploys("a"),
 		Discover:       stubDiscover(map[string][]string{"a": {}}),
-		Scraper:        &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
+		MetricsScraper: &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
 		ScrapeInterval: 10 * time.Millisecond,
 	})
 	ctx, cancel := context.WithCancel(context.Background())

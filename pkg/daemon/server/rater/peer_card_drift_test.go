@@ -17,6 +17,8 @@ limitations under the License.
 package rater
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,9 +42,9 @@ func TestGetPeerCardDrift_UnknownAgentDeploy(t *testing.T) {
 	r := NewRater(Options{
 		AgentSetObject: testAgentSetObject("set", kmv1.AgentPatternSupervisor, "a", "a"),
 		Discover:       stubDiscover(map[string][]string{}),
-		Scraper:        &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
+		MetricsScraper: &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
 	})
-	_, err := r.GetPeerCardDrift("nope")
+	_, err := r.GetPeerCardDrift(context.Background(), "nope")
 	require.ErrorIs(t, err, ErrUnknownAgentDeploy)
 }
 
@@ -50,9 +52,9 @@ func TestGetPeerCardDrift_KnownAgentDeployNoPeers(t *testing.T) {
 	r := NewRater(Options{
 		AgentSetObject: testAgentSetObject("set", kmv1.AgentPatternSupervisor, "a", "a"),
 		Discover:       stubDiscover(map[string][]string{}),
-		Scraper:        &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
+		MetricsScraper: &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
 	})
-	drift, err := r.GetPeerCardDrift("a")
+	drift, err := r.GetPeerCardDrift(context.Background(), "a")
 	require.NoError(t, err)
 	assert.Empty(t, drift)
 }
@@ -61,16 +63,92 @@ func TestGetPeerCardDrift_ManagedPeersEnumerated(t *testing.T) {
 	r := NewRater(Options{
 		AgentSetObject: testAgentSetObject("set", kmv1.AgentPatternSupervisor, "a", "a", "b", "c"),
 		Discover:       stubDiscover(map[string][]string{}),
-		Scraper:        &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
+		MetricsScraper: &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
 	})
 
-	drift, err := r.GetPeerCardDrift("a")
+	drift, err := r.GetPeerCardDrift(context.Background(), "a")
 	require.NoError(t, err)
 	assert.Contains(t, drift, "b")
 	assert.Contains(t, drift, "c")
 
 	// Non-entry agent has no peers under Supervisor.
-	drift, err = r.GetPeerCardDrift("b")
+	drift, err = r.GetPeerCardDrift(context.Background(), "b")
 	require.NoError(t, err)
 	assert.Empty(t, drift)
+}
+
+// stubIntrospectScraper returns canned IntrospectSamples per host.
+type stubIntrospectScraper struct {
+	samples map[string]*IntrospectSample
+	err     error
+}
+
+func (s *stubIntrospectScraper) ScrapeIntrospect(_ context.Context, host string) (*IntrospectSample, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	sample, ok := s.samples[host]
+	if !ok {
+		return nil, errors.New("no sample for host")
+	}
+	return sample, nil
+}
+
+func TestGetPeerCardDrift_ReportedHashesFromIntrospectScrape(t *testing.T) {
+	r := NewRater(Options{
+		AgentSetObject: testAgentSetObject("set", kmv1.AgentPatternSupervisor, "a", "a", "b"),
+		Discover:       stubDiscover(map[string][]string{"a": {"a-0", "a-1"}}),
+		MetricsScraper: &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
+		IntrospectScraper: &stubIntrospectScraper{samples: map[string]*IntrospectSample{
+			"a-0": {PeerHashes: map[string]IntrospectPeerHash{
+				"b": {Hash: "hash-old", ObservedAt: "2026-09-07T09:02:11Z"},
+			}},
+			"a-1": {PeerHashes: map[string]IntrospectPeerHash{
+				"b": {Hash: "hash-new", ObservedAt: "2026-09-09T06:34:29Z"},
+			}},
+		}},
+	})
+
+	drift, err := r.GetPeerCardDrift(context.Background(), "a")
+	require.NoError(t, err)
+	require.Contains(t, drift, "b")
+	reported := drift["b"].ReportedHashes
+	require.Contains(t, reported, "a-0")
+	require.Contains(t, reported, "a-1")
+	assert.Equal(t, "hash-old", reported["a-0"].Hash)
+	assert.Equal(t, "hash-new", reported["a-1"].Hash)
+	assert.Equal(t, 2026, reported["a-1"].ObservedAt.Year())
+}
+
+func TestGetPeerCardDrift_IntrospectScrapeFailureLeavesPodUnreported(t *testing.T) {
+	r := NewRater(Options{
+		AgentSetObject:    testAgentSetObject("set", kmv1.AgentPatternSupervisor, "a", "a", "b"),
+		Discover:          stubDiscover(map[string][]string{"a": {"a-0"}}),
+		MetricsScraper:    &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
+		IntrospectScraper: &stubIntrospectScraper{err: errors.New("scrape failed")},
+	})
+
+	drift, err := r.GetPeerCardDrift(context.Background(), "a")
+	require.NoError(t, err)
+	require.Contains(t, drift, "b")
+	assert.Empty(t, drift["b"].ReportedHashes, "a scrape failure must not fabricate a reported hash")
+}
+
+func TestGetPeerCardDrift_UnknownPeerFromPodIgnored(t *testing.T) {
+	r := NewRater(Options{
+		AgentSetObject: testAgentSetObject("set", kmv1.AgentPatternSupervisor, "a", "a", "b"),
+		Discover:       stubDiscover(map[string][]string{"a": {"a-0"}}),
+		MetricsScraper: &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
+		IntrospectScraper: &stubIntrospectScraper{samples: map[string]*IntrospectSample{
+			"a-0": {PeerHashes: map[string]IntrospectPeerHash{
+				"not-a-declared-peer": {Hash: "x"},
+			}},
+		}},
+	})
+
+	drift, err := r.GetPeerCardDrift(context.Background(), "a")
+	require.NoError(t, err)
+	require.Contains(t, drift, "b")
+	assert.Empty(t, drift["b"].ReportedHashes)
+	assert.NotContains(t, drift, "not-a-declared-peer")
 }

@@ -60,8 +60,8 @@ func newTLSServer(t *testing.T, body string, status int) (host string, port int,
 
 // newScraperPointingAt replaces the introspection port the Scraper
 // uses so tests can drive httptest's random port.
-func newScraperPointingAt(port int) *Scraper {
-	s := New(2 * time.Second)
+func newScraperPointingAt(port int) *MetricsScraper {
+	s := NewMetricsScraper(2 * time.Second)
 	s.port = port
 	return s
 }
@@ -89,7 +89,7 @@ func TestScrape_HappyPath(t *testing.T) {
 	defer closeSrv()
 	s := newScraperPointingAt(port)
 
-	sample, err := s.Scrape(context.Background(), host)
+	sample, err := s.ScrapeMetrics(context.Background(), host)
 	require.NoError(t, err)
 	assert.Equal(t, float64(2), sample.InflightByTransport["jsonrpc"])
 	assert.Equal(t, float64(5), sample.InflightByTransport["rest"])
@@ -119,7 +119,7 @@ broker_inflight_requests{transport="someNewProtocol"} 9
 	defer closeSrv()
 	s := newScraperPointingAt(port)
 
-	sample, err := s.Scrape(context.Background(), host)
+	sample, err := s.ScrapeMetrics(context.Background(), host)
 	require.NoError(t, err)
 	assert.Equal(t, float64(9), sample.InflightByTransport["someNewProtocol"])
 }
@@ -133,7 +133,7 @@ broker_inflight_requests 99
 	defer closeSrv()
 	s := newScraperPointingAt(port)
 
-	sample, err := s.Scrape(context.Background(), host)
+	sample, err := s.ScrapeMetrics(context.Background(), host)
 	require.NoError(t, err)
 	assert.Empty(t, sample.InflightByTransport)
 }
@@ -144,7 +144,7 @@ func TestScrape_MissingMetricsYieldsEmptySample(t *testing.T) {
 	defer closeSrv()
 	s := newScraperPointingAt(port)
 
-	sample, err := s.Scrape(context.Background(), host)
+	sample, err := s.ScrapeMetrics(context.Background(), host)
 	require.NoError(t, err)
 	assert.NotNil(t, sample)
 	assert.Empty(t, sample.InflightByTransport)
@@ -164,7 +164,7 @@ broker_requests_total{transport="rest"} 42
 	defer closeSrv()
 	s := newScraperPointingAt(port)
 
-	sample, err := s.Scrape(context.Background(), host)
+	sample, err := s.ScrapeMetrics(context.Background(), host)
 	require.NoError(t, err)
 	assert.Equal(t, float64(42), sample.RequestsByTransport["rest"])
 	assert.Empty(t, sample.StreamMessagesByTransport)
@@ -182,7 +182,7 @@ broker_stream_messages_total{transport="grpc"} 13
 	defer closeSrv()
 	s := newScraperPointingAt(port)
 
-	sample, err := s.Scrape(context.Background(), host)
+	sample, err := s.ScrapeMetrics(context.Background(), host)
 	require.NoError(t, err)
 	assert.Equal(t, float64(13), sample.StreamMessagesByTransport["grpc"])
 	assert.Empty(t, sample.RequestsByTransport)
@@ -193,14 +193,14 @@ func TestScrape_Non200Errors(t *testing.T) {
 	defer closeSrv()
 	s := newScraperPointingAt(port)
 
-	_, err := s.Scrape(context.Background(), host)
+	_, err := s.ScrapeMetrics(context.Background(), host)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "503")
 }
 
 func TestScrape_DialFailureErrors(t *testing.T) {
 	s := newScraperPointingAt(1) // port 1 is unbound; dial will fail fast
-	_, err := s.Scrape(context.Background(), "127.0.0.1")
+	_, err := s.ScrapeMetrics(context.Background(), "127.0.0.1")
 	require.Error(t, err)
 }
 
@@ -221,7 +221,7 @@ func TestScrape_ContextCancellationHonored(t *testing.T) {
 	defer cancel()
 
 	start := time.Now()
-	_, err := s.Scrape(ctx, host)
+	_, err := s.ScrapeMetrics(ctx, host)
 	require.Error(t, err)
 	assert.Less(t, time.Since(start), 500*time.Millisecond, "should not wait for full client timeout")
 	// Just sanity-check the error mentions one of context-related strings.
@@ -244,7 +244,7 @@ func TestMetricNamesAreStable(t *testing.T) {
 
 // Ensure the introspection port we target matches the API constant.
 func TestDefaultPortMatchesAPIConst(t *testing.T) {
-	s := New(time.Second)
+	s := NewMetricsScraper(time.Second)
 	assert.Equal(t, 8491, s.port)
 	assert.Equal(t, fmt.Sprint(s.port), "8491")
 }

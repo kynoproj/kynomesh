@@ -17,7 +17,10 @@ limitations under the License.
 package rater
 
 import (
+	"context"
 	"time"
+
+	"go.uber.org/zap"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
@@ -28,8 +31,30 @@ type ReportedHash struct {
 	// Hash is that pod's currently-reported AgentCard hash for this peer.
 	Hash string
 	// ObservedAt is when that pod's agent SDK recorded this hash — passed
-	// through from the pod's peer-hashes file, not a scrape time.
+	// through from the pod's peer-hashes file, not a scrape time. Zero
+	// value if the pod's SDK didn't report a parseable timestamp.
 	ObservedAt time.Time
+}
+
+// IntrospectSample is one pod's decoded broker /introspect response, the
+// subset GetPeerCardDrift needs: its peer-hashes map (see
+// broker.PeerHashEntry — mirrored here to avoid pkg/daemon depending on
+// pkg/broker for a single struct shape).
+type IntrospectSample struct {
+	// PeerHashes is keyed by peer name.
+	PeerHashes map[string]IntrospectPeerHash
+}
+
+// IntrospectPeerHash mirrors broker.PeerHashEntry's JSON shape.
+type IntrospectPeerHash struct {
+	Hash       string
+	ObservedAt string // RFC3339, verbatim as the SDK wrote it; parsed on use
+}
+
+// IntrospectScraper fetches one pod's /introspect endpoint. Implemented by
+// pkg/daemon/server/scraper.IntrospectScraper.
+type IntrospectScraper interface {
+	ScrapeIntrospect(ctx context.Context, host string) (*IntrospectSample, error)
 }
 
 // PeerCardDrift carries one peer's drift-comparison state for a single
@@ -51,21 +76,19 @@ type PeerCardDrift struct {
 }
 
 // GetPeerCardDrift returns the current drift-comparison state for name's
-// peers.
+// peers: for each managed peer in name's topology, the live pods of name
+// are scraped for their broker-exposed /introspect peerHashes, keyed by
+// pod host.
 //
-// TODO(#214): the per-peer drift data itself is still a stub — every peer
-// is reported with a zero-value PeerCardDrift (no LatestHash, no
-// ReportedHashes) until the real implementation lands:
-//  1. Poll each managed peer's live AgentCard on some cadence, hash it,
-//     and hold a newly-observed hash change behind a stability gate
-//     before treating it as LatestHash.
-//  2. Scrape each of name's live pods' broker-exposed /introspect
-//     endpoint for their peerHashes, and surface each pod's per-peer
-//     {hash, observedAt} as ReportedHashes.
+// TODO(#214): LatestHash / LatestHashObservedAt are still a stub (always
+// empty) until the daemon polls each peer's own live AgentCard on some
+// cadence, hashes it, and holds a newly-observed hash change behind a
+// stability gate before promoting it. Once that lands, this becomes a real
+// comparison instead of reported-hashes-only.
 //
 // Returns ErrUnknownAgentDeploy if name is not in the configured list,
 // matching GetMetrics.
-func (r *Rater) GetPeerCardDrift(name string) (map[string]PeerCardDrift, error) {
+func (r *Rater) GetPeerCardDrift(ctx context.Context, name string) (map[string]PeerCardDrift, error) {
 	if _, ok := r.buffers[name]; !ok {
 		return nil, ErrUnknownAgentDeploy
 	}
@@ -76,6 +99,41 @@ func (r *Rater) GetPeerCardDrift(name string) (map[string]PeerCardDrift, error) 
 			continue
 		}
 		out[p.Name] = PeerCardDrift{}
+	}
+	if len(out) == 0 || r.opts.IntrospectScraper == nil {
+		return out, nil
+	}
+
+	log := r.opts.Logger.With(zap.String("agentDeploy", name))
+	hosts, err := r.opts.Discover(ctx, r.agentSet, name)
+	if err != nil {
+		log.Warnw("Pod discovery failed for peer card drift", zap.Error(err))
+		return out, nil
+	}
+	for _, host := range hosts {
+		sample, err := r.opts.IntrospectScraper.ScrapeIntrospect(ctx, host)
+		if err != nil {
+			log.Debugw("Introspect scrape failed", zap.String("host", host), zap.Error(err))
+			continue
+		}
+		for peer, ph := range sample.PeerHashes {
+			drift, ok := out[peer]
+			if !ok {
+				// Not a managed peer in this AgentDeploy's topology (or the
+				// pod resolved a peer that isn't declared) — ignore rather
+				// than surface an unexpected key.
+				continue
+			}
+			if drift.ReportedHashes == nil {
+				drift.ReportedHashes = make(map[string]ReportedHash, len(hosts))
+			}
+			var observedAt time.Time
+			if t, err := time.Parse(time.RFC3339, ph.ObservedAt); err == nil {
+				observedAt = t
+			}
+			drift.ReportedHashes[host] = ReportedHash{Hash: ph.Hash, ObservedAt: observedAt}
+			out[peer] = drift
+		}
 	}
 	return out, nil
 }

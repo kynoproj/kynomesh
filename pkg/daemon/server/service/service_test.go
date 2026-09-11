@@ -43,7 +43,7 @@ func (s stubQuerier) GetMetrics(string, int64) (*rater.WindowedResult, error) {
 	return s.res, s.err
 }
 
-func (s stubQuerier) GetPeerCardDrift(string) (map[string]rater.PeerCardDrift, error) {
+func (s stubQuerier) GetPeerCardDrift(context.Context, string) (map[string]rater.PeerCardDrift, error) {
 	return s.drift, s.driftErr
 }
 

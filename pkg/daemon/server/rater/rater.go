@@ -62,10 +62,10 @@ var ErrUnknownAgentDeploy = errors.New("unknown AgentDeploy")
 // compute a rate. The gRPC layer maps this to codes.Unavailable.
 var ErrNoData = errors.New("not enough samples to compute metrics")
 
-// Scraper is the minimal surface the rater needs from a pod-metrics
-// scraper. Implemented by pkg/daemon/server/scraper.Scraper.
-type Scraper interface {
-	Scrape(ctx context.Context, host string) (*PodSample, error)
+// MetricsScraper is the minimal surface the rater needs from a pod-metrics
+// scraper. Implemented by pkg/daemon/server/scraper.MetricsScraper.
+type MetricsScraper interface {
+	ScrapeMetrics(ctx context.Context, host string) (*PodSample, error)
 }
 
 // DiscoverFunc resolves the live pod DNS hostnames for an
@@ -80,9 +80,14 @@ type Clock func() time.Time
 type Options struct {
 	// AgentSetObject is the slimmed-down owning AgentSet.
 	AgentSetObject *kmv1.AgentSet
-	Scraper        Scraper
-	Discover       DiscoverFunc
-	Logger         *zap.SugaredLogger
+	MetricsScraper MetricsScraper
+	// IntrospectScraper fetches each pod's broker-exposed /introspect
+	// endpoint for GetPeerCardDrift's reported-hashes half. Optional: nil
+	// disables reported-hash scraping (GetPeerCardDrift still reports the
+	// managed peer set, just with no ReportedHashes populated).
+	IntrospectScraper IntrospectScraper
+	Discover          DiscoverFunc
+	Logger            *zap.SugaredLogger
 
 	ScrapeInterval time.Duration // default DefaultScrapeInterval
 	ScrapeWorkers  int           // default DefaultScrapeWorkers
@@ -233,7 +238,7 @@ func (r *Rater) scrapeOneAgentDeploy(ctx context.Context, ad string) {
 		go func(host string) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			sample, err := r.opts.Scraper.Scrape(ctx, host)
+			sample, err := r.opts.MetricsScraper.ScrapeMetrics(ctx, host)
 			if err != nil {
 				log.Debugw("Scrape failed", zap.String("host", host), zap.Error(err))
 				if r.selfMetrics != nil {
