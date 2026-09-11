@@ -57,6 +57,10 @@ func (c canned) GetMetrics(string, int64) (*rater.WindowedResult, error) {
 	return c.r, nil
 }
 
+func (c canned) GetPeerCardDrift(string) (map[string]rater.PeerCardDrift, error) {
+	return nil, nil
+}
+
 func TestServer_RoundTripGRPCAndREST(t *testing.T) {
 	cert, err := sharedtls.GenerateX509KeyPair()
 	require.NoError(t, err)
