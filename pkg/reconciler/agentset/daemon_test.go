@@ -96,7 +96,7 @@ func TestNewDaemonDeployment_AgentSetSpecEnvVar(t *testing.T) {
 
 	// The encoded spec decodes to the same names ComputeTopology and the
 	// AgentDeploy reconciler (ChildAgentDeployName: "<set>-<agent>") agree on.
-	decoded, err := kmv1.DecodeAgentSet(env[kmv1.EnvAgentSetSpec].value)
+	decoded, err := kmv1.DecodeAgentSet(env[kmv1.EnvAgentSetObject].value)
 	require.NoError(t, err)
 	assert.Equal(t, "hello", decoded.Name)
 	var names []string
@@ -114,7 +114,7 @@ func TestNewDaemonDeployment_AgentSetSpecEnvVar_TopologyDerivable(t *testing.T) 
 	require.NoError(t, err)
 	env := envMap(dep.Spec.Template.Spec.Containers[0].Env)
 
-	spec, err := kmv1.DecodeAgentSet(env[kmv1.EnvAgentSetSpec].value)
+	spec, err := kmv1.DecodeAgentSet(env[kmv1.EnvAgentSetObject].value)
 	require.NoError(t, err)
 
 	// Supervisor pattern, entry "alpha": alpha sees every other agent as a
@@ -143,7 +143,7 @@ func TestNewDaemonDeployment_AgentSetSpecEnvVar_ExternalAgentsIncluded(t *testin
 	require.NoError(t, err)
 	env := envMap(dep.Spec.Template.Spec.Containers[0].Env)
 
-	spec, err := kmv1.DecodeAgentSet(env[kmv1.EnvAgentSetSpec].value)
+	spec, err := kmv1.DecodeAgentSet(env[kmv1.EnvAgentSetObject].value)
 	require.NoError(t, err)
 	require.Len(t, spec.Spec.ExternalAgents, 1)
 	assert.Equal(t, "outsider", spec.Spec.ExternalAgents[0].Name)
@@ -245,7 +245,7 @@ func TestReconcileDaemon_RecreatesOnAgentDeploysChange(t *testing.T) {
 	// Pod template was rewritten — which is what a real-cluster
 	// Recreate strategy would translate to a Pod rollover.)
 	env := envMap(dep1.Spec.Template.Spec.Containers[0].Env)
-	spec, err := kmv1.DecodeAgentSet(env[kmv1.EnvAgentSetSpec].value)
+	spec, err := kmv1.DecodeAgentSet(env[kmv1.EnvAgentSetObject].value)
 	require.NoError(t, err)
 	var names []string
 	for _, a := range spec.Spec.Agents {

@@ -182,11 +182,7 @@ func (as *AgentSet) ChildAgentDeployName(agentName string) string {
 }
 
 // SimpleCopy returns a slimmed-down copy of the AgentSet suitable for
-// embedding into a downstream consumer — e.g. the daemon (see
-// EncodeAgentSet), which needs the AgentSet's name (for ChildAgentDeployName,
-// DaemonName, etc.) and the routing-relevant subset of its spec (pattern,
-// entry, agent names, external agents) to call ComputeTopology itself, but
-// has no use for the full, potentially large per-agent container specs.
+// embedding into a downstream consumer — e.g. the daemon.
 func (as *AgentSet) SimpleCopy() AgentSet {
 	agents := make([]AbstractAgentDeploy, len(as.Spec.Agents))
 	for i, a := range as.Spec.Agents {

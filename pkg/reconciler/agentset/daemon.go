@@ -165,7 +165,7 @@ func newDaemonContainer(image string, pullPolicy corev1.PullPolicy, as *kmv1.Age
 				FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"},
 			}},
 			{Name: kmv1.EnvAgentSetName, Value: as.Name},
-			{Name: kmv1.EnvAgentSetSpec, Value: encodedSpec},
+			{Name: kmv1.EnvAgentSetObject, Value: encodedSpec},
 		},
 		Ports: []corev1.ContainerPort{
 			{Name: "api", ContainerPort: kmv1.DaemonAPIPort, Protocol: corev1.ProtocolTCP},

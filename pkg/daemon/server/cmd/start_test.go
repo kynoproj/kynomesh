@@ -46,7 +46,7 @@ func testAgentSet(name string, agentNames ...string) *kmv1.AgentSet {
 func TestLoadConfig_HappyPath(t *testing.T) {
 	t.Setenv(kmv1.EnvNamespace, "default")
 	t.Setenv(kmv1.EnvAgentSetName, "my-set")
-	t.Setenv(kmv1.EnvAgentSetSpec, kmv1.EncodeAgentSet(testAgentSet("my-set", "greeter", "summarizer")))
+	t.Setenv(kmv1.EnvAgentSetObject, kmv1.EncodeAgentSet(testAgentSet("my-set", "greeter", "summarizer")))
 
 	cfg, err := loadConfig(9432, 9433)
 	require.NoError(t, err)
@@ -59,7 +59,7 @@ func TestLoadConfig_HappyPath(t *testing.T) {
 
 func TestLoadConfig_MissingNamespace(t *testing.T) {
 	t.Setenv(kmv1.EnvAgentSetName, "x")
-	t.Setenv(kmv1.EnvAgentSetSpec, kmv1.EncodeAgentSet(testAgentSet("x", "a")))
+	t.Setenv(kmv1.EnvAgentSetObject, kmv1.EncodeAgentSet(testAgentSet("x", "a")))
 	_, err := loadConfig(9432, 9433)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), kmv1.EnvNamespace)
@@ -67,7 +67,7 @@ func TestLoadConfig_MissingNamespace(t *testing.T) {
 
 func TestLoadConfig_MissingAgentSet(t *testing.T) {
 	t.Setenv(kmv1.EnvNamespace, "default")
-	t.Setenv(kmv1.EnvAgentSetSpec, kmv1.EncodeAgentSet(testAgentSet("x", "a")))
+	t.Setenv(kmv1.EnvAgentSetObject, kmv1.EncodeAgentSet(testAgentSet("x", "a")))
 	_, err := loadConfig(9432, 9433)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), kmv1.EnvAgentSetName)
@@ -78,13 +78,13 @@ func TestLoadConfig_MissingAgentSetSpec(t *testing.T) {
 	t.Setenv(kmv1.EnvAgentSetName, "x")
 	_, err := loadConfig(9432, 9433)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), kmv1.EnvAgentSetSpec)
+	assert.Contains(t, err.Error(), kmv1.EnvAgentSetObject)
 }
 
 func TestLoadConfig_MalformedAgentSetSpec(t *testing.T) {
 	t.Setenv(kmv1.EnvNamespace, "default")
 	t.Setenv(kmv1.EnvAgentSetName, "x")
-	t.Setenv(kmv1.EnvAgentSetSpec, "not-base64!!!")
+	t.Setenv(kmv1.EnvAgentSetObject, "not-base64!!!")
 	_, err := loadConfig(9432, 9433)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "decode")
@@ -93,7 +93,7 @@ func TestLoadConfig_MalformedAgentSetSpec(t *testing.T) {
 func TestLoadConfig_EmptyAgentsList(t *testing.T) {
 	t.Setenv(kmv1.EnvNamespace, "default")
 	t.Setenv(kmv1.EnvAgentSetName, "x")
-	t.Setenv(kmv1.EnvAgentSetSpec, kmv1.EncodeAgentSet(testAgentSet("x")))
+	t.Setenv(kmv1.EnvAgentSetObject, kmv1.EncodeAgentSet(testAgentSet("x")))
 	_, err := loadConfig(9432, 9433)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "at least one")

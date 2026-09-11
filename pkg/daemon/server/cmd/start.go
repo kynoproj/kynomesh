@@ -80,12 +80,12 @@ func loadConfig(apiPort, metricsPort int) (*daemonConfig, error) {
 	if os.Getenv(kmv1.EnvAgentSetName) == "" {
 		return nil, fmt.Errorf("env var %s is required", kmv1.EnvAgentSetName)
 	}
-	as, err := kmv1.DecodeAgentSet(os.Getenv(kmv1.EnvAgentSetSpec))
+	as, err := kmv1.DecodeAgentSet(os.Getenv(kmv1.EnvAgentSetObject))
 	if err != nil {
-		return nil, fmt.Errorf("decode %s: %w", kmv1.EnvAgentSetSpec, err)
+		return nil, fmt.Errorf("decode %s: %w", kmv1.EnvAgentSetObject, err)
 	}
 	if len(as.Spec.Agents) == 0 {
-		return nil, fmt.Errorf("env var %s must contain at least one agent", kmv1.EnvAgentSetSpec)
+		return nil, fmt.Errorf("env var %s must contain at least one agent", kmv1.EnvAgentSetObject)
 	}
 
 	return &daemonConfig{

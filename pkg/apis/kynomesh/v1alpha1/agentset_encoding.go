@@ -24,13 +24,7 @@ import (
 	sharedutil "github.com/kynoproj/kynomesh/pkg/shared/util"
 )
 
-// EncodeAgentSet returns the base64-encoded JSON of as.SimpleCopy() —
-// the AgentSet's name plus everything ComputeTopology needs (pattern,
-// entry, agent names, external agents), and nothing else. Used to pass an
-// AgentSet's topology-relevant shape to the daemon via KYNOMESH_AGENTSET_SPEC,
-// so the daemon can call the same AgentSet-level methods and topology
-// derivation the controller uses, rather than the controller pre-computing
-// and shipping a derived result.
+// EncodeAgentSet returns the base64-encoded JSON of as.SimpleCopy().
 func EncodeAgentSet(as *AgentSet) string {
 	simple := as.SimpleCopy()
 	return base64.StdEncoding.EncodeToString([]byte(sharedutil.MustJSON(simple)))
@@ -39,15 +33,15 @@ func EncodeAgentSet(as *AgentSet) string {
 // DecodeAgentSet reverses EncodeAgentSet.
 func DecodeAgentSet(encoded string) (*AgentSet, error) {
 	if encoded == "" {
-		return nil, fmt.Errorf("empty %s payload", EnvAgentSetSpec)
+		return nil, fmt.Errorf("empty %s payload", EnvAgentSetObject)
 	}
 	raw, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
-		return nil, fmt.Errorf("base64 decode %s: %w", EnvAgentSetSpec, err)
+		return nil, fmt.Errorf("base64 decode %s: %w", EnvAgentSetObject, err)
 	}
 	var as AgentSet
 	if err := json.Unmarshal(raw, &as); err != nil {
-		return nil, fmt.Errorf("json unmarshal %s: %w", EnvAgentSetSpec, err)
+		return nil, fmt.Errorf("json unmarshal %s: %w", EnvAgentSetObject, err)
 	}
 	return &as, nil
 }
