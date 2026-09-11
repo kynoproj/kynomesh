@@ -25,23 +25,41 @@ import (
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
+// testAgentSet builds a minimal AgentSet with the given managed agent
+// names, suitable for encoding via kmv1.EncodeAgentSet.
+func testAgentSet(name string, agentNames ...string) *kmv1.AgentSet {
+	as := &kmv1.AgentSet{
+		Spec: kmv1.AgentSetSpec{
+			Pattern: kmv1.AgentPatternSupervisor,
+		},
+	}
+	as.Name = name
+	for _, n := range agentNames {
+		as.Spec.Agents = append(as.Spec.Agents, kmv1.AbstractAgentDeploy{Name: n})
+	}
+	if len(agentNames) > 0 {
+		as.Spec.Entry = agentNames[0]
+	}
+	return as
+}
+
 func TestLoadConfig_HappyPath(t *testing.T) {
 	t.Setenv(kmv1.EnvNamespace, "default")
 	t.Setenv(kmv1.EnvAgentSetName, "my-set")
-	t.Setenv(kmv1.EnvAgentSetAgentDeploys, `["greeter","summarizer"]`)
+	t.Setenv(kmv1.EnvAgentSetSpec, kmv1.EncodeAgentSet(testAgentSet("my-set", "greeter", "summarizer")))
 
 	cfg, err := loadConfig(9432, 9433)
 	require.NoError(t, err)
 	assert.Equal(t, "default", cfg.Namespace)
-	assert.Equal(t, "my-set", cfg.AgentSet)
-	assert.Equal(t, []string{"greeter", "summarizer"}, cfg.AgentDeploys)
+	assert.Equal(t, "my-set", cfg.AgentSet.Name)
+	assert.Equal(t, []string{"greeter", "summarizer"}, cfg.AgentDeploys())
 	assert.Equal(t, 9432, cfg.APIPort)
 	assert.Equal(t, 9433, cfg.MetricsPort)
 }
 
 func TestLoadConfig_MissingNamespace(t *testing.T) {
 	t.Setenv(kmv1.EnvAgentSetName, "x")
-	t.Setenv(kmv1.EnvAgentSetAgentDeploys, `["a"]`)
+	t.Setenv(kmv1.EnvAgentSetSpec, kmv1.EncodeAgentSet(testAgentSet("x", "a")))
 	_, err := loadConfig(9432, 9433)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), kmv1.EnvNamespace)
@@ -49,33 +67,33 @@ func TestLoadConfig_MissingNamespace(t *testing.T) {
 
 func TestLoadConfig_MissingAgentSet(t *testing.T) {
 	t.Setenv(kmv1.EnvNamespace, "default")
-	t.Setenv(kmv1.EnvAgentSetAgentDeploys, `["a"]`)
+	t.Setenv(kmv1.EnvAgentSetSpec, kmv1.EncodeAgentSet(testAgentSet("x", "a")))
 	_, err := loadConfig(9432, 9433)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), kmv1.EnvAgentSetName)
 }
 
-func TestLoadConfig_MissingAgentDeploys(t *testing.T) {
+func TestLoadConfig_MissingAgentSetSpec(t *testing.T) {
 	t.Setenv(kmv1.EnvNamespace, "default")
 	t.Setenv(kmv1.EnvAgentSetName, "x")
 	_, err := loadConfig(9432, 9433)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), kmv1.EnvAgentSetAgentDeploys)
+	assert.Contains(t, err.Error(), kmv1.EnvAgentSetSpec)
 }
 
-func TestLoadConfig_MalformedAgentDeploysJSON(t *testing.T) {
+func TestLoadConfig_MalformedAgentSetSpec(t *testing.T) {
 	t.Setenv(kmv1.EnvNamespace, "default")
 	t.Setenv(kmv1.EnvAgentSetName, "x")
-	t.Setenv(kmv1.EnvAgentSetAgentDeploys, `not-json`)
+	t.Setenv(kmv1.EnvAgentSetSpec, "not-base64!!!")
 	_, err := loadConfig(9432, 9433)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "parse")
+	assert.Contains(t, err.Error(), "decode")
 }
 
-func TestLoadConfig_EmptyAgentDeploysList(t *testing.T) {
+func TestLoadConfig_EmptyAgentsList(t *testing.T) {
 	t.Setenv(kmv1.EnvNamespace, "default")
 	t.Setenv(kmv1.EnvAgentSetName, "x")
-	t.Setenv(kmv1.EnvAgentSetAgentDeploys, `[]`)
+	t.Setenv(kmv1.EnvAgentSetSpec, kmv1.EncodeAgentSet(testAgentSet("x")))
 	_, err := loadConfig(9432, 9433)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "at least one")

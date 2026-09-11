@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
 // Default scrape parameters. These are intentionally not exposed as
@@ -78,10 +80,17 @@ type Clock func() time.Time
 type Options struct {
 	AgentSet     string
 	AgentDeploys []string
-	Namespace    string
-	Scraper      Scraper
-	Discover     DiscoverFunc
-	Logger       *zap.SugaredLogger
+	// AgentSetObject is the slimmed-down owning AgentSet the controller
+	// encoded (see kmv1.EncodeAgentSet / kmv1.AgentSet.SimpleCopy).
+	// GetPeerCardDrift derives each AgentDeploy's managed peers from it via
+	// kmv1.ComputeTopology — the same derivation the controller itself uses
+	// to stamp Topology onto each AgentDeploy, so the daemon never needs its
+	// own copy of "who depends on whom" logic.
+	AgentSetObject *kmv1.AgentSet
+	Namespace      string
+	Scraper        Scraper
+	Discover       DiscoverFunc
+	Logger         *zap.SugaredLogger
 
 	ScrapeInterval time.Duration // default DefaultScrapeInterval
 	ScrapeWorkers  int           // default DefaultScrapeWorkers

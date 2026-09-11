@@ -18,7 +18,6 @@ package agentset
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -44,11 +43,7 @@ const daemonProbeInitialDelaySec int32 = 5
 // newDaemonDeployment builds the Deployment that runs the per-
 // AgentSet metrics daemon.
 func (r *Reconciler) newDaemonDeployment(as *kmv1.AgentSet) (*appsv1.Deployment, error) {
-	agentNames := agentDeployNamesFromSpec(as)
-	encodedAgents, err := json.Marshal(agentNames)
-	if err != nil {
-		return nil, fmt.Errorf("marshal agentdeploys: %w", err)
-	}
+	encodedSpec := kmv1.EncodeAgentSet(as)
 
 	labels := daemonLabels(as)
 	podLabels := daemonLabels(as)
@@ -81,7 +76,7 @@ func (r *Reconciler) newDaemonDeployment(as *kmv1.AgentSet) (*appsv1.Deployment,
 				ObjectMeta: metav1.ObjectMeta{Labels: podLabels},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
-						newDaemonContainer(r.image, r.imagePullPolicy, as, string(encodedAgents), cTmpl, defaultResources),
+						newDaemonContainer(r.image, r.imagePullPolicy, as, encodedSpec, cTmpl, defaultResources),
 					},
 				},
 			},
@@ -142,7 +137,7 @@ func (r *Reconciler) newDaemonService(as *kmv1.AgentSet) (*corev1.Service, error
 
 // newDaemonContainer builds the single container that runs the
 // daemon binary.
-func newDaemonContainer(image string, pullPolicy corev1.PullPolicy, as *kmv1.AgentSet, encodedAgents string, tmpl *kmv1.ContainerTemplate, defaultResources corev1.ResourceRequirements) corev1.Container {
+func newDaemonContainer(image string, pullPolicy corev1.PullPolicy, as *kmv1.AgentSet, encodedSpec string, tmpl *kmv1.ContainerTemplate, defaultResources corev1.ResourceRequirements) corev1.Container {
 	probe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -170,7 +165,7 @@ func newDaemonContainer(image string, pullPolicy corev1.PullPolicy, as *kmv1.Age
 				FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"},
 			}},
 			{Name: kmv1.EnvAgentSetName, Value: as.Name},
-			{Name: kmv1.EnvAgentSetAgentDeploys, Value: encodedAgents},
+			{Name: kmv1.EnvAgentSetSpec, Value: encodedSpec},
 		},
 		Ports: []corev1.ContainerPort{
 			{Name: "api", ContainerPort: kmv1.DaemonAPIPort, Protocol: corev1.ProtocolTCP},
@@ -196,16 +191,6 @@ func daemonLabels(as *kmv1.AgentSet) map[string]string {
 		kmv1.KeyPartOf:       kmv1.Project,
 		kmv1.KeyManagedBy:    kmv1.ControllerAgentSet,
 	}
-}
-
-// agentDeployNamesFromSpec returns the AgentDeploy child names that
-// the AgentSet will own.
-func agentDeployNamesFromSpec(as *kmv1.AgentSet) []string {
-	out := make([]string, 0, len(as.Spec.Agents))
-	for _, a := range as.Spec.Agents {
-		out = append(out, a.Name)
-	}
-	return out
 }
 
 // reconcileDaemon ensures the per-AgentSet metrics daemon Deployment

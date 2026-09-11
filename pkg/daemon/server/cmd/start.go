@@ -19,7 +19,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -48,11 +47,28 @@ const shutdownTimeout = 10 * time.Second
 // derived from environment variables set by the controller when it
 // provisions the daemon Deployment.
 type daemonConfig struct {
-	Namespace    string
-	AgentSet     string
-	AgentDeploys []string
-	APIPort      int
-	MetricsPort  int
+	Namespace string
+	// AgentSet is the slimmed-down AgentSet (see kmv1.AgentSet.SimpleCopy,
+	// kmv1.EncodeAgentSet) the controller encoded: name plus the
+	// topology-relevant subset of its spec (pattern, entry, agent names,
+	// external agents). It's the daemon's only source of "who depends on
+	// whom" — the daemon derives both the AgentDeploy name list (metrics
+	// scraping) and each AgentDeploy's peers (drift detection) from it via
+	// kmv1.ComputeTopology and AgentSet-level methods (ChildAgentDeployName,
+	// etc.), the same ones the controller itself uses.
+	AgentSet    *kmv1.AgentSet
+	APIPort     int
+	MetricsPort int
+}
+
+// AgentDeploys returns the AgentDeploy short names this daemon tracks —
+// every managed agent in AgentSet.Spec, in declaration order.
+func (c *daemonConfig) AgentDeploys() []string {
+	out := make([]string, len(c.AgentSet.Spec.Agents))
+	for i, a := range c.AgentSet.Spec.Agents {
+		out[i] = a.Name
+	}
+	return out
 }
 
 // loadConfig reads env vars and validates them.
@@ -61,27 +77,22 @@ func loadConfig(apiPort, metricsPort int) (*daemonConfig, error) {
 	if namespace == "" {
 		return nil, fmt.Errorf("env var %s is required", kmv1.EnvNamespace)
 	}
-	agentSet := os.Getenv(kmv1.EnvAgentSetName)
-	if agentSet == "" {
+	if os.Getenv(kmv1.EnvAgentSetName) == "" {
 		return nil, fmt.Errorf("env var %s is required", kmv1.EnvAgentSetName)
 	}
-	raw := os.Getenv(kmv1.EnvAgentSetAgentDeploys)
-	if raw == "" {
-		return nil, fmt.Errorf("env var %s is required", kmv1.EnvAgentSetAgentDeploys)
+	as, err := kmv1.DecodeAgentSet(os.Getenv(kmv1.EnvAgentSetSpec))
+	if err != nil {
+		return nil, fmt.Errorf("decode %s: %w", kmv1.EnvAgentSetSpec, err)
 	}
-	var ads []string
-	if err := json.Unmarshal([]byte(raw), &ads); err != nil {
-		return nil, fmt.Errorf("parse %s as JSON string array: %w", kmv1.EnvAgentSetAgentDeploys, err)
+	if len(as.Spec.Agents) == 0 {
+		return nil, fmt.Errorf("env var %s must contain at least one agent", kmv1.EnvAgentSetSpec)
 	}
-	if len(ads) == 0 {
-		return nil, fmt.Errorf("env var %s must contain at least one AgentDeploy name", kmv1.EnvAgentSetAgentDeploys)
-	}
+
 	return &daemonConfig{
-		Namespace:    namespace,
-		AgentSet:     agentSet,
-		AgentDeploys: ads,
-		APIPort:      apiPort,
-		MetricsPort:  metricsPort,
+		Namespace:   namespace,
+		AgentSet:    as,
+		APIPort:     apiPort,
+		MetricsPort: metricsPort,
 	}, nil
 }
 
@@ -104,8 +115,8 @@ func Start(apiPort, metricsPort int) {
 	}
 	logger.Infow("Daemon configured",
 		zap.String("namespace", cfg.Namespace),
-		zap.String("agentSet", cfg.AgentSet),
-		zap.Strings("agentDeploys", cfg.AgentDeploys),
+		zap.String("agentSet", cfg.AgentSet.Name),
+		zap.Strings("agentDeploys", cfg.AgentDeploys()),
 		zap.Int("apiPort", cfg.APIPort),
 		zap.Int("metricsPort", cfg.MetricsPort))
 
@@ -129,12 +140,13 @@ func run(ctx context.Context, cfg *daemonConfig, logger *zap.SugaredLogger) erro
 	}
 
 	r := rater.NewRater(rater.Options{
-		AgentSet:     cfg.AgentSet,
-		AgentDeploys: cfg.AgentDeploys,
-		Namespace:    cfg.Namespace,
-		Scraper:      scr,
-		Discover:     discoverFn,
-		Logger:       logger.Named("rater"),
+		AgentSet:       cfg.AgentSet.Name,
+		AgentDeploys:   cfg.AgentDeploys(),
+		AgentSetObject: cfg.AgentSet,
+		Namespace:      cfg.Namespace,
+		Scraper:        scr,
+		Discover:       discoverFn,
+		Logger:         logger.Named("rater"),
 	}).WithSelfMetrics(selfMetrics)
 
 	cert, err := sharedtls.GenerateX509KeyPair()

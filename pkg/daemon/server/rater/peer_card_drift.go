@@ -16,7 +16,11 @@ limitations under the License.
 
 package rater
 
-import "time"
+import (
+	"time"
+
+	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
+)
 
 // ReportedHash is a single pod's self-reported AgentCard hash for one
 // peer, as scraped from that pod's broker-exposed /introspect endpoint.
@@ -47,11 +51,14 @@ type PeerCardDrift struct {
 }
 
 // GetPeerCardDrift returns the current drift-comparison state for name's
-// peers.
+// peers. The peer set itself comes from kmv1.ComputeTopology against
+// r.opts.AgentSetObject — the same derivation the controller uses to stamp
+// Topology onto each AgentDeploy — filtered to managed peers (external
+// peers are out of scope for v1, see the drift-detection spec's Non-goals).
 //
-// TODO(#214): this is a stub. It always returns an empty map (no known
-// peers, no drift data) for any known AgentDeploy. The real
-// implementation needs to:
+// TODO(#214): the per-peer drift data itself is still a stub — every peer
+// is reported with a zero-value PeerCardDrift (no LatestHash, no
+// ReportedHashes) until the real implementation lands:
 //  1. Poll each managed peer's live AgentCard on some cadence, hash it,
 //     and hold a newly-observed hash change behind a stability gate
 //     before treating it as LatestHash.
@@ -65,5 +72,13 @@ func (r *Rater) GetPeerCardDrift(name string) (map[string]PeerCardDrift, error) 
 	if _, ok := r.buffers[name]; !ok {
 		return nil, ErrUnknownAgentDeploy
 	}
-	return map[string]PeerCardDrift{}, nil
+	topology := kmv1.ComputeTopology(r.opts.AgentSetObject, name)
+	out := make(map[string]PeerCardDrift, len(topology.Peers))
+	for _, p := range topology.Peers {
+		if p.Kind != kmv1.PeerKindManaged {
+			continue
+		}
+		out[p.Name] = PeerCardDrift{}
+	}
+	return out, nil
 }

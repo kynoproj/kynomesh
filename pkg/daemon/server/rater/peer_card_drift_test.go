@@ -21,6 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
 func TestGetPeerCardDrift_UnknownAgentDeploy(t *testing.T) {
@@ -34,7 +36,7 @@ func TestGetPeerCardDrift_UnknownAgentDeploy(t *testing.T) {
 	require.ErrorIs(t, err, ErrUnknownAgentDeploy)
 }
 
-func TestGetPeerCardDrift_KnownAgentDeployStub(t *testing.T) {
+func TestGetPeerCardDrift_KnownAgentDeployNoPeers(t *testing.T) {
 	r := NewRater(Options{
 		AgentSet:     "set",
 		AgentDeploys: []string{"a"},
@@ -42,6 +44,35 @@ func TestGetPeerCardDrift_KnownAgentDeployStub(t *testing.T) {
 		Scraper:      &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
 	})
 	drift, err := r.GetPeerCardDrift("a")
+	require.NoError(t, err)
+	assert.Empty(t, drift)
+}
+
+func TestGetPeerCardDrift_ManagedPeersEnumerated(t *testing.T) {
+	as := &kmv1.AgentSet{
+		Spec: kmv1.AgentSetSpec{
+			Pattern: kmv1.AgentPatternSupervisor,
+			Entry:   "a",
+			Agents: []kmv1.AbstractAgentDeploy{
+				{Name: "a"}, {Name: "b"}, {Name: "c"},
+			},
+		},
+	}
+	r := NewRater(Options{
+		AgentSet:       "set",
+		AgentDeploys:   []string{"a", "b", "c"},
+		AgentSetObject: as,
+		Discover:       stubDiscover(map[string][]string{}),
+		Scraper:        &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
+	})
+
+	drift, err := r.GetPeerCardDrift("a")
+	require.NoError(t, err)
+	assert.Contains(t, drift, "b")
+	assert.Contains(t, drift, "c")
+
+	// Non-entry agent has no peers under Supervisor.
+	drift, err = r.GetPeerCardDrift("b")
 	require.NoError(t, err)
 	assert.Empty(t, drift)
 }
