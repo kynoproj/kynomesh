@@ -26,6 +26,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
 // scrapeStep is the wall-clock spacing driveScrapes uses between
@@ -71,12 +73,23 @@ func stubDiscover(hosts map[string][]string) DiscoverFunc {
 	}
 }
 
+// agentSetWithDeploys builds a minimal *kmv1.AgentSet naming the given
+// AgentDeploys, suitable for Options.AgentSetObject in tests that only
+// care about metrics scraping (pattern/entry are irrelevant there).
+func agentSetWithDeploys(agentNames ...string) *kmv1.AgentSet {
+	as := &kmv1.AgentSet{Spec: kmv1.AgentSetSpec{Pattern: kmv1.AgentPatternHandoff}}
+	as.Name = "set"
+	for _, n := range agentNames {
+		as.Spec.Agents = append(as.Spec.Agents, kmv1.AbstractAgentDeploy{Name: n})
+	}
+	return as
+}
+
 func TestGetMetrics_UnknownAgentDeploy(t *testing.T) {
 	r := NewRater(Options{
-		AgentSet:     "set",
-		AgentDeploys: []string{"a"},
-		Discover:     stubDiscover(map[string][]string{}),
-		Scraper:      &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
+		AgentSetObject: agentSetWithDeploys("a"),
+		Discover:       stubDiscover(map[string][]string{}),
+		Scraper:        &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
 	})
 	_, err := r.GetMetrics("nope", 0)
 	require.ErrorIs(t, err, ErrUnknownAgentDeploy)
@@ -84,10 +97,9 @@ func TestGetMetrics_UnknownAgentDeploy(t *testing.T) {
 
 func TestGetMetrics_NoDataYet(t *testing.T) {
 	r := NewRater(Options{
-		AgentSet:     "set",
-		AgentDeploys: []string{"a"},
-		Discover:     stubDiscover(map[string][]string{}),
-		Scraper:      &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
+		AgentSetObject: agentSetWithDeploys("a"),
+		Discover:       stubDiscover(map[string][]string{}),
+		Scraper:        &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
 	})
 	_, err := r.GetMetrics("a", 0)
 	require.ErrorIs(t, err, ErrNoData)
@@ -135,11 +147,10 @@ func TestGetMetrics_HappyPath_SingleTransport(t *testing.T) {
 		{RequestsByTransport: map[string]float64{"rest": 30}, InflightByTransport: map[string]float64{"rest": 3}},
 	}
 	r := NewRater(Options{
-		AgentSet:     "set",
-		AgentDeploys: []string{"greeter"},
-		Discover:     stubDiscover(map[string][]string{"greeter": {"greeter-0"}}),
-		Scraper:      &stubScraper{samples: map[string][]*PodSample{"greeter-0": samples}, idx: map[string]int{}},
-		Clock:        fc.Now,
+		AgentSetObject: agentSetWithDeploys("greeter"),
+		Discover:       stubDiscover(map[string][]string{"greeter": {"greeter-0"}}),
+		Scraper:        &stubScraper{samples: map[string][]*PodSample{"greeter-0": samples}, idx: map[string]int{}},
+		Clock:          fc.Now,
 	})
 
 	driveScrapes(t, r, fc, 4)
@@ -165,10 +176,10 @@ func TestGetMetrics_CustomWindowClampedToRetention(t *testing.T) {
 		InflightByTransport: map[string]float64{"rest": 1},
 	}
 	r := NewRater(Options{
-		AgentDeploys: []string{"a"},
-		Discover:     stubDiscover(map[string][]string{"a": {"a-0"}}),
-		Scraper:      &stubScraper{samples: map[string][]*PodSample{"a-0": {sample, sample}}, idx: map[string]int{}},
-		Clock:        fc.Now,
+		AgentSetObject: agentSetWithDeploys("a"),
+		Discover:       stubDiscover(map[string][]string{"a": {"a-0"}}),
+		Scraper:        &stubScraper{samples: map[string][]*PodSample{"a-0": {sample, sample}}, idx: map[string]int{}},
+		Clock:          fc.Now,
 	})
 	driveScrapes(t, r, fc, 3)
 
@@ -186,10 +197,10 @@ func TestGetMetrics_NoCustomWindowWhenLookbackZero(t *testing.T) {
 		RequestsByTransport: map[string]float64{"rest": 0},
 	}
 	r := NewRater(Options{
-		AgentDeploys: []string{"a"},
-		Discover:     stubDiscover(map[string][]string{"a": {"a-0"}}),
-		Scraper:      &stubScraper{samples: map[string][]*PodSample{"a-0": {sample, sample}}, idx: map[string]int{}},
-		Clock:        fc.Now,
+		AgentSetObject: agentSetWithDeploys("a"),
+		Discover:       stubDiscover(map[string][]string{"a": {"a-0"}}),
+		Scraper:        &stubScraper{samples: map[string][]*PodSample{"a-0": {sample, sample}}, idx: map[string]int{}},
+		Clock:          fc.Now,
 	})
 	driveScrapes(t, r, fc, 3)
 
@@ -211,10 +222,10 @@ func TestGetMetrics_MultipleTransports(t *testing.T) {
 		{RequestsByTransport: map[string]float64{"rest": 30, "grpc": 15}, InflightByTransport: map[string]float64{"rest": 1, "grpc": 2}},
 	}
 	r := NewRater(Options{
-		AgentDeploys: []string{"a"},
-		Discover:     stubDiscover(map[string][]string{"a": {"a-0"}}),
-		Scraper:      &stubScraper{samples: map[string][]*PodSample{"a-0": samples}, idx: map[string]int{}},
-		Clock:        fc.Now,
+		AgentSetObject: agentSetWithDeploys("a"),
+		Discover:       stubDiscover(map[string][]string{"a": {"a-0"}}),
+		Scraper:        &stubScraper{samples: map[string][]*PodSample{"a-0": samples}, idx: map[string]int{}},
+		Clock:          fc.Now,
 	})
 	driveScrapes(t, r, fc, 4)
 
@@ -234,7 +245,7 @@ func TestScrapeAllOnce_DiscoveryFailureSkipsAD(t *testing.T) {
 		idx:     map[string]int{},
 	}
 	r := NewRater(Options{
-		AgentDeploys: []string{"a"},
+		AgentSetObject: agentSetWithDeploys("a"),
 		Discover: func(_ context.Context, _, _ string) ([]string, error) {
 			called.Add(1)
 			return nil, errors.New("dns down")
@@ -257,10 +268,10 @@ func TestScrapeOneAgentDeploy_ScrapeFailureKeepsPreviousValue(t *testing.T) {
 		idx: map[string]int{},
 	}
 	r := NewRater(Options{
-		AgentDeploys: []string{"a"},
-		Discover:     stubDiscover(map[string][]string{"a": {"a-0"}}),
-		Scraper:      scr,
-		Clock:        fc.Now,
+		AgentSetObject: agentSetWithDeploys("a"),
+		Discover:       stubDiscover(map[string][]string{"a": {"a-0"}}),
+		Scraper:        scr,
+		Clock:          fc.Now,
 	})
 	// 1st pass: successful scrape stores 100.
 	r.scrapeAllOnce(context.Background())
@@ -321,10 +332,10 @@ func TestScrape_PerPodTimestamping(t *testing.T) {
 		sample: sample,
 	}
 	r := NewRater(Options{
-		AgentDeploys: []string{"a"},
-		Discover:     stubDiscover(map[string][]string{"a": {"pod-0", "pod-1"}}),
-		Scraper:      scr,
-		Clock:        fc.Now,
+		AgentSetObject: agentSetWithDeploys("a"),
+		Discover:       stubDiscover(map[string][]string{"a": {"pod-0", "pod-1"}}),
+		Scraper:        scr,
+		Clock:          fc.Now,
 		// Serialize: pod-0 finishes before pod-1 starts, so pod-1's
 		// clock advance can't affect pod-0's timestamp.
 		ScrapeWorkers: 1,
@@ -343,7 +354,7 @@ func TestScrape_PerPodTimestamping(t *testing.T) {
 
 func TestStart_ShutsDownOnContextCancel(t *testing.T) {
 	r := NewRater(Options{
-		AgentDeploys:   []string{"a"},
+		AgentSetObject: agentSetWithDeploys("a"),
 		Discover:       stubDiscover(map[string][]string{"a": {}}),
 		Scraper:        &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
 		ScrapeInterval: 10 * time.Millisecond,

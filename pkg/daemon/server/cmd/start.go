@@ -133,10 +133,7 @@ func run(ctx context.Context, cfg *daemonConfig, logger *zap.SugaredLogger) erro
 	}
 
 	r := rater.NewRater(rater.Options{
-		AgentSet:       cfg.AgentSet.Name,
-		AgentDeploys:   cfg.AgentDeploys(),
 		AgentSetObject: cfg.AgentSet,
-		Namespace:      cfg.Namespace,
 		Scraper:        scr,
 		Discover:       discoverFn,
 		Logger:         logger.Named("rater"),

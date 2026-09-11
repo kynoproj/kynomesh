@@ -298,7 +298,7 @@ func TestNewDaemonContainer_DefaultResourcesAppliedWhenUnset(t *testing.T) {
 		Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("100m")},
 	}
 
-	c := newDaemonContainer("test-image:latest", corev1.PullIfNotPresent, as, "e30=", nil, defaults)
+	c := newDaemonContainer("test-image:latest", corev1.PullIfNotPresent, as, nil, defaults)
 	assert.Equal(t, "100m", c.Resources.Requests.Cpu().String(), "daemon container must receive the controller default resources when the template leaves them unset")
 }
 
@@ -313,7 +313,7 @@ func TestNewDaemonContainer_ExplicitTemplateResourcesWinOverDefaults(t *testing.
 		},
 	}
 
-	c := newDaemonContainer("test-image:latest", corev1.PullIfNotPresent, as, "e30=", tmpl, defaults)
+	c := newDaemonContainer("test-image:latest", corev1.PullIfNotPresent, as, tmpl, defaults)
 	assert.Equal(t, "500m", c.Resources.Requests.Cpu().String(), "explicit daemon container template resources must win over the controller default")
 }
 
