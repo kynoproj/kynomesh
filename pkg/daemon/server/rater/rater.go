@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
 // Default scrape parameters. These are intentionally not exposed as
@@ -76,12 +78,11 @@ type Clock func() time.Time
 // Options configures a Rater. Zero-value fields take the package
 // defaults.
 type Options struct {
-	AgentSet     string
-	AgentDeploys []string
-	Namespace    string
-	Scraper      Scraper
-	Discover     DiscoverFunc
-	Logger       *zap.SugaredLogger
+	// AgentSetObject is the slimmed-down owning AgentSet.
+	AgentSetObject *kmv1.AgentSet
+	Scraper        Scraper
+	Discover       DiscoverFunc
+	Logger         *zap.SugaredLogger
 
 	ScrapeInterval time.Duration // default DefaultScrapeInterval
 	ScrapeWorkers  int           // default DefaultScrapeWorkers
@@ -93,6 +94,12 @@ type Options struct {
 type Rater struct {
 	opts    Options
 	buffers map[string]*AgentDeployBuffers
+
+	// agentSet and agentDeploys are derived once from opts.AgentSetObject
+	// at construction time, rather than re-walking the object on every
+	// scrape tick / log line.
+	agentSet     string
+	agentDeploys []string
 
 	// Self-observability counters; nil-safe checks let tests skip
 	// wiring metrics.
@@ -115,11 +122,22 @@ func NewRater(opts Options) *Rater {
 	if opts.Logger == nil {
 		opts.Logger = zap.NewNop().Sugar()
 	}
-	buffers := make(map[string]*AgentDeployBuffers, len(opts.AgentDeploys))
-	for _, ad := range opts.AgentDeploys {
+
+	var agentSet string
+	var agentDeploys []string
+	if opts.AgentSetObject != nil {
+		agentSet = opts.AgentSetObject.Name
+		agentDeploys = make([]string, len(opts.AgentSetObject.Spec.Agents))
+		for i, a := range opts.AgentSetObject.Spec.Agents {
+			agentDeploys[i] = a.Name
+		}
+	}
+
+	buffers := make(map[string]*AgentDeployBuffers, len(agentDeploys))
+	for _, ad := range agentDeploys {
 		buffers[ad] = NewAgentDeployBuffers()
 	}
-	return &Rater{opts: opts, buffers: buffers}
+	return &Rater{opts: opts, buffers: buffers, agentSet: agentSet, agentDeploys: agentDeploys}
 }
 
 // WithSelfMetrics wires the daemon's own /metrics counters. Optional.
@@ -134,8 +152,8 @@ func (r *Rater) WithSelfMetrics(m *SelfMetrics) *Rater {
 func (r *Rater) Start(ctx context.Context) {
 	log := r.opts.Logger
 	log.Infow("Rater starting",
-		zap.String("agentSet", r.opts.AgentSet),
-		zap.Strings("agentDeploys", r.opts.AgentDeploys),
+		zap.String("agentSet", r.agentSet),
+		zap.Strings("agentDeploys", r.agentDeploys),
 		zap.Duration("scrapeInterval", r.opts.ScrapeInterval))
 
 	ticker := time.NewTicker(r.opts.ScrapeInterval)
@@ -158,7 +176,7 @@ func (r *Rater) Start(ctx context.Context) {
 // Each AgentDeploy's pods are scraped concurrently up to ScrapeWorkers.
 func (r *Rater) scrapeAllOnce(ctx context.Context) {
 	var wg sync.WaitGroup
-	for _, ad := range r.opts.AgentDeploys {
+	for _, ad := range r.agentDeploys {
 		wg.Add(1)
 		go func(ad string) {
 			defer wg.Done()
@@ -178,7 +196,7 @@ func (r *Rater) scrapeAllOnce(ctx context.Context) {
 // the rater happened to be on when the tick started.
 func (r *Rater) scrapeOneAgentDeploy(ctx context.Context, ad string) {
 	log := r.opts.Logger.With(zap.String("agentDeploy", ad))
-	hosts, err := r.opts.Discover(ctx, r.opts.AgentSet, ad)
+	hosts, err := r.opts.Discover(ctx, r.agentSet, ad)
 	if err != nil {
 		log.Warnw("Pod discovery failed", zap.Error(err))
 		if r.selfMetrics != nil {

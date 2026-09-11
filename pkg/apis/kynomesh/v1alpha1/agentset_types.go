@@ -180,3 +180,24 @@ func (as *AgentSet) DaemonName() string {
 func (as *AgentSet) ChildAgentDeployName(agentName string) string {
 	return as.Name + "-" + agentName
 }
+
+// SimpleCopy returns a slimmed-down copy of the AgentSet suitable for
+// embedding into a downstream consumer — e.g. the daemon.
+func (as *AgentSet) SimpleCopy() AgentSet {
+	agents := make([]AbstractAgentDeploy, len(as.Spec.Agents))
+	for i, a := range as.Spec.Agents {
+		agents[i] = AbstractAgentDeploy{Name: a.Name}
+	}
+	return AgentSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: as.Namespace,
+			Name:      as.Name,
+		},
+		Spec: AgentSetSpec{
+			Pattern:        as.Spec.Pattern,
+			Entry:          as.Spec.Entry,
+			Agents:         agents,
+			ExternalAgents: as.Spec.ExternalAgents,
+		},
+	}
+}

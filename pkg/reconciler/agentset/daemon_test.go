@@ -18,7 +18,6 @@ package agentset
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -81,7 +80,7 @@ func TestNewDaemonDeployment_Shape(t *testing.T) {
 	}
 }
 
-func TestNewDaemonDeployment_AgentDeploysEnvVar(t *testing.T) {
+func TestNewDaemonDeployment_AgentSetSpecEnvVar(t *testing.T) {
 	as := newAgentSet("hello", "alpha", "beta")
 	r, _ := newTestReconciler(t)
 
@@ -94,11 +93,60 @@ func TestNewDaemonDeployment_AgentDeploysEnvVar(t *testing.T) {
 	assert.Equal(t, "metadata.name", env[kmv1.EnvPodName].fieldRef)
 	// AgentSet name passed verbatim.
 	assert.Equal(t, "hello", env[kmv1.EnvAgentSetName].value)
-	// AgentDeploys list is JSON, with names matching what AgentDeploy
-	// reconciler will create (ChildAgentDeployName: "<set>-<agent>").
+
+	// The encoded spec decodes to the same names ComputeTopology and the
+	// AgentDeploy reconciler (ChildAgentDeployName: "<set>-<agent>") agree on.
+	decoded, err := kmv1.DecodeAgentSet(env[kmv1.EnvAgentSetObject].value)
+	require.NoError(t, err)
+	assert.Equal(t, "hello", decoded.Name)
 	var names []string
-	require.NoError(t, json.Unmarshal([]byte(env[kmv1.EnvAgentSetAgentDeploys].value), &names))
+	for _, a := range decoded.Spec.Agents {
+		names = append(names, a.Name)
+	}
 	assert.Equal(t, []string{"alpha", "beta"}, names)
+}
+
+func TestNewDaemonDeployment_AgentSetSpecEnvVar_TopologyDerivable(t *testing.T) {
+	as := newAgentSet("hello", "alpha", "beta", "gamma")
+	r, _ := newTestReconciler(t)
+
+	dep, err := r.newDaemonDeployment(as)
+	require.NoError(t, err)
+	env := envMap(dep.Spec.Template.Spec.Containers[0].Env)
+
+	spec, err := kmv1.DecodeAgentSet(env[kmv1.EnvAgentSetObject].value)
+	require.NoError(t, err)
+
+	// Supervisor pattern, entry "alpha": alpha sees every other agent as a
+	// peer; non-entry agents see none. Computed daemon-side, from the
+	// decoded spec, using the same ComputeTopology the controller uses.
+	alpha := kmv1.ComputeTopology(spec, "alpha")
+	beta := kmv1.ComputeTopology(spec, "beta")
+	gamma := kmv1.ComputeTopology(spec, "gamma")
+	var alphaPeers []string
+	for _, p := range alpha.Peers {
+		alphaPeers = append(alphaPeers, p.Name)
+	}
+	assert.ElementsMatch(t, []string{"beta", "gamma"}, alphaPeers)
+	assert.Empty(t, beta.Peers)
+	assert.Empty(t, gamma.Peers)
+}
+
+func TestNewDaemonDeployment_AgentSetSpecEnvVar_ExternalAgentsIncluded(t *testing.T) {
+	as := newAgentSet("hello", "alpha", "beta")
+	as.Spec.ExternalAgents = []kmv1.ExternalAgentRef{
+		{Name: "outsider", URL: "https://outsider.example.com"},
+	}
+	r, _ := newTestReconciler(t)
+
+	dep, err := r.newDaemonDeployment(as)
+	require.NoError(t, err)
+	env := envMap(dep.Spec.Template.Spec.Containers[0].Env)
+
+	spec, err := kmv1.DecodeAgentSet(env[kmv1.EnvAgentSetObject].value)
+	require.NoError(t, err)
+	require.Len(t, spec.Spec.ExternalAgents, 1)
+	assert.Equal(t, "outsider", spec.Spec.ExternalAgents[0].Name)
 }
 
 type envEntry struct {
@@ -197,8 +245,13 @@ func TestReconcileDaemon_RecreatesOnAgentDeploysChange(t *testing.T) {
 	// Pod template was rewritten — which is what a real-cluster
 	// Recreate strategy would translate to a Pod rollover.)
 	env := envMap(dep1.Spec.Template.Spec.Containers[0].Env)
-	assert.Contains(t, env[kmv1.EnvAgentSetAgentDeploys].value, "beta",
-		"new agent must appear in the AgentDeploys env after spec change")
+	spec, err := kmv1.DecodeAgentSet(env[kmv1.EnvAgentSetObject].value)
+	require.NoError(t, err)
+	var names []string
+	for _, a := range spec.Spec.Agents {
+		names = append(names, a.Name)
+	}
+	assert.Contains(t, names, "beta", "new agent must appear in the AgentSet spec env after spec change")
 }
 
 // Sanity-check that the daemon name helper matches the wiring used
@@ -245,7 +298,7 @@ func TestNewDaemonContainer_DefaultResourcesAppliedWhenUnset(t *testing.T) {
 		Requests: corev1.ResourceList{corev1.ResourceCPU: resource.MustParse("100m")},
 	}
 
-	c := newDaemonContainer("test-image:latest", corev1.PullIfNotPresent, as, "[]", nil, defaults)
+	c := newDaemonContainer("test-image:latest", corev1.PullIfNotPresent, as, nil, defaults)
 	assert.Equal(t, "100m", c.Resources.Requests.Cpu().String(), "daemon container must receive the controller default resources when the template leaves them unset")
 }
 
@@ -260,7 +313,7 @@ func TestNewDaemonContainer_ExplicitTemplateResourcesWinOverDefaults(t *testing.
 		},
 	}
 
-	c := newDaemonContainer("test-image:latest", corev1.PullIfNotPresent, as, "[]", tmpl, defaults)
+	c := newDaemonContainer("test-image:latest", corev1.PullIfNotPresent, as, tmpl, defaults)
 	assert.Equal(t, "500m", c.Resources.Requests.Cpu().String(), "explicit daemon container template resources must win over the controller default")
 }
 

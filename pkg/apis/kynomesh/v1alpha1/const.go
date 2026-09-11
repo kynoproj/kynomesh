@@ -45,7 +45,7 @@ const (
 	EnvLeaderElectionRetryPeriod   = "KYNOMESH_LEADER_ELECTION_RETRY_PERIOD"
 	EnvImagePullPolicy             = "KYNOMESH_IMAGE_PULL_POLICY"
 	EnvPPROFEnabled                = "KYNOMESH_PPROF_ENABLED"
-	EnvAgentSetAgentDeploys        = "KYNOMESH_AGENTSET_AGENTDEPLOYS"
+	EnvAgentSetObject              = "KYNOMESH_AGENTSET_OBJECT"
 	EnvTerminationGraceSeconds     = "KYNOMESH_TERMINATION_GRACE_SECONDS"
 
 	// Container names
