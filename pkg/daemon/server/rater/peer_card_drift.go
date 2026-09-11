@@ -51,10 +51,7 @@ type PeerCardDrift struct {
 }
 
 // GetPeerCardDrift returns the current drift-comparison state for name's
-// peers. The peer set itself comes from kmv1.ComputeTopology against
-// r.opts.AgentSetObject — the same derivation the controller uses to stamp
-// Topology onto each AgentDeploy — filtered to managed peers (external
-// peers are out of scope for v1, see the drift-detection spec's Non-goals).
+// peers.
 //
 // TODO(#214): the per-peer drift data itself is still a stub — every peer
 // is reported with a zero-value PeerCardDrift (no LatestHash, no
