@@ -127,7 +127,7 @@ func run(ctx context.Context, cfg *daemonConfig, logger *zap.SugaredLogger) erro
 	registry := prometheus.NewRegistry()
 	selfMetrics := rater.NewSelfMetrics(registry)
 
-	scr := scraper.NewMetricsScraper(rater.DefaultScrapeTimeout)
+	metricsScr := scraper.NewMetricsScraper(rater.DefaultScrapeTimeout)
 	introspectScr := scraper.NewIntrospectScraper(rater.DefaultScrapeTimeout)
 	discoverFn := func(ctx context.Context, as, ad string) ([]string, error) {
 		return discovery.Discover(ctx, net.DefaultResolver, as, ad, cfg.Namespace)
@@ -135,7 +135,7 @@ func run(ctx context.Context, cfg *daemonConfig, logger *zap.SugaredLogger) erro
 
 	r := rater.NewRater(rater.Options{
 		AgentSetObject:    cfg.AgentSet,
-		MetricsScraper:    scr,
+		MetricsScraper:    metricsScr,
 		IntrospectScraper: introspectScr,
 		Discover:          discoverFn,
 		Logger:            logger.Named("rater"),

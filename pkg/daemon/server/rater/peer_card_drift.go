@@ -37,17 +37,9 @@ type ReportedHash struct {
 	ObservedAt time.Time
 }
 
-// IntrospectSample is one pod's decoded broker /introspect response, the
-// subset GetPeerCardDrift needs: its peer-hashes map (see
-// broker.PeerHashEntry — mirrored here to avoid pkg/daemon depending on
-// pkg/broker for a single struct shape).
+// IntrospectSample is one pod's decoded broker /introspect response.
+// Mirrored here to avoid pkg/daemon depending on pkg/broker.PeerHashEntry.
 type IntrospectSample struct {
-	// PodName is the scraped pod's own Kubernetes name, as it self-reported
-	// in the /introspect response body — distinct from the DNS host used to
-	// reach it, which callers key the cache by instead of the DNS host so
-	// that ReportedHashes matches the pod names a controller would target
-	// for termination. Empty if the pod didn't report one (e.g. an older
-	// broker build).
 	PodName string
 	// PeerHashes is keyed by peer name.
 	PeerHashes map[string]IntrospectPeerHash
@@ -86,18 +78,14 @@ type PeerCardDrift struct {
 // peerHashCache holds the most recently scraped /introspect peerHashes for
 // one AgentDeploy, keyed by pod name then peer name. Populated by the
 // rater's existing scrape tick (see scrapeOneAgentDeploy), read by
-// GetPeerCardDrift — mirroring how AgentDeployBuffers decouples GetMetrics
-// from live scraping.
+// GetPeerCardDrift.
 //
 // A pod's entry is replaced wholesale on each successful scrape (not
 // merged), so a peer the pod stops reporting (e.g. after an SDK
 // downgrade, or the file being cleared) disappears from that pod's
 // entry rather than lingering forever. A pod that stops being discovered
 // at all (scaled down, replaced) is dropped from the cache entirely by
-// prune, called once per tick with that tick's live host list — unlike
-// AgentDeployBuffers, this cache has no time-based sample expiry of its
-// own, so without pruning a deleted pod's last-known hash would linger
-// indefinitely.
+// prune, called once per tick with that tick's live host list.
 type peerHashCache struct {
 	mu        sync.RWMutex
 	byPod     map[string]map[string]ReportedHash // pod name -> peer -> hash
@@ -116,9 +104,16 @@ func newPeerHashCache() *peerHashCache {
 // set replaces pod's entire peer-hash set after a successful scrape of host.
 // host is remembered so a later prune can find pod again by discovery's DNS
 // name alone, without needing another scrape.
+//
+// If host previously resolved to a different pod name, that old name's
+// entry is dropped here too.
 func (c *peerHashCache) set(host, pod string, peerHashes map[string]ReportedHash, now time.Time) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if prev, ok := c.hostToPod[host]; ok && prev != pod {
+		delete(c.byPod, prev)
+		delete(c.updated, prev)
+	}
 	c.byPod[pod] = peerHashes
 	c.updated[pod] = now
 	c.hostToPod[host] = pod
@@ -127,8 +122,7 @@ func (c *peerHashCache) set(host, pod string, peerHashes map[string]ReportedHash
 // prune drops every cached pod whose DNS host is not in liveHosts. Called
 // once per scrape tick with that tick's freshly-discovered host list, so a
 // pod that scales down or is replaced doesn't leave a stale hash behind
-// indefinitely — the cache has no time-based expiry of its own (unlike
-// AgentDeployBuffers' ring buffers), so discovery is what ages entries out.
+// indefinitely.
 func (c *peerHashCache) prune(liveHosts []string) {
 	live := make(map[string]struct{}, len(liveHosts))
 	for _, h := range liveHosts {
@@ -147,9 +141,7 @@ func (c *peerHashCache) prune(liveHosts []string) {
 
 // reportedByPeer returns every currently-cached pod's hash for peer,
 // across all pods this cache has ever successfully scraped /introspect
-// for — independent of whether that pod's metrics scrape succeeded on the
-// same tick. Omits pods with no entry for peer (never resolved that peer,
-// or the pod doesn't report it).
+// for.
 func (c *peerHashCache) reportedByPeer(peer string) map[string]ReportedHash {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -164,8 +156,7 @@ func (c *peerHashCache) reportedByPeer(peer string) map[string]ReportedHash {
 
 // scrapeIntrospectOnce scrapes ad's live pods' /introspect endpoints and
 // caches each pod's peerHashes. Called from the rater's existing scrape
-// tick, alongside the metrics scrape — same discovery, same cadence.
-// A no-op if IntrospectScraper is unset.
+// tick, alongside the metrics scrape.
 func (r *Rater) scrapeIntrospectOnce(ctx context.Context, ad string, hosts []string) {
 	if r.opts.IntrospectScraper == nil {
 		return

@@ -138,6 +138,40 @@ func TestGetPeerCardDrift_ReportedHashesKeyedByPodNameNotDNSHost(t *testing.T) {
 	assert.NotContains(t, reported, "a-0.a-headless.ns.svc.cluster.local")
 }
 
+func TestGetPeerCardDrift_PodRecreatedAtSameHostDropsOldPodName(t *testing.T) {
+	scraper := &stubIntrospectScraper{samples: map[string]*IntrospectSample{
+		"a-0.a-headless.ns.svc.cluster.local": {
+			PodName:    "a-0-old",
+			PeerHashes: map[string]IntrospectPeerHash{"b": {Hash: "hash-old"}},
+		},
+	}}
+	r := NewRater(Options{
+		AgentSetObject:    testAgentSetObject("set", kmv1.AgentPatternSupervisor, "a", "a", "b"),
+		Discover:          stubDiscover(map[string][]string{"a": {"a-0.a-headless.ns.svc.cluster.local"}}),
+		MetricsScraper:    &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
+		IntrospectScraper: scraper,
+	})
+
+	r.scrapeAllOnce(context.Background())
+	drift, err := r.GetPeerCardDrift(context.Background(), "a")
+	require.NoError(t, err)
+	require.Contains(t, drift["b"].ReportedHashes, "a-0-old")
+
+	// Same DNS host (same ordinal), but the pod behind it was recreated with
+	// a new random-suffixed name — Discover still reports the host as live.
+	scraper.samples["a-0.a-headless.ns.svc.cluster.local"] = &IntrospectSample{
+		PodName:    "a-0-new",
+		PeerHashes: map[string]IntrospectPeerHash{"b": {Hash: "hash-new"}},
+	}
+
+	r.scrapeAllOnce(context.Background())
+	drift, err = r.GetPeerCardDrift(context.Background(), "a")
+	require.NoError(t, err)
+	reported := drift["b"].ReportedHashes
+	require.Contains(t, reported, "a-0-new")
+	assert.NotContains(t, reported, "a-0-old", "a pod recreated at the same DNS host must not leave its old name cached forever")
+}
+
 func TestGetPeerCardDrift_ReportedHashesFromIntrospectScrape(t *testing.T) {
 	r := NewRater(Options{
 		AgentSetObject: testAgentSetObject("set", kmv1.AgentPatternSupervisor, "a", "a", "b"),
