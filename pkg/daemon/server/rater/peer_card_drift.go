@@ -18,6 +18,7 @@ package rater
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -41,6 +42,13 @@ type ReportedHash struct {
 // broker.PeerHashEntry — mirrored here to avoid pkg/daemon depending on
 // pkg/broker for a single struct shape).
 type IntrospectSample struct {
+	// PodName is the scraped pod's own Kubernetes name, as it self-reported
+	// in the /introspect response body — distinct from the DNS host used to
+	// reach it, which callers key the cache by instead of the DNS host so
+	// that ReportedHashes matches the pod names a controller would target
+	// for termination. Empty if the pod didn't report one (e.g. an older
+	// broker build).
+	PodName string
 	// PeerHashes is keyed by peer name.
 	PeerHashes map[string]IntrospectPeerHash
 }
@@ -75,10 +83,135 @@ type PeerCardDrift struct {
 	ReportedHashes map[string]ReportedHash
 }
 
+// peerHashCache holds the most recently scraped /introspect peerHashes for
+// one AgentDeploy, keyed by pod name then peer name. Populated by the
+// rater's existing scrape tick (see scrapeOneAgentDeploy), read by
+// GetPeerCardDrift — mirroring how AgentDeployBuffers decouples GetMetrics
+// from live scraping.
+//
+// A pod's entry is replaced wholesale on each successful scrape (not
+// merged), so a peer the pod stops reporting (e.g. after an SDK
+// downgrade, or the file being cleared) disappears from that pod's
+// entry rather than lingering forever. A pod that stops being discovered
+// at all (scaled down, replaced) is dropped from the cache entirely by
+// prune, called once per tick with that tick's live host list — unlike
+// AgentDeployBuffers, this cache has no time-based sample expiry of its
+// own, so without pruning a deleted pod's last-known hash would linger
+// indefinitely.
+type peerHashCache struct {
+	mu        sync.RWMutex
+	byPod     map[string]map[string]ReportedHash // pod name -> peer -> hash
+	updated   map[string]time.Time               // pod name -> last successful scrape time
+	hostToPod map[string]string                  // DNS host -> last-known pod name scraped there
+}
+
+func newPeerHashCache() *peerHashCache {
+	return &peerHashCache{
+		byPod:     map[string]map[string]ReportedHash{},
+		updated:   map[string]time.Time{},
+		hostToPod: map[string]string{},
+	}
+}
+
+// set replaces pod's entire peer-hash set after a successful scrape of host.
+// host is remembered so a later prune can find pod again by discovery's DNS
+// name alone, without needing another scrape.
+func (c *peerHashCache) set(host, pod string, peerHashes map[string]ReportedHash, now time.Time) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.byPod[pod] = peerHashes
+	c.updated[pod] = now
+	c.hostToPod[host] = pod
+}
+
+// prune drops every cached pod whose DNS host is not in liveHosts. Called
+// once per scrape tick with that tick's freshly-discovered host list, so a
+// pod that scales down or is replaced doesn't leave a stale hash behind
+// indefinitely — the cache has no time-based expiry of its own (unlike
+// AgentDeployBuffers' ring buffers), so discovery is what ages entries out.
+func (c *peerHashCache) prune(liveHosts []string) {
+	live := make(map[string]struct{}, len(liveHosts))
+	for _, h := range liveHosts {
+		live[h] = struct{}{}
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for host, pod := range c.hostToPod {
+		if _, ok := live[host]; !ok {
+			delete(c.byPod, pod)
+			delete(c.updated, pod)
+			delete(c.hostToPod, host)
+		}
+	}
+}
+
+// reportedByPeer returns every currently-cached pod's hash for peer,
+// across all pods this cache has ever successfully scraped /introspect
+// for — independent of whether that pod's metrics scrape succeeded on the
+// same tick. Omits pods with no entry for peer (never resolved that peer,
+// or the pod doesn't report it).
+func (c *peerHashCache) reportedByPeer(peer string) map[string]ReportedHash {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	out := make(map[string]ReportedHash, len(c.byPod))
+	for pod, peers := range c.byPod {
+		if rh, ok := peers[peer]; ok {
+			out[pod] = rh
+		}
+	}
+	return out
+}
+
+// scrapeIntrospectOnce scrapes ad's live pods' /introspect endpoints and
+// caches each pod's peerHashes. Called from the rater's existing scrape
+// tick, alongside the metrics scrape — same discovery, same cadence.
+// A no-op if IntrospectScraper is unset.
+func (r *Rater) scrapeIntrospectOnce(ctx context.Context, ad string, hosts []string) {
+	if r.opts.IntrospectScraper == nil {
+		return
+	}
+	cache, ok := r.peerHashes[ad]
+	if !ok {
+		return
+	}
+	cache.prune(hosts)
+	log := r.opts.Logger.With(zap.String("agentDeploy", ad))
+
+	sem := make(chan struct{}, r.opts.ScrapeWorkers)
+	var wg sync.WaitGroup
+	for _, host := range hosts {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(host string) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			sample, err := r.opts.IntrospectScraper.ScrapeIntrospect(ctx, host)
+			if err != nil {
+				log.Debugw("Introspect scrape failed", zap.String("host", host), zap.Error(err))
+				return
+			}
+			peerHashes := make(map[string]ReportedHash, len(sample.PeerHashes))
+			for peer, ph := range sample.PeerHashes {
+				var observedAt time.Time
+				if t, err := time.Parse(time.RFC3339, ph.ObservedAt); err == nil {
+					observedAt = t
+				}
+				peerHashes[peer] = ReportedHash{Hash: ph.Hash, ObservedAt: observedAt}
+			}
+			pod := sample.PodName
+			if pod == "" {
+				pod = host
+			}
+			cache.set(host, pod, peerHashes, r.opts.Clock())
+		}(host)
+	}
+	wg.Wait()
+}
+
 // GetPeerCardDrift returns the current drift-comparison state for name's
-// peers: for each managed peer in name's topology, the live pods of name
-// are scraped for their broker-exposed /introspect peerHashes, keyed by
-// pod host.
+// peers, read from the cache scrapeIntrospectOnce populates on the rater's
+// background scrape tick — this never scrapes live on the calling
+// goroutine.
 //
 // TODO(#214): LatestHash / LatestHashObservedAt are still a stub (always
 // empty) until the daemon polls each peer's own live AgentCard on some
@@ -94,46 +227,21 @@ func (r *Rater) GetPeerCardDrift(ctx context.Context, name string) (map[string]P
 	}
 	topology := kmv1.ComputeTopology(r.opts.AgentSetObject, name)
 	out := make(map[string]PeerCardDrift, len(topology.Peers))
+	cache := r.peerHashes[name]
+	if cache == nil {
+		for _, p := range topology.Peers {
+			if p.Kind == kmv1.PeerKindManaged {
+				out[p.Name] = PeerCardDrift{}
+			}
+		}
+		return out, nil
+	}
+
 	for _, p := range topology.Peers {
 		if p.Kind != kmv1.PeerKindManaged {
 			continue
 		}
-		out[p.Name] = PeerCardDrift{}
-	}
-	if len(out) == 0 || r.opts.IntrospectScraper == nil {
-		return out, nil
-	}
-
-	log := r.opts.Logger.With(zap.String("agentDeploy", name))
-	hosts, err := r.opts.Discover(ctx, r.agentSet, name)
-	if err != nil {
-		log.Warnw("Pod discovery failed for peer card drift", zap.Error(err))
-		return out, nil
-	}
-	for _, host := range hosts {
-		sample, err := r.opts.IntrospectScraper.ScrapeIntrospect(ctx, host)
-		if err != nil {
-			log.Debugw("Introspect scrape failed", zap.String("host", host), zap.Error(err))
-			continue
-		}
-		for peer, ph := range sample.PeerHashes {
-			drift, ok := out[peer]
-			if !ok {
-				// Not a managed peer in this AgentDeploy's topology (or the
-				// pod resolved a peer that isn't declared) — ignore rather
-				// than surface an unexpected key.
-				continue
-			}
-			if drift.ReportedHashes == nil {
-				drift.ReportedHashes = make(map[string]ReportedHash, len(hosts))
-			}
-			var observedAt time.Time
-			if t, err := time.Parse(time.RFC3339, ph.ObservedAt); err == nil {
-				observedAt = t
-			}
-			drift.ReportedHashes[host] = ReportedHash{Hash: ph.Hash, ObservedAt: observedAt}
-			out[peer] = drift
-		}
+		out[p.Name] = PeerCardDrift{ReportedHashes: cache.reportedByPeer(p.Name)}
 	}
 	return out, nil
 }

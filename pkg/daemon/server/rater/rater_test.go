@@ -19,6 +19,7 @@ package rater
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -52,6 +53,9 @@ func (s *stubScraper) ScrapeMetrics(_ context.Context, host string) (*PodSample,
 		return nil, s.failure
 	}
 	list := s.samples[host]
+	if len(list) == 0 {
+		return nil, fmt.Errorf("no samples fixtured for host %q", host)
+	}
 	i := s.idx[host]
 	if i >= len(list) {
 		i = len(list) - 1 // hold last

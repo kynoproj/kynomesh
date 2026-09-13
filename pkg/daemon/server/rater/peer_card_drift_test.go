@@ -19,6 +19,7 @@ package rater
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,6 +27,26 @@ import (
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
+
+// mutableDiscover returns whatever host list was most recently set via
+// setHosts, letting a test change discovery results between successive
+// scrapeAllOnce calls (e.g. to simulate a pod scaling down).
+type mutableDiscover struct {
+	mu    sync.Mutex
+	hosts map[string][]string
+}
+
+func (d *mutableDiscover) setHosts(ad string, hosts []string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.hosts[ad] = hosts
+}
+
+func (d *mutableDiscover) discover(_ context.Context, _, ad string) ([]string, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.hosts[ad], nil
+}
 
 // testAgentSetObject builds a minimal *kmv1.AgentSet with the given managed
 // agent names, suitable for Options.AgentSetObject in tests.
@@ -94,6 +115,29 @@ func (s *stubIntrospectScraper) ScrapeIntrospect(_ context.Context, host string)
 	return sample, nil
 }
 
+func TestGetPeerCardDrift_ReportedHashesKeyedByPodNameNotDNSHost(t *testing.T) {
+	r := NewRater(Options{
+		AgentSetObject: testAgentSetObject("set", kmv1.AgentPatternSupervisor, "a", "a", "b"),
+		Discover:       stubDiscover(map[string][]string{"a": {"a-0.a-headless.ns.svc.cluster.local"}}),
+		MetricsScraper: &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
+		IntrospectScraper: &stubIntrospectScraper{samples: map[string]*IntrospectSample{
+			"a-0.a-headless.ns.svc.cluster.local": {
+				PodName: "a-0",
+				PeerHashes: map[string]IntrospectPeerHash{
+					"b": {Hash: "hash-old"},
+				},
+			},
+		}},
+	})
+
+	r.scrapeAllOnce(context.Background())
+	drift, err := r.GetPeerCardDrift(context.Background(), "a")
+	require.NoError(t, err)
+	reported := drift["b"].ReportedHashes
+	require.Contains(t, reported, "a-0", "must be keyed by the pod's real name, not the DNS host used to scrape it")
+	assert.NotContains(t, reported, "a-0.a-headless.ns.svc.cluster.local")
+}
+
 func TestGetPeerCardDrift_ReportedHashesFromIntrospectScrape(t *testing.T) {
 	r := NewRater(Options{
 		AgentSetObject: testAgentSetObject("set", kmv1.AgentPatternSupervisor, "a", "a", "b"),
@@ -109,6 +153,7 @@ func TestGetPeerCardDrift_ReportedHashesFromIntrospectScrape(t *testing.T) {
 		}},
 	})
 
+	r.scrapeAllOnce(context.Background())
 	drift, err := r.GetPeerCardDrift(context.Background(), "a")
 	require.NoError(t, err)
 	require.Contains(t, drift, "b")
@@ -128,6 +173,7 @@ func TestGetPeerCardDrift_IntrospectScrapeFailureLeavesPodUnreported(t *testing.
 		IntrospectScraper: &stubIntrospectScraper{err: errors.New("scrape failed")},
 	})
 
+	r.scrapeAllOnce(context.Background())
 	drift, err := r.GetPeerCardDrift(context.Background(), "a")
 	require.NoError(t, err)
 	require.Contains(t, drift, "b")
@@ -146,9 +192,39 @@ func TestGetPeerCardDrift_UnknownPeerFromPodIgnored(t *testing.T) {
 		}},
 	})
 
+	r.scrapeAllOnce(context.Background())
 	drift, err := r.GetPeerCardDrift(context.Background(), "a")
 	require.NoError(t, err)
 	require.Contains(t, drift, "b")
 	assert.Empty(t, drift["b"].ReportedHashes)
 	assert.NotContains(t, drift, "not-a-declared-peer")
+}
+
+func TestGetPeerCardDrift_PrunesPodsNoLongerDiscovered(t *testing.T) {
+	discover := &mutableDiscover{hosts: map[string][]string{"a": {"a-0", "a-1"}}}
+	r := NewRater(Options{
+		AgentSetObject: testAgentSetObject("set", kmv1.AgentPatternSupervisor, "a", "a", "b"),
+		Discover:       discover.discover,
+		MetricsScraper: &stubScraper{samples: map[string][]*PodSample{}, idx: map[string]int{}},
+		IntrospectScraper: &stubIntrospectScraper{samples: map[string]*IntrospectSample{
+			"a-0": {PeerHashes: map[string]IntrospectPeerHash{"b": {Hash: "hash-0"}}},
+			"a-1": {PeerHashes: map[string]IntrospectPeerHash{"b": {Hash: "hash-1"}}},
+		}},
+	})
+
+	r.scrapeAllOnce(context.Background())
+	drift, err := r.GetPeerCardDrift(context.Background(), "a")
+	require.NoError(t, err)
+	reported := drift["b"].ReportedHashes
+	require.Contains(t, reported, "a-0")
+	require.Contains(t, reported, "a-1")
+
+	// a-1 scales down: subsequent discovery only returns a-0.
+	discover.setHosts("a", []string{"a-0"})
+	r.scrapeAllOnce(context.Background())
+	drift, err = r.GetPeerCardDrift(context.Background(), "a")
+	require.NoError(t, err)
+	reported = drift["b"].ReportedHashes
+	require.Contains(t, reported, "a-0")
+	assert.NotContains(t, reported, "a-1", "a pod no longer discovered must be pruned from the cache")
 }

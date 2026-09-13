@@ -100,6 +100,12 @@ type Rater struct {
 	opts    Options
 	buffers map[string]*AgentDeployBuffers
 
+	// peerHashes holds each AgentDeploy's most recently scraped
+	// /introspect peer-hashes, keyed by AgentDeploy name. Populated by
+	// scrapeIntrospectOnce on the same tick as the metrics scrape;
+	// GetPeerCardDrift only ever reads from it.
+	peerHashes map[string]*peerHashCache
+
 	// agentSet and agentDeploys are derived once from opts.AgentSetObject
 	// at construction time, rather than re-walking the object on every
 	// scrape tick / log line.
@@ -139,10 +145,18 @@ func NewRater(opts Options) *Rater {
 	}
 
 	buffers := make(map[string]*AgentDeployBuffers, len(agentDeploys))
+	peerHashes := make(map[string]*peerHashCache, len(agentDeploys))
 	for _, ad := range agentDeploys {
 		buffers[ad] = NewAgentDeployBuffers()
+		peerHashes[ad] = newPeerHashCache()
 	}
-	return &Rater{opts: opts, buffers: buffers, agentSet: agentSet, agentDeploys: agentDeploys}
+	return &Rater{
+		opts:         opts,
+		buffers:      buffers,
+		peerHashes:   peerHashes,
+		agentSet:     agentSet,
+		agentDeploys: agentDeploys,
+	}
 }
 
 // WithSelfMetrics wires the daemon's own /metrics counters. Optional.
@@ -221,6 +235,10 @@ func (r *Rater) scrapeOneAgentDeploy(ctx context.Context, ad string) {
 	if r.selfMetrics != nil {
 		r.selfMetrics.PodsObserved.WithLabelValues(ad).Set(float64(len(hosts)))
 	}
+
+	// Reuses this same tick's pod discovery for the peer-hashes scrape —
+	// no separate discovery call, no separate cadence.
+	r.scrapeIntrospectOnce(ctx, ad, hosts)
 
 	sem := make(chan struct{}, r.opts.ScrapeWorkers)
 	var wg sync.WaitGroup

@@ -93,5 +93,5 @@ func (s *IntrospectScraper) ScrapeIntrospect(ctx context.Context, host string) (
 	for peer, ph := range decoded.PeerHashes {
 		peerHashes[peer] = rater.IntrospectPeerHash{Hash: ph.Hash, ObservedAt: ph.ObservedAt}
 	}
-	return &rater.IntrospectSample{PeerHashes: peerHashes}, nil
+	return &rater.IntrospectSample{PodName: decoded.Host, PeerHashes: peerHashes}, nil
 }
