@@ -32,8 +32,7 @@ type ReportedHash struct {
 	// Hash is that pod's currently-reported AgentCard hash for this peer.
 	Hash string
 	// ObservedAt is when that pod's agent SDK recorded this hash — passed
-	// through from the pod's peer-hashes file, not a scrape time. Zero
-	// value if the pod's SDK didn't report a parseable timestamp.
+	// through from the pod's peer-hashes file, not a scrape time.
 	ObservedAt time.Time
 }
 

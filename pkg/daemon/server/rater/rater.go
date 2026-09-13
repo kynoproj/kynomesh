@@ -79,13 +79,9 @@ type Clock func() time.Time
 // defaults.
 type Options struct {
 	// AgentSetObject is the slimmed-down owning AgentSet.
-	AgentSetObject *kmv1.AgentSet
-	MetricsScraper MetricsScraper
-	// IntrospectScraper fetches each pod's broker-exposed /introspect
-	// endpoint for GetPeerCardDrift's reported-hashes half. Optional: nil
-	// disables reported-hash scraping (GetPeerCardDrift still reports the
-	// managed peer set, just with no ReportedHashes populated).
-	IntrospectScraper IntrospectScraper
+	AgentSetObject    *kmv1.AgentSet
+	MetricsScraper    MetricsScraper
+	IntrospectScraper IntrospectScraper // Optional: nil disables reported-hash scraping.
 	Discover          DiscoverFunc
 	Logger            *zap.SugaredLogger
 
@@ -112,7 +108,7 @@ type Rater struct {
 	agentSet     string
 	agentDeploys []string
 
-	// Self-observability counters; nil-safe checks let tests skip
+	// Self-observability metrics; nil-safe checks let tests skip
 	// wiring metrics.
 	selfMetrics *SelfMetrics
 }
