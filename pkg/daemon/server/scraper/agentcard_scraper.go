@@ -39,6 +39,8 @@ type AgentCardScraper struct {
 	resolver *agentcard.Resolver
 }
 
+var _ rater.AgentCardScraper = (*AgentCardScraper)(nil)
+
 // NewAgentCardScraper returns an AgentCardScraper.
 func NewAgentCardScraper(timeout time.Duration) *AgentCardScraper {
 	client := &http.Client{

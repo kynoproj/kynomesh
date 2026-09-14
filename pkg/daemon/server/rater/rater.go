@@ -27,8 +27,7 @@ import (
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
-// Default scrape parameters. These are intentionally not exposed as
-// env vars — they are part of the daemon contract.
+// Default scrape parameters.
 const (
 	DefaultScrapeInterval = 5 * time.Second
 	DefaultScrapeTimeout  = 1 * time.Second
@@ -36,8 +35,7 @@ const (
 
 	// DefaultStabilityWindow is the number of consecutive polls a newly
 	// observed peer AgentCard hash must hold before being promoted to
-	// PeerCardDrift.LatestHash (mirrors kmv1.Probe's FailureThreshold
-	// default of 3 — same "don't react to one blip" convention).
+	// PeerCardDrift.LatestHash.
 	DefaultStabilityWindow = 3
 )
 
@@ -84,9 +82,7 @@ type Clock func() time.Time
 // Options configures a Rater. Zero-value fields take the package
 // defaults.
 type Options struct {
-	// AgentSetObject is the slimmed-down owning AgentSet. Its embedded
-	// ObjectMeta.Namespace is also used to address peers' ClusterIP
-	// Services for AgentCard polling.
+	// AgentSetObject is the slimmed-down owning AgentSet.
 	AgentSetObject    *kmv1.AgentSet
 	MetricsScraper    MetricsScraper
 	IntrospectScraper IntrospectScraper // Optional: nil disables reported-hash scraping.
@@ -235,9 +231,7 @@ func (r *Rater) scrapeOneAgentDeploy(ctx context.Context, ad string) {
 	log := r.opts.Logger.With(zap.String("agentDeploy", ad))
 
 	// Peer AgentCard polling addresses each managed peer's own
-	// per-AgentDeploy ClusterIP Service directly — it has no dependency
-	// on this AgentDeploy's own live pods, so it runs even when ad itself
-	// has zero ready replicas (e.g. scaled to zero) or discovery fails.
+	// per-AgentDeploy ClusterIP Service directly.
 	r.scrapePeerCardsOnce(ctx, ad)
 
 	hosts, err := r.opts.Discover(ctx, r.agentSet, ad)

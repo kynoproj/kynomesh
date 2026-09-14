@@ -58,6 +58,8 @@ type MetricsScraper struct {
 	port   int
 }
 
+var _ rater.MetricsScraper = (*MetricsScraper)(nil)
+
 // NewMetricsScraper returns a MetricsScraper.
 func NewMetricsScraper(timeout time.Duration) *MetricsScraper {
 	return &MetricsScraper{

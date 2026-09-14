@@ -45,10 +45,7 @@ func podHost(agentSet, agentDeploy, namespace string, replica int) string {
 	return fmt.Sprintf("%s-%s-%d.%s-%s%s.%s.svc", agentSet, agentDeploy, replica, agentSet, agentDeploy, HeadlessSuffix, namespace)
 }
 
-// ClusterIPHost returns the DNS name of the AgentDeploy's per-AgentDeploy
-// ClusterIP Service — the load-balanced address peers use to reach it (see
-// docs/development/specifications/agent-discovery.md's "Peer path"),
-// distinct from the per-pod headless names above used for direct scraping.
+// ClusterIPHost returns the DNS name of the AgentDeploy's ClusterIP Service.
 func ClusterIPHost(agentSet, agentDeploy, namespace string) string {
 	return fmt.Sprintf("%s-%s.%s.svc", agentSet, agentDeploy, namespace)
 }
