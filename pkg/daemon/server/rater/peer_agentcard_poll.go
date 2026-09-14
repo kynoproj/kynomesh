@@ -29,13 +29,10 @@ import (
 )
 
 // PeerAgentCard is one peer's decoded, hashed live AgentCard, as fetched
-// directly from that peer's own AgentDeploy (not from any of this
-// AgentDeploy's pods).
+// directly from that peer's own AgentDeploy ClusterIP service.
 type PeerAgentCard struct {
 	// Hash is the JCS-canonicalized-then-sha256 hash of the peer's
-	// current AgentCard — must match the hash algorithm the SDKs use
-	// when writing peer-hashes.json (see
-	// pkg/daemon/server/scraper.hashAgentCard's doc comment).
+	// current AgentCard.
 	Hash string
 }
 
@@ -119,12 +116,7 @@ func (s *peerCardState) snapshot(peer string) (hash string, observedAt time.Time
 }
 
 // scrapePeerCardsOnce polls ad's managed peers' live AgentCards and folds
-// each into that peer's stability gate. Called from the rater's existing
-// scrape tick, alongside the metrics/introspect scrapes — but unlike
-// those, this has no dependency on ad's own live pods or discovery
-// succeeding: a peer is addressed directly via its own per-AgentDeploy
-// ClusterIP Service, so this still runs for a scaled-to-zero ad.
-// A no-op if AgentCardScraper is unset.
+// each into that peer's stability gate. A no-op if AgentCardScraper is unset.
 func (r *Rater) scrapePeerCardsOnce(ctx context.Context, ad string) {
 	if r.opts.AgentCardScraper == nil || r.opts.AgentSetObject == nil {
 		return

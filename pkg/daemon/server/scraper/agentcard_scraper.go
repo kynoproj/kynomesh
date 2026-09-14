@@ -73,13 +73,7 @@ func (s *AgentCardScraper) ScrapeAgentCard(ctx context.Context, baseURL string) 
 // hashAgentCard returns the hex-encoded SHA-256 digest of card's JSON
 // encoding, canonicalized per JCS (RFC 8785) before hashing.
 //
-// This MUST stay byte-for-byte identical to kynomesh-go's
-// pkg/client/hash.go (hashAgentCard) and kynomesh-py's equivalent — the
-// daemon's LatestHash is only ever meaningful if it can equal a pod's
-// self-reported hash of the same card, and there is no shared package
-// across repos/languages to enforce that; JCS is used specifically
-// because it's a language-agnostic canonical JSON form, not because it
-// happens to match Go's own map-key-sorting behavior.
+// This MUST stay byte-for-byte identical to SDKs generated hash.
 func hashAgentCard(card *a2a.AgentCard) (string, error) {
 	data, err := json.Marshal(card)
 	if err != nil {
