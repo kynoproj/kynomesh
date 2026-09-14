@@ -57,7 +57,7 @@ func (c canned) GetMetrics(string, int64) (*rater.WindowedResult, error) {
 	return c.r, nil
 }
 
-func (c canned) GetPeerCardDrift(string) (map[string]rater.PeerCardDrift, error) {
+func (c canned) GetPeerCardDrift(context.Context, string) (map[string]rater.PeerCardDrift, error) {
 	return nil, nil
 }
 

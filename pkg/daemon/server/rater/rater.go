@@ -62,10 +62,10 @@ var ErrUnknownAgentDeploy = errors.New("unknown AgentDeploy")
 // compute a rate. The gRPC layer maps this to codes.Unavailable.
 var ErrNoData = errors.New("not enough samples to compute metrics")
 
-// Scraper is the minimal surface the rater needs from a pod-metrics
-// scraper. Implemented by pkg/daemon/server/scraper.Scraper.
-type Scraper interface {
-	Scrape(ctx context.Context, host string) (*PodSample, error)
+// MetricsScraper is the minimal surface the rater needs from a pod-metrics
+// scraper. Implemented by pkg/daemon/server/scraper.MetricsScraper.
+type MetricsScraper interface {
+	ScrapeMetrics(ctx context.Context, host string) (*PodSample, error)
 }
 
 // DiscoverFunc resolves the live pod DNS hostnames for an
@@ -79,10 +79,11 @@ type Clock func() time.Time
 // defaults.
 type Options struct {
 	// AgentSetObject is the slimmed-down owning AgentSet.
-	AgentSetObject *kmv1.AgentSet
-	Scraper        Scraper
-	Discover       DiscoverFunc
-	Logger         *zap.SugaredLogger
+	AgentSetObject    *kmv1.AgentSet
+	MetricsScraper    MetricsScraper
+	IntrospectScraper IntrospectScraper // Optional: nil disables reported-hash scraping.
+	Discover          DiscoverFunc
+	Logger            *zap.SugaredLogger
 
 	ScrapeInterval time.Duration // default DefaultScrapeInterval
 	ScrapeWorkers  int           // default DefaultScrapeWorkers
@@ -95,13 +96,19 @@ type Rater struct {
 	opts    Options
 	buffers map[string]*AgentDeployBuffers
 
+	// peerHashes holds each AgentDeploy's most recently scraped
+	// /introspect peer-hashes, keyed by AgentDeploy name. Populated by
+	// scrapeIntrospectOnce on the same tick as the metrics scrape;
+	// GetPeerCardDrift only ever reads from it.
+	peerHashes map[string]*peerHashCache
+
 	// agentSet and agentDeploys are derived once from opts.AgentSetObject
 	// at construction time, rather than re-walking the object on every
 	// scrape tick / log line.
 	agentSet     string
 	agentDeploys []string
 
-	// Self-observability counters; nil-safe checks let tests skip
+	// Self-observability metrics; nil-safe checks let tests skip
 	// wiring metrics.
 	selfMetrics *SelfMetrics
 }
@@ -134,10 +141,18 @@ func NewRater(opts Options) *Rater {
 	}
 
 	buffers := make(map[string]*AgentDeployBuffers, len(agentDeploys))
+	peerHashes := make(map[string]*peerHashCache, len(agentDeploys))
 	for _, ad := range agentDeploys {
 		buffers[ad] = NewAgentDeployBuffers()
+		peerHashes[ad] = newPeerHashCache()
 	}
-	return &Rater{opts: opts, buffers: buffers, agentSet: agentSet, agentDeploys: agentDeploys}
+	return &Rater{
+		opts:         opts,
+		buffers:      buffers,
+		peerHashes:   peerHashes,
+		agentSet:     agentSet,
+		agentDeploys: agentDeploys,
+	}
 }
 
 // WithSelfMetrics wires the daemon's own /metrics counters. Optional.
@@ -217,6 +232,10 @@ func (r *Rater) scrapeOneAgentDeploy(ctx context.Context, ad string) {
 		r.selfMetrics.PodsObserved.WithLabelValues(ad).Set(float64(len(hosts)))
 	}
 
+	// Reuses this same tick's pod discovery for the peer-hashes scrape —
+	// no separate discovery call, no separate cadence.
+	r.scrapeIntrospectOnce(ctx, ad, hosts)
+
 	sem := make(chan struct{}, r.opts.ScrapeWorkers)
 	var wg sync.WaitGroup
 	buf, ok := r.buffers[ad]
@@ -233,7 +252,7 @@ func (r *Rater) scrapeOneAgentDeploy(ctx context.Context, ad string) {
 		go func(host string) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			sample, err := r.opts.Scraper.Scrape(ctx, host)
+			sample, err := r.opts.MetricsScraper.ScrapeMetrics(ctx, host)
 			if err != nil {
 				log.Debugw("Scrape failed", zap.String("host", host), zap.Error(err))
 				if r.selfMetrics != nil {

@@ -52,15 +52,15 @@ const (
 	TransportLabelName = "transport"
 )
 
-// Scraper fetches one pod's /metrics endpoint and parses it.
-type Scraper struct {
+// MetricsScraper fetches one pod's /metrics endpoint and parses it.
+type MetricsScraper struct {
 	client *http.Client
 	port   int
 }
 
-// New returns a Scraper.
-func New(timeout time.Duration) *Scraper {
-	return &Scraper{
+// NewMetricsScraper returns a MetricsScraper.
+func NewMetricsScraper(timeout time.Duration) *MetricsScraper {
+	return &MetricsScraper{
 		client: &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{
@@ -75,9 +75,9 @@ func New(timeout time.Duration) *Scraper {
 	}
 }
 
-// Scrape fetches https://<host>:<port>/metrics and returns the parsed
+// ScrapeMetrics fetches https://<host>:<port>/metrics and returns the parsed
 // PodSample.
-func (s *Scraper) Scrape(ctx context.Context, host string) (*rater.PodSample, error) {
+func (s *MetricsScraper) ScrapeMetrics(ctx context.Context, host string) (*rater.PodSample, error) {
 	url := fmt.Sprintf("https://%s:%d/metrics", host, s.port)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

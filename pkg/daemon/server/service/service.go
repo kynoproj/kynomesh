@@ -42,7 +42,7 @@ type Querier interface {
 	// name's peers: for each peer, the daemon's own stability-gated
 	// AgentCard hash alongside what each of name's live pods currently
 	// reports for that peer. See rater.PeerCardDrift.
-	GetPeerCardDrift(name string) (map[string]rater.PeerCardDrift, error)
+	GetPeerCardDrift(ctx context.Context, name string) (map[string]rater.PeerCardDrift, error)
 }
 
 // Service implements pb.DaemonServiceServer over a Querier.
@@ -103,8 +103,8 @@ func (s *Service) GetAgentDeployMetrics(_ context.Context, req *pb.GetAgentDeplo
 //   - OK with a populated GetPeerCardDriftResponse otherwise. A peer with
 //     no reported hashes from any pod is still present in the map (empty
 //     ReportedHashes) — see rater.PeerCardDrift.
-func (s *Service) GetPeerCardDrift(_ context.Context, req *pb.GetPeerCardDriftRequest) (*pb.GetPeerCardDriftResponse, error) {
-	res, err := s.q.GetPeerCardDrift(req.GetName())
+func (s *Service) GetPeerCardDrift(ctx context.Context, req *pb.GetPeerCardDriftRequest) (*pb.GetPeerCardDriftResponse, error) {
+	res, err := s.q.GetPeerCardDrift(ctx, req.GetName())
 	switch {
 	case errors.Is(err, rater.ErrUnknownAgentDeploy):
 		return nil, status.Errorf(codes.NotFound, "unknown AgentDeploy %q", req.GetName())
