@@ -77,8 +77,6 @@ const (
 	AdvertiseHostDefault = "127.0.0.1"
 )
 
-const clusterDNSDomain = "cluster.local"
-
 // DefaultLocalAgentHTTPAddr is the default agent HTTP target in local-dev mode.
 const DefaultLocalAgentHTTPAddr = "127.0.0.1:8088"
 
@@ -204,13 +202,12 @@ func loadInjectedAgentDeploy() (*kmv1.AgentDeploy, error) {
 	return kmv1.DecodeAgentDeploy(encoded)
 }
 
-// advertiseHostFor returns the headless-service FQDN for ad, or "" if ad is nil.
+// advertiseHostFor returns the ClusterIP-Service FQDN for ad, or "" if ad is nil.
 func advertiseHostFor(ad *kmv1.AgentDeploy) string {
 	if ad == nil {
 		return ""
 	}
-	return fmt.Sprintf("%s.%s.svc.%s",
-		ad.ServiceName(), ad.Namespace, clusterDNSDomain)
+	return fmt.Sprintf("%s.%s.svc", ad.ServiceName(), ad.Namespace)
 }
 
 // brokerRuntime holds process-lifetime broker state.

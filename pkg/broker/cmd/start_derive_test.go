@@ -69,10 +69,10 @@ func TestLoadInjectedAgentDeploy_EnvMalformed(t *testing.T) {
 	assert.Nil(t, ad)
 }
 
-// TestAdvertiseHostFor formats the headless-Service FQDN that the
+// TestAdvertiseHostFor formats the ClusterIP-Service FQDN that the
 // AgentCard advertises. The host is service-scoped, not pod-scoped:
-// "<ad>-headless.<ns>.svc.cluster.local" resolves to every replica
-// behind the headless Service via DNS A-record list.
+// "<ad>.<ns>.svc" load-balances across every ready replica behind the
+// Service.
 func TestAdvertiseHostFor(t *testing.T) {
 	cases := []struct {
 		name string
@@ -92,7 +92,7 @@ func TestAdvertiseHostFor(t *testing.T) {
 				ad.Name = "demo-ad"
 				return ad
 			}(),
-			want: "demo-ad.demo-ns.svc.cluster.local",
+			want: "demo-ad.demo-ns.svc",
 		},
 	}
 	for _, tc := range cases {

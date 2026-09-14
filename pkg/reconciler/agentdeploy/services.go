@@ -80,7 +80,7 @@ func (r *Reconciler) upsertService(ctx context.Context, ad *kmv1.AgentDeploy, de
 
 // newHeadlessService builds the per-deploy ClusterIP=None service. Each
 // pod with matching labels gets a DNS record at
-// "<deploy>-<idx>.<deploy>-headless.<ns>.svc.cluster.local".
+// "<deploy>-<idx>.<deploy>-headless.<ns>.svc".
 func newHeadlessService(ad *kmv1.AgentDeploy) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{

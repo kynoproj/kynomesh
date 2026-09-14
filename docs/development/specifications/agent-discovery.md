@@ -44,7 +44,7 @@ The naming convention is fixed:
 
 The entry service is the front door of an AgentSet. Anything outside the set
 (other AgentSets, HTTP gateways, manual `curl` from a developer pod) reaches the
-set through `<agentset>-ingress.<namespace>.svc.cluster.local:8490`.
+set through `<agentset>-ingress.<namespace>.svc:8490`.
 
 ### Port
 
@@ -63,7 +63,7 @@ over their shared UDS.
 The traversal in one line is:
 
 ```
-agent  ->  <sibling-agentdeploy>.<ns>.svc.cluster.local:8490  ->  sibling broker  ->  sibling agent
+agent  ->  <sibling-agentdeploy>.<ns>.svc:8490  ->  sibling broker  ->  sibling agent
 ```
 
 The agent learns the sibling's DNS name from its topology file (see below); no
@@ -76,7 +76,7 @@ Each AgentDeploy also owns a headless Service named `<agentdeploy>-headless`
 gets an A record:
 
 ```
-<agentdeploy>-<replica>.<agentdeploy>-headless.<ns>.svc.cluster.local
+<agentdeploy>-<replica>.<agentdeploy>-headless.<ns>.svc
 ```
 
 The headless service exposes the broker's **introspection port** (`8491`) for
@@ -96,7 +96,7 @@ At pod startup, an init container materializes that payload into
   "peers": [
     {
       "name": "worker",
-      "url": "https://greeter-worker.ns.svc.cluster.local:8490"
+      "url": "https://greeter-worker.ns.svc:8490"
     }
   ]
 }
@@ -113,7 +113,7 @@ For an external HTTP call landing on the entry service of an AgentSet:
    external caller
         |
         v
-   greeter-ingress.<ns>.svc.cluster.local:8490    (AgentSet-owned, ClusterIP)
+   greeter-ingress.<ns>.svc:8490    (AgentSet-owned, ClusterIP)
         |  selector matches: agentset-name=greeter, entry=true, serving=true
         v
    pod: greeter-planner-0-xxxxx  (broker sidecar)
@@ -122,7 +122,7 @@ For an external HTTP call landing on the entry service of an AgentSet:
    container: agent  (user code)
         |  hands off to a worker via topology peer URL
         v
-   greeter-worker.<ns>.svc.cluster.local:8490     (AgentDeploy-owned, ClusterIP)
+   greeter-worker.<ns>.svc:8490     (AgentDeploy-owned, ClusterIP)
         |
         v
    pod: greeter-worker-0-yyyyy   (broker sidecar) -> agent
@@ -130,4 +130,4 @@ For an external HTTP call landing on the entry service of an AgentSet:
 
 For a sequential pattern (`planner -> reviewer -> publisher`), the agent in
 `planner` reads its topology file and finds a single peer entry pointing at
-`greeter-reviewer.<ns>.svc.cluster.local:8490`, and so on down the chain.
+`greeter-reviewer.<ns>.svc:8490`, and so on down the chain.

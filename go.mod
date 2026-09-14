@@ -5,6 +5,7 @@ go 1.26.0
 require (
 	github.com/a2aproject/a2a-go/v2 v2.5.0
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
+	github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gavv/httpexpect/v2 v2.17.0
 	github.com/go-logr/zapr v1.3.0

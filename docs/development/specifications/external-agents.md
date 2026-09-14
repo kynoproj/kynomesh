@@ -203,7 +203,7 @@ The original issue asks for two ways to point at a peer: a raw URL (for truly
 external endpoints), and a friendlier reference for an agent already known to
 the cluster — e.g. by its AgentSet + agent name — that the controller resolves
 to the existing ClusterIP DNS name
-(`https://<agentset>-<agent>.<namespace>.svc.cluster.local:8490`, per
+(`https://<agentset>-<agent>.<namespace>.svc:8490`, per
 [Agent Discovery](agent-discovery.md)) so users don't hand-write it.
 
 This is deliberately deferred out of v1: raw `url` alone is sufficient to close
