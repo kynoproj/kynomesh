@@ -1543,7 +1543,7 @@ untouched.</p>
 external endpoints), and a friendlier reference for an agent already known to
 the cluster — e.g. by its AgentSet + agent name — that the controller resolves
 to the existing ClusterIP DNS name
-(<code>https://&lt;agentset&gt;-&lt;agent&gt;.&lt;namespace&gt;.svc.cluster.local:8490</code>, per
+(<code>https://&lt;agentset&gt;-&lt;agent&gt;.&lt;namespace&gt;.svc:8490</code>, per
 <a href="../agent-discovery/">Agent Discovery</a>) so users don't hand-write it.</p>
 <p>This is deliberately deferred out of v1: raw <code>url</code> alone is sufficient to close
 the issue's core gap (no user-facing field for external peers at all today), and
