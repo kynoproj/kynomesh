@@ -48,6 +48,12 @@ func newFullAgentDeploy() *AgentDeploy {
 				InitContainers: []corev1.Container{{Name: "init"}},
 				Sidecars:       []corev1.Container{{Name: "side"}},
 				UpdateStrategy: UpdateStrategy{Type: RollingUpdateStrategyType},
+				Scale: Scale{
+					Disabled:                   true,
+					Min:                        ptr.To[int32](2),
+					Max:                        ptr.To[int32](10),
+					TargetSaturationPercentage: ptr.To[uint32](80),
+				},
 			},
 			Replicas: ptr.To[int32](3),
 		},
@@ -100,6 +106,7 @@ func TestSimpleCopy_ZeroesOrchestrationSpecFields(t *testing.T) {
 	assert.Empty(t, c.Spec.InitContainers)
 	assert.Empty(t, c.Spec.Volumes)
 	assert.Equal(t, UpdateStrategy{}, c.Spec.UpdateStrategy)
+	assert.Equal(t, Scale{}, c.Spec.Scale, "Scale drives autoscaling, not agent identity")
 }
 
 func TestSimpleCopy_KeepsAgentIdentityFields(t *testing.T) {
