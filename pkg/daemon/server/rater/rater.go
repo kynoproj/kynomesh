@@ -27,12 +27,16 @@ import (
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
-// Default scrape parameters. These are intentionally not exposed as
-// env vars — they are part of the daemon contract.
+// Default scrape parameters.
 const (
 	DefaultScrapeInterval = 5 * time.Second
 	DefaultScrapeTimeout  = 1 * time.Second
 	DefaultScrapeWorkers  = 32
+
+	// DefaultStabilityWindow is the number of consecutive polls a newly
+	// observed peer AgentCard hash must hold before being promoted to
+	// PeerCardDrift.LatestHash.
+	DefaultStabilityWindow = 3
 )
 
 // Fixed lookback windows that GetMetrics always reports when data is
@@ -82,12 +86,14 @@ type Options struct {
 	AgentSetObject    *kmv1.AgentSet
 	MetricsScraper    MetricsScraper
 	IntrospectScraper IntrospectScraper // Optional: nil disables reported-hash scraping.
+	AgentCardScraper  AgentCardScraper  // Optional: nil disables LatestHash polling.
 	Discover          DiscoverFunc
 	Logger            *zap.SugaredLogger
 
-	ScrapeInterval time.Duration // default DefaultScrapeInterval
-	ScrapeWorkers  int           // default DefaultScrapeWorkers
-	Clock          Clock         // default time.Now
+	ScrapeInterval  time.Duration // default DefaultScrapeInterval
+	ScrapeWorkers   int           // default DefaultScrapeWorkers
+	Clock           Clock         // default time.Now
+	StabilityWindow int           // default DefaultStabilityWindow
 }
 
 // Rater maintains per-AgentDeploy storage fed by periodic scrapes.
@@ -101,6 +107,12 @@ type Rater struct {
 	// scrapeIntrospectOnce on the same tick as the metrics scrape;
 	// GetPeerCardDrift only ever reads from it.
 	peerHashes map[string]*peerHashCache
+
+	// peerCards holds each AgentDeploy's stability-gated LatestHash state
+	// for its own peers, keyed by AgentDeploy name. Populated by
+	// scrapePeerCardsOnce on the same tick; GetPeerCardDrift only ever
+	// reads from it.
+	peerCards map[string]*peerCardState
 
 	// agentSet and agentDeploys are derived once from opts.AgentSetObject
 	// at construction time, rather than re-walking the object on every
@@ -129,6 +141,9 @@ func NewRater(opts Options) *Rater {
 	if opts.Logger == nil {
 		opts.Logger = zap.NewNop().Sugar()
 	}
+	if opts.StabilityWindow == 0 {
+		opts.StabilityWindow = DefaultStabilityWindow
+	}
 
 	var agentSet string
 	var agentDeploys []string
@@ -142,14 +157,17 @@ func NewRater(opts Options) *Rater {
 
 	buffers := make(map[string]*AgentDeployBuffers, len(agentDeploys))
 	peerHashes := make(map[string]*peerHashCache, len(agentDeploys))
+	peerCards := make(map[string]*peerCardState, len(agentDeploys))
 	for _, ad := range agentDeploys {
 		buffers[ad] = NewAgentDeployBuffers()
 		peerHashes[ad] = newPeerHashCache()
+		peerCards[ad] = newPeerCardState()
 	}
 	return &Rater{
 		opts:         opts,
 		buffers:      buffers,
 		peerHashes:   peerHashes,
+		peerCards:    peerCards,
 		agentSet:     agentSet,
 		agentDeploys: agentDeploys,
 	}
@@ -211,6 +229,11 @@ func (r *Rater) scrapeAllOnce(ctx context.Context) {
 // the rater happened to be on when the tick started.
 func (r *Rater) scrapeOneAgentDeploy(ctx context.Context, ad string) {
 	log := r.opts.Logger.With(zap.String("agentDeploy", ad))
+
+	// Peer AgentCard polling addresses each managed peer's own
+	// per-AgentDeploy ClusterIP Service directly.
+	r.scrapePeerCardsOnce(ctx, ad)
+
 	hosts, err := r.opts.Discover(ctx, r.agentSet, ad)
 	if err != nil {
 		log.Warnw("Pod discovery failed", zap.Error(err))

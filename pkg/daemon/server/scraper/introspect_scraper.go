@@ -50,6 +50,8 @@ type IntrospectScraper struct {
 	port   int
 }
 
+var _ rater.IntrospectScraper = (*IntrospectScraper)(nil)
+
 // NewIntrospectScraper returns an IntrospectScraper.
 func NewIntrospectScraper(timeout time.Duration) *IntrospectScraper {
 	return &IntrospectScraper{

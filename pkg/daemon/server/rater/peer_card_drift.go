@@ -199,15 +199,9 @@ func (r *Rater) scrapeIntrospectOnce(ctx context.Context, ad string, hosts []str
 }
 
 // GetPeerCardDrift returns the current drift-comparison state for name's
-// peers, read from the cache scrapeIntrospectOnce populates on the rater's
-// background scrape tick — this never scrapes live on the calling
-// goroutine.
-//
-// TODO(#214): LatestHash / LatestHashObservedAt are still a stub (always
-// empty) until the daemon polls each peer's own live AgentCard on some
-// cadence, hashes it, and holds a newly-observed hash change behind a
-// stability gate before promoting it. Once that lands, this becomes a real
-// comparison instead of reported-hashes-only.
+// peers, read from the caches scrapeIntrospectOnce and scrapePeerCardsOnce
+// populate on the rater's background scrape tick — this never scrapes live
+// on the calling goroutine.
 //
 // Returns ErrUnknownAgentDeploy if name is not in the configured list,
 // matching GetMetrics.
@@ -218,20 +212,23 @@ func (r *Rater) GetPeerCardDrift(ctx context.Context, name string) (map[string]P
 	topology := kmv1.ComputeTopology(r.opts.AgentSetObject, name)
 	out := make(map[string]PeerCardDrift, len(topology.Peers))
 	cache := r.peerHashes[name]
-	if cache == nil {
-		for _, p := range topology.Peers {
-			if p.Kind == kmv1.PeerKindManaged {
-				out[p.Name] = PeerCardDrift{}
-			}
-		}
-		return out, nil
-	}
+	cards := r.peerCards[name]
 
 	for _, p := range topology.Peers {
 		if p.Kind != kmv1.PeerKindManaged {
 			continue
 		}
-		out[p.Name] = PeerCardDrift{ReportedHashes: cache.reportedByPeer(p.Name)}
+		var drift PeerCardDrift
+		if cache != nil {
+			drift.ReportedHashes = cache.reportedByPeer(p.Name)
+		}
+		if cards != nil {
+			if hash, observedAt, ok := cards.snapshot(p.Name); ok {
+				drift.LatestHash = hash
+				drift.LatestHashObservedAt = observedAt
+			}
+		}
+		out[p.Name] = drift
 	}
 	return out, nil
 }

@@ -39,12 +39,23 @@ func (s stubResolver) LookupHost(_ context.Context, _ string) ([]string, error) 
 }
 
 func TestHeadlessHost(t *testing.T) {
-	assert.Equal(t, "my-agentset-greeter-headless.default.svc.cluster.local", headlessHost("my-agentset", "greeter", "default"))
+	assert.Equal(t, "my-agentset-greeter-headless.default.svc", headlessHost("my-agentset", "greeter", "default"))
 }
 
 func TestPodHost(t *testing.T) {
-	assert.Equal(t, "my-agentset-greeter-0.my-agentset-greeter-headless.default.svc.cluster.local", podHost("my-agentset", "greeter", "default", 0))
-	assert.Equal(t, "my-agentset-greeter-7.my-agentset-greeter-headless.ns.svc.cluster.local", podHost("my-agentset", "greeter", "ns", 7))
+	assert.Equal(t, "my-agentset-greeter-0.my-agentset-greeter-headless.default.svc", podHost("my-agentset", "greeter", "default", 0))
+	assert.Equal(t, "my-agentset-greeter-7.my-agentset-greeter-headless.ns.svc", podHost("my-agentset", "greeter", "ns", 7))
+}
+
+func TestClusterIPHost(t *testing.T) {
+	assert.Equal(t, "my-agentset-greeter.default.svc", ClusterIPHost("my-agentset", "greeter", "default"))
+	assert.Equal(t, "my-agentset-greeter.ns.svc", ClusterIPHost("my-agentset", "greeter", "ns"))
+}
+
+func TestClusterIPHost_MatchesAPIPackageChildName(t *testing.T) {
+	as := &kmv1.AgentSet{ObjectMeta: metav1.ObjectMeta{Name: "my-agentset"}}
+	ad := &kmv1.AgentDeploy{ObjectMeta: metav1.ObjectMeta{Name: as.ChildAgentDeployName("greeter")}}
+	assert.Equal(t, ad.ServiceName()+".default.svc", ClusterIPHost("my-agentset", "greeter", "default"))
 }
 
 func TestDiscover_NormalCase(t *testing.T) {
@@ -52,16 +63,16 @@ func TestDiscover_NormalCase(t *testing.T) {
 	hosts, err := Discover(context.Background(), r, "my-agentset", "greeter", "default")
 	require.NoError(t, err)
 	assert.Equal(t, []string{
-		"my-agentset-greeter-0.my-agentset-greeter-headless.default.svc.cluster.local",
-		"my-agentset-greeter-1.my-agentset-greeter-headless.default.svc.cluster.local",
-		"my-agentset-greeter-2.my-agentset-greeter-headless.default.svc.cluster.local",
+		"my-agentset-greeter-0.my-agentset-greeter-headless.default.svc",
+		"my-agentset-greeter-1.my-agentset-greeter-headless.default.svc",
+		"my-agentset-greeter-2.my-agentset-greeter-headless.default.svc",
 	}, hosts)
 }
 
 func TestHeadlessHost_MatchesAPIPackageChildName(t *testing.T) {
 	as := &kmv1.AgentSet{ObjectMeta: metav1.ObjectMeta{Name: "my-agentset"}}
 	ad := &kmv1.AgentDeploy{ObjectMeta: metav1.ObjectMeta{Name: as.ChildAgentDeployName("greeter")}}
-	assert.Equal(t, ad.HeadlessServiceName()+".default.svc.cluster.local", headlessHost("my-agentset", "greeter", "default"))
+	assert.Equal(t, ad.HeadlessServiceName()+".default.svc", headlessHost("my-agentset", "greeter", "default"))
 }
 
 func TestDiscover_NoReadyPods_NotAnError(t *testing.T) {

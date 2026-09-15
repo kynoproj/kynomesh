@@ -53,11 +53,11 @@ The agent discovers peers by reading the topology file:
   "peers": [
     {
       "name": "worker1",
-      "url": "https://greeter-worker1.ns.svc.cluster.local:8490"
+      "url": "https://greeter-worker1.ns.svc:8490"
     },
     {
       "name": "worker2",
-      "url": "https://greeter-worker2.ns.svc.cluster.local:8490"
+      "url": "https://greeter-worker2.ns.svc:8490"
     }
   ]
 }
