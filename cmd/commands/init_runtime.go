@@ -27,7 +27,6 @@ import (
 	"go.uber.org/zap"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
-	"github.com/kynoproj/kynomesh/pkg/shared/discovery"
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 )
 
@@ -126,7 +125,8 @@ func resolvePeerURLs(ad *kmv1.AgentDeploy) kmv1.Topology {
 
 // managedPeerURL returns the in-cluster URL for a managed peer.
 func managedPeerURL(setName, peerName, namespace string) string {
-	return fmt.Sprintf("https://%s:%d", discovery.ClusterIPHost(setName, peerName, namespace), kmv1.AgentBrokerPort)
+	host := fmt.Sprintf("%s-%s.%s.svc", setName, peerName, namespace)
+	return fmt.Sprintf("https://%s:%d", host, kmv1.AgentBrokerPort)
 }
 
 // installProbeBinary atomically copies src into dst with mode 0755 so the

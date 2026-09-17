@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
-	"github.com/kynoproj/kynomesh/pkg/shared/discovery"
 )
 
 // PeerAgentCard is one peer's decoded, hashed live AgentCard, as fetched
@@ -140,7 +139,7 @@ func (r *Rater) scrapePeerCardsOnce(ctx context.Context, ad string) {
 		go func(peer string) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			baseURL := fmt.Sprintf("https://%s:%d", discovery.ClusterIPHost(r.agentSet, peer, namespace), kmv1.AgentBrokerPort)
+			baseURL := fmt.Sprintf("https://%s-%s.%s.svc:%d", r.agentSet, peer, namespace, kmv1.AgentBrokerPort)
 			card, err := r.opts.AgentCardScraper.ScrapeAgentCard(ctx, baseURL)
 			if err != nil {
 				log.Debugw("Peer AgentCard scrape failed", zap.String("peer", peer), zap.Error(err))
