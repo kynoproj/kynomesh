@@ -79,7 +79,7 @@ func newTestReconciler(t *testing.T, objs ...client.Object) (*Reconciler, client
 		WithObjects(objs...).
 		WithStatusSubresource(&kmv1.AgentDeploy{}).
 		Build()
-	r := NewReconciler(c, scheme, nil, nil, &events.FakeRecorder{}, testBrokerImage, "", nil)
+	r := NewReconciler(c, scheme, nil, nil, &events.FakeRecorder{}, testBrokerImage, "", nil, nil)
 	return r, c
 }
 
@@ -466,6 +466,29 @@ func TestReconcile_ManagesWatchSet(t *testing.T) {
 		r, _ := newTestReconciler(t) // no objects
 		fs := &fakeScaler{}
 		r.scaler = fs
+		_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+		require.NoError(t, err)
+		assert.Contains(t, fs.forgot, key)
+	})
+}
+
+func TestReconcile_ManagesDriftWatcher(t *testing.T) {
+	key := reconcileRequest("greeter").NamespacedName
+
+	t.Run("tracked at the same points as the scaler", func(t *testing.T) {
+		r, _ := newTestReconciler(t, newAgentDeploy("greeter", 1))
+		fs := &fakeScaler{}
+		r.driftWatcher = fs
+		_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+		require.NoError(t, err)
+		assert.Contains(t, fs.tracked, key)
+		assert.Empty(t, fs.forgot)
+	})
+
+	t.Run("missing AgentDeploy is forgotten", func(t *testing.T) {
+		r, _ := newTestReconciler(t) // no objects
+		fs := &fakeScaler{}
+		r.driftWatcher = fs
 		_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
 		require.NoError(t, err)
 		assert.Contains(t, fs.forgot, key)

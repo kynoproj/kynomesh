@@ -172,32 +172,48 @@ and force those callers' pods to restart.
      current desired hash is on the next pass — there is nothing to cancel or
      preempt.
 
-## Enabling this: `peerWatch`
+## Enabling this: `driftReload`
 
-This must be opt-in/opt-out, not always-on — for some deployments,
-auto-reloading on every capability change is undesirable (agents that
-legitimately change their card often, or environments where uncontrolled pod
-churn is itself a cost).
+This is opt-in/opt-out, not always-on — for some deployments, auto-reloading
+on every capability change is undesirable (agents that legitimately change
+their card often, or environments where uncontrolled pod churn is itself a
+cost).
 
-The toggle is a grouped field, `peerWatch`, available at both levels:
+The toggle is a grouped field, `driftReload`, available at both levels:
 
-- **AgentSet level:** `spec.peerWatch` — the default for every agent in the set.
-- **Agent level:** `spec.agents[*].peerWatch` — overrides the AgentSet-level
+- **AgentSet level:** `spec.driftReload` — the default for every agent in the
+  set.
+- **Agent level:** `spec.agents[*].driftReload` — overrides the AgentSet-level
   default for that agent, following the same fill-if-unset pattern already used
   for `BrokerContainer`/`InitContainer` templates
   (`ContainerTemplate.ApplyDefaultsFrom`,
-  `pkg/apis/kynomesh/v1alpha1/container_template.go`).
+  `pkg/apis/kynomesh/v1alpha1/container_template.go`): an unset per-agent
+  `driftReload` takes the AgentSet-level default wholesale; a per-agent
+  `driftReload` that is set always wins outright.
 
-`peerWatch` is deliberately a struct (e.g. `{enabled: bool}` today) rather than
-a bare boolean, so related settings in the same "how does this agent react to
+```yaml
+spec:
+  driftReload:
+    enabled: true      # fleet-wide default
+  agents:
+    - name: planner
+      driftReload:
+        enabled: false # this agent opts out even though the fleet default is on
+    - name: worker      # omitted — inherits the fleet default (enabled: true)
+```
+
+`driftReload` is deliberately a struct (`{enabled: bool}` today) rather than a
+bare boolean, so related settings in the same "how does this agent react to
 its peers" space can be added later without introducing new top-level fields.
-The exact field name, shape, precedence details, and default (on vs. off) are
-provisional — to be finalized during implementation, whichever is easiest to
-build correctly.
+Default is **off** (`Enabled` bool zero-value is `false`): auto-restarting pods
+is a behavior change with real blast radius, so opt-in is the safer default for
+a first release.
 
-What exactly `enabled` gates — whether it stops the daemon from tracking drift
-for that agent at all, or only stops the controller from acting on drift it
-still detects — is also left to implementation.
+`driftReload.enabled` gates the controller only, not the daemon: the daemon's
+drift tracking (step 3 above) runs unconditionally for every managed peer
+regardless of this setting, so the drift data stays visible via the API even
+when a user has turned auto-reload off. Only the controller-side component
+that acts on drift (deleting stale pods) checks `driftReload.enabled`.
 
 ## Non-goals
 
@@ -218,16 +234,22 @@ still detects — is also left to implementation.
 
 ## Open questions
 
-- **Detection cadence.** What interval the daemon polls managed peers'
-  `AgentCard`s on, and how that interacts with (or reuses) its existing scrape
-  loop (`pkg/daemon/server/rater`'s `DefaultScrapeInterval` = 5s) — left open
-  intentionally; not a blocking design decision, tunable during implementation.
-- **Daemon poll-trigger model.** Whether the daemon polls peers on its own
-  independent background timer (mirroring the reconciler-side `Sampler`'s 60s
-  loop, `pkg/reconciler/agentdeploy/scaling/sampler.go`) feeding a cache the new
-  API just reads from, or polls synchronously when `GetPeerCardDrift` is called.
 - **External-agent drift detection**, per the Non-goals section above — blocked
   on a credentials story for external agents that doesn't exist yet.
+
+Resolved during implementation:
+
+- **Detection cadence / daemon poll-trigger model.** The daemon's own polling
+  of peer AgentCards (step 3) predates and is unaffected by this issue; #214
+  already merged that half unconditionally.
+- **Controller-side poll cadence.** The controller-side `driftwatch.Watcher`
+  (`pkg/reconciler/agentdeploy/driftwatch`) runs its own independent
+  round-robin worker pool with its own `taskInterval`, mirroring the
+  `Sampler`/`Autoscaler` split
+  (`pkg/reconciler/agentdeploy/scaling/sampling`,
+  `pkg/reconciler/agentdeploy/scaling/autoscaler.go`) — each of the three
+  components (Sampler, Autoscaler, Watcher) polls/acts on its own cadence
+  rather than sharing one timer.
 
 ## See Also
 

@@ -90,6 +90,11 @@ type AgentSetSpec struct {
 	// +patchMergeKey=name
 	// +optional
 	ExternalAgents []ExternalAgentRef `json:"externalAgents,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,5,rep,name=externalAgents"`
+	// DriftReload is the fleet-wide default for automatic reload-on-drift.
+	// Any agent may override it with its own driftReload; unset agents
+	// inherit this value.
+	// +optional
+	DriftReload *DriftReload `json:"driftReload,omitempty" protobuf:"bytes,6,opt,name=driftReload"`
 }
 
 // ExternalAgentRef is a reference to an existing agent this AgentSet does not

@@ -148,6 +148,9 @@ func (r *Reconciler) newAgentDeploy(as *kmv1.AgentSet, agent kmv1.AbstractAgentD
 	if t := as.Spec.Templates; t != nil && t.AgentDeployTemplate != nil {
 		applyTemplate(&abstract, t.AgentDeployTemplate)
 	}
+	if abstract.DriftReload == nil {
+		abstract.DriftReload = as.Spec.DriftReload
+	}
 	ad := &kmv1.AgentDeploy{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: as.Namespace,

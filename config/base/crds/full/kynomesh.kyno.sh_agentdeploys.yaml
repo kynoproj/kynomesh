@@ -1046,6 +1046,11 @@ spec:
                 type: object
               dnsPolicy:
                 type: string
+              driftReload:
+                properties:
+                  enabled:
+                    type: boolean
+                type: object
               imagePullSecrets:
                 items:
                   properties:

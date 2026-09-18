@@ -75,6 +75,37 @@ func TestBuildAgentDeploys_TemplateAppliedAsDefault(t *testing.T) {
 		"per-agent value should beat the template default")
 }
 
+func TestBuildAgentDeploys_DriftReloadFillIfUnset(t *testing.T) {
+	r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+
+	t.Run("both nil defaults to disabled", func(t *testing.T) {
+		as := newAgentSet("greeter", "alpha")
+		out, err := r.buildDesired(as)
+		require.NoError(t, err)
+		assert.Nil(t, out["greeter-alpha"].Spec.DriftReload)
+	})
+
+	t.Run("per-agent nil takes the AgentSet default", func(t *testing.T) {
+		as := newAgentSet("greeter", "alpha")
+		as.Spec.DriftReload = &kmv1.DriftReload{Enabled: true}
+		out, err := r.buildDesired(as)
+		require.NoError(t, err)
+		require.NotNil(t, out["greeter-alpha"].Spec.DriftReload)
+		assert.True(t, out["greeter-alpha"].Spec.DriftReload.Enabled)
+	})
+
+	t.Run("per-agent set wins outright over the AgentSet default", func(t *testing.T) {
+		as := newAgentSet("greeter", "alpha")
+		as.Spec.DriftReload = &kmv1.DriftReload{Enabled: true}
+		as.Spec.Agents[0].DriftReload = &kmv1.DriftReload{Enabled: false}
+		out, err := r.buildDesired(as)
+		require.NoError(t, err)
+		require.NotNil(t, out["greeter-alpha"].Spec.DriftReload)
+		assert.False(t, out["greeter-alpha"].Spec.DriftReload.Enabled,
+			"per-agent DriftReload must win even though it disables what the AgentSet default enables")
+	})
+}
+
 func TestBuildAgentDeploys_BrokerContainerFieldMerge(t *testing.T) {
 	r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	as := newAgentSet("greeter", "alpha")

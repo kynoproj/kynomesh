@@ -41,6 +41,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container":             schema_pkg_apis_kynomesh_v1alpha1_Container(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate":     schema_pkg_apis_kynomesh_v1alpha1_ContainerTemplate(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.DaemonTemplate":        schema_pkg_apis_kynomesh_v1alpha1_DaemonTemplate(ref),
+		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.DriftReload":           schema_pkg_apis_kynomesh_v1alpha1_DriftReload(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ExternalAgentRef":      schema_pkg_apis_kynomesh_v1alpha1_ExternalAgentRef(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata":              schema_pkg_apis_kynomesh_v1alpha1_Metadata(ref),
 		"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Peer":                  schema_pkg_apis_kynomesh_v1alpha1_Peer(ref),
@@ -303,12 +304,18 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 							Format:      "",
 						},
 					},
+					"driftReload": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DriftReload controls automatic reload-on-drift for this agent. When unset, it inherits the AgentSet-level default (spec.driftReload).",
+							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.DriftReload"),
+						},
+					},
 				},
 				Required: []string{"name", "container"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.RateLimit", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.DriftReload", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.RateLimit", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
 	}
 }
 
@@ -813,6 +820,12 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 							Format:      "",
 						},
 					},
+					"driftReload": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DriftReload controls automatic reload-on-drift for this agent. When unset, it inherits the AgentSet-level default (spec.driftReload).",
+							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.DriftReload"),
+						},
+					},
 					"agentSetName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "AgentSetName is the name of the AgentSet that owns this AgentDeploy.",
@@ -839,7 +852,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 			},
 		},
 		Dependencies: []string{
-			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.RateLimit", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Topology", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
+			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Container", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.DriftReload", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.RateLimit", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Scale", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Topology", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.UpdateStrategy", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.Container", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration", "k8s.io/api/core/v1.Volume"},
 	}
 }
 
@@ -1301,12 +1314,18 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetSpec(ref common.ReferenceCallback
 							},
 						},
 					},
+					"driftReload": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DriftReload is the fleet-wide default for automatic reload-on-drift. Any agent may override it with its own driftReload; unset agents inherit this value.",
+							Ref:         ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.DriftReload"),
+						},
+					},
 				},
 				Required: []string{"pattern", "entry", "agents"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AbstractAgentDeploy", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ExternalAgentRef", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Templates"},
+			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AbstractAgentDeploy", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.DriftReload", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ExternalAgentRef", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Templates"},
 	}
 }
 
@@ -1743,6 +1762,26 @@ func schema_pkg_apis_kynomesh_v1alpha1_DaemonTemplate(ref common.ReferenceCallba
 		},
 		Dependencies: []string{
 			"github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ContainerTemplate", "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Metadata", "k8s.io/api/core/v1.Affinity", "k8s.io/api/core/v1.LocalObjectReference", "k8s.io/api/core/v1.PodDNSConfig", "k8s.io/api/core/v1.PodResourceClaim", "k8s.io/api/core/v1.PodSecurityContext", "k8s.io/api/core/v1.Toleration"},
+	}
+}
+
+func schema_pkg_apis_kynomesh_v1alpha1_DriftReload(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "DriftReload controls whether the controller reloads (restarts) this AgentDeploy's pods when the daemon detects they're serving a stale cached AgentCard for one of their peers. The daemon always tracks drift regardless of this setting — DriftReload only gates whether the controller acts on it.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"enabled": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enabled turns on automatic reload-on-drift for this AgentDeploy.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
 	}
 }
 

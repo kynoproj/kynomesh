@@ -134,7 +134,7 @@ func TestDesiredReplicas(t *testing.T) {
 			scale.Disabled = tc.disabled
 			ad := &kmv1.AgentDeploy{Spec: kmv1.AgentDeploySpec{Replicas: tc.replicas}}
 			ad.Spec.Scale = scale
-			assert.Equal(t, tc.want, desiredReplicas(ad))
+			assert.Equal(t, tc.want, DesiredReplicas(ad))
 		})
 	}
 }

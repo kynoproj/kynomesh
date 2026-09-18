@@ -46,6 +46,7 @@ import (
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 	"github.com/kynoproj/kynomesh/pkg/reconciler"
 	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/driftwatch"
 	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling"
 	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/history"
 	scalingmetrics "github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/metrics"
@@ -167,7 +168,9 @@ func Start(namespaced bool, managedNamespace string) {
 		logger.Named("autoscaler"), scaling.WithAutoscalerMetrics(scalingMetrics))
 	scalingTracker := scaling.NewTracker(sampler, autoscaler)
 
-	if err := registerAgentDeployController(mgr, config, logger, image, brokerPullPolicy, scalingTracker); err != nil {
+	driftWatcher := driftwatch.NewWatcher(mgr.GetClient(), driftwatch.GRPCDaemonDialer, logger.Named("driftwatch"))
+
+	if err := registerAgentDeployController(mgr, config, logger, image, brokerPullPolicy, scalingTracker, driftWatcher); err != nil {
 		logger.Fatalw("Failed to register AgentDeploy controller", zap.Error(err))
 	}
 	if err := mgr.Add(LeaderElectionRunner(sampler.Start)); err != nil {
@@ -175,6 +178,9 @@ func Start(namespaced bool, managedNamespace string) {
 	}
 	if err := mgr.Add(LeaderElectionRunner(autoscaler.Start)); err != nil {
 		logger.Fatalw("Failed to add autoscaler runnable", zap.Error(err))
+	}
+	if err := mgr.Add(LeaderElectionRunner(driftWatcher.Start)); err != nil {
+		logger.Fatalw("Failed to add driftwatch runnable", zap.Error(err))
 	}
 
 	logger.Infow("Starting controller-manager",
@@ -337,7 +343,7 @@ func registerAgentSetController(mgr manager.Manager, config *reconciler.GlobalCo
 //
 //   - Service (owned): enqueue the controlling AgentDeploy if the headless
 //     service is mutated or deleted out from under us.
-func registerAgentDeployController(mgr manager.Manager, config *reconciler.GlobalConfig, logger *zap.SugaredLogger, brokerImage string, brokerPullPolicy corev1.PullPolicy, watch *scaling.Tracker) error {
+func registerAgentDeployController(mgr manager.Manager, config *reconciler.GlobalConfig, logger *zap.SugaredLogger, brokerImage string, brokerPullPolicy corev1.PullPolicy, watch *scaling.Tracker, driftWatcher *driftwatch.Watcher) error {
 	r := agentdeploy.NewReconciler(
 		mgr.GetClient(),
 		mgr.GetScheme(),
@@ -347,6 +353,7 @@ func registerAgentDeployController(mgr manager.Manager, config *reconciler.Globa
 		brokerImage,
 		brokerPullPolicy,
 		watch,
+		driftWatcher,
 	)
 
 	c, err := controller.New(kmv1.ControllerAgentDeploy, mgr, controller.Options{

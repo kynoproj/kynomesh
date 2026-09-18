@@ -82,6 +82,11 @@ message AbstractAgentDeploy {
   // cluster. If empty, the broker advertises its in-cluster address.
   // +optional
   optional string publicBaseURL = 12;
+
+  // DriftReload controls automatic reload-on-drift for this agent. When
+  // unset, it inherits the AgentSet-level default (spec.driftReload).
+  // +optional
+  optional DriftReload driftReload = 13;
 }
 
 // AbstractPodTemplate provides a template for pod customization in vertices, daemon deployments and so on.
@@ -356,6 +361,12 @@ message AgentSetSpec {
   // +patchMergeKey=name
   // +optional
   repeated ExternalAgentRef externalAgents = 5;
+
+  // DriftReload is the fleet-wide default for automatic reload-on-drift.
+  // Any agent may override it with its own driftReload; unset agents
+  // inherit this value.
+  // +optional
+  optional DriftReload driftReload = 6;
 }
 
 message AgentSetStatus {
@@ -449,6 +460,17 @@ message DaemonTemplate {
 
   // Container for the daemon container (resources, env, ...).
   optional ContainerTemplate container = 2;
+}
+
+// DriftReload controls whether the controller reloads (restarts) this
+// AgentDeploy's pods when the daemon detects they're serving a stale
+// cached AgentCard for one of their peers. The daemon always tracks
+// drift regardless of this setting — DriftReload only gates whether the
+// controller acts on it.
+message DriftReload {
+  // Enabled turns on automatic reload-on-drift for this AgentDeploy.
+  // +optional
+  optional bool enabled = 1;
 }
 
 // ExternalAgentRef is a reference to an existing agent this AgentSet does not
