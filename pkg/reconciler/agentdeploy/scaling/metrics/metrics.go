@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaling
+package metrics
 
 import (
 	"sync"
@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/decision"
 )
 
 // Metrics holds the autoscaling Prometheus collectors.
@@ -102,7 +103,7 @@ func (m *Metrics) RecordSample(ad *kmv1.AgentDeploy) {
 }
 
 // ObserveDecision publishes the estimate and replica counts from one decision.
-func (m *Metrics) ObserveDecision(ad *kmv1.AgentDeploy, est Estimate, current, desired int32) {
+func (m *Metrics) ObserveDecision(ad *kmv1.AgentDeploy, est decision.Estimate, current, desired int32) {
 	if m == nil {
 		return
 	}

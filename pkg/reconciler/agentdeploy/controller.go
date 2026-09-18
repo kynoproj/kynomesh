@@ -38,8 +38,8 @@ import (
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 )
 
-// scaleWatcher is the subset of the scaling WatchSet the controller drives to
-// keep the autoscaling components' shared watch set in sync with the live
+// scaleWatcher is the subset of the scaling Tracker the controller drives to
+// keep the Sampler's and Autoscaler's watch sets in sync with the live
 // AgentDeploys.
 type scaleWatcher interface {
 	Track(types.NamespacedName)

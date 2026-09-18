@@ -27,9 +27,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/decision"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/history"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/metrics"
+	"github.com/kynoproj/kynomesh/pkg/shared/workset"
 )
 
 const (
+	defaultWorkers       = 16
 	defaultScaleInterval = 30 * time.Second
 	// defaultMaxSampleAge bounds how stale the freshest sample may be before the
 	// Autoscaler declines to act — guards against scaling on outdated load when
@@ -38,19 +43,17 @@ const (
 )
 
 // Autoscaler computes desired replicas and patches spec.replicas, leaving the
-// agentdeploy controller to realize the change.
+// agentdeploy controller to realize the change. It runs its own WorkSet.
 type Autoscaler struct {
 	client       client.Client
-	watch        *WatchSet
-	registry     *Registry
+	watch        *workset.WorkSet[types.NamespacedName]
+	registry     *history.Registry
 	logger       *zap.SugaredLogger
 	workers      int
 	taskInterval time.Duration
 	maxSampleAge time.Duration
 	clock        func() time.Time
-	metrics      *Metrics
-
-	runner *runner
+	metrics      *metrics.Metrics
 }
 
 // AutoscalerOption configures an Autoscaler.
@@ -63,18 +66,17 @@ func WithScaleInterval(d time.Duration) AutoscalerOption {
 func WithMaxSampleAge(d time.Duration) AutoscalerOption {
 	return func(a *Autoscaler) { a.maxSampleAge = d }
 }
-func WithAutoscalerMetrics(m *Metrics) AutoscalerOption {
+func WithAutoscalerMetrics(m *metrics.Metrics) AutoscalerOption {
 	return func(a *Autoscaler) { a.metrics = m }
 }
 func WithAutoscalerClock(f func() time.Time) AutoscalerOption {
 	return func(a *Autoscaler) { a.clock = f }
 }
 
-// NewAutoscaler builds an Autoscaler over the shared WatchSet and Registry.
-func NewAutoscaler(c client.Client, watch *WatchSet, reg *Registry, logger *zap.SugaredLogger, opts ...AutoscalerOption) *Autoscaler {
+// NewAutoscaler builds an Autoscaler with its own WorkSet over the Registry.
+func NewAutoscaler(c client.Client, reg *history.Registry, logger *zap.SugaredLogger, opts ...AutoscalerOption) *Autoscaler {
 	a := &Autoscaler{
 		client:       c,
-		watch:        watch,
 		registry:     reg,
 		logger:       logger,
 		workers:      defaultWorkers,
@@ -85,19 +87,27 @@ func NewAutoscaler(c client.Client, watch *WatchSet, reg *Registry, logger *zap.
 	for _, o := range opts {
 		o(a)
 	}
-	a.runner = &runner{
-		name:         "autoscaler",
-		watch:        watch,
-		process:      a.scaleKey,
-		workers:      a.workers,
-		taskInterval: a.taskInterval,
-		logger:       logger,
-	}
+	a.watch = workset.NewWorkSet("autoscaler", a.scaleKey,
+		workset.WithWorkers[types.NamespacedName](a.workers),
+		workset.WithTaskInterval[types.NamespacedName](a.taskInterval),
+		workset.WithLogger[types.NamespacedName](logger),
+	)
 	return a
 }
 
-// Start runs the scaling runner until ctx is cancelled.
-func (a *Autoscaler) Start(ctx context.Context) error { return a.runner.start(ctx) }
+// Track adds an AgentDeploy to the autoscaler's WorkSet.
+func (a *Autoscaler) Track(k types.NamespacedName) { a.watch.Track(k) }
+
+// Forget removes an AgentDeploy from the autoscaler's WorkSet, dropping its
+// registry entry and metric series so a deleted object doesn't leak state.
+func (a *Autoscaler) Forget(k types.NamespacedName) {
+	a.watch.Forget(k)
+	a.registry.Forget(k)
+	a.metrics.Delete(k)
+}
+
+// Start runs the scaling WorkSet until ctx is cancelled.
+func (a *Autoscaler) Start(ctx context.Context) error { return a.watch.Start(ctx) }
 
 // scaleKey evaluates one AgentDeploy and patches spec.replicas when a change is
 // warranted.
@@ -105,7 +115,7 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 	var ad kmv1.AgentDeploy
 	if err := a.client.Get(ctx, k, &ad); err != nil {
 		if apierrors.IsNotFound(err) {
-			a.watch.Forget(k)
+			a.Forget(k)
 			return nil
 		}
 		return fmt.Errorf("get agentdeploy: %w", err)
@@ -114,7 +124,7 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 		zap.String("agentSet", ad.Spec.AgentSetName),
 		zap.String("agentDeploy", ad.Spec.Name))
 	if !ad.DeletionTimestamp.IsZero() {
-		a.watch.Forget(k)
+		a.Forget(k)
 		log.Debug("AgentDeploy being deleted")
 		return nil
 	}
@@ -140,8 +150,8 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 		return nil
 	}
 	secondsSinceLastScale := time.Since(ad.Status.LastScaledAt.Time).Seconds()
-	scaleDownCooldown := float64(getOr(ad.Spec.Scale.ScaleDownCooldownSeconds, kmv1.DefaultScaleDownCooldownSeconds))
-	scaleUpCooldown := float64(getOr(ad.Spec.Scale.ScaleUpCooldownSeconds, kmv1.DefaultScaleUpCooldownSeconds))
+	scaleDownCooldown := float64(decision.GetOr(ad.Spec.Scale.ScaleDownCooldownSeconds, kmv1.DefaultScaleDownCooldownSeconds))
+	scaleUpCooldown := float64(decision.GetOr(ad.Spec.Scale.ScaleUpCooldownSeconds, kmv1.DefaultScaleUpCooldownSeconds))
 	if secondsSinceLastScale < scaleDownCooldown && secondsSinceLastScale < scaleUpCooldown {
 		// Skip scaling without needing further calculation
 		log.Infow("Skipping scale: Cooldown period")
@@ -169,7 +179,7 @@ func (a *Autoscaler) scaleKey(ctx context.Context, k types.NamespacedName) error
 	}
 
 	current := currentReplicas(&ad)
-	dec := Decide(Inputs{
+	dec := decision.Decide(decision.Inputs{
 		CurrentReplicas: current,
 		ReadyReplicas:   int32(ad.Status.ReadyReplicas),
 		History:         hist,

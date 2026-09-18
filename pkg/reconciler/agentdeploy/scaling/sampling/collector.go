@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaling
+package sampling
 
 import (
 	"context"
@@ -27,6 +27,7 @@ import (
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 	pb "github.com/kynoproj/kynomesh/pkg/apis/proto/daemon"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/history"
 )
 
 // Window keys mirror the daemon rater's windows
@@ -53,15 +54,15 @@ type MetricsSource interface {
 // the chosen window isn't computable yet. The caller should simply skip rather
 // than treat it as a failure. The caller is responsible for recording the
 // returned Sample.
-func collectSample(ctx context.Context, src MetricsSource, ad *kmv1.AgentDeploy, now time.Time, lookback int64) (Sample, bool, error) {
+func collectSample(ctx context.Context, src MetricsSource, ad *kmv1.AgentDeploy, now time.Time, lookback int64) (history.Sample, bool, error) {
 	m, err := src.GetAgentDeployMetrics(ctx, ad.Spec.Name, lookback)
 	if err != nil {
 		switch status.Code(err) {
 		case codes.Unavailable, codes.NotFound:
 			// Daemon has no samples yet, or doesn't know this AgentDeploy.
-			return Sample{}, false, nil
+			return history.Sample{}, false, nil
 		default:
-			return Sample{}, false, fmt.Errorf("get agentdeploy metrics: %w", err)
+			return history.Sample{}, false, fmt.Errorf("get agentdeploy metrics: %w", err)
 		}
 	}
 
@@ -71,20 +72,20 @@ func collectSample(ctx context.Context, src MetricsSource, ad *kmv1.AgentDeploy,
 	}
 	totalInflight, ok := doubleVal(m.GetInflights(), window)
 	if !ok {
-		return Sample{}, false, nil
+		return history.Sample{}, false, nil
 	}
 	totalRate, ok := doubleVal(m.GetProcessingRates(), window)
 	if !ok {
-		return Sample{}, false, nil
+		return history.Sample{}, false, nil
 	}
 
 	ready := ad.Status.ReadyReplicas
 	if ready == 0 {
 		// Can't convert fleet totals to per-replica without a divisor.
-		return Sample{}, false, nil
+		return history.Sample{}, false, nil
 	}
 
-	s := Sample{
+	s := history.Sample{
 		Timestamp:      now,
 		Replicas:       int32(ready),
 		InflightPerRep: totalInflight / float64(ready),

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaling
+package sampling
 
 import (
 	"context"
@@ -26,14 +26,32 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/history"
 )
 
 func testLogger() *zap.SugaredLogger { return zap.NewNop().Sugar() }
+
+func ptrI32(v int32) *int32 { return &v }
+
+func storeScheme(t *testing.T) *runtime.Scheme {
+	t.Helper()
+	s := runtime.NewScheme()
+	require.NoError(t, clientgoscheme.AddToScheme(s))
+	require.NoError(t, kmv1.AddToScheme(s))
+	return s
+}
+
+// sample builds a history.Sample for tests.
+func sample(ts time.Time, replicas int32, inflight, rate float64) history.Sample {
+	return history.Sample{Timestamp: ts, Replicas: replicas, InflightPerRep: inflight, RatePerRep: rate}
+}
 
 // scalingAD builds a scaling-enabled AgentDeploy for the loop tests.
 func scalingAD(name string, ready uint32) *kmv1.AgentDeploy {
@@ -69,8 +87,8 @@ func TestSamplerSampleKeyRecordsPerReplica(t *testing.T) {
 	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	ad := scalingAD("foo", 4)
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
-	reg := NewRegistry(c)
-	s := NewSampler(c, NewWatchSet(reg, nil), reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 100, 200)}),
+	reg := history.NewRegistry(c)
+	s := NewSampler(c, reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 100, 200)}),
 		testLogger(), WithFlushInterval(time.Hour), fixedClock(now))
 
 	require.NoError(t, s.sampleKey(context.Background(), nn("foo")))
@@ -88,8 +106,8 @@ func TestSamplerSampleKeySamplesDisabled(t *testing.T) {
 	ad := scalingAD("foo", 2)
 	ad.Spec.Scale.Disabled = true
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
-	reg := NewRegistry(c)
-	s := NewSampler(c, NewWatchSet(reg, nil), reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 40, 80)}),
+	reg := history.NewRegistry(c)
+	s := NewSampler(c, reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 40, 80)}),
 		testLogger(), WithFlushInterval(time.Hour), fixedClock(now))
 
 	require.NoError(t, s.sampleKey(context.Background(), nn("foo")))
@@ -100,29 +118,28 @@ func TestSamplerSampleKeySamplesDisabled(t *testing.T) {
 
 func TestSamplerSampleKeyForgetsDeleted(t *testing.T) {
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).Build() // no objects
-	reg := NewRegistry(c)
-	watch := NewWatchSet(reg, nil)
-	watch.Track(nn("ghost"))
-	s := NewSampler(c, watch, reg, staticDialer(&fakeSource{}), testLogger())
+	reg := history.NewRegistry(c)
+	s := NewSampler(c, reg, staticDialer(&fakeSource{}), testLogger())
+	s.Track(nn("ghost"))
 
 	require.NoError(t, s.sampleKey(context.Background(), nn("ghost")))
-	assert.False(t, watch.Contains(nn("ghost")), "missing AgentDeploy is forgotten")
+	assert.False(t, s.watch.Contains(nn("ghost")), "missing AgentDeploy is forgotten")
 }
 
 func TestSamplerFlushesOnInterval(t *testing.T) {
 	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 	ad := scalingAD("foo", 2)
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
-	reg := NewRegistry(c)
-	s := NewSampler(c, NewWatchSet(reg, nil), reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 40, 80)}),
+	reg := history.NewRegistry(c)
+	s := NewSampler(c, reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 40, 80)}),
 		testLogger(), WithFlushInterval(0), fixedClock(now)) // flush every sample
 
 	require.NoError(t, s.sampleKey(context.Background(), nn("foo")))
 
 	var cm corev1.ConfigMap
-	err := c.Get(context.Background(), client.ObjectKey{Namespace: "ns", Name: HistoryConfigMapName("foo")}, &cm)
+	err := c.Get(context.Background(), client.ObjectKey{Namespace: "ns", Name: history.HistoryConfigMapName("foo")}, &cm)
 	require.NoError(t, err, "history ConfigMap flushed")
-	assert.NotEmpty(t, cm.BinaryData[historyKey])
+	assert.NotEmpty(t, cm.BinaryData[history.HistoryKey])
 }
 
 func TestSamplerStartSamplesAllWatched(t *testing.T) {
@@ -131,13 +148,12 @@ func TestSamplerStartSamplesAllWatched(t *testing.T) {
 		objs = append(objs, scalingAD(n, 4))
 	}
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(objs...).Build()
-	reg := NewRegistry(c)
-	watch := NewWatchSet(reg, nil)
-	for _, n := range []string{"a", "b", "c"} {
-		watch.Track(nn(n))
-	}
-	s := NewSampler(c, watch, reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 100, 200)}),
+	reg := history.NewRegistry(c)
+	s := NewSampler(c, reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 100, 200)}),
 		testLogger(), WithWorkers(2), WithTaskInterval(5*time.Millisecond), WithFlushInterval(time.Hour))
+	for _, n := range []string{"a", "b", "c"} {
+		s.Track(nn(n))
+	}
 
 	go func() { _ = s.Start(t.Context()) }()
 
@@ -155,13 +171,12 @@ func TestSamplerStartSamplesAllWatched(t *testing.T) {
 func TestSamplerFlushesAllOnShutdown(t *testing.T) {
 	ad := scalingAD("foo", 2)
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
-	reg := NewRegistry(c)
-	watch := NewWatchSet(reg, nil)
-	watch.Track(nn("foo"))
+	reg := history.NewRegistry(c)
 	// Periodic flush interval far in the future, so any persisted history must
 	// have come from the shutdown flush.
-	s := NewSampler(c, watch, reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 40, 80)}),
+	s := NewSampler(c, reg, staticDialer(&fakeSource{resp: metricsAt(windowKey1m, 40, 80)}),
 		testLogger(), WithWorkers(1), WithTaskInterval(5*time.Millisecond), WithFlushInterval(time.Hour))
+	s.Track(nn("foo"))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
@@ -176,9 +191,9 @@ func TestSamplerFlushesAllOnShutdown(t *testing.T) {
 	<-done // Start returns after flushAll completes
 
 	var cm corev1.ConfigMap
-	err := c.Get(context.Background(), client.ObjectKey{Namespace: "ns", Name: HistoryConfigMapName("foo")}, &cm)
+	err := c.Get(context.Background(), client.ObjectKey{Namespace: "ns", Name: history.HistoryConfigMapName("foo")}, &cm)
 	require.NoError(t, err, "history flushed on shutdown despite the 1h flush interval")
-	assert.NotEmpty(t, cm.BinaryData[historyKey])
+	assert.NotEmpty(t, cm.BinaryData[history.HistoryKey])
 }
 
 func TestSamplerFlushAllPersistsAllStores(t *testing.T) {
@@ -189,8 +204,8 @@ func TestSamplerFlushAllPersistsAllStores(t *testing.T) {
 		objs = append(objs, scalingAD(n, 2))
 	}
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(objs...).Build()
-	reg := NewRegistry(c)
-	s := NewSampler(c, NewWatchSet(reg, nil), reg, staticDialer(&fakeSource{}), testLogger(), WithWorkers(3))
+	reg := history.NewRegistry(c)
+	s := NewSampler(c, reg, staticDialer(&fakeSource{}), testLogger(), WithWorkers(3))
 
 	for _, n := range names {
 		store, err := reg.StoreFor(context.Background(), scalingAD(n, 2))
@@ -203,8 +218,8 @@ func TestSamplerFlushAllPersistsAllStores(t *testing.T) {
 	for _, n := range names {
 		var cm corev1.ConfigMap
 		require.NoError(t, c.Get(context.Background(),
-			client.ObjectKey{Namespace: "ns", Name: HistoryConfigMapName(n)}, &cm), n)
-		assert.NotEmpty(t, cm.BinaryData[historyKey], n)
+			client.ObjectKey{Namespace: "ns", Name: history.HistoryConfigMapName(n)}, &cm), n)
+		assert.NotEmpty(t, cm.BinaryData[history.HistoryKey], n)
 	}
 }
 
@@ -219,8 +234,8 @@ func (c *closableSource) Close() error { c.closed = true; return nil }
 func TestSamplerReapsUnreferencedSources(t *testing.T) {
 	ad := scalingAD("foo", 2) // AgentSet "set" → cache key "ns/set"
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
-	reg := NewRegistry(c)
-	s := NewSampler(c, NewWatchSet(reg, nil), reg, staticDialer(&fakeSource{}), testLogger())
+	reg := history.NewRegistry(c)
+	s := NewSampler(c, reg, staticDialer(&fakeSource{}), testLogger())
 
 	referenced := &closableSource{}
 	stale := &closableSource{}
@@ -243,8 +258,8 @@ func TestSamplerReapsUnreferencedSources(t *testing.T) {
 
 func TestSamplerCloseAllSources(t *testing.T) {
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).Build()
-	reg := NewRegistry(c)
-	s := NewSampler(c, NewWatchSet(reg, nil), reg, staticDialer(&fakeSource{}), testLogger())
+	reg := history.NewRegistry(c)
+	s := NewSampler(c, reg, staticDialer(&fakeSource{}), testLogger())
 
 	a, b := &closableSource{}, &closableSource{}
 	s.mu.Lock()

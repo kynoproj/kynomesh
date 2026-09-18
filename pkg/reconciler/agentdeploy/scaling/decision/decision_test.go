@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaling
+package decision
 
 import (
 	"testing"
@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/history"
 )
 
 func ptrI32(v int32) *int32   { return &v }
@@ -270,7 +271,7 @@ func TestDecide(t *testing.T) {
 			got := Decide(Inputs{
 				CurrentReplicas: tc.specified,
 				ReadyReplicas:   tc.ready,
-				Current: Sample{
+				Current: history.Sample{
 					Timestamp:      now,
 					Replicas:       tc.curReplicas,
 					InflightPerRep: tc.curInflight,
@@ -294,12 +295,12 @@ func TestDecideUsesLearnedCapacity(t *testing.T) {
 	spec := baseSpec()
 	spec.Max = ptrI32(50)
 
-	decideWith := func(hist []Sample) Decision {
+	decideWith := func(hist []history.Sample) Decision {
 		return Decide(Inputs{
 			CurrentReplicas: 5,
 			ReadyReplicas:   5,
 			History:         hist,
-			Current:         Sample{Timestamp: now, Replicas: 5, InflightPerRep: 20, RatePerRep: 200},
+			Current:         history.Sample{Timestamp: now, Replicas: 5, InflightPerRep: 20, RatePerRep: 200},
 			Spec:            spec,
 			Now:             now,
 			LastScaledAt:    now.Add(-time.Hour),
@@ -328,7 +329,7 @@ func TestDecideColdStartReactsToSurge(t *testing.T) {
 		CurrentReplicas: 1,
 		ReadyReplicas:   1,
 		History:         nil, // cold start
-		Current:         Sample{Timestamp: now, Replicas: 1, InflightPerRep: 80},
+		Current:         history.Sample{Timestamp: now, Replicas: 1, InflightPerRep: 80},
 		Spec:            spec,
 		Now:             now,
 	}

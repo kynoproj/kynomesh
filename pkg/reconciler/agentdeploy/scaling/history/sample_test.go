@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaling
+package history
 
 import (
 	"testing"
@@ -49,7 +49,7 @@ func TestSanitizeDropsInvalid(t *testing.T) {
 		sample(base.Add(30*time.Second), 2, 12, 0),   // invalid: zero rate
 		sample(base.Add(45*time.Second), 2, 12, 120), // keep
 	}
-	clean := sanitize(history)
+	clean := Sanitize(history)
 	assert.Len(t, clean, 2)
 	assert.Equal(t, 10.0, clean[0].InflightPerRep)
 	assert.Equal(t, 12.0, clean[1].InflightPerRep)
@@ -63,7 +63,7 @@ func TestSanitizeSkipsWarmupAfterScale(t *testing.T) {
 		sample(base.Add(60*time.Second), 3, 10, 100),  // still within 60s warmup, drop
 		sample(base.Add(100*time.Second), 3, 11, 110), // past warmup, keep
 	}
-	clean := sanitize(history)
+	clean := Sanitize(history)
 	assert.Len(t, clean, 2)
 	assert.Equal(t, int32(2), clean[0].Replicas)
 	assert.Equal(t, 11.0, clean[1].InflightPerRep)
@@ -75,7 +75,7 @@ func TestSanitizeSortsByTime(t *testing.T) {
 		sample(base.Add(45*time.Second), 2, 12, 120),
 		sample(base, 2, 10, 100),
 	}
-	clean := sanitize(history)
+	clean := Sanitize(history)
 	assert.Len(t, clean, 2)
 	assert.True(t, clean[0].Timestamp.Before(clean[1].Timestamp))
 }
@@ -87,7 +87,7 @@ func TestSanitizeDedupsSameTimestamp(t *testing.T) {
 		sample(base, 2, 15, 150),                     // last write for base wins
 		sample(base.Add(30*time.Second), 2, 12, 120), // distinct instant, kept
 	}
-	clean := sanitize(history)
+	clean := Sanitize(history)
 	assert.Len(t, clean, 2)
 	assert.Equal(t, 15.0, clean[0].InflightPerRep, "last reading for the shared instant wins")
 	assert.Equal(t, 12.0, clean[1].InflightPerRep)
@@ -101,13 +101,13 @@ func TestSanitizeDedupsAcrossUnsortedInput(t *testing.T) {
 		sample(base, 2, 10, 100),
 		sample(base.Add(30*time.Second), 2, 20, 200),
 	}
-	clean := sanitize(history)
+	clean := Sanitize(history)
 	assert.Len(t, clean, 2)
 	assert.Equal(t, 10.0, clean[0].InflightPerRep)
 	assert.Equal(t, 20.0, clean[1].InflightPerRep, "last reading at t+30s wins")
 }
 
 func TestSanitizeEmpty(t *testing.T) {
-	assert.Nil(t, sanitize(nil))
-	assert.Nil(t, sanitize([]Sample{}))
+	assert.Nil(t, Sanitize(nil))
+	assert.Nil(t, Sanitize([]Sample{}))
 }

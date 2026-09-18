@@ -25,41 +25,21 @@ import (
 	"net"
 )
 
-// HeadlessSuffix matches v1alpha1.AgentDeploy.HeadlessServiceName().
-const HeadlessSuffix = "-headless"
-
 // Resolver is a small interface that net.DefaultResolver satisfies;
 // tests inject a stub.
 type Resolver interface {
 	LookupHost(ctx context.Context, host string) ([]string, error)
 }
 
-// headlessHost returns the DNS name of the AgentDeploy's headless
-// Service.
-func headlessHost(agentSet, agentDeploy, namespace string) string {
-	return fmt.Sprintf("%s-%s%s.%s.svc", agentSet, agentDeploy, HeadlessSuffix, namespace)
-}
-
-// podHost returns the DNS name of the i-th replica's pod.
-func podHost(agentSet, agentDeploy, namespace string, replica int) string {
-	return fmt.Sprintf("%s-%s-%d.%s-%s%s.%s.svc", agentSet, agentDeploy, replica, agentSet, agentDeploy, HeadlessSuffix, namespace)
-}
-
-// ClusterIPHost returns the DNS name of the AgentDeploy's ClusterIP Service.
-func ClusterIPHost(agentSet, agentDeploy, namespace string) string {
-	return fmt.Sprintf("%s-%s.%s.svc", agentSet, agentDeploy, namespace)
-}
-
 // Discover returns the list of pod DNS names to scrape for the given
 // AgentDeploy, identified by its AgentSet and its short (Spec.Name) agent
-// name — the same two values an AgentSet's Spec.Agents entry carries.
+// name.
 func Discover(ctx context.Context, r Resolver, as, ad, namespace string) ([]string, error) {
-	host := headlessHost(as, ad, namespace)
+	host := fmt.Sprintf("%s-%s-headless.%s.svc", as, ad, namespace)
 	ips, err := r.LookupHost(ctx, host)
 	if err != nil {
 		// NXDOMAIN means the headless Service exists but no pods are
-		// ready yet. Treat as "zero replicas," same as the scaled-to-
-		// zero case.
+		// ready yet. Treat as "zero replicas".
 		if isNotFound(err) {
 			return nil, nil
 		}
@@ -68,7 +48,7 @@ func Discover(ctx context.Context, r Resolver, as, ad, namespace string) ([]stri
 	n := len(ips)
 	out := make([]string, n)
 	for i := range n {
-		out[i] = podHost(as, ad, namespace, i)
+		out[i] = fmt.Sprintf("%s-%s-%d.%s-%s-headless.%s.svc", as, ad, i, as, ad, namespace)
 	}
 	return out, nil
 }

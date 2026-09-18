@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaling
+package sampling
 
 import (
 	"context"
@@ -32,6 +32,9 @@ import (
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 	daemonclient "github.com/kynoproj/kynomesh/pkg/daemon/client"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/history"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/metrics"
+	"github.com/kynoproj/kynomesh/pkg/shared/workset"
 )
 
 const (
@@ -74,15 +77,15 @@ func GRPCDaemonDialer(namespace, agentSetName string) (MetricsSource, error) {
 	return daemonclient.NewGRPCClient(addr)
 }
 
-// Sampler collects per-replica load. It is a runner over the shared WatchSet:
-// each watched AgentDeploy's per-AgentSet daemon is scraped roughly once per
-// task interval and the result recorded into the Registry, with the store
-// flushed to its ConfigMap on a slower cadence. Its Start method is registered
-// as a leader-elected runner.
+// Sampler collects per-replica load. It runs its own WorkSet: each tracked
+// AgentDeploy's per-AgentSet daemon is scraped roughly once per task interval
+// and the result recorded into the Registry, with the store flushed to its
+// ConfigMap on a slower cadence. Its Start method is registered as a
+// leader-elected runner.
 type Sampler struct {
 	client        client.Client
-	watch         *WatchSet
-	registry      *Registry
+	watch         *workset.WorkSet[types.NamespacedName]
+	registry      *history.Registry
 	dial          DaemonDialer
 	logger        *zap.SugaredLogger
 	workers       int
@@ -91,12 +94,10 @@ type Sampler struct {
 	scrapeTimeout time.Duration
 	reapInterval  time.Duration
 	clock         func() time.Time
-	metrics       *Metrics
+	metrics       *metrics.Metrics
 
 	mu      sync.Mutex
 	sources map[string]MetricsSource // keyed by namespace/agentset
-
-	runner *runner
 }
 
 // SamplerOption configures a Sampler.
@@ -115,18 +116,17 @@ func WithScrapeTimeout(d time.Duration) SamplerOption {
 func WithReapInterval(d time.Duration) SamplerOption {
 	return func(s *Sampler) { s.reapInterval = d }
 }
-func WithSamplerMetrics(m *Metrics) SamplerOption       { return func(s *Sampler) { s.metrics = m } }
-func WithSamplerClock(f func() time.Time) SamplerOption { return func(s *Sampler) { s.clock = f } }
+func WithSamplerMetrics(m *metrics.Metrics) SamplerOption { return func(s *Sampler) { s.metrics = m } }
+func WithSamplerClock(f func() time.Time) SamplerOption   { return func(s *Sampler) { s.clock = f } }
 
-// NewSampler builds a Sampler over the shared WatchSet. dial defaults to
+// NewSampler builds a Sampler with its own WorkSet. dial defaults to
 // GRPCDaemonDialer when nil.
-func NewSampler(c client.Client, watch *WatchSet, reg *Registry, dial DaemonDialer, logger *zap.SugaredLogger, opts ...SamplerOption) *Sampler {
+func NewSampler(c client.Client, reg *history.Registry, dial DaemonDialer, logger *zap.SugaredLogger, opts ...SamplerOption) *Sampler {
 	if dial == nil {
 		dial = GRPCDaemonDialer
 	}
 	s := &Sampler{
 		client:        c,
-		watch:         watch,
 		registry:      reg,
 		dial:          dial,
 		logger:        logger,
@@ -141,21 +141,37 @@ func NewSampler(c client.Client, watch *WatchSet, reg *Registry, dial DaemonDial
 	for _, o := range opts {
 		o(s)
 	}
-	s.runner = &runner{
-		name:         "sampler",
-		watch:        watch,
-		process:      s.sampleKey,
-		workers:      s.workers,
-		taskInterval: s.taskInterval,
-		logger:       logger,
-	}
+	s.watch = workset.NewWorkSet("sampler", s.sampleKey,
+		workset.WithWorkers[types.NamespacedName](s.workers),
+		workset.WithTaskInterval[types.NamespacedName](s.taskInterval),
+		workset.WithLogger[types.NamespacedName](logger),
+	)
 	return s
 }
 
-// Start runs the sampling runner.
+// Track adds an AgentDeploy to the sampler's WorkSet.
+func (s *Sampler) Track(k types.NamespacedName) { s.watch.Track(k) }
+
+// Contains reports whether k is tracked by the sampler's WorkSet.
+func (s *Sampler) Contains(k types.NamespacedName) bool { return s.watch.Contains(k) }
+
+// Forget removes an AgentDeploy from the sampler's WorkSet, dropping its
+// in-memory history and metric series so a deleted object doesn't leak state.
+func (s *Sampler) Forget(k types.NamespacedName) { s.forgetAll(k) }
+
+// forgetAll drops k from the WorkSet, the Registry, and Metrics. Called both
+// by the controller (Forget) and as an in-band safety net from sampleKey when
+// the AgentDeploy is already gone.
+func (s *Sampler) forgetAll(k types.NamespacedName) {
+	s.watch.Forget(k)
+	s.registry.Forget(k)
+	s.metrics.Delete(k)
+}
+
+// Start runs the sampling WorkSet.
 func (s *Sampler) Start(ctx context.Context) error {
 	go s.runReaper(ctx)
-	err := s.runner.start(ctx)
+	err := s.watch.Start(ctx)
 	s.flushAll()
 	s.closeAllSources()
 	return err
@@ -240,7 +256,7 @@ func (s *Sampler) flushAll() {
 		}
 		wg.Add(1)
 		sem <- struct{}{}
-		go func(k types.NamespacedName, store *ConfigMapStore) {
+		go func(k types.NamespacedName, store *history.ConfigMapStore) {
 			defer wg.Done()
 			defer func() { <-sem }()
 			if err := store.Flush(ctx); err != nil {
@@ -259,7 +275,7 @@ func (s *Sampler) sampleKey(ctx context.Context, k types.NamespacedName) error {
 	var ad kmv1.AgentDeploy
 	if err := s.client.Get(ctx, k, &ad); err != nil {
 		if apierrors.IsNotFound(err) {
-			s.watch.Forget(k)
+			s.forgetAll(k)
 			return nil
 		}
 		return fmt.Errorf("get agentdeploy: %w", err)
@@ -311,7 +327,7 @@ func (s *Sampler) sampleKey(ctx context.Context, k types.NamespacedName) error {
 // consecutive recorded samples (the daemon still counts every request, but that
 // traffic would never land in history). Keeping window >= interval guarantees
 // contiguous coverage.
-func lookbackSeconds(store *ConfigMapStore, now time.Time, scrapeInterval time.Duration) int64 {
+func lookbackSeconds(store *history.ConfigMapStore, now time.Time, scrapeInterval time.Duration) int64 {
 	d := medianRequestDuration(historyOf(store, now))
 	if d <= 0 {
 		return 0
@@ -322,7 +338,7 @@ func lookbackSeconds(store *ConfigMapStore, now time.Time, scrapeInterval time.D
 }
 
 // historyOf returns the store's recorded samples, tolerating a nil store.
-func historyOf(store *ConfigMapStore, now time.Time) []Sample {
+func historyOf(store *history.ConfigMapStore, now time.Time) []history.Sample {
 	if store == nil {
 		return nil
 	}
@@ -332,7 +348,7 @@ func historyOf(store *ConfigMapStore, now time.Time) []Sample {
 // medianRequestDuration derives the typical per-request service time from
 // history via Little's Law (D = inflight/rate), using the median to shrug off
 // outliers. Returns 0 when no sample carries a usable rate.
-func medianRequestDuration(history []Sample) time.Duration {
+func medianRequestDuration(history []history.Sample) time.Duration {
 	ds := make([]float64, 0, len(history))
 	for _, s := range history {
 		if s.RatePerRep > 0 && s.InflightPerRep > 0 {

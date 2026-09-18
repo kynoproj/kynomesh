@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package scaling implements the AgentDeploy autoscaler.
+// Package decision implements the AgentDeploy autoscaler's scaling math.
 //
 // It splits into two layers:
 //
@@ -28,13 +28,14 @@ limitations under the License.
 // Decide does no I/O and reads no clocks beyond the supplied Now/LastScaledAt,
 // so it is deterministic and fully testable. Orchestration (metrics collection,
 // deployment patching) lives elsewhere.
-package scaling
+package decision
 
 import (
 	"math"
 	"time"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/history"
 )
 
 // Reason classifies why Decide produced its output.
@@ -60,9 +61,9 @@ type Inputs struct {
 	// ReadyReplicas is what's actually serving traffic.
 	ReadyReplicas int32
 	// History is the rolling window of past samples used to learn capacity.
-	History []Sample
+	History []history.Sample
 	// Current is the latest live snapshot, the load to act on now.
-	Current Sample
+	Current history.Sample
 	// Spec is the Scale spec from the AgentDeploy.
 	Spec kmv1.Scale
 	// MaxInFlight is the fleet-wide rate-limit cap (spec.rateLimit.maxInFlight),
@@ -127,10 +128,10 @@ func Decide(in Inputs) Decision {
 		return Decision{DesiredReplicas: desired, Reason: ReasonManualOutRange, Skip: false}
 	}
 
-	scaleUpCooldown := time.Duration(getOr(in.Spec.ScaleUpCooldownSeconds, kmv1.DefaultScaleUpCooldownSeconds)) * time.Second
-	scaleDownCooldown := time.Duration(getOr(in.Spec.ScaleDownCooldownSeconds, kmv1.DefaultScaleDownCooldownSeconds)) * time.Second
-	stepUp := int32(getOr(in.Spec.ReplicasPerScaleUp, kmv1.DefaultReplicasPerScaleUp))
-	stepDown := int32(getOr(in.Spec.ReplicasPerScaleDown, kmv1.DefaultReplicasPerScaleDown))
+	scaleUpCooldown := time.Duration(GetOr(in.Spec.ScaleUpCooldownSeconds, kmv1.DefaultScaleUpCooldownSeconds)) * time.Second
+	scaleDownCooldown := time.Duration(GetOr(in.Spec.ScaleDownCooldownSeconds, kmv1.DefaultScaleDownCooldownSeconds)) * time.Second
+	stepUp := int32(GetOr(in.Spec.ReplicasPerScaleUp, kmv1.DefaultReplicasPerScaleUp))
+	stepDown := int32(GetOr(in.Spec.ReplicasPerScaleDown, kmv1.DefaultReplicasPerScaleDown))
 	sinceLast := in.Now.Sub(in.LastScaledAt)
 
 	totalInflight := in.Current.InflightPerRep * float64(inflightBasis(in))
@@ -231,7 +232,7 @@ func inflightBasis(in Inputs) int32 {
 // Unset or 0 falls back to the default; values above 100 are clamped (the
 // admission webhook is expected to reject them outright).
 func targetSaturation(s kmv1.Scale) float64 {
-	pct := getOr(s.TargetSaturationPercentage, kmv1.DefaultTargetSaturationPercentage)
+	pct := GetOr(s.TargetSaturationPercentage, kmv1.DefaultTargetSaturationPercentage)
 	if pct == 0 {
 		pct = kmv1.DefaultTargetSaturationPercentage
 	}
@@ -267,7 +268,7 @@ func clamp(v, lo, hi int32) int32 {
 	return v
 }
 
-func getOr(p *uint32, fallback uint32) uint32 {
+func GetOr(p *uint32, fallback uint32) uint32 {
 	if p == nil {
 		return fallback
 	}

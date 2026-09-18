@@ -27,10 +27,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/history"
 )
 
 // seedStore creates a store for ad in reg and records the given samples.
-func seedStore(t *testing.T, reg *Registry, ad *kmv1.AgentDeploy, samples ...Sample) {
+func seedStore(t *testing.T, reg *history.Registry, ad *kmv1.AgentDeploy, samples ...history.Sample) {
 	t.Helper()
 	store, err := reg.StoreFor(context.Background(), ad)
 	require.NoError(t, err)
@@ -48,8 +49,8 @@ func specReplicasOf(t *testing.T, c client.Client, name string) int32 {
 }
 
 // newTestAutoscaler builds an Autoscaler with a fixed clock over the registry.
-func newTestAutoscaler(c client.Client, reg *Registry, now time.Time) *Autoscaler {
-	return NewAutoscaler(c, NewWatchSet(reg, nil), reg, testLogger(),
+func newTestAutoscaler(c client.Client, reg *history.Registry, now time.Time) *Autoscaler {
+	return NewAutoscaler(c, reg, testLogger(),
 		WithAutoscalerClock(func() time.Time { return now }))
 }
 
@@ -59,7 +60,7 @@ func TestAutoscalerScalesUpAndPatchesSpec(t *testing.T) {
 	ad.Spec.Scale = kmv1.Scale{Max: ptrI32(10), TargetSaturationPercentage: ptrU32(100)}
 
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
-	reg := NewRegistry(c)
+	reg := history.NewRegistry(c)
 	// Heavy load on a single replica → cold-start target 12 → surge, scaled up
 	// by the step cap (cooldown is long-elapsed since LastScaledAt is unset).
 	seedStore(t, reg, ad, sample(now, 1, 80, 160))
@@ -76,7 +77,7 @@ func TestAutoscalerNoChangeLeavesSpecAlone(t *testing.T) {
 	ad.Spec.Scale = kmv1.Scale{Max: ptrI32(10), TargetSaturationPercentage: ptrU32(100)}
 
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
-	reg := NewRegistry(c)
+	reg := history.NewRegistry(c)
 	// total 48, target 12 → desired ceil(48/12)=4 == current → no change.
 	seedStore(t, reg, ad, sample(now, 4, 12, 60))
 
@@ -91,7 +92,7 @@ func TestAutoscalerSkipsDisabled(t *testing.T) {
 	ad.Spec.Scale = kmv1.Scale{Disabled: true, Max: ptrI32(10)}
 
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
-	reg := NewRegistry(c)
+	reg := history.NewRegistry(c)
 	seedStore(t, reg, ad, sample(now, 1, 80, 160))
 
 	require.NoError(t, newTestAutoscaler(c, reg, now).scaleKey(context.Background(), nn("foo")))
@@ -104,7 +105,7 @@ func TestAutoscalerSkipsWhenNotSampled(t *testing.T) {
 	ad.Spec.Scale = kmv1.Scale{Max: ptrI32(10)}
 
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
-	reg := NewRegistry(c) // empty — no store for foo
+	reg := history.NewRegistry(c) // empty — no store for foo
 
 	require.NoError(t, newTestAutoscaler(c, reg, now).scaleKey(context.Background(), nn("foo")))
 	assert.Equal(t, int32(1), specReplicasOf(t, c, "foo"), "no history → no scaling")
@@ -118,7 +119,7 @@ func TestAutoscalerUsesStatusReplicasAsCurrent(t *testing.T) {
 	ad.Spec.Scale = kmv1.Scale{Max: ptrI32(10), TargetSaturationPercentage: ptrU32(100)}
 
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
-	reg := NewRegistry(c)
+	reg := history.NewRegistry(c)
 	// total 55, cold target 12 → desired ceil(55/12)=5 == current(status 5) → no change.
 	// Had it used Spec.Replicas=1, desired 5 != 1 would have patched spec upward.
 	seedStore(t, reg, ad, sample(now, 5, 11, 220))
@@ -134,7 +135,7 @@ func TestAutoscalerSkipsStaleSamples(t *testing.T) {
 	ad.Spec.Scale = kmv1.Scale{Max: ptrI32(10), TargetSaturationPercentage: ptrU32(100)}
 
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
-	reg := NewRegistry(c)
+	reg := history.NewRegistry(c)
 	// Freshest sample is 10 minutes old; default maxSampleAge is 2 minutes.
 	seedStore(t, reg, ad, sample(now.Add(-10*time.Minute), 1, 80, 160))
 

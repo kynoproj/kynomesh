@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaling
+package decision
 
 import (
 	"testing"
@@ -22,6 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/history"
 )
 
 // TestDecide_RateLimitCeiling covers the autoscaler coupling: when a
@@ -42,7 +44,7 @@ func TestDecide_RateLimitCeiling(t *testing.T) {
 		return Inputs{
 			CurrentReplicas: curReplicas,
 			ReadyReplicas:   curReplicas,
-			Current: Sample{
+			Current: history.Sample{
 				Timestamp:      now,
 				Replicas:       curReplicas,
 				InflightPerRep: inflightPerRep,
@@ -106,7 +108,7 @@ func TestDecide_RateLimitDoesNotBlockScaleDown(t *testing.T) {
 	got := Decide(Inputs{
 		CurrentReplicas: 10,
 		ReadyReplicas:   10,
-		Current: Sample{
+		Current: history.Sample{
 			Timestamp:      now,
 			Replicas:       10,
 			InflightPerRep: 1, // total 10, well under capacity -> scale down

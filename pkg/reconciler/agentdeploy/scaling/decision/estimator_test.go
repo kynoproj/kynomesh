@@ -14,13 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaling
+package decision
 
 import (
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/history"
 )
 
 // curveRate models throughput vs concurrency: rate rises linearly with
@@ -35,12 +37,12 @@ func curveRate(inflight, knee, svc float64) float64 {
 
 // genSeries builds `count` samples spanning the given in-flight range, all aged
 // `age` before now, following the throughput curve for `knee`.
-func genSeries(now time.Time, age time.Duration, count int, knee, svc, lo, hi float64) []Sample {
-	out := make([]Sample, count)
+func genSeries(now time.Time, age time.Duration, count int, knee, svc, lo, hi float64) []history.Sample {
+	out := make([]history.Sample, count)
 	for i := range count {
 		frac := float64(i) / float64(count-1)
 		inflight := lo + (hi-lo)*frac
-		out[i] = Sample{
+		out[i] = history.Sample{
 			Timestamp:      now.Add(-age).Add(time.Duration(i) * 15 * time.Second),
 			Replicas:       3,
 			InflightPerRep: inflight,
@@ -92,11 +94,11 @@ func TestEstimateFavorsRecentAfterCapacityDrop(t *testing.T) {
 
 // spanSeries builds count samples evenly spaced over the given wall-clock span
 // ending at now, ramping in-flight lo→hi along the knee-20 throughput curve.
-func spanSeries(now time.Time, span time.Duration, count int, lo, hi float64) []Sample {
-	out := make([]Sample, count)
+func spanSeries(now time.Time, span time.Duration, count int, lo, hi float64) []history.Sample {
+	out := make([]history.Sample, count)
 	for i := range count {
 		frac := float64(i) / float64(count-1)
-		out[i] = Sample{
+		out[i] = history.Sample{
 			Timestamp:      now.Add(-span).Add(time.Duration(frac * float64(span))),
 			Replicas:       3,
 			InflightPerRep: lo + (hi-lo)*frac,
