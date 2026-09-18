@@ -174,10 +174,9 @@ and force those callers' pods to restart.
 
 ## Enabling this: `driftReload`
 
-This is opt-in/opt-out, not always-on — for some deployments, auto-reloading
-on every capability change is undesirable (agents that legitimately change
-their card often, or environments where uncontrolled pod churn is itself a
-cost).
+This is opt-in/opt-out, not always-on — for some deployments, auto-reloading on
+every capability change is undesirable (agents that legitimately change their
+card often, or environments where uncontrolled pod churn is itself a cost).
 
 The toggle is a grouped field, `driftReload`, available at both levels:
 
@@ -194,17 +193,17 @@ The toggle is a grouped field, `driftReload`, available at both levels:
 ```yaml
 spec:
   driftReload:
-    enabled: true      # fleet-wide default
+    enabled: true # fleet-wide default
   agents:
     - name: planner
       driftReload:
         enabled: false # this agent opts out even though the fleet default is on
-    - name: worker      # omitted — inherits the fleet default (enabled: true)
+    - name: worker # omitted — inherits the fleet default (enabled: true)
 ```
 
 `driftReload` is deliberately a struct (`{enabled: bool}` today) rather than a
-bare boolean, so related settings in the same "how does this agent react to
-its peers" space can be added later without introducing new top-level fields.
+bare boolean, so related settings in the same "how does this agent react to its
+peers" space can be added later without introducing new top-level fields.
 Default is **off** (`Enabled` bool zero-value is `false`): auto-restarting pods
 is a behavior change with real blast radius, so opt-in is the safer default for
 a first release.
@@ -212,8 +211,8 @@ a first release.
 `driftReload.enabled` gates the controller only, not the daemon: the daemon's
 drift tracking (step 3 above) runs unconditionally for every managed peer
 regardless of this setting, so the drift data stays visible via the API even
-when a user has turned auto-reload off. Only the controller-side component
-that acts on drift (deleting stale pods) checks `driftReload.enabled`.
+when a user has turned auto-reload off. Only the controller-side component that
+acts on drift (deleting stale pods) checks `driftReload.enabled`.
 
 ## Non-goals
 
@@ -236,20 +235,6 @@ that acts on drift (deleting stale pods) checks `driftReload.enabled`.
 
 - **External-agent drift detection**, per the Non-goals section above — blocked
   on a credentials story for external agents that doesn't exist yet.
-
-Resolved during implementation:
-
-- **Detection cadence / daemon poll-trigger model.** The daemon's own polling
-  of peer AgentCards (step 3) predates and is unaffected by this issue; #214
-  already merged that half unconditionally.
-- **Controller-side poll cadence.** The controller-side `driftwatch.Watcher`
-  (`pkg/reconciler/agentdeploy/driftwatch`) runs its own independent
-  round-robin worker pool with its own `taskInterval`, mirroring the
-  `Sampler`/`Autoscaler` split
-  (`pkg/reconciler/agentdeploy/scaling/sampling`,
-  `pkg/reconciler/agentdeploy/scaling/autoscaler.go`) — each of the three
-  components (Sampler, Autoscaler, Watcher) polls/acts on its own cadence
-  rather than sharing one timer.
 
 ## See Also
 

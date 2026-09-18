@@ -181,9 +181,7 @@ func (r *Reconciler) reconcilePods(ctx context.Context, ad *kmv1.AgentDeploy) er
 }
 
 // ResolveMaxUnavailable returns the per-pass replacement budget. Always at
-// least 1 so a rollout can make forward progress. Exported so other
-// controller-side components (e.g. driftwatch) can respect the same
-// per-pass concurrency cap as the rolling update.
+// least 1 so a rollout can make forward progress.
 func ResolveMaxUnavailable(ad *kmv1.AgentDeploy, desired int) int {
 	mu := ad.Spec.UpdateStrategy.GetRollingUpdateStrategy().GetMaxUnavailable()
 	n, err := intstr.GetScaledValueFromIntOrPercent(&mu, desired, true)
@@ -224,9 +222,7 @@ func (r *Reconciler) listOwnedPods(ctx context.Context, ad *kmv1.AgentDeploy) ([
 }
 
 // ListOwnedPods returns the live pods owned by ad, identified by its
-// AgentSet/AgentDeploy/managed-by labels. Exported so other controller-side
-// components (e.g. driftwatch) can identify an AgentDeploy's pods without
-// duplicating the label-selector logic.
+// AgentSet/AgentDeploy/managed-by labels.
 func ListOwnedPods(ctx context.Context, c client.Client, ad *kmv1.AgentDeploy) ([]*corev1.Pod, error) {
 	var list corev1.PodList
 	if err := c.List(ctx, &list,
@@ -283,9 +279,7 @@ func (r *Reconciler) updatePodStatus(ctx context.Context, ad *kmv1.AgentDeploy) 
 }
 
 // DesiredReplicas returns the replica count to render pods for, keyed on
-// whether autoscaling is enabled. Exported so other controller-side
-// components (e.g. driftwatch) can compute the same replica count the
-// AgentDeploy controller itself uses.
+// whether autoscaling is enabled.
 func DesiredReplicas(ad *kmv1.AgentDeploy) int {
 	if ad.Spec.Scale.Disabled {
 		if ad.Spec.Replicas == nil {
