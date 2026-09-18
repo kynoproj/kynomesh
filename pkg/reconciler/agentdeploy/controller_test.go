@@ -475,14 +475,38 @@ func TestReconcile_ManagesWatchSet(t *testing.T) {
 func TestReconcile_ManagesDriftWatcher(t *testing.T) {
 	key := reconcileRequest("greeter").NamespacedName
 
-	t.Run("tracked at the same points as the scaler", func(t *testing.T) {
-		r, _ := newTestReconciler(t, newAgentDeploy("greeter", 1))
+	t.Run("driftReload enabled is tracked", func(t *testing.T) {
+		ad := newAgentDeploy("greeter", 1)
+		ad.Spec.DriftReload = &kmv1.DriftReload{Enabled: true}
+		r, _ := newTestReconciler(t, ad)
 		fs := &fakeScaler{}
 		r.driftWatcher = fs
 		_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
 		require.NoError(t, err)
 		assert.Contains(t, fs.tracked, key)
 		assert.Empty(t, fs.forgot)
+	})
+
+	t.Run("driftReload unset is never tracked", func(t *testing.T) {
+		r, _ := newTestReconciler(t, newAgentDeploy("greeter", 1))
+		fs := &fakeScaler{}
+		r.driftWatcher = fs
+		_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+		require.NoError(t, err)
+		assert.Empty(t, fs.tracked, "an AgentDeploy without driftReload enabled should never be tracked")
+		assert.Contains(t, fs.forgot, key)
+	})
+
+	t.Run("driftReload disabled is forgotten", func(t *testing.T) {
+		ad := newAgentDeploy("greeter", 1)
+		ad.Spec.DriftReload = &kmv1.DriftReload{Enabled: false}
+		r, _ := newTestReconciler(t, ad)
+		fs := &fakeScaler{}
+		r.driftWatcher = fs
+		_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+		require.NoError(t, err)
+		assert.Empty(t, fs.tracked)
+		assert.Contains(t, fs.forgot, key, "flipping driftReload off must evict any prior tracking")
 	})
 
 	t.Run("missing AgentDeploy is forgotten", func(t *testing.T) {

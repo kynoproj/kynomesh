@@ -114,7 +114,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// For autoscaling.
 	r.scaler.Track(req.NamespacedName)
 	// For drift-reload.
-	r.driftWatcher.Track(req.NamespacedName)
+	if original.Spec.DriftReload != nil && original.Spec.DriftReload.Enabled {
+		r.driftWatcher.Track(req.NamespacedName)
+	} else {
+		r.driftWatcher.Forget(req.NamespacedName)
+	}
 
 	log := r.logger.With("namespace", req.Namespace).With("agentSet", original.Spec.AgentSetName).
 		With("agentDeploy", original.Name)

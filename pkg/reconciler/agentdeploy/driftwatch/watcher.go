@@ -202,9 +202,7 @@ func (w *Watcher) sourceFor(ad *kmv1.AgentDeploy) (DriftSource, error) {
 
 // reconcileDrift evaluates one AgentDeploy's peer drift state and deletes
 // exactly the pods reporting a stale peer AgentCard hash, so they restart
-// and re-resolve. It does not touch ad.Status/hashes — the AgentDeploy
-// controller's next reconcile (triggered by the pod-delete watch event)
-// recreates the empty slot on the unchanged desiredHash.
+// and re-resolve.
 func (w *Watcher) reconcileDrift(ctx context.Context, k types.NamespacedName) error {
 	var ad kmv1.AgentDeploy
 	if err := w.client.Get(ctx, k, &ad); err != nil {
@@ -222,13 +220,11 @@ func (w *Watcher) reconcileDrift(ctx context.Context, k types.NamespacedName) er
 		log.Debug("AgentDeploy being deleted")
 		return nil
 	}
-	// DriftReload is left tracked in the watch set even when disabled —
-	// flipping it back on doesn't need a resync, mirroring how the Sampler
-	// keeps sampling while scaling is disabled.
 	if ad.Spec.DriftReload == nil || !ad.Spec.DriftReload.Enabled {
+		w.Forget(k)
 		return nil
 	}
-	// Defer to an active rollout, same gate as Autoscaler.scaleKey.
+	// Defer to an active rollout.
 	if ad.Status.UpdateHash != ad.Status.CurrentHash && ad.Status.UpdateHash != "" {
 		return nil
 	}
