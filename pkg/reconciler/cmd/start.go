@@ -47,6 +47,9 @@ import (
 	"github.com/kynoproj/kynomesh/pkg/reconciler"
 	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy"
 	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/history"
+	scalingmetrics "github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/metrics"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/sampling"
 	"github.com/kynoproj/kynomesh/pkg/reconciler/agentset"
 	"github.com/kynoproj/kynomesh/pkg/shared/logging"
 	sharedutil "github.com/kynoproj/kynomesh/pkg/shared/util"
@@ -154,16 +157,17 @@ func Start(namespaced bool, managedNamespace string) {
 		logger.Fatalw("Failed to register AgentSet controller", "err", err)
 	}
 
-	// Autoscaling components share one Registry, WatchSet, and metrics set.
-	scalingMetrics := scaling.NewMetrics(ctrlmetrics.Registry)
-	scalingRegistry := scaling.NewRegistry(mgr.GetClient())
-	scalingWatch := scaling.NewWatchSet(scalingRegistry, scalingMetrics)
-	sampler := scaling.NewSampler(mgr.GetClient(), scalingWatch, scalingRegistry, scaling.GRPCDaemonDialer,
-		logger.Named("sampler"), scaling.WithSamplerMetrics(scalingMetrics))
-	autoscaler := scaling.NewAutoscaler(mgr.GetClient(), scalingWatch, scalingRegistry,
+	// Autoscaling components share one Registry and metrics set, but each of
+	// the Sampler and Autoscaler runs its own WorkSet.
+	scalingMetrics := scalingmetrics.NewMetrics(ctrlmetrics.Registry)
+	scalingRegistry := history.NewRegistry(mgr.GetClient())
+	sampler := sampling.NewSampler(mgr.GetClient(), scalingRegistry, sampling.GRPCDaemonDialer,
+		logger.Named("sampler"), sampling.WithSamplerMetrics(scalingMetrics))
+	autoscaler := scaling.NewAutoscaler(mgr.GetClient(), scalingRegistry,
 		logger.Named("autoscaler"), scaling.WithAutoscalerMetrics(scalingMetrics))
+	scalingTracker := scaling.NewTracker(sampler, autoscaler)
 
-	if err := registerAgentDeployController(mgr, config, logger, image, brokerPullPolicy, scalingWatch); err != nil {
+	if err := registerAgentDeployController(mgr, config, logger, image, brokerPullPolicy, scalingTracker); err != nil {
 		logger.Fatalw("Failed to register AgentDeploy controller", zap.Error(err))
 	}
 	if err := mgr.Add(LeaderElectionRunner(sampler.Start)); err != nil {
@@ -333,7 +337,7 @@ func registerAgentSetController(mgr manager.Manager, config *reconciler.GlobalCo
 //
 //   - Service (owned): enqueue the controlling AgentDeploy if the headless
 //     service is mutated or deleted out from under us.
-func registerAgentDeployController(mgr manager.Manager, config *reconciler.GlobalConfig, logger *zap.SugaredLogger, brokerImage string, brokerPullPolicy corev1.PullPolicy, watch *scaling.WatchSet) error {
+func registerAgentDeployController(mgr manager.Manager, config *reconciler.GlobalConfig, logger *zap.SugaredLogger, brokerImage string, brokerPullPolicy corev1.PullPolicy, watch *scaling.Tracker) error {
 	r := agentdeploy.NewReconciler(
 		mgr.GetClient(),
 		mgr.GetScheme(),

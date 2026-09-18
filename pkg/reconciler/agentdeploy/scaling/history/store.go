@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaling
+package history
 
 import (
 	"context"
@@ -51,8 +51,8 @@ type Store interface {
 	FlushIfDue(ctx context.Context, now time.Time, interval time.Duration) error
 }
 
-// historyKey is the ConfigMap binaryData key holding the encoded history blob.
-const historyKey = "history"
+// HistoryKey is the ConfigMap binaryData key holding the encoded history blob.
+const HistoryKey = "history"
 
 // ConfigMapStore persists history to a single ConfigMap owned by the
 // AgentDeploy — one object per AgentDeploy, garbage-collected with it.
@@ -120,7 +120,7 @@ func (s *ConfigMapStore) Load(ctx context.Context) error {
 		}
 		return fmt.Errorf("failed to get history ConfigMap: %w", err)
 	}
-	specHash, records, err := decodeHistory(cm.BinaryData[historyKey])
+	specHash, records, err := decodeHistory(cm.BinaryData[HistoryKey])
 	if err != nil {
 		return fmt.Errorf("failed to decode history: %w", err)
 	}
@@ -171,7 +171,7 @@ func (s *ConfigMapStore) upsert(ctx context.Context, blob []byte, retry bool) er
 				Labels:          s.labels,
 				OwnerReferences: []metav1.OwnerReference{s.ownerRef},
 			},
-			BinaryData: map[string][]byte{historyKey: blob},
+			BinaryData: map[string][]byte{HistoryKey: blob},
 		}
 		if createErr := s.client.Create(ctx, create); createErr != nil && !apierrors.IsAlreadyExists(createErr) {
 			return fmt.Errorf("failed to create history ConfigMap: %w", createErr)
@@ -185,7 +185,7 @@ func (s *ConfigMapStore) upsert(ctx context.Context, blob []byte, retry bool) er
 	if cm.BinaryData == nil {
 		cm.BinaryData = map[string][]byte{}
 	}
-	cm.BinaryData[historyKey] = blob
+	cm.BinaryData[HistoryKey] = blob
 	if updErr := s.client.Update(ctx, &cm); updErr != nil {
 		if apierrors.IsConflict(updErr) && retry {
 			return s.upsert(ctx, blob, false)

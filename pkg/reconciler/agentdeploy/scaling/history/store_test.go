@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaling
+package history
 
 import (
 	"context"
@@ -68,7 +68,7 @@ func TestConfigMapStoreFlushCreatesAndLoadRehydrates(t *testing.T) {
 	require.Len(t, cm.OwnerReferences, 1)
 	assert.Equal(t, "foo", cm.OwnerReferences[0].Name)
 	assert.Equal(t, "foo", cm.Labels[kmv1.KeyAgentDeployName])
-	assert.NotEmpty(t, cm.BinaryData[historyKey])
+	assert.NotEmpty(t, cm.BinaryData[HistoryKey])
 
 	// A fresh store rehydrates the same history.
 	s2 := NewConfigMapStore(c, ad)

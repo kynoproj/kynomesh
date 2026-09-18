@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaling
+package decision
 
 import (
 	"math"
 	"sort"
 	"time"
+
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/history"
 )
 
 // Estimate is what the learner derives from history: the per-replica
@@ -69,8 +71,8 @@ const (
 //
 // When history is too thin or shows no concurrency spread, Confidence is 0
 // (cold start) — the controller is expected to fall back to a default.
-func EstimateKnee(history []Sample, now time.Time) Estimate {
-	clean := sanitize(history)
+func EstimateKnee(hist []history.Sample, now time.Time) Estimate {
+	clean := history.Sanitize(hist)
 	if len(clean) < minSamplesToLearn {
 		return Estimate{Confidence: 0}
 	}
@@ -105,7 +107,7 @@ type bucket struct {
 // bucketize bins clean samples by per-replica concurrency and collapses each
 // non-empty bin to recency-weighted means. Returned buckets are sorted by
 // ascending in-flight.
-func bucketize(clean []Sample, now time.Time) []bucket {
+func bucketize(clean []history.Sample, now time.Time) []bucket {
 	minI, maxI := clean[0].InflightPerRep, clean[0].InflightPerRep
 	for _, s := range clean {
 		minI = math.Min(minI, s.InflightPerRep)
@@ -173,7 +175,7 @@ func findKnee(buckets []bucket) (knee float64, isLowerBound bool) {
 
 // confidence combines how long we've been observing (time span) with the
 // concurrency coverage, penalized when saturation was never actually observed.
-func confidence(clean []Sample, buckets []bucket, isLowerBound bool) float64 {
+func confidence(clean []history.Sample, buckets []bucket, isLowerBound bool) float64 {
 	c := timeSpanFactor(clean) * coverageFactor(buckets)
 	if isLowerBound {
 		c *= lowerBoundPenalty
@@ -184,7 +186,7 @@ func confidence(clean []Sample, buckets []bucket, isLowerBound bool) float64 {
 // timeSpanFactor grows with the wall-clock span the clean samples cover,
 // saturating at fullConfidenceWindow. Time-based rather than count-based so the
 // confidence ramp doesn't depend on the sampling cadence. clean is time-ordered.
-func timeSpanFactor(clean []Sample) float64 {
+func timeSpanFactor(clean []history.Sample) float64 {
 	if len(clean) < 2 {
 		return 0
 	}

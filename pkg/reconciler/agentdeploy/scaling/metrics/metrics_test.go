@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaling
+package metrics
 
 import (
 	"strings"
@@ -24,7 +24,33 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+
+	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/decision"
 )
+
+// scalingAD builds a scaling-enabled AgentDeploy for metrics tests.
+func scalingAD(name string, ready uint32) *kmv1.AgentDeploy {
+	return &kmv1.AgentDeploy{
+		ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: name},
+		Spec: kmv1.AgentDeploySpec{
+			AbstractAgentDeploy: kmv1.AbstractAgentDeploy{Name: name},
+			AgentSetName:        "set",
+		},
+		Status: kmv1.AgentDeployStatus{
+			Phase:           kmv1.AgentDeployPhaseRunning,
+			Replicas:        ready,
+			DesiredReplicas: ready,
+			ReadyReplicas:   ready,
+		},
+	}
+}
+
+func nn(name string) types.NamespacedName {
+	return types.NamespacedName{Namespace: "ns", Name: name}
+}
 
 func TestMetricsRecordAndDelete(t *testing.T) {
 	reg := prometheus.NewRegistry()
@@ -33,7 +59,7 @@ func TestMetricsRecordAndDelete(t *testing.T) {
 
 	m.RecordSample(ad)
 	m.RecordSample(ad)
-	m.ObserveDecision(ad, Estimate{KneePerReplica: 20, Confidence: 0.8}, 3, 5)
+	m.ObserveDecision(ad, decision.Estimate{KneePerReplica: 20, Confidence: 0.8}, 3, 5)
 	m.RecordScale(ad, true)  // up
 	m.RecordScale(ad, false) // down
 
@@ -60,7 +86,7 @@ func TestMetricsNilSafe(t *testing.T) {
 	ad := scalingAD("foo", 1)
 	assert.NotPanics(t, func() {
 		m.RecordSample(ad)
-		m.ObserveDecision(ad, Estimate{}, 1, 1)
+		m.ObserveDecision(ad, decision.Estimate{}, 1, 1)
 		m.RecordScale(ad, true)
 		m.Delete(nn("foo"))
 	})

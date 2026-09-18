@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaling
+package sampling
 
 import (
 	"context"
@@ -24,23 +24,25 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/kynoproj/kynomesh/pkg/reconciler/agentdeploy/scaling/history"
 )
 
 func TestMedianRequestDuration(t *testing.T) {
-	d := func(inflight, rate float64) Sample {
-		return Sample{InflightPerRep: inflight, RatePerRep: rate}
+	d := func(inflight, rate float64) history.Sample {
+		return history.Sample{InflightPerRep: inflight, RatePerRep: rate}
 	}
 	tests := []struct {
 		name    string
-		samples []Sample
+		samples []history.Sample
 		want    time.Duration
 	}{
 		{"empty", nil, 0},
-		{"no usable rate", []Sample{d(10, 0), d(5, 0)}, 0},
-		{"single D=5s", []Sample{d(10, 2)}, 5 * time.Second},
-		{"odd median", []Sample{d(2, 2), d(10, 2), d(4, 2)}, 2 * time.Second}, // Ds 1,5,2 → median 2
-		{"even median", []Sample{d(2, 2), d(8, 2)}, 2500 * time.Millisecond},  // Ds 1,4 → 2.5
-		{"skips zero rate", []Sample{d(10, 0), d(20, 2)}, 10 * time.Second},
+		{"no usable rate", []history.Sample{d(10, 0), d(5, 0)}, 0},
+		{"single D=5s", []history.Sample{d(10, 2)}, 5 * time.Second},
+		{"odd median", []history.Sample{d(2, 2), d(10, 2), d(4, 2)}, 2 * time.Second}, // Ds 1,5,2 → median 2
+		{"even median", []history.Sample{d(2, 2), d(8, 2)}, 2500 * time.Millisecond},  // Ds 1,4 → 2.5
+		{"skips zero rate", []history.Sample{d(10, 0), d(20, 2)}, 10 * time.Second},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -80,9 +82,9 @@ func TestLookbackSecondsAdaptive(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ad := scalingAD("foo", 2)
 			c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
-			store, err := NewRegistry(c).StoreFor(context.Background(), ad)
+			store, err := history.NewRegistry(c).StoreFor(context.Background(), ad)
 			require.NoError(t, err)
-			store.Record(Sample{Timestamp: now, Replicas: 2, InflightPerRep: tc.inflight, RatePerRep: tc.rate}, "")
+			store.Record(history.Sample{Timestamp: now, Replicas: 2, InflightPerRep: tc.inflight, RatePerRep: tc.rate}, "")
 			assert.Equal(t, tc.want, lookbackSeconds(store, now, tc.interval))
 		})
 	}

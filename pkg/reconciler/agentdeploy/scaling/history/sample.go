@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scaling
+package history
 
 import (
 	"math"
@@ -56,13 +56,13 @@ func (s Sample) valid() bool {
 		!math.IsNaN(s.RatePerRep)
 }
 
-// sanitize returns the subset of history safe to learn from: positive,
+// Sanitize returns the subset of history safe to learn from: positive,
 // steady-state readings sorted by time, with at most one reading per instant.
 // Samples within warmupAfterScale of a replica-count change are dropped because
 // the fleet had not yet settled.
 //
 // The input slice is not mutated.
-func sanitize(history []Sample) []Sample {
+func Sanitize(history []Sample) []Sample {
 	if len(history) == 0 {
 		return nil
 	}
