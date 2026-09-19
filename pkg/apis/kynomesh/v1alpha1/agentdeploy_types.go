@@ -232,6 +232,7 @@ func (ad *AgentDeploy) SimpleCopy() AgentDeploy {
 		Spec: *ad.Spec.DeepCopy(),
 	}
 	out.Spec.Scale = Scale{}
+	out.Spec.DriftReload = nil
 	out.Spec.Replicas = nil
 	out.Spec.Sidecars = nil
 	out.Spec.InitContainers = nil
