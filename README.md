@@ -63,6 +63,8 @@ implemented using any programming language.
 - [Drift Reload](docs/user-guide/reference/drift-reload.md)
 - [External Agents](docs/user-guide/reference/configuration/external-agents.md)
 - [SDKs](docs/user-guide/sdks/overview.md)
+  ([Python](https://github.com/kynoproj/kynomesh-py),
+  [Go](https://github.com/kynoproj/kynomesh-go))
 - [APIs](docs/APIs.md)
 - [Development](docs/development/development.md)
 - [Static code analysis](docs/development/static-code-analysis.md)
