@@ -18,8 +18,8 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/env/-
         value:
-          name: KYNOMESH_DEBUG
-          value: !!str "true"
+          name: LOG_LEVEL
+          value: debug
     target:
       kind: Deployment
       name: kynomesh-controller
