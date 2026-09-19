@@ -57,7 +57,7 @@ implemented using any programming language.
 ## Resources
 
 - [Quick Start](docs/quick-start.md)
-- [Core Concepts: AgentSet](docs/core-concepts/agentset.md)
+- [AgentSet](docs/core-concepts/agentset.md)
 - [Autoscaling](docs/user-guide/reference/autoscaling.md)
 - [Rate Limiting](docs/user-guide/reference/rate-limiting.md)
 - [Drift Reload](docs/user-guide/reference/drift-reload.md)
