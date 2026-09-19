@@ -80,7 +80,7 @@ const (
 // fires (typically SIGINT or SIGTERM) and only returns after the manager has
 // cleanly shut down.
 func Start(namespaced bool, managedNamespace string) {
-	logger := logging.NewLogger().Named("controller-manager")
+	logger := logging.NewLogger().Named("controller")
 
 	// Route controller-runtime's internal logs into the same zap logger.
 	// Without this, controller-runtime panics on first log call ("must call
