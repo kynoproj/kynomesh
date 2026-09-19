@@ -345,9 +345,10 @@ When you don't need a full client:
 
 ### Error Handling
 
-Two failure modes are worth distinguishing: the peer isn't reachable, versus
-peer discovery itself isn't available (the topology hasn't been delivered to the
-pod yet).
+The realistic failure case inside a running agent is calling a peer that isn't
+in your topology — either it doesn't exist, or the routing pattern forbids you
+from reaching it. Check for that specifically and treat anything else as a
+generic failure:
 
 === "Python"
 
@@ -357,9 +358,9 @@ pod yet).
     try:
         a2a_client = await client.peer_client("worker-a")
     except client.PeerNotFoundError:
-        ...  # no such peer, or it isn't reachable
-    except client.TopologyNotAvailableError:
-        ...  # peer discovery not ready yet
+        ...  # no such peer, or the routing pattern forbids reaching it
+    except Exception:
+        ...  # something else went wrong resolving the peer
     ```
 
 === "Go"
@@ -368,9 +369,9 @@ pod yet).
     c, err := client.PeerClient(ctx, "worker-a")
     switch {
     case errors.Is(err, client.ErrPeerNotFound):
-        // no such peer, or it isn't reachable
-    case errors.Is(err, client.ErrTopologyNotAvailable):
-        // peer discovery not ready yet
+        // no such peer, or the routing pattern forbids reaching it
+    case err != nil:
+        // something else went wrong resolving the peer
     }
     ```
 
