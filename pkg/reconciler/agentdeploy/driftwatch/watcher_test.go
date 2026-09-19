@@ -37,6 +37,8 @@ import (
 
 func testLogger() *zap.SugaredLogger { return zap.NewNop().Sugar() }
 
+func ptrBool(v bool) *bool { return &v }
+
 func watcherScheme(t *testing.T) *runtime.Scheme {
 	t.Helper()
 	s := runtime.NewScheme()
@@ -58,7 +60,7 @@ func driftAD(name string) *kmv1.AgentDeploy {
 		Spec: kmv1.AgentDeploySpec{
 			AbstractAgentDeploy: kmv1.AbstractAgentDeploy{
 				Name:        name,
-				DriftReload: &kmv1.DriftReload{Enabled: true},
+				DriftReload: &kmv1.DriftReload{Enabled: ptrBool(true)},
 			},
 			AgentSetName: "set",
 		},
@@ -132,7 +134,7 @@ func TestReconcileDrift_DeletesExactlyStalePods(t *testing.T) {
 
 func TestReconcileDrift_DisabledIsNoop(t *testing.T) {
 	ad := driftAD("foo")
-	ad.Spec.DriftReload.Enabled = false
+	ad.Spec.DriftReload.Enabled = ptrBool(false)
 	stalePod := driftPod("foo", "foo-0-stale")
 	c := fake.NewClientBuilder().WithScheme(watcherScheme(t)).WithObjects(ad, stalePod).Build()
 
@@ -170,6 +172,31 @@ func TestReconcileDrift_NilDriftReloadIsNoop(t *testing.T) {
 	var pod corev1.Pod
 	assert.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: "ns", Name: "foo-0-stale"}, &pod),
 		"nil DriftReload leaves pods untouched")
+}
+
+func TestReconcileDrift_EmptyDriftReloadStructIsNoop(t *testing.T) {
+	// DriftReload{} (non-nil struct, nil Enabled) means "no explicit
+	// per-agent choice was made here" once the AgentSet reconciler's
+	// fill-if-unset logic has already run — reconcileDrift must treat it
+	// the same as fully disabled, not panic or treat it as enabled.
+	ad := driftAD("foo")
+	ad.Spec.DriftReload = &kmv1.DriftReload{}
+	stalePod := driftPod("foo", "foo-0-stale")
+	c := fake.NewClientBuilder().WithScheme(watcherScheme(t)).WithObjects(ad, stalePod).Build()
+
+	src := &fakeDriftSource{drift: map[string]*pb.PeerCardDrift{
+		"peer-a": {
+			LatestHash:     "new",
+			ReportedHashes: map[string]*pb.ReportedHash{"foo-0-stale": {Hash: "old"}},
+		},
+	}}
+	w := newTestWatcher(c, src)
+
+	require.NoError(t, w.reconcileDrift(context.Background(), nn("foo")))
+
+	var pod corev1.Pod
+	assert.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: "ns", Name: "foo-0-stale"}, &pod),
+		"an empty DriftReload struct (Enabled unset) leaves pods untouched")
 }
 
 func TestReconcileDrift_UnstabilizedPeerContributesNoStalePods(t *testing.T) {

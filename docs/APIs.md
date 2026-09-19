@@ -2492,11 +2492,9 @@ DriftReload
 
 <p>
 
-DriftReload controls whether the controller reloads (restarts) this
-AgentDeploy’s pods when the daemon detects they’re serving a stale
-cached AgentCard for one of their peers. The daemon always tracks drift
-regardless of this setting — DriftReload only gates whether the
-controller acts on it.
+DriftReload controls whether to restart this AgentDeploy’s pods when the
+daemon detects they’re serving a stale cached AgentCard for one of their
+peers.
 </p>
 
 </p>

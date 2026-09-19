@@ -27,6 +27,8 @@ import (
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
 )
 
+func ptrBool(v bool) *bool { return &v }
+
 func TestBuildAgentDeploys(t *testing.T) {
 	r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
 	as := newAgentSet("greeter", "alpha", "beta")
@@ -87,22 +89,36 @@ func TestBuildAgentDeploys_DriftReloadFillIfUnset(t *testing.T) {
 
 	t.Run("per-agent nil takes the AgentSet default", func(t *testing.T) {
 		as := newAgentSet("greeter", "alpha")
-		as.Spec.DriftReload = &kmv1.DriftReload{Enabled: true}
+		as.Spec.DriftReload = &kmv1.DriftReload{Enabled: ptrBool(true)}
 		out, err := r.buildDesired(as)
 		require.NoError(t, err)
 		require.NotNil(t, out["greeter-alpha"].Spec.DriftReload)
-		assert.True(t, out["greeter-alpha"].Spec.DriftReload.Enabled)
+		assert.True(t, out["greeter-alpha"].Spec.DriftReload.IsEnabled())
 	})
 
-	t.Run("per-agent set wins outright over the AgentSet default", func(t *testing.T) {
+	t.Run("per-agent empty struct also takes the AgentSet default", func(t *testing.T) {
+		// driftReload: {} on the agent (non-nil struct, Enabled unset) must
+		// not be mistaken for an explicit opt-out — it should inherit the
+		// AgentSet-level value just like an entirely absent per-agent field.
 		as := newAgentSet("greeter", "alpha")
-		as.Spec.DriftReload = &kmv1.DriftReload{Enabled: true}
-		as.Spec.Agents[0].DriftReload = &kmv1.DriftReload{Enabled: false}
+		as.Spec.DriftReload = &kmv1.DriftReload{Enabled: ptrBool(true)}
+		as.Spec.Agents[0].DriftReload = &kmv1.DriftReload{}
 		out, err := r.buildDesired(as)
 		require.NoError(t, err)
 		require.NotNil(t, out["greeter-alpha"].Spec.DriftReload)
-		assert.False(t, out["greeter-alpha"].Spec.DriftReload.Enabled,
-			"per-agent DriftReload must win even though it disables what the AgentSet default enables")
+		assert.True(t, out["greeter-alpha"].Spec.DriftReload.IsEnabled(),
+			"an empty per-agent driftReload must inherit the AgentSet default, not silently disable")
+	})
+
+	t.Run("per-agent explicit value wins outright over the AgentSet default", func(t *testing.T) {
+		as := newAgentSet("greeter", "alpha")
+		as.Spec.DriftReload = &kmv1.DriftReload{Enabled: ptrBool(true)}
+		as.Spec.Agents[0].DriftReload = &kmv1.DriftReload{Enabled: ptrBool(false)}
+		out, err := r.buildDesired(as)
+		require.NoError(t, err)
+		require.NotNil(t, out["greeter-alpha"].Spec.DriftReload)
+		assert.False(t, out["greeter-alpha"].Spec.DriftReload.IsEnabled(),
+			"an explicit per-agent DriftReload must win even though it disables what the AgentSet default enables")
 	})
 }
 

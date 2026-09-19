@@ -1281,14 +1281,16 @@ func (m *DriftReload) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	i--
-	if m.Enabled {
-		dAtA[i] = 1
-	} else {
-		dAtA[i] = 0
+	if m.Enabled != nil {
+		i--
+		if *m.Enabled {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x8
 	}
-	i--
-	dAtA[i] = 0x8
 	return len(dAtA) - i, nil
 }
 
@@ -2227,7 +2229,9 @@ func (m *DriftReload) Size() (n int) {
 	}
 	var l int
 	_ = l
-	n += 2
+	if m.Enabled != nil {
+		n += 2
+	}
 	return n
 }
 
@@ -2747,7 +2751,7 @@ func (this *DriftReload) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&DriftReload{`,
-		`Enabled:` + fmt.Sprintf("%v", this.Enabled) + `,`,
+		`Enabled:` + valueToStringGenerated(this.Enabled) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6639,7 +6643,8 @@ func (m *DriftReload) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			m.Enabled = bool(v != 0)
+			b := bool(v != 0)
+			m.Enabled = &b
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])

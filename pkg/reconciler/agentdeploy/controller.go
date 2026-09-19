@@ -114,7 +114,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// For autoscaling.
 	r.scaler.Track(req.NamespacedName)
 	// For drift-reload.
-	if original.Spec.DriftReload != nil && original.Spec.DriftReload.Enabled {
+	if original.Spec.DriftReload.IsEnabled() {
 		r.driftWatcher.Track(req.NamespacedName)
 	} else {
 		r.driftWatcher.Forget(req.NamespacedName)

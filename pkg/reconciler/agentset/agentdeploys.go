@@ -148,9 +148,7 @@ func (r *Reconciler) newAgentDeploy(as *kmv1.AgentSet, agent kmv1.AbstractAgentD
 	if t := as.Spec.Templates; t != nil && t.AgentDeployTemplate != nil {
 		applyTemplate(&abstract, t.AgentDeployTemplate)
 	}
-	if abstract.DriftReload == nil {
-		abstract.DriftReload = as.Spec.DriftReload
-	}
+	applyDriftReloadDefault(&abstract, as.Spec.DriftReload)
 	ad := &kmv1.AgentDeploy{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: as.Namespace,
@@ -180,6 +178,19 @@ func (r *Reconciler) newAgentDeploy(as *kmv1.AgentSet, agent kmv1.AbstractAgentD
 		kmv1.KeyHash: sharedutil.MustHash(ad.Spec),
 	}
 	return ad, nil
+}
+
+// applyDriftReloadDefault fills the agent's DriftReload.Enabled from the
+// AgentSet-level default, field by field. An agent with an explicit Enabled
+// always wins outright.
+func applyDriftReloadDefault(agent *kmv1.AbstractAgentDeploy, setDefault *kmv1.DriftReload) {
+	if agent.DriftReload == nil {
+		agent.DriftReload = setDefault
+		return
+	}
+	if agent.DriftReload.Enabled == nil && setDefault != nil {
+		agent.DriftReload.Enabled = setDefault.Enabled
+	}
 }
 
 // applyTemplate fills unset fields of the per-agent spec from the

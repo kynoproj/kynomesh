@@ -220,7 +220,7 @@ func (w *Watcher) reconcileDrift(ctx context.Context, k types.NamespacedName) er
 		log.Debug("AgentDeploy being deleted")
 		return nil
 	}
-	if ad.Spec.DriftReload == nil || !ad.Spec.DriftReload.Enabled {
+	if !ad.Spec.DriftReload.IsEnabled() {
 		w.Forget(k)
 		return nil
 	}

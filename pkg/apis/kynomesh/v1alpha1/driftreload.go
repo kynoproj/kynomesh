@@ -16,13 +16,17 @@ limitations under the License.
 
 package v1alpha1
 
-// DriftReload controls whether the controller reloads (restarts) this
-// AgentDeploy's pods when the daemon detects they're serving a stale
-// cached AgentCard for one of their peers. The daemon always tracks
-// drift regardless of this setting — DriftReload only gates whether the
-// controller acts on it.
+// DriftReload controls whether to restart this AgentDeploy's pods when
+// the daemon detects they're serving a stale cached AgentCard for one
+// of their peers.
 type DriftReload struct {
 	// Enabled turns on automatic reload-on-drift for this AgentDeploy.
 	// +optional
-	Enabled bool `json:"enabled,omitempty" protobuf:"varint,1,opt,name=enabled"`
+	Enabled *bool `json:"enabled,omitempty" protobuf:"varint,1,opt,name=enabled"`
+}
+
+// IsEnabled reports whether automatic reload-on-drift is turned on,
+// tolerating a nil DriftReload or a nil Enabled (both mean "off").
+func (d *DriftReload) IsEnabled() bool {
+	return d != nil && d.Enabled != nil && *d.Enabled
 }

@@ -24440,7 +24440,7 @@
       "type": "object"
     },
     "sh.kyno.kynomesh.v1alpha1.DriftReload": {
-      "description": "DriftReload controls whether the controller reloads (restarts) this AgentDeploy's pods when the daemon detects they're serving a stale cached AgentCard for one of their peers. The daemon always tracks drift regardless of this setting — DriftReload only gates whether the controller acts on it.",
+      "description": "DriftReload controls whether to restart this AgentDeploy's pods when the daemon detects they're serving a stale cached AgentCard for one of their peers.",
       "properties": {
         "enabled": {
           "description": "Enabled turns on automatic reload-on-drift for this AgentDeploy.",

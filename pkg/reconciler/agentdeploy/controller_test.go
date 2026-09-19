@@ -55,6 +55,8 @@ func mustScheme(t *testing.T) *runtime.Scheme {
 	return scheme
 }
 
+func ptrBool(v bool) *bool { return &v }
+
 func newAgentDeploy(name string, replicas int32) *kmv1.AgentDeploy {
 	return &kmv1.AgentDeploy{
 		ObjectMeta: metav1.ObjectMeta{
@@ -477,7 +479,7 @@ func TestReconcile_ManagesDriftWatcher(t *testing.T) {
 
 	t.Run("driftReload enabled is tracked", func(t *testing.T) {
 		ad := newAgentDeploy("greeter", 1)
-		ad.Spec.DriftReload = &kmv1.DriftReload{Enabled: true}
+		ad.Spec.DriftReload = &kmv1.DriftReload{Enabled: ptrBool(true)}
 		r, _ := newTestReconciler(t, ad)
 		fs := &fakeScaler{}
 		r.driftWatcher = fs
@@ -499,7 +501,7 @@ func TestReconcile_ManagesDriftWatcher(t *testing.T) {
 
 	t.Run("driftReload disabled is forgotten", func(t *testing.T) {
 		ad := newAgentDeploy("greeter", 1)
-		ad.Spec.DriftReload = &kmv1.DriftReload{Enabled: false}
+		ad.Spec.DriftReload = &kmv1.DriftReload{Enabled: ptrBool(false)}
 		r, _ := newTestReconciler(t, ad)
 		fs := &fakeScaler{}
 		r.driftWatcher = fs
