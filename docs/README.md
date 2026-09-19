@@ -32,15 +32,21 @@ implemented using any programming language.
   automatically derives and maintains peer relationships. No custom
   service-discovery logic is required in your agents.
 - **Language agnostic:** Build agents in any programming language, including Go,
-  Python, Node.js, Rust, and more. Managed and external agents: An AgentSet can
-  seamlessly combine agents running inside the cluster with external HTTP-based
-  agents, providing a unified interface to callers.
+  Python, and more.
 - **Built-in autoscaling:** Automatically scales agent workloads in response to
   traffic demand and system load, ensuring efficient resource utilization and
   high availability.
 - **Zero-downtime rolling updates:** Kynomesh orchestrates rolling deployments
   and graceful pod termination, enabling seamless upgrades with minimal
   disruption to ongoing traffic.
+- **Rate limiting:** Cap concurrent in-flight A2A requests, protecting agents
+  (and their downstream dependencies) from overload.
+- **Hybrid topologies with external agents:** Combine in-cluster managed agents
+  with external, HTTP-reachable agents behind a single Kubernetes API and
+  unified peer discovery.
+- **Automatic drift reload:** Kynomesh detects when a peer agent's `AgentCard`
+  changes and automatically restarts only the pods still holding a stale cached
+  copy, so dependent agents pick up the change without a manual restart.
 
 ## Getting Started
 
