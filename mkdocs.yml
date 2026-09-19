@@ -58,6 +58,8 @@ nav:
           - Overview: "core-concepts/overview.md"
           - core-concepts/agentset.md
           - core-concepts/agentdeploy.md
+      - SDKs:
+          - Overview: "user-guide/sdks/overview.md"
       - Reference:
           - Autoscaling: "user-guide/reference/autoscaling.md"
           - Rate limiting: "user-guide/reference/rate-limiting.md"
