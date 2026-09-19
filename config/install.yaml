@@ -1045,6 +1045,11 @@ spec:
                 type: object
               dnsPolicy:
                 type: string
+              driftReload:
+                properties:
+                  enabled:
+                    type: boolean
+                type: object
               imagePullSecrets:
                 items:
                   properties:
@@ -4879,6 +4884,11 @@ spec:
                       type: object
                     dnsPolicy:
                       type: string
+                    driftReload:
+                      properties:
+                        enabled:
+                          type: boolean
+                      type: object
                     imagePullSecrets:
                       items:
                         properties:
@@ -7548,6 +7558,11 @@ spec:
                   type: object
                 minItems: 1
                 type: array
+              driftReload:
+                properties:
+                  enabled:
+                    type: boolean
+                type: object
               entry:
                 type: string
               externalAgents:

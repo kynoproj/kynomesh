@@ -63,6 +63,8 @@ func (m *ContainerTemplate) Reset() { *m = ContainerTemplate{} }
 
 func (m *DaemonTemplate) Reset() { *m = DaemonTemplate{} }
 
+func (m *DriftReload) Reset() { *m = DriftReload{} }
+
 func (m *ExternalAgentRef) Reset() { *m = ExternalAgentRef{} }
 
 func (m *Metadata) Reset() { *m = Metadata{} }
@@ -105,6 +107,18 @@ func (m *AbstractAgentDeploy) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.DriftReload != nil {
+		{
+			size, err := m.DriftReload.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x6a
+	}
 	i -= len(m.PublicBaseURL)
 	copy(dAtA[i:], m.PublicBaseURL)
 	i = encodeVarintGenerated(dAtA, i, uint64(len(m.PublicBaseURL)))
@@ -838,6 +852,18 @@ func (m *AgentSetSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.DriftReload != nil {
+		{
+			size, err := m.DriftReload.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x32
+	}
 	if len(m.ExternalAgents) > 0 {
 		for iNdEx := len(m.ExternalAgents) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -1232,6 +1258,39 @@ func (m *DaemonTemplate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	i--
 	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *DriftReload) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DriftReload) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DriftReload) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Enabled != nil {
+		i--
+		if *m.Enabled {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -1789,6 +1848,10 @@ func (m *AbstractAgentDeploy) Size() (n int) {
 	n += 1 + l + sovGenerated(uint64(l))
 	l = len(m.PublicBaseURL)
 	n += 1 + l + sovGenerated(uint64(l))
+	if m.DriftReload != nil {
+		l = m.DriftReload.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
 	return n
 }
 
@@ -2020,6 +2083,10 @@ func (m *AgentSetSpec) Size() (n int) {
 			n += 1 + l + sovGenerated(uint64(l))
 		}
 	}
+	if m.DriftReload != nil {
+		l = m.DriftReload.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
 	return n
 }
 
@@ -2152,6 +2219,18 @@ func (m *DaemonTemplate) Size() (n int) {
 	if m.Container != nil {
 		l = m.Container.Size()
 		n += 1 + l + sovGenerated(uint64(l))
+	}
+	return n
+}
+
+func (m *DriftReload) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Enabled != nil {
+		n += 2
 	}
 	return n
 }
@@ -2392,6 +2471,7 @@ func (this *AbstractAgentDeploy) String() string {
 		`Sidecars:` + repeatedStringForSidecars + `,`,
 		`UpdateStrategy:` + strings.Replace(strings.Replace(this.UpdateStrategy.String(), "UpdateStrategy", "UpdateStrategy", 1), `&`, ``, 1) + `,`,
 		`PublicBaseURL:` + fmt.Sprintf("%v", this.PublicBaseURL) + `,`,
+		`DriftReload:` + strings.Replace(this.DriftReload.String(), "DriftReload", "DriftReload", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2569,6 +2649,7 @@ func (this *AgentSetSpec) String() string {
 		`Agents:` + repeatedStringForAgents + `,`,
 		`Templates:` + strings.Replace(this.Templates.String(), "Templates", "Templates", 1) + `,`,
 		`ExternalAgents:` + repeatedStringForExternalAgents + `,`,
+		`DriftReload:` + strings.Replace(this.DriftReload.String(), "DriftReload", "DriftReload", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2661,6 +2742,16 @@ func (this *DaemonTemplate) String() string {
 	s := strings.Join([]string{`&DaemonTemplate{`,
 		`AbstractPodTemplate:` + strings.Replace(strings.Replace(this.AbstractPodTemplate.String(), "AbstractPodTemplate", "AbstractPodTemplate", 1), `&`, ``, 1) + `,`,
 		`Container:` + strings.Replace(this.Container.String(), "ContainerTemplate", "ContainerTemplate", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DriftReload) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DriftReload{`,
+		`Enabled:` + valueToStringGenerated(this.Enabled) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3269,6 +3360,42 @@ func (m *AbstractAgentDeploy) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.PublicBaseURL = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 13:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DriftReload", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DriftReload == nil {
+				m.DriftReload = &DriftReload{}
+			}
+			if err := m.DriftReload.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -5378,6 +5505,42 @@ func (m *AgentSetSpec) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DriftReload", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DriftReload == nil {
+				m.DriftReload = &DriftReload{}
+			}
+			if err := m.DriftReload.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])
@@ -6411,6 +6574,77 @@ func (m *DaemonTemplate) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DriftReload) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DriftReload: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DriftReload: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Enabled", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			b := bool(v != 0)
+			m.Enabled = &b
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenerated(dAtA[iNdEx:])

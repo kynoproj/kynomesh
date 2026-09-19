@@ -306,6 +306,27 @@ in-cluster address.
 
 </tr>
 
+<tr>
+
+<td>
+
+<code>driftReload</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.DriftReload"> DriftReload </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+DriftReload controls automatic reload-on-drift for this agent. When
+unset, it inherits the AgentSet-level default (spec.driftReload).
+</p>
+
+</td>
+
+</tr>
+
 </tbody>
 
 </table>
@@ -1593,6 +1614,28 @@ or roll. They may never be Entry.
 
 </tr>
 
+<tr>
+
+<td>
+
+<code>driftReload</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.DriftReload"> DriftReload </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+DriftReload is the fleet-wide default for automatic reload-on-drift. Any
+agent may override it with its own driftReload; unset agents inherit
+this value.
+</p>
+
+</td>
+
+</tr>
+
 </table>
 
 </td>
@@ -1787,6 +1830,28 @@ for the AgentSet
 
 ExternalAgents references agents this AgentSet does not deploy, scale,
 or roll. They may never be Entry.
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>driftReload</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.DriftReload"> DriftReload </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+DriftReload is the fleet-wide default for automatic reload-on-drift. Any
+agent may override it with its own driftReload; unset agents inherit
+this value.
 </p>
 
 </td>
@@ -2401,6 +2466,74 @@ ContainerTemplate </a> </em>
 <p>
 
 Container for the daemon container (resources, env, …).
+</p>
+
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="kynomesh.kyno.sh/v1alpha1.DriftReload">
+
+DriftReload
+</h3>
+
+<p>
+
+(<em>Appears on:</em>
+<a href="#kynomesh.kyno.sh/v1alpha1.AbstractAgentDeploy">AbstractAgentDeploy</a>,
+<a href="#kynomesh.kyno.sh/v1alpha1.AgentSetSpec">AgentSetSpec</a>)
+</p>
+
+<p>
+
+<p>
+
+DriftReload controls whether to restart this AgentDeploy’s pods when the
+daemon detects they’re serving a stale cached AgentCard for one of their
+peers.
+</p>
+
+</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>
+
+Field
+</th>
+
+<th>
+
+Description
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>
+
+<code>enabled</code></br> <em> bool </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+Enabled turns on automatic reload-on-drift for this AgentDeploy.
 </p>
 
 </td>

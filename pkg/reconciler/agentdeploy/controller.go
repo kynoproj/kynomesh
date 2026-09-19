@@ -56,10 +56,11 @@ type Reconciler struct {
 	image           string
 	imagePullPolicy corev1.PullPolicy
 	scaler          scaleWatcher
+	driftWatcher    scaleWatcher
 }
 
 // NewReconciler returns a Reconciler bound to the supplied client and scheme.
-func NewReconciler(c client.Client, scheme *runtime.Scheme, config *reconciler.GlobalConfig, logger *zap.SugaredLogger, recorder events.EventRecorder, image string, imagePullPolicy corev1.PullPolicy, scaler scaleWatcher) *Reconciler {
+func NewReconciler(c client.Client, scheme *runtime.Scheme, config *reconciler.GlobalConfig, logger *zap.SugaredLogger, recorder events.EventRecorder, image string, imagePullPolicy corev1.PullPolicy, scaler scaleWatcher, driftWatcher scaleWatcher) *Reconciler {
 	if logger == nil {
 		logger = logging.NewLogger().Named(kmv1.ControllerAgentDeploy)
 	}
@@ -68,6 +69,9 @@ func NewReconciler(c client.Client, scheme *runtime.Scheme, config *reconciler.G
 	}
 	if scaler == nil {
 		scaler = noopScaler{}
+	}
+	if driftWatcher == nil {
+		driftWatcher = noopScaler{}
 	}
 	return &Reconciler{
 		Client:          c,
@@ -78,10 +82,11 @@ func NewReconciler(c client.Client, scheme *runtime.Scheme, config *reconciler.G
 		image:           image,
 		imagePullPolicy: imagePullPolicy,
 		scaler:          scaler,
+		driftWatcher:    driftWatcher,
 	}
 }
 
-// noopScaler is used when no autoscaler is wired in.
+// noopScaler is used when no autoscaler (or drift watcher) is wired in.
 type noopScaler struct{}
 
 func (noopScaler) Track(types.NamespacedName)  {}
@@ -93,6 +98,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err := r.Get(ctx, req.NamespacedName, &original); err != nil {
 		if apierrors.IsNotFound(err) {
 			r.scaler.Forget(req.NamespacedName)
+			r.driftWatcher.Forget(req.NamespacedName)
 			return ctrl.Result{}, nil
 		}
 		r.logger.Errorw("Unable to get AgentDeploy", zap.Any("request", req), zap.Error(err))
@@ -101,11 +107,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if !original.DeletionTimestamp.IsZero() {
 		r.scaler.Forget(req.NamespacedName)
+		r.driftWatcher.Forget(req.NamespacedName)
 		return ctrl.Result{}, nil
 	}
 
 	// For autoscaling.
 	r.scaler.Track(req.NamespacedName)
+	// For drift-reload.
+	if original.Spec.DriftReload.IsEnabled() {
+		r.driftWatcher.Track(req.NamespacedName)
+	} else {
+		r.driftWatcher.Forget(req.NamespacedName)
+	}
 
 	log := r.logger.With("namespace", req.Namespace).With("agentSet", original.Spec.AgentSetName).
 		With("agentDeploy", original.Name)

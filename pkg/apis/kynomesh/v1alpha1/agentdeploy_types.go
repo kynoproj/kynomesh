@@ -161,6 +161,10 @@ type AbstractAgentDeploy struct {
 	// cluster. If empty, the broker advertises its in-cluster address.
 	// +optional
 	PublicBaseURL string `json:"publicBaseURL,omitempty" protobuf:"bytes,12,opt,name=publicBaseURL"`
+	// DriftReload controls automatic reload-on-drift for this agent. When
+	// unset, it inherits the AgentSet-level default (spec.driftReload).
+	// +optional
+	DriftReload *DriftReload `json:"driftReload,omitempty" protobuf:"bytes,13,opt,name=driftReload"`
 }
 
 type AgentDeployStatus struct {
@@ -228,6 +232,7 @@ func (ad *AgentDeploy) SimpleCopy() AgentDeploy {
 		Spec: *ad.Spec.DeepCopy(),
 	}
 	out.Spec.Scale = Scale{}
+	out.Spec.DriftReload = nil
 	out.Spec.Replicas = nil
 	out.Spec.Sidecars = nil
 	out.Spec.InitContainers = nil

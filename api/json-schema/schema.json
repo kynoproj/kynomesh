@@ -23543,6 +23543,10 @@
           "description": "Set DNS policy for the pod. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.",
           "type": "string"
         },
+        "driftReload": {
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.DriftReload",
+          "description": "DriftReload controls automatic reload-on-drift for this agent. When unset, it inherits the AgentSet-level default (spec.driftReload)."
+        },
         "imagePullSecrets": {
           "description": "ImagePullSecrets is an optional list of references to secrets in the same namespace to use for pulling any of the images used by this PodSpec. If specified, these secrets will be passed to individual puller implementations for them to use. For example, in the case of docker, only DockerConfig type secrets are honored. More info: https://kubernetes.io/docs/concepts/containers/images#specifying-imagepullsecrets-on-a-pod",
           "items": {
@@ -23820,6 +23824,10 @@
         "dnsPolicy": {
           "description": "Set DNS policy for the pod. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'.",
           "type": "string"
+        },
+        "driftReload": {
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.DriftReload",
+          "description": "DriftReload controls automatic reload-on-drift for this agent. When unset, it inherits the AgentSet-level default (spec.driftReload)."
         },
         "imagePullSecrets": {
           "description": "ImagePullSecrets is an optional list of references to secrets in the same namespace to use for pulling any of the images used by this PodSpec. If specified, these secrets will be passed to individual puller implementations for them to use. For example, in the case of docker, only DockerConfig type secrets are honored. More info: https://kubernetes.io/docs/concepts/containers/images#specifying-imagepullsecrets-on-a-pod",
@@ -24176,6 +24184,10 @@
           "x-kubernetes-patch-merge-key": "name",
           "x-kubernetes-patch-strategy": "merge"
         },
+        "driftReload": {
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.DriftReload",
+          "description": "DriftReload is the fleet-wide default for automatic reload-on-drift. Any agent may override it with its own driftReload; unset agents inherit this value."
+        },
         "entry": {
           "description": "Entry is the name of the agent external callers reach first. Must match one of agents[].name. For Sequential it must be agents[0].",
           "type": "string"
@@ -24423,6 +24435,16 @@
             "$ref": "#/definitions/io.k8s.api.core.v1.Toleration"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "sh.kyno.kynomesh.v1alpha1.DriftReload": {
+      "description": "DriftReload controls whether to restart this AgentDeploy's pods when the daemon detects they're serving a stale cached AgentCard for one of their peers.",
+      "properties": {
+        "enabled": {
+          "description": "Enabled turns on automatic reload-on-drift for this AgentDeploy.",
+          "type": "boolean"
         }
       },
       "type": "object"
