@@ -630,6 +630,20 @@
   
   
     <li class="md-nav__item">
+      <a href="user-guide/reference/drift-reload/" class="md-nav__link">
+        Drift Reload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="user-guide/reference/gpu/" class="md-nav__link">
         Running On GPU
       </a>
@@ -647,18 +661,18 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2_5" type="checkbox" id="__nav_3_2_5" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2_6" type="checkbox" id="__nav_3_2_6" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_3_2_5">
+        <label class="md-nav__link" for="__nav_3_2_6">
           Configuration
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Configuration" data-md-level="3">
-        <label class="md-nav__title" for="__nav_3_2_5">
+        <label class="md-nav__title" for="__nav_3_2_6">
           <span class="md-nav__icon md-icon"></span>
           Configuration
         </label>
@@ -1273,15 +1287,21 @@ implemented using any programming language.</p>
   automatically derives and maintains peer relationships. No custom
   service-discovery logic is required in your agents.</li>
 <li><strong>Language agnostic:</strong> Build agents in any programming language, including Go,
-  Python, Node.js, Rust, and more. Managed and external agents: An AgentSet can
-  seamlessly combine agents running inside the cluster with external HTTP-based
-  agents, providing a unified interface to callers.</li>
+  Python, and more.</li>
 <li><strong>Built-in autoscaling:</strong> Automatically scales agent workloads in response to
   traffic demand and system load, ensuring efficient resource utilization and
   high availability.</li>
 <li><strong>Zero-downtime rolling updates:</strong> Kynomesh orchestrates rolling deployments
   and graceful pod termination, enabling seamless upgrades with minimal
   disruption to ongoing traffic.</li>
+<li><strong>Rate limiting:</strong> Cap concurrent in-flight A2A requests, protecting agents
+  (and their downstream dependencies) from overload.</li>
+<li><strong>Hybrid topologies with external agents:</strong> Combine in-cluster managed agents
+  with external, HTTP-reachable agents behind a single Kubernetes API and
+  unified peer discovery.</li>
+<li><strong>Automatic drift reload:</strong> Kynomesh detects when a peer agent's <code>AgentCard</code>
+  changes and automatically restarts only the pods still holding a stale cached
+  copy, so dependent agents pick up the change without a manual restart.</li>
 </ul>
 <h2 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h2>
 <p>For set-up information and running your first Kynomesh AgentSet, please see our

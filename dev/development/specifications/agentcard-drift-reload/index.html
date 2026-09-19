@@ -575,6 +575,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../user-guide/reference/drift-reload/" class="md-nav__link">
+        Drift Reload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../user-guide/reference/gpu/" class="md-nav__link">
         Running On GPU
       </a>
@@ -592,18 +606,18 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2_5" type="checkbox" id="__nav_3_2_5" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2_6" type="checkbox" id="__nav_3_2_6" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_3_2_5">
+        <label class="md-nav__link" for="__nav_3_2_6">
           Configuration
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Configuration" data-md-level="3">
-        <label class="md-nav__title" for="__nav_3_2_5">
+        <label class="md-nav__title" for="__nav_3_2_6">
           <span class="md-nav__icon md-icon"></span>
           Configuration
         </label>
@@ -1138,8 +1152,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#enabling-this-peerwatch" class="md-nav__link">
-    Enabling this: peerWatch
+  <a href="#enabling-this-driftreload" class="md-nav__link">
+    Enabling this: driftReload
   </a>
   
 </li>
@@ -1297,8 +1311,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#enabling-this-peerwatch" class="md-nav__link">
-    Enabling this: peerWatch
+  <a href="#enabling-this-driftreload" class="md-nav__link">
+    Enabling this: driftReload
   </a>
   
 </li>
@@ -1503,29 +1517,42 @@ and force those callers' pods to restart.</p>
      current desired hash is on the next pass — there is nothing to cancel or
      preempt.</li>
 </ol>
-<h2 id="enabling-this-peerwatch">Enabling this: <code>peerWatch</code><a class="headerlink" href="#enabling-this-peerwatch" title="Permanent link">&para;</a></h2>
-<p>This must be opt-in/opt-out, not always-on — for some deployments,
-auto-reloading on every capability change is undesirable (agents that
-legitimately change their card often, or environments where uncontrolled pod
-churn is itself a cost).</p>
-<p>The toggle is a grouped field, <code>peerWatch</code>, available at both levels:</p>
+<h2 id="enabling-this-driftreload">Enabling this: <code>driftReload</code><a class="headerlink" href="#enabling-this-driftreload" title="Permanent link">&para;</a></h2>
+<p>This is opt-in/opt-out, not always-on — for some deployments, auto-reloading on
+every capability change is undesirable (agents that legitimately change their
+card often, or environments where uncontrolled pod churn is itself a cost).</p>
+<p>The toggle is a grouped field, <code>driftReload</code>, available at both levels:</p>
 <ul>
-<li><strong>AgentSet level:</strong> <code>spec.peerWatch</code> — the default for every agent in the set.</li>
-<li><strong>Agent level:</strong> <code>spec.agents[*].peerWatch</code> — overrides the AgentSet-level
+<li><strong>AgentSet level:</strong> <code>spec.driftReload</code> — the default for every agent in the
+  set.</li>
+<li><strong>Agent level:</strong> <code>spec.agents[*].driftReload</code> — overrides the AgentSet-level
   default for that agent, following the same fill-if-unset pattern already used
   for <code>BrokerContainer</code>/<code>InitContainer</code> templates
   (<code>ContainerTemplate.ApplyDefaultsFrom</code>,
-  <code>pkg/apis/kynomesh/v1alpha1/container_template.go</code>).</li>
+  <code>pkg/apis/kynomesh/v1alpha1/container_template.go</code>): an unset per-agent
+  <code>driftReload</code> takes the AgentSet-level default wholesale; a per-agent
+  <code>driftReload</code> that is set always wins outright.</li>
 </ul>
-<p><code>peerWatch</code> is deliberately a struct (e.g. <code>{enabled: bool}</code> today) rather than
-a bare boolean, so related settings in the same "how does this agent react to
-its peers" space can be added later without introducing new top-level fields.
-The exact field name, shape, precedence details, and default (on vs. off) are
-provisional — to be finalized during implementation, whichever is easiest to
-build correctly.</p>
-<p>What exactly <code>enabled</code> gates — whether it stops the daemon from tracking drift
-for that agent at all, or only stops the controller from acting on drift it
-still detects — is also left to implementation.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">driftReload</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"> </span><span class="c1"># fleet-wide default</span>
+<span class="w">  </span><span class="nt">agents</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">planner</span>
+<span class="w">      </span><span class="nt">driftReload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w"> </span><span class="c1"># this agent opts out even though the fleet default is on</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker</span><span class="w"> </span><span class="c1"># omitted — inherits the fleet default (enabled: true)</span>
+</code></pre></div>
+<p><code>driftReload</code> is deliberately a struct (<code>{enabled: bool}</code> today) rather than a
+bare boolean, so related settings in the same "how does this agent react to its
+peers" space can be added later without introducing new top-level fields.
+Default is <strong>off</strong> (<code>Enabled</code> bool zero-value is <code>false</code>): auto-restarting pods
+is a behavior change with real blast radius, so opt-in is the safer default for
+a first release.</p>
+<p><code>driftReload.enabled</code> gates the controller only, not the daemon: the daemon's
+drift tracking (step 3 above) runs unconditionally for every managed peer
+regardless of this setting, so the drift data stays visible via the API even
+when a user has turned auto-reload off. Only the controller-side component that
+acts on drift (deleting stale pods) checks <code>driftReload.enabled</code>.</p>
 <h2 id="non-goals">Non-goals<a class="headerlink" href="#non-goals" title="Permanent link">&para;</a></h2>
 <ul>
 <li>This does not change anything about the A2A SDKs' caching behavior itself —
@@ -1545,14 +1572,6 @@ still detects — is also left to implementation.</p>
 </ul>
 <h2 id="open-questions">Open questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Detection cadence.</strong> What interval the daemon polls managed peers'
-  <code>AgentCard</code>s on, and how that interacts with (or reuses) its existing scrape
-  loop (<code>pkg/daemon/server/rater</code>'s <code>DefaultScrapeInterval</code> = 5s) — left open
-  intentionally; not a blocking design decision, tunable during implementation.</li>
-<li><strong>Daemon poll-trigger model.</strong> Whether the daemon polls peers on its own
-  independent background timer (mirroring the reconciler-side <code>Sampler</code>'s 60s
-  loop, <code>pkg/reconciler/agentdeploy/scaling/sampler.go</code>) feeding a cache the new
-  API just reads from, or polls synchronously when <code>GetPeerCardDrift</code> is called.</li>
 <li><strong>External-agent drift detection</strong>, per the Non-goals section above — blocked
   on a credentials story for external agents that doesn't exist yet.</li>
 </ul>

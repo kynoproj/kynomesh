@@ -574,6 +574,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../user-guide/reference/drift-reload/" class="md-nav__link">
+        Drift Reload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../user-guide/reference/gpu/" class="md-nav__link">
         Running On GPU
       </a>
@@ -591,18 +605,18 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2_5" type="checkbox" id="__nav_3_2_5" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2_6" type="checkbox" id="__nav_3_2_6" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_3_2_5">
+        <label class="md-nav__link" for="__nav_3_2_6">
           Configuration
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Configuration" data-md-level="3">
-        <label class="md-nav__title" for="__nav_3_2_5">
+        <label class="md-nav__title" for="__nav_3_2_6">
           <span class="md-nav__icon md-icon"></span>
           Configuration
         </label>
@@ -1467,6 +1481,27 @@ When set, the broker uses it to rewrite AgentCard SupportedInterfaces
 URLs so external clients can reach the agent through an ingress or
 gateway in front of the cluster. If empty, the broker advertises its
 in-cluster address.
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>driftReload</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.DriftReload"> DriftReload </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+DriftReload controls automatic reload-on-drift for this agent. When
+unset, it inherits the AgentSet-level default (spec.driftReload).
 </p>
 
 </td>
@@ -2760,6 +2795,28 @@ or roll. They may never be Entry.
 
 </tr>
 
+<tr>
+
+<td>
+
+<code>driftReload</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.DriftReload"> DriftReload </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+DriftReload is the fleet-wide default for automatic reload-on-drift. Any
+agent may override it with its own driftReload; unset agents inherit
+this value.
+</p>
+
+</td>
+
+</tr>
+
 </table>
 
 </td>
@@ -2954,6 +3011,28 @@ for the AgentSet
 
 ExternalAgents references agents this AgentSet does not deploy, scale,
 or roll. They may never be Entry.
+</p>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<code>driftReload</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.DriftReload"> DriftReload </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+DriftReload is the fleet-wide default for automatic reload-on-drift. Any
+agent may override it with its own driftReload; unset agents inherit
+this value.
 </p>
 
 </td>
@@ -3568,6 +3647,74 @@ ContainerTemplate </a> </em>
 <p>
 
 Container for the daemon container (resources, env, …).
+</p>
+
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+<h3 id="kynomesh.kyno.sh/v1alpha1.DriftReload">
+
+DriftReload
+</h3>
+
+<p>
+
+(<em>Appears on:</em>
+<a href="#kynomesh.kyno.sh/v1alpha1.AbstractAgentDeploy">AbstractAgentDeploy</a>,
+<a href="#kynomesh.kyno.sh/v1alpha1.AgentSetSpec">AgentSetSpec</a>)
+</p>
+
+<p>
+
+<p>
+
+DriftReload controls whether to restart this AgentDeploy’s pods when the
+daemon detects they’re serving a stale cached AgentCard for one of their
+peers.
+</p>
+
+</p>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>
+
+Field
+</th>
+
+<th>
+
+Description
+</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>
+
+<code>enabled</code></br> <em> bool </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+<p>
+
+Enabled turns on automatic reload-on-drift for this AgentDeploy.
 </p>
 
 </td>
