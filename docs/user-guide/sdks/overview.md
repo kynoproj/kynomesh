@@ -201,8 +201,8 @@ you can advertise more than one and let each caller pick:
 The URLs here are only used for local development - running your agent
 in-cluster, Kynomesh's broker fronts it and advertises the reachable address to
 peers, so you don't need to construct those addresses yourself. If your agent
-needs to be reachable from outside the cluster too, set `publicBaseURL` on the
-agent (see the [API reference](../../APIs.md)).
+needs to be reachable from outside the cluster too, set
+[`publicBaseURL`](../reference/configuration/public-base-url.md) on the agent.
 
 ### Health Checks
 

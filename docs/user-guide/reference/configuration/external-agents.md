@@ -131,3 +131,5 @@ to make it a mid-chain hop by requiring it to be last.
   `agents` fields external agents interact with.
 - [Agent Discovery](../../../development/specifications/agent-discovery.md) -
   how a managed agent resolves and reaches a peer's broker.
+- [Public Base URL](public-base-url.md) - the inverse direction: making one of
+  your own agents reachable from outside the cluster.
