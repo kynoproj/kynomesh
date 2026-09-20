@@ -1,5 +1,37 @@
 # Changelog
 
+## v0.7.0 (2026-09-19)
+
+ * [dc8672e](https://github.com/kynoproj/kynomesh/commit/dc8672e418d68d4a78cb7d98b129900f1cda7052) Update manifests to v0.7.0
+ * [369890e](https://github.com/kynoproj/kynomesh/commit/369890e7adc26be96bfac11682afa6424400a259) feat: drift reload wiring to the controller (#233)
+ * [8ca1e40](https://github.com/kynoproj/kynomesh/commit/8ca1e4086849a74a90fdc2316573352e348b8914) fix: exclude scale field from pod hash calculation (#231)
+ * [cfd2f2f](https://github.com/kynoproj/kynomesh/commit/cfd2f2ff6eac2c12892eada8fa45c273cf210b38) feat: drift detection - latest hash in daemon (#230)
+ * [c2c6c65](https://github.com/kynoproj/kynomesh/commit/c2c6c65625ea3e8800de3874c08aafb150111040) feat: drift detection - fetch pod reported peer hashes (#229)
+ * [4b26a75](https://github.com/kynoproj/kynomesh/commit/4b26a75a74c6d846d63e797fd5284f482c282422) feat: drift detection part 2 - refactor (#228)
+ * [4d8afb8](https://github.com/kynoproj/kynomesh/commit/4d8afb885cf94ee23e730bb3a372836786e77610) feat: drift detection service (#227)
+ * [9895a33](https://github.com/kynoproj/kynomesh/commit/9895a339727ff77433950e34d342d1c921751ed0) feat: add GetPeerCardDrift proto for daemon AgentCard drift API (#224)
+ * [2052d25](https://github.com/kynoproj/kynomesh/commit/2052d25beb1ed5fb549119dd15c47a406fab3d5e) feat: expose peer hash from each agent pod (#220)
+ * [1b0f00f](https://github.com/kynoproj/kynomesh/commit/1b0f00f28288490b06e18e4b4764f1a6f339aa75) chore(deps): bump github.com/go-swagger/go-swagger from 0.36.4 to 0.36.5 (#217)
+ * [9a5452c](https://github.com/kynoproj/kynomesh/commit/9a5452cae3ed37d0363891eae1b1dccd275bc1df) chore(deps): bump google.golang.org/grpc from 1.83.1 to 1.83.2 (#216)
+ * [0eca728](https://github.com/kynoproj/kynomesh/commit/0eca728c74f6148df93c4abcef2bdde5982a4fd7) feat: validating webhook for AgentSet (#203)
+ * [9fd74b2](https://github.com/kynoproj/kynomesh/commit/9fd74b279705fb965becc7ac1ee788a1e6dcc22b) chore(deps): bump google.golang.org/grpc from 1.83.0 to 1.83.1 (#201)
+ * [58dc693](https://github.com/kynoproj/kynomesh/commit/58dc6938c4ccc81edb9639e5aab1d6a74ebb5b5e) chore(deps): bump github.com/a2aproject/a2a-go/v2 from 2.4.0 to 2.5.0 (#199)
+ * [a95f4c4](https://github.com/kynoproj/kynomesh/commit/a95f4c4bca2e2910754ea99a7a0e5630be62c4c4) chore(deps): bump github.com/stretchr/testify from 1.11.1 to 1.12.1 (#198)
+ * [2763239](https://github.com/kynoproj/kynomesh/commit/2763239e40bffb7fe154c746297d9d4210c199dd) chore(deps): bump github.com/go-swagger/go-swagger from 0.36.2 to 0.36.4 (#197)
+ * [593d4f2](https://github.com/kynoproj/kynomesh/commit/593d4f216862a8b1efee01e81a2b04eba95c11ad) feat: split the socket and port for grpc and http (#193)
+ * [0974480](https://github.com/kynoproj/kynomesh/commit/0974480d88e47eee220029a7d3d64c110d44f5bc) feat: support external agents (#187)
+ * [def25a5](https://github.com/kynoproj/kynomesh/commit/def25a575896bdae09ef4ba2f6ff7e0c8b491ad6) chor: broker error metrics (#184)
+ * [3af8416](https://github.com/kynoproj/kynomesh/commit/3af8416127f817a4fa22b9348da32dc55e078c9d) chore(deps): bump google.golang.org/protobuf from 1.36.12-0.20260120151049-f2248ac996af to 1.36.12 (#180)
+ * [90d5da1](https://github.com/kynoproj/kynomesh/commit/90d5da154bc22e1fccafdc1dbdf1c9a550345e83) chore(deps): bump github.com/go-swagger/go-swagger from 0.36.1 to 0.36.2 (#181)
+ * [548135f](https://github.com/kynoproj/kynomesh/commit/548135f9951e757c2f03cc591f3130510a6d02aa) chore(deps): bump golang.org/x/net from 0.57.0 to 0.58.0 (#182)
+ * [ef72d1e](https://github.com/kynoproj/kynomesh/commit/ef72d1eb6a7682ba788bbcfe1105be9b78280ff2) feat: add template for daemon deployment (#176)
+ * [5d79554](https://github.com/kynoproj/kynomesh/commit/5d795542e1c0bd3ee56cb57ca0c13cdf2a8b407b) fix: agent pod template not honored (#174)
+
+### Contributors
+
+ * Derek Wang
+ * dependabot[bot]
+
 ## v0.6.1 (2026-08-15)
 
  * [5c12def](https://github.com/kynoproj/kynomesh/commit/5c12def761542fc2e08b29f340d848fbc878c3be) Update manifests to v0.6.1
