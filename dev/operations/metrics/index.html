@@ -1355,7 +1355,7 @@ autoscaler).</p>
 </tbody>
 </table>
 <p>The broker's and daemon's metrics endpoints are TLS-only, using a certificate
-generated fresh per process — Prometheus scrape configs need <code>scheme: https</code> and
+generated fresh per process - Prometheus scrape configs need <code>scheme: https</code> and
 <code>insecure_skip_verify: true</code> (there's no shared CA to validate against). The
 controller-manager's endpoint is plain HTTP, served by controller-runtime's
 default metrics server.</p>
@@ -1392,7 +1392,7 @@ Kynomesh's custom autoscaler metrics below.</p>
 <tr>
 <td><code>broker_stream_messages_total</code></td>
 <td>Counter</td>
-<td>Stream messages observed on the wire — SSE events for REST/passthrough, server→client frames for gRPC. Stays 0 for non-streaming responses.</td>
+<td>Stream messages observed on the wire - SSE events for REST/passthrough, server→client frames for gRPC. Stays 0 for non-streaming responses.</td>
 </tr>
 <tr>
 <td><code>broker_request_duration_seconds</code></td>
@@ -1489,7 +1489,7 @@ All are labeled by <code>namespace</code>, <code>agentSet</code>, <code>agentDep
 </tbody>
 </table>
 <h2 id="prometheus-operator-integration">Prometheus Operator Integration<a class="headerlink" href="#prometheus-operator-integration" title="Permanent link">&para;</a></h2>
-<p>Example <code>PodMonitor</code> for agent pods (broker metrics) — matched by the common
+<p>Example <code>PodMonitor</code> for agent pods (broker metrics) - matched by the common
 labels every agent pod carries:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">monitoring.coreos.com/v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PodMonitor</span>

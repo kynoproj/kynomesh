@@ -1322,8 +1322,8 @@
 <h1 id="how-to-debug">How To Debug<a class="headerlink" href="#how-to-debug" title="Permanent link">&para;</a></h1>
 <h2 id="debug-logging">Debug Logging<a class="headerlink" href="#debug-logging" title="Permanent link">&para;</a></h2>
 <p>To enable debug logs on a container, set the <code>LOG_LEVEL</code> environment variable to
-<code>debug</code>. It's read by every Kynomesh process — broker, agent init containers,
-the per-AgentSet daemon, and the controller-manager — so the same variable works
+<code>debug</code>. It's read by every Kynomesh process - broker, agent init containers,
+the per-AgentSet daemon, and the controller-manager - so the same variable works
 regardless of which container you're debugging.</p>
 <p>To enable it on an agent's broker (via the shared template, so it applies to
 every agent in the AgentSet, or per agent):</p>
@@ -1369,7 +1369,7 @@ every agent in the AgentSet, or per agent):</p>
 <h2 id="profiling">Profiling<a class="headerlink" href="#profiling" title="Permanent link">&para;</a></h2>
 <p><code>pprof</code> is available on the broker's introspection port, gated separately from
 debug logging by the <code>KYNOMESH_PPROF_ENABLED</code> environment variable
-(unset/<code>false</code> by default — the endpoints are disabled unless explicitly turned
+(unset/<code>false</code> by default - the endpoints are disabled unless explicitly turned
 on):</p>
 <div class="highlight"><pre><span></span><code><span class="nt">brokerContainer</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">env</span><span class="p">:</span>
@@ -1391,7 +1391,7 @@ go<span class="w"> </span>tool<span class="w"> </span>trace<span class="w"> </sp
 <p>The broker's introspection endpoints are TLS-only with a self-signed certificate
 (see <a href="../../operations/metrics/">Metrics</a>), which is why the examples above use
 <code>https+insecure://</code> / <code>curl -k</code>.</p>
-<p><code>pprof</code> is only wired up on the broker today — the daemon and controller-manager
+<p><code>pprof</code> is only wired up on the broker today - the daemon and controller-manager
 don't expose <code>/debug/pprof/*</code>.</p>
 <h2 id="pod-internal-insight">Pod-Internal Insight<a class="headerlink" href="#pod-internal-insight" title="Permanent link">&para;</a></h2>
 <p>The broker's introspection port also serves <code>/introspect</code>, a single structured
@@ -1410,15 +1410,15 @@ JSON endpoint for pod-internal state.</p>
 </code></pre></div>
 <p>Today it carries:</p>
 <ul>
-<li><strong><code>host</code></strong> — the pod name.</li>
-<li><strong><code>peerHashes</code></strong> — the peer-hashes file the agent's SDK writes to the shared
+<li><strong><code>host</code></strong> - the pod name.</li>
+<li><strong><code>peerHashes</code></strong> - the peer-hashes file the agent's SDK writes to the shared
   <code>kynomesh-run</code> volume (<code>/var/run/kynomesh/peer-hashes.json</code>): a
   peer-name-keyed map of each peer client the agent process has resolved (see
   <a href="../specifications/agentcard-drift-reload/">AgentCard Drift Detection and Dependent Reload</a>).
   An empty object if the agent hasn't resolved any peer clients since last
   restart, not an error. Each entry carries:</li>
-<li><strong><code>hash</code></strong> — the <code>AgentCard</code> hash behind that peer's cached client.</li>
-<li><strong><code>observedAt</code></strong> — an RFC3339 timestamp (fractional seconds optional) for
+<li><strong><code>hash</code></strong> - the <code>AgentCard</code> hash behind that peer's cached client.</li>
+<li><strong><code>observedAt</code></strong> - an RFC3339 timestamp (fractional seconds optional) for
     when the SDK recorded this hash.</li>
 </ul>
 <h2 id="debug-inside-the-container">Debug Inside The Container<a class="headerlink" href="#debug-inside-the-container" title="Permanent link">&para;</a></h2>

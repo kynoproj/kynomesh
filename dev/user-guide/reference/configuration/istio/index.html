@@ -1307,9 +1307,9 @@ the Istio sidecar doesn't intercept in-mesh traffic meant for the broker.</p>
 <span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-agent:latest</span>
 </code></pre></div>
 <ul>
-<li><code>8490</code> is <code>AgentBrokerPort</code> — the broker's <code>A2A</code> listener, used for both
+<li><code>8490</code> is <code>AgentBrokerPort</code> - the broker's <code>A2A</code> listener, used for both
   inbound calls into this agent and outbound calls to peer agents' brokers.</li>
-<li><code>8491</code> is <code>AgentBrokerIntrospectionPort</code> — <code>/metrics</code>, <code>/healthz</code>, and
+<li><code>8491</code> is <code>AgentBrokerIntrospectionPort</code> - <code>/metrics</code>, <code>/healthz</code>, and
   <code>/readyz</code>, scraped in-cluster (e.g. by the per-AgentSet daemon and kubelet
   probes).</li>
 </ul>
@@ -1340,9 +1340,9 @@ them once on the shared template instead, via
 </code></pre></div>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../labels-and-annotations/">Labels And Annotations</a> — setting
+<li><a href="../labels-and-annotations/">Labels And Annotations</a> - setting
   <code>metadata.annotations</code> on agent and daemon pods.</li>
-<li><a href="../agentset-customization/">AgentSet Customization</a> — the <code>agent</code> and <code>daemon</code>
+<li><a href="../agentset-customization/">AgentSet Customization</a> - the <code>agent</code> and <code>daemon</code>
   shared templates.</li>
 </ul>
 

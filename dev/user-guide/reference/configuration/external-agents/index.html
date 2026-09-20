@@ -1379,8 +1379,8 @@
 
 <h1 id="external-agents">External Agents<a class="headerlink" href="#external-agents" title="Permanent link">&para;</a></h1>
 <p>Use <code>.spec.externalAgents</code> to let an AgentSet's agents talk to an agent this
-AgentSet doesn't own — an agent in another AgentSet, or any A2A endpoint
-reachable at a URL — without redeclaring its spec or deploying a duplicate.</p>
+AgentSet doesn't own - an agent in another AgentSet, or any A2A endpoint
+reachable at a URL - without redeclaring its spec or deploying a duplicate.</p>
 <p>No pod, Service, or broker is ever created for an external agent. It's purely a
 reference: a name (for peer bookkeeping, same as a managed agent's name) and a
 URL.</p>
@@ -1402,7 +1402,7 @@ URL.</p>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraud-check</span>
 <span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://fraud-check.example.com</span>
 </code></pre></div>
-<p><code>fraud-check</code> never gets a pod — it's added to <code>coordinator</code> and <code>worker</code>'s peer
+<p><code>fraud-check</code> never gets a pod - it's added to <code>coordinator</code> and <code>worker</code>'s peer
 list, and their brokers can reach it directly at the given URL, the same way
 they'd reach a managed sibling.</p>
 <h2 id="what-an-external-agent-can-and-cant-do">What an external agent can and can't do<a class="headerlink" href="#what-an-external-agent-can-and-cant-do" title="Permanent link">&para;</a></h2>
@@ -1411,18 +1411,18 @@ guarantee it forwards a call onward to another peer. It can be <strong>called</s
 it can never be relied on to <strong>originate</strong> a call to a further peer. Concretely:</p>
 <ul>
 <li>An external agent can never be <code>entry</code>.</li>
-<li>It can appear anywhere else in <code>Handoff</code> or <code>Supervisor</code> — see below.</li>
+<li>It can appear anywhere else in <code>Handoff</code> or <code>Supervisor</code> - see below.</li>
 <li>In <code>Sequential</code>, it can only be the <strong>last</strong> hop in the chain, and at most one
   external agent is allowed.</li>
 </ul>
 <h2 id="per-pattern-behavior">Per-pattern behavior<a class="headerlink" href="#per-pattern-behavior" title="Permanent link">&para;</a></h2>
 <h3 id="handoff">Handoff<a class="headerlink" href="#handoff" title="Permanent link">&para;</a></h3>
 <p>Every managed agent's peer list includes every other managed agent plus every
-external agent — external agents are just more peers in the mesh. Managed agents
+external agent - external agents are just more peers in the mesh. Managed agents
 may call an external one; nothing calls back through it.</p>
 <h3 id="supervisor">Supervisor<a class="headerlink" href="#supervisor" title="Permanent link">&para;</a></h3>
 <p>Only <code>entry</code>'s peer list includes anyone, and that list includes every external
-agent alongside the other managed agents — an external agent works well here as
+agent alongside the other managed agents - an external agent works well here as
 one of the entry's "workers," since the entry calls it and nothing more is
 required of it.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh.kyno.sh/v1alpha1</span>
@@ -1446,8 +1446,8 @@ required of it.</p>
 <p><code>planner</code> (the entry) sees both <code>worker</code> and <code>search-api</code> as peers; <code>worker</code>
 sees nobody, same as any non-entry agent under Supervisor.</p>
 <h3 id="sequential">Sequential<a class="headerlink" href="#sequential" title="Permanent link">&para;</a></h3>
-<p>The chain runs through <code>agents[]</code> in declaration order, and an external agent —
-if configured — is always the final hop, regardless of where it's declared in
+<p>The chain runs through <code>agents[]</code> in declaration order, and an external agent -
+if configured - is always the final hop, regardless of where it's declared in
 <code>externalAgents</code> (there can only be one):</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh.kyno.sh/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AgentSet</span>
@@ -1470,14 +1470,14 @@ if configured — is always the final hop, regardless of where it's declared in
 <p>This produces the chain <code>intake -&gt; review -&gt; fraud-check</code>. <code>review</code> (the last
 managed agent) gets <code>fraud-check</code> as its one peer; <code>fraud-check</code> itself gets no
 peers, since nothing is deployed for it.</p>
-<p>A chain like <code>intake -&gt; fraud-check -&gt; review</code> — an external agent <em>in the
-middle</em> of the chain — isn't possible: <code>fraud-check</code>'s code has no way to know
+<p>A chain like <code>intake -&gt; fraud-check -&gt; review</code> - an external agent <em>in the
+middle</em> of the chain - isn't possible: <code>fraud-check</code>'s code has no way to know
 it should call <code>review</code> next, so the AgentSet would reject a config that tries
 to make it a mid-chain hop by requiring it to be last.</p>
 <h2 id="validation">Validation<a class="headerlink" href="#validation" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>externalAgents[*].name</code> follows the same naming rules as <code>agents[*].name</code>
-  (DNS-1035, not reserved, no duplicates — the two lists share one name
+  (DNS-1035, not reserved, no duplicates - the two lists share one name
   namespace).</li>
 <li><code>externalAgents[*].url</code> must be an absolute URL (<code>scheme://host</code>).</li>
 <li><code>entry</code> must name a managed agent; naming an external agent is rejected.</li>
@@ -1485,9 +1485,9 @@ to make it a mid-chain hop by requiring it to be last.</p>
 </ul>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../../../core-concepts/agentset/">AgentSet</a> — the <code>pattern</code>/<code>entry</code>/
+<li><a href="../../../../core-concepts/agentset/">AgentSet</a> - the <code>pattern</code>/<code>entry</code>/
   <code>agents</code> fields external agents interact with.</li>
-<li><a href="../../../../development/specifications/agent-discovery/">Agent Discovery</a> —
+<li><a href="../../../../development/specifications/agent-discovery/">Agent Discovery</a> -
   how a managed agent resolves and reaches a peer's broker.</li>
 </ul>
 

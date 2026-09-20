@@ -1420,15 +1420,15 @@
 <h1 id="external-agents">External Agents<a class="headerlink" href="#external-agents" title="Permanent link">&para;</a></h1>
 <blockquote>
 <p>[!NOTE] This document is for Kynomesh contributors. It records the design
-decisions behind <a href="https://github.com/kynoproj/kynomesh/issues/147">#147</a> —
+decisions behind <a href="https://github.com/kynoproj/kynomesh/issues/147">#147</a> -
 referencing an existing/external agent as a peer, without the AgentSet
-deploying a duplicate — and how the shipped implementation reflects them.</p>
+deploying a duplicate - and how the shipped implementation reflects them.</p>
 </blockquote>
 <h2 id="problem">Problem<a class="headerlink" href="#problem" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Kynomesh is targeted to support "hybrid topologies: mix in-cluster managed
   agents with external agents reachable at a URL".</li>
-<li><code>AgentSetSpec.Agents []AbstractAgentDeploy</code> is homogeneous — every entry is a
+<li><code>AgentSetSpec.Agents []AbstractAgentDeploy</code> is homogeneous - every entry is a
   real agent this AgentSet deploys, scales, and rolls. There is no way to
   declare "treat this existing agent (in another AgentSet, or truly outside the
   cluster) as a peer, but don't deploy anything for it."</li>
@@ -1436,12 +1436,12 @@ deploying a duplicate — and how the shipped implementation reflects them.</p>
 <h2 id="what-an-external-agent-actually-is">What an external agent actually is<a class="headerlink" href="#what-an-external-agent-actually-is" title="Permanent link">&para;</a></h2>
 <p>No pod, Service, or broker is ever run for an external agent. Concretely:</p>
 <ul>
-<li>It is not scaled, rate-limited, health-probed, or rolled by Kynomesh — there
+<li>It is not scaled, rate-limited, health-probed, or rolled by Kynomesh - there
   is no Kynomesh-owned process there to do any of that to.</li>
 <li>It carries no auth, header, or TLS-trust configuration in the Kynomesh API.
   That configuration would need to live on a broker fronting the external agent,
   and no such broker exists. Any auth/TLS the external endpoint requires is the
-  concern of whichever <strong>managed</strong> agent calls it — normal application-level
+  concern of whichever <strong>managed</strong> agent calls it - normal application-level
   configuration on the caller, entirely outside Kynomesh's API surface. This
   isn't deferred as future work; it's out of scope by construction, because
   there is no Kynomesh-managed process on the external side to configure.</li>
@@ -1451,26 +1451,26 @@ deploying a duplicate — and how the shipped implementation reflects them.</p>
   <a href="#future-friendlier-in-cluster-reference">Future: friendlier in-cluster reference</a>).</li>
 </ul>
 <h2 id="where-can-an-external-agent-appear-in-a-pattern">Where can an external agent appear in a pattern?<a class="headerlink" href="#where-can-an-external-agent-appear-in-a-pattern" title="Permanent link">&para;</a></h2>
-<p>An external agent's code is opaque to Kynomesh — nothing guarantees it reads
+<p>An external agent's code is opaque to Kynomesh - nothing guarantees it reads
 <code>topology.json</code> or forwards a call onward. So it can only ever <strong>receive</strong> a
 call, never be relied on to <strong>originate</strong> one to a further peer. That one rule
 determines where it's legal in each pattern:</p>
 <ul>
-<li><strong>Never <code>Entry</code>.</strong> Entry is "the agent external callers reach first" —
+<li><strong>Never <code>Entry</code>.</strong> Entry is "the agent external callers reach first" -
   Kynomesh routes to it and, in Supervisor, expects it to fan out to peers. An
   agent Kynomesh doesn't run and doesn't control can't be asked to do that.</li>
 <li><strong>Handoff</strong> (every agent sees every other agent): an external agent can be any
   of the peers. Managed agents may call it; nothing requires it to call back,
-  which is fine — Handoff peers are permitted, not required, to call each other.</li>
+  which is fine - Handoff peers are permitted, not required, to call each other.</li>
 <li><strong>Supervisor</strong> (only <code>Entry</code> gets a peer list): an external agent can be one
-  of the entry's peers/workers — the entry calls it, it doesn't need to call
+  of the entry's peers/workers - the entry calls it, it doesn't need to call
   anyone further. Naturally terminal, so naturally fine.</li>
 <li><strong>Sequential</strong> (<code>agents[i]</code> sees only <code>agents[i+1]</code>): an external agent may
   only be the <strong>last</strong> hop in the chain. <code>managed → managed → external</code> is a
-  legitimate pipeline (e.g. <code>intake → intake2 → external-fraud-check</code>) — the
+  legitimate pipeline (e.g. <code>intake → intake2 → external-fraud-check</code>) - the
   managed agents do the forwarding, the external agent is a valid dead end.
   <code>managed → external → managed</code> is impossible to support: the middle hop is
-  opaque, so Kynomesh has no way to guarantee it calls the next agent — the
+  opaque, so Kynomesh has no way to guarantee it calls the next agent - the
   chain would silently dead-end at a black box that looks, from the spec, like
   it continues.</li>
 </ul>
@@ -1478,7 +1478,7 @@ determines where it's legal in each pattern:</p>
 supports at most one external agent, and only as the final hop.</strong></p>
 <h2 id="api-shape">API shape<a class="headerlink" href="#api-shape" title="Permanent link">&para;</a></h2>
 <h3 id="options-considered">Options considered<a class="headerlink" href="#options-considered" title="Permanent link">&para;</a></h3>
-<p><strong>A — flag on <code>AbstractAgentDeploy</code>, one list.</strong> Add
+<p><strong>A - flag on <code>AbstractAgentDeploy</code>, one list.</strong> Add
 <code>External *ExternalAgentRef</code> directly to the existing <code>AbstractAgentDeploy</code>
 struct (the <code>Agents[]</code> element type), alongside <code>Container *Container</code>.
 Discriminator: exactly one of <code>Container</code>/<code>External</code> set.</p>
@@ -1489,22 +1489,22 @@ Discriminator: exactly one of <code>Container</code>/<code>External</code> set.<
   (<code>Container</code>'s required-ness aside: <code>Scale</code>, <code>RateLimit</code>, <code>Sidecars</code>,
   <code>InitContainers</code>, <code>UpdateStrategy</code>, <code>PublicBaseURL</code>, plus everything inlined
   from <code>AbstractPodTemplate</code>). "Must be empty when <code>External</code> is set" is
-  enforceable only by validation, not by the schema — a user can write
+  enforceable only by validation, not by the schema - a user can write
   <code>external: {...}</code> next to a populated <code>container:</code> and only find out at
   admission time which one (if either) wins.</li>
 </ul>
-<p><strong>B — wrapper type inside <code>agents[]</code></strong> (<code>managed:</code>/<code>external:</code> variants per
+<p><strong>B - wrapper type inside <code>agents[]</code></strong> (<code>managed:</code>/<code>external:</code> variants per
 element). Rejected quickly: it has the same YAML nesting cost as a separate
 top-level list, but without that list's benefit of leaving today's <code>agents[]</code>
 shape untouched. If nesting is being accepted anyway, a top-level list is
 strictly better than hiding the same nesting inside <code>agents[]</code>.</p>
-<p><strong>C — separate top-level <code>externalAgents []ExternalAgentRef</code> list.</strong> Initially
-set aside over the Sequential ordering question — a second, unordered list
+<p><strong>C - separate top-level <code>externalAgents []ExternalAgentRef</code> list.</strong> Initially
+set aside over the Sequential ordering question - a second, unordered list
 seemingly can't express "this external agent is the third link in the chain."
 Revisited once the <strong>terminal-only</strong> rule above was established: Sequential
 never needs to interleave an external agent mid-chain, only append at most one
 after the last managed agent. That ordering need is exactly "how many entries
-does <code>externalAgents</code> have," not "at what index" — a second list is sufficient
+does <code>externalAgents</code> have," not "at what index" - a second list is sufficient
 once external participation is constrained to the tail.</p>
 <h3 id="decision-option-c">Decision: Option C<a class="headerlink" href="#decision-option-c" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh.kyno.sh/v1alpha1</span>
@@ -1534,7 +1534,7 @@ once external participation is constrained to the tail.</p>
 <span class="p">}</span>
 
 <span class="c1">// ExternalAgentRef is a reference to an agent this AgentSet does not deploy,</span>
-<span class="c1">// scale, or roll — no pod, Service, or broker is created for it.</span>
+<span class="c1">// scale, or roll - no pod, Service, or broker is created for it.</span>
 <span class="kd">type</span><span class="w"> </span><span class="nx">ExternalAgentRef</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="c1">// +kubebuilder:validation:Required</span>
 <span class="w">    </span><span class="nx">Name</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="s">`json:"name" ...`</span>
@@ -1547,10 +1547,10 @@ existing manifest.</p>
 <p>The name <code>externalAgents</code> (rather than <code>peers</code>, <code>externalPeers</code>,
 <code>referencedAgents</code>, or <code>agentRefs</code>) was chosen to match the existing
 <code>PeerKindExternal</code> vocabulary already in the API
-(<code>pkg/apis/kynomesh/v1alpha1/agentdeploy_types.go</code>) — what a user writes in
+(<code>pkg/apis/kynomesh/v1alpha1/agentdeploy_types.go</code>) - what a user writes in
 <code>spec.externalAgents</code> becomes, one-to-one, a <code>Peer{Kind: PeerKindExternal}</code>
 entry in the generated <code>topology.peers</code>. <code>peers</code>/<code>externalPeers</code> were passed
-over because "peer" is a topology-time (computed) concept — describing <code>Agents</code>
+over because "peer" is a topology-time (computed) concept - describing <code>Agents</code>
 as peers of each other too would be equally valid, so scoping "peer" to only the
 external list in the spec is misleading.</p>
 <h2 id="pattern-semantics-with-externalagents">Pattern semantics with <code>externalAgents</code><a class="headerlink" href="#pattern-semantics-with-externalagents" title="Permanent link">&para;</a></h2>
@@ -1568,9 +1568,9 @@ external list in the spec is misleading.</p>
 <p><code>pkg/reconciler/validator/agentset.go</code> (<code>ValidateAgentSet</code>) adds:</p>
 <ul>
 <li>Each <code>ExternalAgentRef.Name</code>: non-empty, DNS-1035-valid (same rule as managed
-  agent names, for consistency — it's a peer identity even though no Service is
+  agent names, for consistency - it's a peer identity even though no Service is
   created for it), not colliding with reserved names, and unique across <strong>both</strong>
-  <code>Agents</code> and <code>ExternalAgents</code> (one flat name namespace — an external agent
+  <code>Agents</code> and <code>ExternalAgents</code> (one flat name namespace - an external agent
   named the same as a managed agent would be ambiguous in <code>topology.peers</code>).</li>
 <li>Each <code>ExternalAgentRef.URL</code>: validated as an absolute URL (non-empty scheme
   and host, via <code>net/url.Parse</code>) at admission time, rather than left fully
@@ -1592,23 +1592,23 @@ external list in the spec is misleading.</p>
 <li>The Sequential branch (<code>nextAgent</code>) has a new case: when <code>self</code> is the last
   entry in <code>Agents</code> and <code>len(as.Spec.ExternalAgents) == 1</code>, the peer list
   becomes <code>[]Peer{{Name, Kind: PeerKindExternal, URL: ...}}</code> instead of <code>nil</code>.</li>
-<li>No AgentDeploy is ever created for an <code>ExternalAgents</code> entry — the
+<li>No AgentDeploy is ever created for an <code>ExternalAgents</code> entry - the
   reconciler's <code>Agents</code>-only iteration for pod/Service/AgentDeploy creation is
   unaffected; only the peer-list computation reads <code>ExternalAgents</code>.</li>
 </ul>
 <p>Downstream (<code>resolvePeerURLs</code> in <code>cmd/commands/init_runtime.go</code>) needed no
-change — it already passes <code>Kind: PeerKindExternal</code> peers' <code>URL</code> through
+change - it already passes <code>Kind: PeerKindExternal</code> peers' <code>URL</code> through
 untouched.</p>
 <h2 id="future-friendlier-in-cluster-reference">Future: friendlier in-cluster reference<a class="headerlink" href="#future-friendlier-in-cluster-reference" title="Permanent link">&para;</a></h2>
 <p>The original issue asks for two ways to point at a peer: a raw URL (for truly
 external endpoints), and a friendlier reference for an agent already known to
-the cluster — e.g. by its AgentSet + agent name — that the controller resolves
+the cluster - e.g. by its AgentSet + agent name - that the controller resolves
 to the existing ClusterIP DNS name
 (<code>https://&lt;agentset&gt;-&lt;agent&gt;.&lt;namespace&gt;.svc:8490</code>, per
 <a href="../agent-discovery/">Agent Discovery</a>) so users don't hand-write it.</p>
 <p>This is deliberately deferred out of v1: raw <code>url</code> alone is sufficient to close
 the issue's core gap (no user-facing field for external peers at all today), and
-the friendlier reference is additive — it can be introduced later as a second,
+the friendlier reference is additive - it can be introduced later as a second,
 mutually-exclusive field on <code>ExternalAgentRef</code> (e.g.
 <code>AgentSetRef *LocalAgentSetRef</code>) without touching anything decided above.</p>
 

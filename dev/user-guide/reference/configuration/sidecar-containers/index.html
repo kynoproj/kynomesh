@@ -1285,11 +1285,10 @@
 <p>Additional
 <a href="https://kubernetes.io/docs/concepts/workloads/pods/#how-pods-manage-multiple-containers">sidecar</a>
 containers can be added to an agent's pod via <code>.spec.agents[*].sidecars</code>. They
-run alongside the <code>broker</code> container for the lifetime of the pod. Be aware
-that these sidecar containers start after the <code>agent</code> container has started
-(<code>agent</code> runs as a native init-container sidecar, ahead of the pod's main
-containers) — so don't rely on a <code>sidecars</code> entry being up before <code>agent</code>
-starts.</p>
+run alongside the <code>broker</code> container for the lifetime of the pod. Be aware that
+these sidecar containers start after the <code>agent</code> container has started (<code>agent</code>
+runs as a native init-container sidecar, ahead of the pod's main containers) -
+so don't rely on a <code>sidecars</code> entry being up before <code>agent</code> starts.</p>
 <p>The following example shows how to add a sidecar container to an agent:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh.kyno.sh/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AgentSet</span>
@@ -1320,8 +1319,8 @@ shared volume.</p>
 <p>It is the sidecar owner's responsibility to come up with a protocol that can be
 used with the agent. It could be a volume, gRPC, TCP, HTTP 1.x, etc. Since
 <code>agent</code> starts before the <code>my-sidecar</code> container is guaranteed to be listening
-(see the start-order note above), the client side needs to retry the
-connection rather than dial once and fail.</p>
+(see the start-order note above), the client side needs to retry the connection
+rather than dial once and fail.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh.kyno.sh/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AgentSet</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -1369,11 +1368,11 @@ the pod, and <code>sidecars[*].resources</code> can be set like any other
 <a href="../container-resources/">container resources</a>.</p>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../init-containers/">Init Containers</a> — run one-shot setup before the agent
+<li><a href="../init-containers/">Init Containers</a> - run one-shot setup before the agent
   starts.</li>
-<li><a href="../container-resources/">Container Resources</a> — set <code>resources</code> on any
+<li><a href="../container-resources/">Container Resources</a> - set <code>resources</code> on any
   container.</li>
-<li><a href="../environment-variables/">Environment Variables</a> — env vars injected into
+<li><a href="../environment-variables/">Environment Variables</a> - env vars injected into
   every container.</li>
 </ul>
 

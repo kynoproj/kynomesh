@@ -1402,7 +1402,7 @@
 
 
 <h1 id="sdks">SDKs<a class="headerlink" href="#sdks" title="Permanent link">&para;</a></h1>
-<p>Kynomesh agents are plain <a href="https://a2a-protocol.org/">A2A</a> agents — you can
+<p>Kynomesh agents are plain <a href="https://a2a-protocol.org/">A2A</a> agents - you can
 write one in any language with an A2A implementation, and Kynomesh will run it.
 The SDKs are optional conveniences, not a requirement.</p>
 <p>What they save you is the wiring. Without an SDK you have to pick the right
@@ -1433,13 +1433,13 @@ with agent logic and peer <em>names</em>.</p>
 </table>
 <p>Both SDKs expose the same two halves:</p>
 <ul>
-<li><strong>Server</strong> — start an A2A agent the broker can reach.</li>
-<li><strong>Client</strong> — call other agents in the same AgentSet by name, with no URLs,
+<li><strong>Server</strong> - start an A2A agent the broker can reach.</li>
+<li><strong>Client</strong> - call other agents in the same AgentSet by name, with no URLs,
   transports, or <code>AgentCard</code> plumbing in your code.</li>
 </ul>
 <h2 id="writing-an-agent">Writing an Agent<a class="headerlink" href="#writing-an-agent" title="Permanent link">&para;</a></h2>
-<p>Implement the A2A executor interface, describe your agent with an <code>AgentCard</code>,
-and hand both to the SDK's start function.</p>
+<p>Implement the <a href="https://a2a-protocol.org/">A2A</a> executor interface, describe your
+agent with an <code>AgentCard</code>, and hand both to the SDK's start function.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Python</label><label for="__tabbed_1_2">Go</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
@@ -1557,11 +1557,11 @@ locally), mounts the JSON-RPC, REST, and gRPC transports your card advertises,
 and registers the agent for peer discovery.</p>
 <p>The URLs in the <code>AgentCard</code> above are development addresses. In-cluster,
 Kynomesh's broker sidecar fronts your agent and advertises the reachable address
-to peers — see
+to peers - see
 <a href="../../../development/specifications/agent-discovery/">Agent Discovery</a>.</p>
 <h3 id="exposing-transports">Exposing Transports<a class="headerlink" href="#exposing-transports" title="Permanent link">&para;</a></h3>
 <p>List every transport you want callers to be able to use in
-<code>supported_interfaces</code> / <code>SupportedInterfaces</code> — most agents only need one, but
+<code>supported_interfaces</code> / <code>SupportedInterfaces</code> - most agents only need one, but
 you can advertise more than one and let each caller pick:</p>
 <table>
 <thead>
@@ -1628,14 +1628,14 @@ you can advertise more than one and let each caller pick:</p>
 </div>
 </div>
 </div>
-<p>The URLs here are only used for local development — running your agent
+<p>The URLs here are only used for local development - running your agent
 in-cluster, Kynomesh's broker fronts it and advertises the reachable address to
 peers, so you don't need to construct those addresses yourself. If your agent
 needs to be reachable from outside the cluster too, set <code>publicBaseURL</code> on the
 agent (see the <a href="../../../APIs/">API reference</a>).</p>
 <h3 id="health-checks">Health Checks<a class="headerlink" href="#health-checks" title="Permanent link">&para;</a></h3>
 <p>By default an agent reports <code>SERVING</code> as soon as it starts. If readiness depends
-on something else — a model endpoint, a warm cache, a downstream dependency —
+on something else - a model endpoint, a warm cache, a downstream dependency -
 own the signal yourself and flip it as that dependency changes. Both the gRPC
 and HTTP health endpoints reflect it, so Kubernetes readiness probes and the
 broker see the same state.</p>
@@ -1678,7 +1678,7 @@ broker see the same state.</p>
 </div>
 <h2 id="calling-a-peer-agent">Calling a Peer Agent<a class="headerlink" href="#calling-a-peer-agent" title="Permanent link">&para;</a></h2>
 <p>Inside an AgentSet you address peers by the name declared in
-<code>spec.agents[*].name</code> — no URL, no transport negotiation. Kynomesh resolves the
+<code>spec.agents[*].name</code> - no URL, no transport negotiation. Kynomesh resolves the
 peer and picks a transport both sides support.</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Python</label><label for="__tabbed_4_2">Go</label></div>
 <div class="tabbed-content">
@@ -1740,17 +1740,17 @@ peer and picks a transport both sides support.</p>
 <h3 id="clients-are-built-once-and-reused">Clients Are Built Once and Reused<a class="headerlink" href="#clients-are-built-once-and-reused" title="Permanent link">&para;</a></h3>
 <p>The first call for a given peer name resolves that peer's <code>AgentCard</code> and builds
 a client; every later call for the same name reuses it, for the life of the
-process. This is deliberate — re-resolving the card on every request would add a
+process. This is deliberate - re-resolving the card on every request would add a
 round-trip and client construction to each call for no benefit when the peer
 hasn't changed.</p>
 <p>The tradeoff is that a cached client keeps serving the card it resolved at build
 time. If a peer's capabilities change while your agent is running, your agent
 won't notice on its own. Two ways to handle that:</p>
 <ul>
-<li><strong>Automatically</strong> — turn on <a href="../../reference/drift-reload/">Drift Reload</a>, and
+<li><strong>Automatically</strong> - turn on <a href="../../reference/drift-reload/">Drift Reload</a>, and
   Kynomesh restarts exactly the pods holding a stale card when a peer's card
   actually changes.</li>
-<li><strong>Manually</strong> — drop the cached client yourself with
+<li><strong>Manually</strong> - drop the cached client yourself with
   <code>client.forget_peer("worker-a")</code> (Python) or <code>client.ForgetPeer("worker-a")</code>
   (Go); the next call rebuilds it.</li>
 </ul>
@@ -1793,9 +1793,10 @@ won't notice on its own. Two ways to handle that:</p>
 </tbody>
 </table>
 <h3 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h3>
-<p>Two failure modes are worth distinguishing: the peer isn't reachable, versus
-peer discovery itself isn't available (the topology hasn't been delivered to the
-pod yet).</p>
+<p>The realistic failure case inside a running agent is calling a peer that isn't
+in your topology - either it doesn't exist, or the routing pattern forbids you
+from reaching it. Check for that specifically and treat anything else as a
+generic failure:</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Python</label><label for="__tabbed_5_2">Go</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
@@ -1804,18 +1805,18 @@ pod yet).</p>
 <span class="k">try</span><span class="p">:</span>
     <span class="n">a2a_client</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">peer_client</span><span class="p">(</span><span class="s2">"worker-a"</span><span class="p">)</span>
 <span class="k">except</span> <span class="n">client</span><span class="o">.</span><span class="n">PeerNotFoundError</span><span class="p">:</span>
-    <span class="o">...</span>  <span class="c1"># no such peer, or it isn't reachable</span>
-<span class="k">except</span> <span class="n">client</span><span class="o">.</span><span class="n">TopologyNotAvailableError</span><span class="p">:</span>
-    <span class="o">...</span>  <span class="c1"># peer discovery not ready yet</span>
+    <span class="o">...</span>  <span class="c1"># no such peer, or the routing pattern forbids reaching it</span>
+<span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+    <span class="o">...</span>  <span class="c1"># something else went wrong resolving the peer</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="nx">c</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">PeerClient</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="s">"worker-a"</span><span class="p">)</span>
 <span class="k">switch</span><span class="w"> </span><span class="p">{</span>
 <span class="k">case</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">Is</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">ErrPeerNotFound</span><span class="p">):</span>
-<span class="w">    </span><span class="c1">// no such peer, or it isn't reachable</span>
-<span class="k">case</span><span class="w"> </span><span class="nx">errors</span><span class="p">.</span><span class="nx">Is</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">ErrTopologyNotAvailable</span><span class="p">):</span>
-<span class="w">    </span><span class="c1">// peer discovery not ready yet</span>
+<span class="w">    </span><span class="c1">// no such peer, or the routing pattern forbids reaching it</span>
+<span class="k">case</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="p">:</span>
+<span class="w">    </span><span class="c1">// something else went wrong resolving the peer</span>
 <span class="p">}</span>
 </code></pre></div>
 </div>
@@ -1823,12 +1824,12 @@ pod yet).</p>
 </div>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../../quick-start/">Quick Start</a> — run your first AgentSet end to end.</li>
-<li><a href="../../../core-concepts/agentset/">AgentSet</a> — where peer names and the
+<li><a href="../../../quick-start/">Quick Start</a> - run your first AgentSet end to end.</li>
+<li><a href="../../../core-concepts/agentset/">AgentSet</a> - where peer names and the
   communication pattern are declared.</li>
-<li><a href="../../../development/specifications/agent-discovery/">Agent Discovery</a> — how
+<li><a href="../../../development/specifications/agent-discovery/">Agent Discovery</a> - how
   peers resolve each other's addresses.</li>
-<li><a href="../../reference/drift-reload/">Drift Reload</a> — keeping cached peer clients
+<li><a href="../../reference/drift-reload/">Drift Reload</a> - keeping cached peer clients
   from going stale.</li>
 </ul>
 

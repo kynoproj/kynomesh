@@ -1296,12 +1296,14 @@
 
 
 <h1 id="graceful-termination">Graceful Termination<a class="headerlink" href="#graceful-termination" title="Permanent link">&para;</a></h1>
-<p>When an agent's pod is deleted — scale-down, rolling update, or manual deletion
-— the broker drains in-flight requests before the pod actually terminates, so
-long-running agentic calls aren't cut off mid-flight. This is controlled by the
-standard Kubernetes
-<a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination"><code>terminationGracePeriodSeconds</code></a>,
-set per agent via <code>.spec.agents[*].terminationGracePeriodSeconds</code>:</p>
+<p>When an agent's pod is deleted - scale-down, rolling update, or manual deletion</p>
+<ul>
+<li>the broker drains in-flight requests before the pod actually terminates, so
+  long-running agentic calls aren't cut off mid-flight. This is controlled by
+  the standard Kubernetes
+  <a href="https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination"><code>terminationGracePeriodSeconds</code></a>,
+  set per agent via <code>.spec.agents[*].terminationGracePeriodSeconds</code>:</li>
+</ul>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh.kyno.sh/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AgentSet</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -1324,8 +1326,8 @@ single <code>terminationGracePeriodSeconds</code> budget:</p>
 <ol>
 <li><strong>preStop drain.</strong> Before <code>SIGTERM</code> is sent, Kubernetes runs the broker's
    <code>preStop</code> hook (<code>kynomesh drain</code>). It first waits out a fixed propagation
-   delay — so Kubernetes has time to remove the pod from Service endpoints
-   before the broker starts checking — then polls its own <code>/metrics</code> and waits
+   delay - so Kubernetes has time to remove the pod from Service endpoints
+   before the broker starts checking - then polls its own <code>/metrics</code> and waits
    for <code>broker_inflight_requests</code> to reach zero before returning, up to its
    share of the budget.</li>
 <li><strong>Post-<code>SIGTERM</code> shutdown.</strong> Once the <code>preStop</code> hook returns, Kubernetes
@@ -1333,7 +1335,7 @@ single <code>terminationGracePeriodSeconds</code> budget:</p>
    (stops accepting new connections, lets accepted ones finish), bounded by the
    remaining budget, before the process exits or the kubelet <code>SIGKILL</code>s it.</li>
 </ol>
-<p>The budget split isn't a fixed fraction — it's computed from the actual grace
+<p>The budget split isn't a fixed fraction - it's computed from the actual grace
 period so both phases stay useful at very short or very long settings:</p>
 <table>
 <thead>
@@ -1365,7 +1367,7 @@ window gets whatever's left after both, minus a small safety margin. At the 120s
 default, that's a 6s propagation wait, a 12s shutdown budget, and a 106s window
 (including the propagation wait) for in-flight requests to finish.</p>
 <p>A <code>preStop</code> drain that times out with requests still in flight is not treated as
-an error — it's expected behavior under load. The post-<code>SIGTERM</code> phase and,
+an error - it's expected behavior under load. The post-<code>SIGTERM</code> phase and,
 ultimately, the kubelet's own <code>SIGKILL</code> at the end of the grace period handle
 whatever's left. Raising <code>terminationGracePeriodSeconds</code> is the lever for giving
 slow requests more room before that happens.</p>
@@ -1378,12 +1380,12 @@ flowing.</p>
 </blockquote>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../rolling-update/">Rolling Update</a> — how <code>terminationGracePeriodSeconds</code>
+<li><a href="../rolling-update/">Rolling Update</a> - how <code>terminationGracePeriodSeconds</code>
   interacts with the batched pod replacement during a spec change.</li>
-<li><a href="../../zero-downtime-pod-replacement/">Zero-Downtime Pod Replacement</a> — how
+<li><a href="../../zero-downtime-pod-replacement/">Zero-Downtime Pod Replacement</a> - how
   draining outgoing pods combines with rolling update batching and readiness
   gating on incoming pods.</li>
-<li><a href="../../../../operations/metrics/">Metrics</a> — <code>broker_inflight_requests</code> and the
+<li><a href="../../../../operations/metrics/">Metrics</a> - <code>broker_inflight_requests</code> and the
   other broker metrics the drain hook itself scrapes.</li>
 </ul>
 

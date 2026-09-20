@@ -1293,7 +1293,7 @@
 
 <h1 id="validating-admission-webhook">Validating Admission Webhook<a class="headerlink" href="#validating-admission-webhook" title="Permanent link">&para;</a></h1>
 <p>This validating webhook rejects faulty <code>AgentSet</code> specs such as duplicate agent
-names, a reserved name collision, a malformed external-agent URL, etc. — the
+names, a reserved name collision, a malformed external-agent URL, etc. - the
 cross-field rules the CRD's OpenAPI schema can't express on its own. Instead of
 the object being persisted and only failing later during reconciliation, the API
 server rejects it immediately and <code>kubectl apply</code> returns the validation error
@@ -1305,7 +1305,7 @@ right away.</p>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <p>Note that some fields, such as <code>spec.pattern</code>'s allowed values and
 <code>spec.agents[].container</code> being required, are already enforced by the CRD's
-OpenAPI schema — the API server rejects those before any admission webhook runs,
+OpenAPI schema - the API server rejects those before any admission webhook runs,
 with a <code>"... is invalid"</code> style error. The validating webhook catches everything
 the schema can't express.</p>
 <p>For example, given an <code>AgentSet</code> with a duplicate agent name:</p>

@@ -1378,7 +1378,7 @@ the shared default for that agent.</p>
 <span class="w">              </span><span class="nt">topologyKey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kubernetes.io/hostname</span>
 </code></pre></div>
 <h2 id="daemon">Daemon<a class="headerlink" href="#daemon" title="Permanent link">&para;</a></h2>
-<p>Use <code>.spec.templates.daemon</code> to customize the per-AgentSet daemon Deployment —
+<p>Use <code>.spec.templates.daemon</code> to customize the per-AgentSet daemon Deployment -
 the singleton pod that scrapes agent metrics and serves them to the autoscaler.
 All fields under <code>.spec.templates.daemon</code> are optional.</p>
 <p><code>container</code> customizes the daemon's single container (resources, env, security
@@ -1417,11 +1417,11 @@ fields available under <code>spec.agents[]</code>.</p>
 daemon is a Recreate-strategy singleton, not a rolling update).</p>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../labels-and-annotations/">Labels And Annotations</a> — set custom labels and
+<li><a href="../labels-and-annotations/">Labels And Annotations</a> - set custom labels and
   annotations on agent pods.</li>
-<li><a href="../../../../core-concepts/agentset/">AgentSet</a> — where <code>templates</code> and the
+<li><a href="../../../../core-concepts/agentset/">AgentSet</a> - where <code>templates</code> and the
   <code>agents</code> list live.</li>
-<li><a href="../../../../core-concepts/agentdeploy/">AgentDeploy</a> — the unit these pods
+<li><a href="../../../../core-concepts/agentdeploy/">AgentDeploy</a> - the unit these pods
   belong to.</li>
 </ul>
 

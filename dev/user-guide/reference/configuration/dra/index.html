@@ -1285,8 +1285,9 @@
 <p><a href="https://kubernetes.io/docs/concepts/scheduling-eviction/dynamic-resource-allocation/">Dynamic Resource Allocation</a>
 (DRA) is supported on an agent's pod: declare a claim at the pod level via
 <code>.spec.agents[*].resourceClaims</code>, then reference it by name from
-<code>resources.claims</code> on any container that needs it — the agent container, the
-<code>brokerContainer</code> template, or the per-AgentSet <code>.spec.templates.daemon.container</code>.</p>
+<code>resources.claims</code> on any container that needs it - the agent container, the
+<code>brokerContainer</code> template, or the per-AgentSet
+<code>.spec.templates.daemon.container</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">resource.k8s.io/v1alpha3</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ResourceClaimTemplate</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -1319,17 +1320,17 @@
 <p>To give the <code>broker</code> container access to the same claim, reference it from
 <code>brokerContainer.resources.claims</code> (either per-agent or on the shared
 <code>.spec.templates.agent.brokerContainer</code>):</p>
-<div class="highlight"><pre><span></span><code><span class="w">      </span><span class="nt">brokerContainer</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">resources</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">claims</span><span class="p">:</span>
-<span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu</span>
+<div class="highlight"><pre><span></span><code><span class="nt">brokerContainer</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">claims</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpu</span>
 </code></pre></div>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../container-resources/">Container Resources</a> — set <code>resources</code> on any
+<li><a href="../container-resources/">Container Resources</a> - set <code>resources</code> on any
   container.</li>
-<li><a href="../agentset-customization/">AgentSet Customization</a> — the <code>agent</code> and
-  <code>daemon</code> shared templates.</li>
+<li><a href="../agentset-customization/">AgentSet Customization</a> - the <code>agent</code> and <code>daemon</code>
+  shared templates.</li>
 </ul>
 
               

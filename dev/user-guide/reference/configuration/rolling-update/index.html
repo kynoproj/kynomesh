@@ -1327,7 +1327,7 @@ configuration is:</p>
 </ul>
 <h2 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
 <p><code>maxUnavailable</code> only gates the <strong>replacement</strong> of pods that are already running
-an outdated pod spec — it does not gate initial bring-up (a fresh AgentDeploy,
+an outdated pod spec - it does not gate initial bring-up (a fresh AgentDeploy,
 or new replica slots created by scaling up) or scale-down (removing replica
 slots), both of which happen immediately and in full.</p>
 <p>For replacement, the controller batches replica slots that are still on the old
@@ -1341,9 +1341,9 @@ recreated with the new spec, and the controller waits for all 5 to become Ready
 before touching the next 5. If your agent has a long startup time and you're
 sensitive to the reduced capacity during a rollout, set <code>maxUnavailable</code> to a
 smaller value.</p>
-<p>Autoscaling is paused for an agent while a rolling update is in progress — the
+<p>Autoscaling is paused for an agent while a rolling update is in progress - the
 autoscaler skips scaling decisions until every replica slot is back on the
-desired pod spec — so a rollout and an autoscaling decision never race each
+desired pod spec - so a rollout and an autoscaling decision never race each
 other.</p>
 <h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh.kyno.sh/v1alpha1</span>
@@ -1364,10 +1364,10 @@ other.</p>
 </code></pre></div>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../zero-downtime-pod-replacement/">Zero-Downtime Pod Replacement</a> — how
-  <code>maxUnavailable</code> combines with readiness and graceful termination so a
-  rollout doesn't drop traffic.</li>
-<li><a href="../agentset-customization/">AgentSet Customization</a> — other per-agent
+<li><a href="../../zero-downtime-pod-replacement/">Zero-Downtime Pod Replacement</a> - how
+  <code>maxUnavailable</code> combines with readiness and graceful termination so a rollout
+  doesn't drop traffic.</li>
+<li><a href="../agentset-customization/">AgentSet Customization</a> - other per-agent
   settings.</li>
 </ul>
 

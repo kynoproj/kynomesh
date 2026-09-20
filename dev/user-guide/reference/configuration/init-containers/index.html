@@ -1289,7 +1289,7 @@ can be added to an agent's pod via <code>.spec.agents[*].initContainers</code>.<
 containers listed in <code>initContainers</code> run, and <code>agent</code> (the user's agent
 container, run as a
 <a href="https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/">native sidecar</a>
-via <code>restartPolicy: Always</code>) runs last — since it never completes, anything
+via <code>restartPolicy: Always</code>) runs last - since it never completes, anything
 meant to prepare state for it must run before it starts.</p>
 <p>The following example adds an init container that seeds a volume before the
 agent starts:</p>
@@ -1348,11 +1348,11 @@ the pod, and <code>initContainers[*].resources</code> can be set like any other
 <a href="../container-resources/">container resources</a>.</p>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../sidecar-containers/">Sidecar Containers</a> — add extra long-running
+<li><a href="../sidecar-containers/">Sidecar Containers</a> - add extra long-running
   containers to an agent pod.</li>
-<li><a href="../container-resources/">Container Resources</a> — set <code>resources</code> on any
+<li><a href="../container-resources/">Container Resources</a> - set <code>resources</code> on any
   container.</li>
-<li><a href="../environment-variables/">Environment Variables</a> — env vars injected into
+<li><a href="../environment-variables/">Environment Variables</a> - env vars injected into
   every container.</li>
 </ul>
 

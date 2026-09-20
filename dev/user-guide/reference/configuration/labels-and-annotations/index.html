@@ -1282,7 +1282,7 @@
 
 
 <h1 id="labels-and-annotations">Labels And Annotations<a class="headerlink" href="#labels-and-annotations" title="Permanent link">&para;</a></h1>
-<p>Sometimes customized <em>Labels</em> or <em>Annotations</em> are needed for an agent's pods —
+<p>Sometimes customized <em>Labels</em> or <em>Annotations</em> are needed for an agent's pods -
 for example, adding an annotation to enable or disable
 <a href="https://istio.io/">Istio</a> sidecar injection. To do that, add a <code>metadata</code> block
 with <code>labels</code> or <code>annotations</code> to the agent.</p>
@@ -1329,13 +1329,13 @@ shared agent template under <code>spec.templates.agent</code>:</p>
 </code></pre></div>
 <p>A per-agent <code>metadata</code> value takes precedence over the shared template for the
 same key.</p>
-<p>The labels and annotations are <strong>added</strong> to the agent's pods — Kynomesh's own
+<p>The labels and annotations are <strong>added</strong> to the agent's pods - Kynomesh's own
 labels and annotations (used to manage and route the pods) are never overridden.</p>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../../../core-concepts/agentset/">AgentSet</a> — where the <code>agents</code> list and
+<li><a href="../../../../core-concepts/agentset/">AgentSet</a> - where the <code>agents</code> list and
   <code>templates</code> live.</li>
-<li><a href="../../../../core-concepts/agentdeploy/">AgentDeploy</a> — the unit these pods
+<li><a href="../../../../core-concepts/agentdeploy/">AgentDeploy</a> - the unit these pods
   belong to.</li>
 </ul>
 

@@ -1379,11 +1379,11 @@ not supposed to be created by the user directly.</p>
 <p>Every AgentDeploy pod is composed of three controller-managed containers plus
 whatever the user adds:</p>
 <ul>
-<li><strong><code>init-runtime</code></strong> (init container) — writes <code>/var/run/kynomesh/topology.json</code>
+<li><strong><code>init-runtime</code></strong> (init container) - writes <code>/var/run/kynomesh/topology.json</code>
   from the encoded AgentDeploy payload, resolving peer URLs.</li>
-<li><strong><code>agent</code></strong> (Kubernetes-native sidecar with <code>restartPolicy: Always</code>) — runs
+<li><strong><code>agent</code></strong> (Kubernetes-native sidecar with <code>restartPolicy: Always</code>) - runs
   the user's code. Listens on a Unix Domain Socket the broker connects to.</li>
-<li><strong><code>broker</code></strong> (main container) — terminates A2A traffic and forwards it to the
+<li><strong><code>broker</code></strong> (main container) - terminates A2A traffic and forwards it to the
   agent over the shared UDS.</li>
 </ul>
 <h2 id="peer-discovery">Peer discovery<a class="headerlink" href="#peer-discovery" title="Permanent link">&para;</a></h2>
@@ -1418,8 +1418,8 @@ rollouts, so pod DNS names stay predictable.</p>
 </code></pre></div>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../agentset/">AgentSet</a> — group-level resource and patterns.</li>
-<li><a href="../../APIs/">APIs</a> — full CRD reference.</li>
+<li><a href="../agentset/">AgentSet</a> - group-level resource and patterns.</li>
+<li><a href="../../APIs/">APIs</a> - full CRD reference.</li>
 </ul>
 
               

@@ -1367,16 +1367,16 @@ receives. Every <a href="../../../core-concepts/agentdeploy/">AgentDeploy</a> is
 its own, so a busy agent grows while its idle peers stay small.</p>
 <p>There are three ways to autoscale an agent:</p>
 <ul>
-<li><strong>Kynomesh autoscaling</strong> — built in and on by default (below).</li>
-<li><strong>Kubernetes HPA</strong> — drive replicas from CPU/memory or custom metrics.</li>
-<li><strong>Third-party autoscalers</strong> — e.g. KEDA.</li>
+<li><strong>Kynomesh autoscaling</strong> - built in and on by default (below).</li>
+<li><strong>Kubernetes HPA</strong> - drive replicas from CPU/memory or custom metrics.</li>
+<li><strong>Third-party autoscalers</strong> - e.g. KEDA.</li>
 </ul>
 <p>The AgentDeploy exposes a standard Kubernetes <code>scale</code> subresource
 (<code>spec.replicas</code>), so HPA and third-party autoscalers can target it directly.
-Only one autoscaler should own an agent at a time — disable Kynomesh autoscaling
+Only one autoscaler should own an agent at a time - disable Kynomesh autoscaling
 when you use another (see <a href="#kubernetes-hpa">below</a>).</p>
 <h2 id="kynomesh-autoscaling">Kynomesh autoscaling<a class="headerlink" href="#kynomesh-autoscaling" title="Permanent link">&para;</a></h2>
-<p>Kynomesh autoscaling is <strong>on by default</strong> — every agent is autoscaled unless you
+<p>Kynomesh autoscaling is <strong>on by default</strong> - every agent is autoscaled unless you
 opt out. With no <code>scale</code> block an agent still autoscales using the defaults
 (<code>min</code> 1, <code>max</code> 50). Set a <code>scale</code> block to bound or tune it, or set
 <code>disabled: true</code> to turn it off and pin the replica count.</p>
@@ -1385,15 +1385,15 @@ opt out. With no <code>scale</code> block an agent still autoscales using the de
 samples this per replica, learns the agent's capacity, and adjusts replicas to
 keep the fleet near a target utilization.</p>
 <ul>
-<li><strong>Signal — in-flight concurrency.</strong> For agentic (LLM/tool) workloads the
+<li><strong>Signal - in-flight concurrency.</strong> For agentic (LLM/tool) workloads the
   binding resource is <em>slot occupancy</em>: each request holds a context and an
   upstream connection for the duration of a (often multi-second) call. Kynomesh
-  scales on concurrent in-flight requests, not requests-per-second — a better
+  scales on concurrent in-flight requests, not requests-per-second - a better
   fit for long, variable-duration agent calls. Latency is deliberately ignored
   (it is dominated by upstream response time and can't tell a saturated replica
   from a busy-but-healthy one).</li>
 <li><strong>Learned capacity (the "knee").</strong> From observed load the controller learns
-  the per-replica concurrency at which throughput stops rising — the saturation
+  the per-replica concurrency at which throughput stops rising - the saturation
   knee. It targets a fraction of that knee (see <code>targetSaturationPercentage</code>).
   Until enough data is collected, it falls back to a conservative default and
   over-provisions rather than under-provisions.</li>
@@ -1404,7 +1404,7 @@ keep the fleet near a target utilization.</p>
   reconcile then rolls pods to match.</li>
 <li><strong>Rate-limit ceiling.</strong> If the agent has a
   <a href="../rate-limiting/"><code>rateLimit.maxInFlight</code></a> cap, scale-up is suppressed once
-  total in-flight reaches it — more replicas can't raise a fixed external
+  total in-flight reaches it - more replicas can't raise a fixed external
   ceiling, so the agent settles instead of climbing toward <code>max</code>.</li>
 </ul>
 <h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
@@ -1496,10 +1496,10 @@ AgentDeploy's <code>scale</code> subresource from the tool's scaling object (e.g
 <code>ScaledObject</code> <code>scaleTargetRef</code>).</p>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../rate-limiting/">Rate limiting</a> — cap an agent's in-flight load; interacts
+<li><a href="../rate-limiting/">Rate limiting</a> - cap an agent's in-flight load; interacts
   with autoscaling (a rate-limited agent stops scaling up once it hits its cap).</li>
-<li><a href="../../../core-concepts/agentdeploy/">AgentDeploy</a> — the unit that gets scaled.</li>
-<li><a href="../../../core-concepts/agentset/">AgentSet</a> — where the <code>scale</code> block lives.</li>
+<li><a href="../../../core-concepts/agentdeploy/">AgentDeploy</a> - the unit that gets scaled.</li>
+<li><a href="../../../core-concepts/agentset/">AgentSet</a> - where the <code>scale</code> block lives.</li>
 </ul>
 
               
