@@ -11,4 +11,4 @@ namespace: kynomesh-system
 
 images:
   - name: quay.io/kynoproj/kynomesh
-    newTag: latest
+    newTag: v0.7.0

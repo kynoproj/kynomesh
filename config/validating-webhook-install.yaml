@@ -134,7 +134,7 @@ spec:
           value: kynomesh-webhook
         - name: CLUSTER_ROLE_NAME
           value: kynomesh-webhook
-        image: quay.io/kynoproj/kynomesh:latest
+        image: quay.io/kynoproj/kynomesh:v0.7.0
         imagePullPolicy: Always
         name: webhook
         resources:
