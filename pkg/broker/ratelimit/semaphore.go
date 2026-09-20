@@ -61,7 +61,7 @@ func (s *semaphore) SetLimit(limit int) {
 	s.limit = limit
 }
 
-// limitValue returns the current limit — test-only introspection.
+// limitValue returns the current limit - test-only introspection.
 func (s *semaphore) limitValue() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()

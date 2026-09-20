@@ -43,7 +43,7 @@ type AgentCardScraper interface {
 
 // gatedHash is one peer's stability-gated latest-hash state: a newly
 // observed hash must be seen on stabilityWindow consecutive polls before
-// it's promoted to accepted (LatestHash) — a peer mid-rollout can briefly
+// it's promoted to accepted (LatestHash) - a peer mid-rollout can briefly
 // serve an old and new card from different replicas, and that shouldn't
 // itself flip LatestHash back and forth.
 type gatedHash struct {
@@ -57,7 +57,7 @@ type gatedHash struct {
 // observe folds one poll's hash into the gate.
 func (g *gatedHash) observe(hash string, now time.Time, stabilityWindow int) {
 	if hash == g.accepted {
-		// Back to the already-accepted value — a competing candidate's
+		// Back to the already-accepted value - a competing candidate's
 		// progress shouldn't survive a bounce through the old value.
 		g.pending = ""
 		g.pendingCount = 0

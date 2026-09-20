@@ -28,9 +28,9 @@ spec:
         image: my-agent:latest
 ```
 
-- `8490` is `AgentBrokerPort` — the broker's `A2A` listener, used for both
+- `8490` is `AgentBrokerPort` - the broker's `A2A` listener, used for both
   inbound calls into this agent and outbound calls to peer agents' brokers.
-- `8491` is `AgentBrokerIntrospectionPort` — `/metrics`, `/healthz`, and
+- `8491` is `AgentBrokerIntrospectionPort` - `/metrics`, `/healthz`, and
   `/readyz`, scraped in-cluster (e.g. by the per-AgentSet daemon and kubelet
   probes).
 
@@ -64,7 +64,7 @@ spec:
 
 ## See Also
 
-- [Labels And Annotations](labels-and-annotations.md) — setting
+- [Labels And Annotations](labels-and-annotations.md) - setting
   `metadata.annotations` on agent and daemon pods.
-- [AgentSet Customization](agentset-customization.md) — the `agent` and `daemon`
+- [AgentSet Customization](agentset-customization.md) - the `agent` and `daemon`
   shared templates.

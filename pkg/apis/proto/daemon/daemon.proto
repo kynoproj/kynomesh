@@ -102,7 +102,7 @@ message PeerCardDrift {
 
   // reportedHashes is keyed by pod name, holding what that pod currently
   // reports for this peer (via its broker-exposed peer-hashes endpoint).
-  // A pod with no entry has not reported a hash for this peer yet — 
+  // A pod with no entry has not reported a hash for this peer yet - 
   // "unknown," not "drifted."
   map<string, ReportedHash> reportedHashes = 2;
 }
@@ -136,7 +136,7 @@ service DaemonService {
 
   // GetPeerCardDrift returns, for each of the named AgentDeploy's peers,
   // the daemon's own latest (stability-gated) AgentCard hash alongside the
-  // hash(es) that AgentDeploy's live pods currently report for that peer —
+  // hash(es) that AgentDeploy's live pods currently report for that peer -
   // a decision-ready comparison so the controller never has to fetch a
   // peer's AgentCard or read a pod's exposed hash file itself.
   rpc GetPeerCardDrift(GetPeerCardDriftRequest) returns (GetPeerCardDriftResponse) {

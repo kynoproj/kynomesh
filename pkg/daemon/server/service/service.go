@@ -102,7 +102,7 @@ func (s *Service) GetAgentDeployMetrics(_ context.Context, req *pb.GetAgentDeplo
 //   - NotFound when the AgentDeploy is unknown.
 //   - OK with a populated GetPeerCardDriftResponse otherwise. A peer with
 //     no reported hashes from any pod is still present in the map (empty
-//     ReportedHashes) — see rater.PeerCardDrift.
+//     ReportedHashes) - see rater.PeerCardDrift.
 func (s *Service) GetPeerCardDrift(ctx context.Context, req *pb.GetPeerCardDriftRequest) (*pb.GetPeerCardDriftResponse, error) {
 	res, err := s.q.GetPeerCardDrift(ctx, req.GetName())
 	switch {

@@ -56,7 +56,7 @@ spec:
 
 ## See Also
 
-- [Sidecar Containers](sidecar-containers.md) — a shared-volume example between
+- [Sidecar Containers](sidecar-containers.md) - a shared-volume example between
   the agent and a sidecar.
-- [Init Containers](init-containers.md) — a shared-volume example between an
+- [Init Containers](init-containers.md) - a shared-volume example between an
   init container and the agent.

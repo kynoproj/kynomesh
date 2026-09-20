@@ -92,7 +92,7 @@ func inflightValue(s *PodSample, transport string) float64 {
 //     sample's value).
 //
 // Walking samples in order and committing a run's delta on each
-// detected reset gives the right answer in all cases — including
+// detected reset gives the right answer in all cases - including
 // the no-reset case, where the algorithm reduces to (last - first).
 //
 // Returns (rate, true) when computable; (0, false) when the pod has
@@ -160,14 +160,14 @@ func calculateCounterRate(b *AgentDeployBuffers, nowUnix, lookbackSeconds int64,
 //
 // A sample's value represents the gauge from its timestamp until
 // the NEXT sample's timestamp (step-function semantics). The last
-// in-window sample contributes no weight — we don't extrapolate
+// in-window sample contributes no weight - we don't extrapolate
 // past the most recent observation. Likewise the window's leading
-// gap (before the first sample) gets no weight — we don't
+// gap (before the first sample) gets no weight - we don't
 // extrapolate backwards.
 //
 // Edge cases:
-//   - Zero samples in window: (0, false) — pod contributes nothing.
-//   - One sample in window: (its value, true) — single observation
+//   - Zero samples in window: (0, false) - pod contributes nothing.
+//   - One sample in window: (its value, true) - single observation
 //     IS our best estimate, no duration to weight by.
 //   - Multiple samples at the same timestamp (degenerate but
 //     possible if a future change adds sub-second timestamping):

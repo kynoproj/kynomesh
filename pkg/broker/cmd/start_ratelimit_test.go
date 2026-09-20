@@ -91,7 +91,7 @@ func TestBuildLimiter_PodLocalWhenNoAgentDeployIdentity(t *testing.T) {
 func TestBuildLimiter_FleetLimiterEnforcesCapBeforeDNSNarrows(t *testing.T) {
 	// In-cluster (name+namespace present): a DNS-count limiter. Inject a stub
 	// resolver via the seam and a pre-cancelled ctx so the loop does its one
-	// immediate recount against the stub, then stops — no real DNS, no races.
+	// immediate recount against the stub, then stops - no real DNS, no races.
 	restore := dnsResolver
 	t.Cleanup(func() { dnsResolver = restore })
 	dnsResolver = stubResolver{ips: []string{"10.0.0.1"}} // 1 replica -> full cap

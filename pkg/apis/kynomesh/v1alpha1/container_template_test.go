@@ -477,7 +477,7 @@ func TestApplyDefaultResources(t *testing.T) {
 		// The container only set a memory limit; the default only sets a
 		// cpu request and a different memory limit. All-or-nothing means
 		// the default's cpu request must NOT be merged in alongside the
-		// container's own memory limit — that combination was never
+		// container's own memory limit - that combination was never
 		// requested by either side.
 		c := &corev1.Container{
 			Resources: corev1.ResourceRequirements{

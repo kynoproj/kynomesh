@@ -32,7 +32,7 @@ import (
 )
 
 // allTransportsEnabled is a convenience for tests that don't care about
-// transport filtering — every standard A2A binding is in the set.
+// transport filtering - every standard A2A binding is in the set.
 func allTransportsEnabled() map[a2a.TransportProtocol]bool {
 	return map[a2a.TransportProtocol]bool{
 		a2a.TransportProtocolJSONRPC:  true,
@@ -84,7 +84,7 @@ func TestAgentCardProxy_RewritesInterfaceURLs(t *testing.T) {
 	var got a2a.AgentCard
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &got))
 
-	// Identity / metadata fields are passed through unchanged — the
+	// Identity / metadata fields are passed through unchanged - the
 	// broker doesn't claim the agent's identity, just relays it.
 	assert.Equal(t, "user-agent", got.Name)
 	assert.Equal(t, "user-supplied agent", got.Description)
@@ -170,7 +170,7 @@ func TestAgentCardProxy_StripsDisabledTransports(t *testing.T) {
 }
 
 func TestAgentCardProxy_AgentUnreachableReturns502(t *testing.T) {
-	// Dial a UDS path that doesn't exist — every fetch must surface a
+	// Dial a UDS path that doesn't exist - every fetch must surface a
 	// 502 rather than fall back to anything cached.
 	deadSocket := filepath.Join(shortSocketDir(t), "x.sock")
 	proxy := NewAgentCardProxy(NewUDSHTTPClient(deadSocket), "", "broker.example.com", 9100, allTransportsEnabled())
@@ -182,7 +182,7 @@ func TestAgentCardProxy_AgentUnreachableReturns502(t *testing.T) {
 
 func TestAgentCardProxy_FetchesFreshOnEachRequest(t *testing.T) {
 	// Mutating the agent's card between two proxy calls must be visible
-	// to the second caller — no caching layer.
+	// to the second caller - no caching layer.
 	currentCard := &a2a.AgentCard{Name: "v1"}
 	socketPath := fakeUDSAgent(t, currentCard)
 

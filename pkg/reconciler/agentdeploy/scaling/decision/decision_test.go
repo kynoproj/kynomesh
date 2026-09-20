@@ -319,7 +319,7 @@ func TestDecideUsesLearnedCapacity(t *testing.T) {
 // TestDecideColdStartReactsToSurge verifies a brand-new deployment with no
 // history reacts to a load surge once the scale-up cooldown is clear, scaling
 // up by the step cap and tagging the decision as a surge. The surge does not
-// bypass the cooldown or the step cap — it only ramps faster by continuing to
+// bypass the cooldown or the step cap - it only ramps faster by continuing to
 // step up on each tick while the load persists.
 func TestDecideColdStartReactsToSurge(t *testing.T) {
 	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)

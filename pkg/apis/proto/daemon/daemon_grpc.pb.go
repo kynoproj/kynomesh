@@ -48,7 +48,7 @@ type DaemonServiceClient interface {
 	GetAgentDeployMetrics(ctx context.Context, in *GetAgentDeployMetricsRequest, opts ...grpc.CallOption) (*GetAgentDeployMetricsResponse, error)
 	// GetPeerCardDrift returns, for each of the named AgentDeploy's peers,
 	// the daemon's own latest (stability-gated) AgentCard hash alongside the
-	// hash(es) that AgentDeploy's live pods currently report for that peer —
+	// hash(es) that AgentDeploy's live pods currently report for that peer -
 	// a decision-ready comparison so the controller never has to fetch a
 	// peer's AgentCard or read a pod's exposed hash file itself.
 	GetPeerCardDrift(ctx context.Context, in *GetPeerCardDriftRequest, opts ...grpc.CallOption) (*GetPeerCardDriftResponse, error)
@@ -92,7 +92,7 @@ type DaemonServiceServer interface {
 	GetAgentDeployMetrics(context.Context, *GetAgentDeployMetricsRequest) (*GetAgentDeployMetricsResponse, error)
 	// GetPeerCardDrift returns, for each of the named AgentDeploy's peers,
 	// the daemon's own latest (stability-gated) AgentCard hash alongside the
-	// hash(es) that AgentDeploy's live pods currently report for that peer —
+	// hash(es) that AgentDeploy's live pods currently report for that peer -
 	// a decision-ready comparison so the controller never has to fetch a
 	// peer's AgentCard or read a pod's exposed hash file itself.
 	GetPeerCardDrift(context.Context, *GetPeerCardDriftRequest) (*GetPeerCardDriftResponse, error)

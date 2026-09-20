@@ -32,7 +32,7 @@ const (
 )
 
 // record is one persisted observation: a Sample plus bookkeeping. count is the
-// number of raw samples folded into this record — always 1 today; reserved for
+// number of raw samples folded into this record - always 1 today; reserved for
 // when tier rollup lands.
 type record struct {
 	sample Sample
@@ -72,7 +72,7 @@ func (b *buffer) add(s Sample) {
 	b.evictLocked(s.Timestamp)
 }
 
-// reset clears all buffered records — used when the AgentDeploy's pod spec
+// reset clears all buffered records - used when the AgentDeploy's pod spec
 // changes (a new deployment), so capacity learned from the old spec is dropped.
 func (b *buffer) reset() {
 	b.mu.Lock()

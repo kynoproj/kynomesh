@@ -177,7 +177,7 @@ func TestReconcileDrift_NilDriftReloadIsNoop(t *testing.T) {
 func TestReconcileDrift_EmptyDriftReloadStructIsNoop(t *testing.T) {
 	// DriftReload{} (non-nil struct, nil Enabled) means "no explicit
 	// per-agent choice was made here" once the AgentSet reconciler's
-	// fill-if-unset logic has already run — reconcileDrift must treat it
+	// fill-if-unset logic has already run - reconcileDrift must treat it
 	// the same as fully disabled, not panic or treat it as enabled.
 	ad := driftAD("foo")
 	ad.Spec.DriftReload = &kmv1.DriftReload{}
@@ -290,7 +290,7 @@ func TestReconcileDrift_AlreadyTerminatingPodNeverReDeleted(t *testing.T) {
 	w := newTestWatcher(c, src)
 
 	require.NoError(t, w.reconcileDrift(context.Background(), nn("foo")))
-	// No assertion needed beyond "does not error" — deleting an already
+	// No assertion needed beyond "does not error" - deleting an already
 	// terminating pod again would surface as an error from the fake client
 	// only if we tried to double-delete; the filter in reconcileDrift skips
 	// it, and we assert on that filter directly via stalePodNames below.
@@ -328,7 +328,7 @@ func TestStalePodNames(t *testing.T) {
 			},
 		},
 		"peer-b": {
-			LatestHash: "", // unstabilized — contributes nothing
+			LatestHash: "", // unstabilized - contributes nothing
 			ReportedHashes: map[string]*pb.ReportedHash{
 				"pod-fresh": {Hash: "whatever"},
 			},

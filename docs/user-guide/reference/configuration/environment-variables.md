@@ -1,8 +1,8 @@
 # Environment Variables
 
 Kynomesh injects a common set of preset environment variables into **every**
-container of an agent pod — the broker, the agent container, and any
-user-defined `sidecars` or `initContainers` — so any container can identify
+container of an agent pod - the broker, the agent container, and any
+user-defined `sidecars` or `initContainers` - so any container can identify
 which pod, agent, and AgentSet it's running in:
 
 - `NAMESPACE` - Namespace the agent runs in.
@@ -19,7 +19,7 @@ For setting environment variables on pods not owned by an agent, see
 ## Your Own Environment Variables
 
 To add your own environment variables to the agent container, set `env` on the
-agent's `container`. The same applies to `sidecars` and `initContainers` — set
+agent's `container`. The same applies to `sidecars` and `initContainers` - set
 `env`/`envFrom` directly on those container entries.
 
 ```yaml
@@ -67,7 +67,7 @@ spec:
 
 ## See Also
 
-- [AgentSet Customization](agentset-customization.md) — customize pods not owned
+- [AgentSet Customization](agentset-customization.md) - customize pods not owned
   by an agent.
-- [AgentSet](../../../core-concepts/agentset.md) — where the `agents` list
+- [AgentSet](../../../core-concepts/agentset.md) - where the `agents` list
   lives.

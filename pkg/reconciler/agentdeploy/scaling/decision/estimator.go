@@ -28,12 +28,12 @@ import (
 // saturation knee and how much to trust it.
 type Estimate struct {
 	// KneePerReplica is the in-flight concurrency at which one replica stops
-	// converting added concurrency into throughput — the point where the
+	// converting added concurrency into throughput - the point where the
 	// rate-vs-concurrency curve plateaus.
 	KneePerReplica float64
 	// IsLowerBound is true when throughput was still climbing at the highest
 	// observed concurrency, so the knee is "at least this much, probably more"
-	// — the controller should treat it cautiously.
+	// - the controller should treat it cautiously.
 	IsLowerBound bool
 	// Confidence in [0,1]. 0 means "no usable signal, fall back to default".
 	Confidence float64
@@ -70,7 +70,7 @@ const (
 // per-request latency) and so is robust to a heterogeneous request mix.
 //
 // When history is too thin or shows no concurrency spread, Confidence is 0
-// (cold start) — the controller is expected to fall back to a default.
+// (cold start) - the controller is expected to fall back to a default.
 func EstimateKnee(hist []history.Sample, now time.Time) Estimate {
 	clean := history.Sanitize(hist)
 	if len(clean) < minSamplesToLearn {
@@ -148,7 +148,7 @@ func bucketize(clean []history.Sample, now time.Time) []bucket {
 }
 
 // findKnee walks buckets from low to high concurrency and returns the in-flight
-// level at which throughput stops rising — where the marginal rate gain per
+// level at which throughput stops rising - where the marginal rate gain per
 // unit concurrency drops below plateauFraction of the low-load slope. The knee
 // is the last band still on the rising part (conservative). If throughput never
 // plateaus, the knee is the highest observed concurrency and isLowerBound=true.

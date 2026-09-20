@@ -78,10 +78,10 @@ func TestSemaphore_SetLimitDownStopsAdmittingButKeepsHeld(t *testing.T) {
 
 	r1()
 	_, ok = s.Acquire()
-	assert.False(t, ok, "still 2 held vs limit 1 — must keep rejecting")
+	assert.False(t, ok, "still 2 held vs limit 1 - must keep rejecting")
 	r2()
 	_, ok = s.Acquire()
-	assert.False(t, ok, "1 held vs limit 1 — still at capacity")
+	assert.False(t, ok, "1 held vs limit 1 - still at capacity")
 	r3()
 	r4, ok := s.Acquire()
 	assert.True(t, ok, "once held drops under the limit, admit again")

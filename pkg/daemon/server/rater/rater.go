@@ -180,7 +180,7 @@ func (r *Rater) WithSelfMetrics(m *SelfMetrics) *Rater {
 }
 
 // Start runs scrape ticks until ctx is cancelled. It does not return
-// errors mid-loop — per-tick failures are logged and counted, the
+// errors mid-loop - per-tick failures are logged and counted, the
 // loop continues. The caller treats ctx.Done as the shutdown signal.
 func (r *Rater) Start(ctx context.Context) {
 	log := r.opts.Logger
@@ -243,7 +243,7 @@ func (r *Rater) scrapeOneAgentDeploy(ctx context.Context, ad string) {
 		return
 	}
 	if len(hosts) == 0 {
-		// No ready pods — common during initial bring-up or
+		// No ready pods - common during initial bring-up or
 		// scaled-to-zero. Not an error, but worth recording a metric
 		// so operators can see it.
 		if r.selfMetrics != nil {
@@ -255,7 +255,7 @@ func (r *Rater) scrapeOneAgentDeploy(ctx context.Context, ad string) {
 		r.selfMetrics.PodsObserved.WithLabelValues(ad).Set(float64(len(hosts)))
 	}
 
-	// Reuses this same tick's pod discovery for the peer-hashes scrape —
+	// Reuses this same tick's pod discovery for the peer-hashes scrape -
 	// no separate discovery call, no separate cadence.
 	r.scrapeIntrospectOnce(ctx, ad, hosts)
 

@@ -105,7 +105,7 @@ func TestAutoscalerSkipsWhenNotSampled(t *testing.T) {
 	ad.Spec.Scale = kmv1.Scale{Max: ptrI32(10)}
 
 	c := fake.NewClientBuilder().WithScheme(storeScheme(t)).WithObjects(ad).Build()
-	reg := history.NewRegistry(c) // empty — no store for foo
+	reg := history.NewRegistry(c) // empty - no store for foo
 
 	require.NoError(t, newTestAutoscaler(c, reg, now).scaleKey(context.Background(), nn("foo")))
 	assert.Equal(t, int32(1), specReplicasOf(t, c, "foo"), "no history → no scaling")

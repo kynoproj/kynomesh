@@ -58,7 +58,7 @@ func TestLoadInjectedAgentDeploy_EnvUnset(t *testing.T) {
 
 // TestLoadInjectedAgentDeploy_EnvMalformed exercises a configured-but-
 // broken env. The broker must surface the decode error rather than
-// silently treating misconfiguration as "no AgentDeploy injected" —
+// silently treating misconfiguration as "no AgentDeploy injected" -
 // otherwise an operator mistake would manifest as a wrong-looking
 // AgentCard URL with no obvious signal.
 func TestLoadInjectedAgentDeploy_EnvMalformed(t *testing.T) {

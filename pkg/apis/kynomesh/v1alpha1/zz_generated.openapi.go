@@ -1789,7 +1789,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_ExternalAgentRef(ref common.ReferenceCall
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ExternalAgentRef is a reference to an existing agent this AgentSet does not own — another AgentSet's agent, or any A2A endpoint reachable at a URL.",
+				Description: "ExternalAgentRef is a reference to an existing agent this AgentSet does not own - another AgentSet's agent, or any A2A endpoint reachable at a URL.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {

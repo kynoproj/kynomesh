@@ -42,28 +42,28 @@ func TestAdvertisedURL(t *testing.T) {
 		want          string
 	}{
 		{
-			name:      "no public base — JSON-RPC falls back to in-cluster",
+			name:      "no public base - JSON-RPC falls back to in-cluster",
 			host:      "broker.local",
 			port:      9100,
 			transport: a2a.TransportProtocolJSONRPC,
 			want:      "https://broker.local:9100" + JSONRPCEndpoint,
 		},
 		{
-			name:      "no public base — REST falls back to in-cluster",
+			name:      "no public base - REST falls back to in-cluster",
 			host:      "broker.local",
 			port:      9100,
 			transport: a2a.TransportProtocolHTTPJSON,
 			want:      "https://broker.local:9100" + RESTEndpoint,
 		},
 		{
-			name:      "no public base — gRPC falls back to host:port",
+			name:      "no public base - gRPC falls back to host:port",
 			host:      "broker.local",
 			port:      9102,
 			transport: a2a.TransportProtocolGRPC,
 			want:      "broker.local:9102",
 		},
 		{
-			name:          "public base — JSON-RPC appends endpoint",
+			name:          "public base - JSON-RPC appends endpoint",
 			publicBaseURL: "https://agent.example.com",
 			host:          "broker.local",
 			port:          9100,
@@ -71,7 +71,7 @@ func TestAdvertisedURL(t *testing.T) {
 			want:          "https://agent.example.com" + JSONRPCEndpoint,
 		},
 		{
-			name:          "public base — REST appends endpoint",
+			name:          "public base - REST appends endpoint",
 			publicBaseURL: "https://agent.example.com",
 			host:          "broker.local",
 			port:          9100,
@@ -79,7 +79,7 @@ func TestAdvertisedURL(t *testing.T) {
 			want:          "https://agent.example.com" + RESTEndpoint,
 		},
 		{
-			name:          "public base — trailing slash is collapsed",
+			name:          "public base - trailing slash is collapsed",
 			publicBaseURL: "https://agent.example.com/",
 			host:          "broker.local",
 			port:          9100,
@@ -87,7 +87,7 @@ func TestAdvertisedURL(t *testing.T) {
 			want:          "https://agent.example.com" + JSONRPCEndpoint,
 		},
 		{
-			name:          "public base — gRPC strips https scheme and uses 443",
+			name:          "public base - gRPC strips https scheme and uses 443",
 			publicBaseURL: "https://agent.example.com",
 			host:          "broker.local",
 			port:          9102,
@@ -95,7 +95,7 @@ func TestAdvertisedURL(t *testing.T) {
 			want:          "agent.example.com:443",
 		},
 		{
-			name:          "public base — gRPC keeps explicit port",
+			name:          "public base - gRPC keeps explicit port",
 			publicBaseURL: "https://agent.example.com:8443",
 			host:          "broker.local",
 			port:          9102,
@@ -103,7 +103,7 @@ func TestAdvertisedURL(t *testing.T) {
 			want:          "agent.example.com:8443",
 		},
 		{
-			name:          "public base — gRPC honors http scheme port 80",
+			name:          "public base - gRPC honors http scheme port 80",
 			publicBaseURL: "http://agent.example.com",
 			host:          "broker.local",
 			port:          9102,
@@ -111,7 +111,7 @@ func TestAdvertisedURL(t *testing.T) {
 			want:          "agent.example.com:80",
 		},
 		{
-			name:          "public base — gRPC accepts scheme-less host:port",
+			name:          "public base - gRPC accepts scheme-less host:port",
 			publicBaseURL: "agent.example.com:50051",
 			host:          "broker.local",
 			port:          9102,

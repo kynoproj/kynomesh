@@ -284,7 +284,7 @@ func TestScrapeOneAgentDeploy_ScrapeFailureKeepsPreviousValue(t *testing.T) {
 	fc.Advance(scrapeStep)
 	r.scrapeAllOnce(context.Background())
 
-	// Pod still has exactly one sample — the failed scrape did not
+	// Pod still has exactly one sample - the failed scrape did not
 	// overwrite or duplicate the previous successful observation.
 	samples := r.buffers["a"].Samples("a-0")
 	require.Len(t, samples, 1, "failed scrape must not append a new sample")

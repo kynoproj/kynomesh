@@ -42,7 +42,7 @@ type DrainConfig struct {
 	// PropagationDelay is a fixed initial wait that lets Kubernetes finish
 	// removing this pod from Service endpoints before we start checking, so no
 	// new request lands after we begin draining. It is NOT tied to request
-	// duration — it only covers endpoint-propagation lag.
+	// duration - it only covers endpoint-propagation lag.
 	PropagationDelay time.Duration
 	// Budget bounds the whole drain (propagation + poll). Must stay within the
 	// pod's terminationGracePeriodSeconds (minus the post-SIGTERM shutdown), or
@@ -75,7 +75,7 @@ func RunDrain(introspectionPort int) {
 // Drain runs the preStop drain: wait out endpoint propagation, then poll the
 // broker's own /metrics until in-flight hits 0 or the budget elapses. It always
 // returns nil error semantics for the caller (a drain that times out is not a
-// failure — SIGTERM + the post-SIGTERM shutdown handle the residue); errors are
+// failure - SIGTERM + the post-SIGTERM shutdown handle the residue); errors are
 // logged. The returned bool reports whether the pod reached zero in-flight.
 //
 // Limitation: broker_inflight_requests counts a streaming call (gRPC stream or
@@ -108,7 +108,7 @@ func Drain(ctx context.Context, cfg DrainConfig) bool {
 				return false
 			}
 			// Otherwise the broker most likely already stopped serving /metrics
-			// — nothing left to drain.
+			// - nothing left to drain.
 			logger.Infow("Drain: metrics scrape failed, assuming drained", zap.Error(err))
 			return true
 		}

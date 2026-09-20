@@ -261,7 +261,7 @@ func TestReconcile_DeletionTimestampIsNoop(t *testing.T) {
 	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
 	require.NoError(t, err)
 
-	// Reconciler must not have deleted the child — that's GC's job.
+	// Reconciler must not have deleted the child - that's GC's job.
 	assert.Len(t, listPods(t, c), 1, "reconciler must not delete children itself; GC handles it")
 }
 

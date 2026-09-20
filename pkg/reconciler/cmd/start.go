@@ -66,7 +66,7 @@ const (
 	probeAddr   = ":8081"
 
 	// imageDiscoveryTimeout caps the one-shot self-pod lookup at startup.
-	// If the API server is unreachable that long, fail fast — the
+	// If the API server is unreachable that long, fail fast - the
 	// controller can't function without it anyway.
 	imageDiscoveryTimeout = 30 * time.Second
 
@@ -258,7 +258,7 @@ func resolveBrokerPullPolicy() (corev1.PullPolicy, error) {
 // Watches:
 //
 //   - AgentSet (primary): enqueue self on spec (Generation) or label changes.
-//     Status-only updates are filtered out — the reconciler writes status
+//     Status-only updates are filtered out - the reconciler writes status
 //     itself and shouldn't trigger its own re-runs.
 //
 //   - AgentDeploy (owned): enqueue the controlling AgentSet on any meaningful
@@ -329,8 +329,8 @@ func registerAgentSetController(mgr manager.Manager, config *reconciler.GlobalCo
 }
 
 // registerAgentDeployController wires the AgentDeploy reconciler into the
-// manager. Same pattern as registerAgentSetController — controller.New
-// plus explicit Watch calls — so the per-source handler / predicate choice
+// manager. Same pattern as registerAgentSetController - controller.New
+// plus explicit Watch calls - so the per-source handler / predicate choice
 // is visible at the call site.
 //
 // Watches:

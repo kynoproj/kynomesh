@@ -1,6 +1,6 @@
 # Labels And Annotations
 
-Sometimes customized _Labels_ or _Annotations_ are needed for an agent's pods —
+Sometimes customized _Labels_ or _Annotations_ are needed for an agent's pods -
 for example, adding an annotation to enable or disable
 [Istio](https://istio.io/) sidecar injection. To do that, add a `metadata` block
 with `labels` or `annotations` to the agent.
@@ -55,12 +55,12 @@ spec:
 A per-agent `metadata` value takes precedence over the shared template for the
 same key.
 
-The labels and annotations are **added** to the agent's pods — Kynomesh's own
+The labels and annotations are **added** to the agent's pods - Kynomesh's own
 labels and annotations (used to manage and route the pods) are never overridden.
 
 ## See Also
 
-- [AgentSet](../../../core-concepts/agentset.md) — where the `agents` list and
+- [AgentSet](../../../core-concepts/agentset.md) - where the `agents` list and
   `templates` live.
-- [AgentDeploy](../../../core-concepts/agentdeploy.md) — the unit these pods
+- [AgentDeploy](../../../core-concepts/agentdeploy.md) - the unit these pods
   belong to.

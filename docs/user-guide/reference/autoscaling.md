@@ -6,18 +6,18 @@ its own, so a busy agent grows while its idle peers stay small.
 
 There are three ways to autoscale an agent:
 
-- **Kynomesh autoscaling** — built in and on by default (below).
-- **Kubernetes HPA** — drive replicas from CPU/memory or custom metrics.
-- **Third-party autoscalers** — e.g. KEDA.
+- **Kynomesh autoscaling** - built in and on by default (below).
+- **Kubernetes HPA** - drive replicas from CPU/memory or custom metrics.
+- **Third-party autoscalers** - e.g. KEDA.
 
 The AgentDeploy exposes a standard Kubernetes `scale` subresource
 (`spec.replicas`), so HPA and third-party autoscalers can target it directly.
-Only one autoscaler should own an agent at a time — disable Kynomesh autoscaling
+Only one autoscaler should own an agent at a time - disable Kynomesh autoscaling
 when you use another (see [below](#kubernetes-hpa)).
 
 ## Kynomesh autoscaling
 
-Kynomesh autoscaling is **on by default** — every agent is autoscaled unless you
+Kynomesh autoscaling is **on by default** - every agent is autoscaled unless you
 opt out. With no `scale` block an agent still autoscales using the defaults
 (`min` 1, `max` 50). Set a `scale` block to bound or tune it, or set
 `disabled: true` to turn it off and pin the replica count.
@@ -28,15 +28,15 @@ Each agent's broker reports how many requests it is handling. The controller
 samples this per replica, learns the agent's capacity, and adjusts replicas to
 keep the fleet near a target utilization.
 
-- **Signal — in-flight concurrency.** For agentic (LLM/tool) workloads the
+- **Signal - in-flight concurrency.** For agentic (LLM/tool) workloads the
   binding resource is _slot occupancy_: each request holds a context and an
   upstream connection for the duration of a (often multi-second) call. Kynomesh
-  scales on concurrent in-flight requests, not requests-per-second — a better
+  scales on concurrent in-flight requests, not requests-per-second - a better
   fit for long, variable-duration agent calls. Latency is deliberately ignored
   (it is dominated by upstream response time and can't tell a saturated replica
   from a busy-but-healthy one).
 - **Learned capacity (the "knee").** From observed load the controller learns
-  the per-replica concurrency at which throughput stops rising — the saturation
+  the per-replica concurrency at which throughput stops rising - the saturation
   knee. It targets a fraction of that knee (see `targetSaturationPercentage`).
   Until enough data is collected, it falls back to a conservative default and
   over-provisions rather than under-provisions.
@@ -47,7 +47,7 @@ keep the fleet near a target utilization.
   reconcile then rolls pods to match.
 - **Rate-limit ceiling.** If the agent has a
   [`rateLimit.maxInFlight`](./rate-limiting.md) cap, scale-up is suppressed once
-  total in-flight reaches it — more replicas can't raise a fixed external
+  total in-flight reaches it - more replicas can't raise a fixed external
   ceiling, so the agent settles instead of climbing toward `max`.
 
 ### Configuration
@@ -151,7 +151,7 @@ AgentDeploy's `scale` subresource from the tool's scaling object (e.g. KEDA's
 
 ## See Also
 
-- [Rate limiting](./rate-limiting.md) — cap an agent's in-flight load; interacts
+- [Rate limiting](./rate-limiting.md) - cap an agent's in-flight load; interacts
   with autoscaling (a rate-limited agent stops scaling up once it hits its cap).
-- [AgentDeploy](../../core-concepts/agentdeploy.md) — the unit that gets scaled.
-- [AgentSet](../../core-concepts/agentset.md) — where the `scale` block lives.
+- [AgentDeploy](../../core-concepts/agentdeploy.md) - the unit that gets scaled.
+- [AgentSet](../../core-concepts/agentset.md) - where the `scale` block lives.

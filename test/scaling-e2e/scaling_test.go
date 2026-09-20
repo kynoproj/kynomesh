@@ -37,7 +37,7 @@ type ScalingSuite struct {
 //
 //  1. Sustained concurrent load holds in-flight occupancy high on one replica,
 //     overshooting the cold-start per-replica target enough to trip the surge
-//     fast-path — spec.replicas scales up.
+//     fast-path - spec.replicas scales up.
 //  2. Load stops; in-flight drains to zero, so the deployment drifts back to min
 //     (short cooldowns in the manifest keep this within the test budget).
 func (s *ScalingSuite) TestAutoscalingUpAndDown() {

@@ -159,7 +159,7 @@ func TestPassthroughReverseProxy_ForwardsArbitraryPath(t *testing.T) {
 	assert.Equal(t, "ui-html", w.Body.String())
 	assert.Equal(t, "GET", rec.method)
 	assert.Equal(t, "/my-app/v1/sessions", rec.path,
-		"passthrough must forward the path verbatim — no rewriting")
+		"passthrough must forward the path verbatim - no rewriting")
 }
 
 func TestPassthroughReverseProxy_OnlyIncrementsPassthroughCounter(t *testing.T) {
@@ -193,7 +193,7 @@ func TestPassthroughReverseProxy_OnlyIncrementsPassthroughCounter(t *testing.T) 
 }
 
 // stringReader returns an io.Reader for a string without pulling strings.Reader
-// out of the strings package — keeping the test's imports minimal.
+// out of the strings package - keeping the test's imports minimal.
 func stringReader(s string) io.Reader {
 	return &readerAt{data: []byte(s)}
 }

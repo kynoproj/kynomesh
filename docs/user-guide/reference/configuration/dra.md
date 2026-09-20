@@ -3,8 +3,9 @@
 [Dynamic Resource Allocation](https://kubernetes.io/docs/concepts/scheduling-eviction/dynamic-resource-allocation/)
 (DRA) is supported on an agent's pod: declare a claim at the pod level via
 `.spec.agents[*].resourceClaims`, then reference it by name from
-`resources.claims` on any container that needs it — the agent container, the
-`brokerContainer` template, or the per-AgentSet `.spec.templates.daemon.container`.
+`resources.claims` on any container that needs it - the agent container, the
+`brokerContainer` template, or the per-AgentSet
+`.spec.templates.daemon.container`.
 
 ```yaml
 apiVersion: resource.k8s.io/v1alpha3
@@ -42,15 +43,15 @@ To give the `broker` container access to the same claim, reference it from
 `.spec.templates.agent.brokerContainer`):
 
 ```yaml
-      brokerContainer:
-        resources:
-          claims:
-            - name: gpu
+brokerContainer:
+  resources:
+    claims:
+      - name: gpu
 ```
 
 ## See Also
 
-- [Container Resources](container-resources.md) — set `resources` on any
+- [Container Resources](container-resources.md) - set `resources` on any
   container.
-- [AgentSet Customization](agentset-customization.md) — the `agent` and
-  `daemon` shared templates.
+- [AgentSet Customization](agentset-customization.md) - the `agent` and `daemon`
+  shared templates.

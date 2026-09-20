@@ -226,7 +226,7 @@ func (r *Reconciler) reconcileDaemonDeployment(ctx context.Context, as *kmv1.Age
 	if existing.Annotations[kmv1.KeyHash] == desiredHash {
 		return nil
 	}
-	// Spec drifted — recreate. We delete first rather than patching
+	// Spec drifted - recreate. We delete first rather than patching
 	// because the Recreate strategy guarantees the old Pod is gone
 	// before the new one starts, and that's enforced naturally by
 	// destroy/create rather than mutation.

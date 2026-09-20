@@ -33,7 +33,7 @@ import (
 
 // rawCodec is a grpc.Codec that passes frames through as opaque []byte,
 // so the broker can proxy gRPC without knowing the proto descriptors.
-// Name returns "proto" — the codec lookup is keyed off that string.
+// Name returns "proto" - the codec lookup is keyed off that string.
 type rawCodec struct{}
 
 func (rawCodec) Name() string { return "proto" }
@@ -121,7 +121,7 @@ func forwardGRPCStream(backendConn *grpc.ClientConn, ss grpc.ServerStream, serve
 
 	clientToBackendErr := make(chan error, 1)
 	go func() {
-		// Client→server frames: not counted by metrics — "work" is
+		// Client→server frames: not counted by metrics - "work" is
 		// what the agent produced, not what the caller sent.
 		clientToBackendErr <- copyMessages(ss, clientStream, nil)
 		// Half-close: tell the backend the client is done sending.
@@ -143,7 +143,7 @@ func forwardGRPCStream(backendConn *grpc.ClientConn, ss grpc.ServerStream, serve
 	backendErr := <-backendToClientErr
 	clientErr := <-clientToBackendErr
 
-	// Trailers must be set before this handler returns — gRPC flushes
+	// Trailers must be set before this handler returns - gRPC flushes
 	// them on exit.
 	ss.SetTrailer(clientStream.Trailer())
 

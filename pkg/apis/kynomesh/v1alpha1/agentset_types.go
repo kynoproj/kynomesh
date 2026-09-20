@@ -98,7 +98,7 @@ type AgentSetSpec struct {
 }
 
 // ExternalAgentRef is a reference to an existing agent this AgentSet does not
-// own — another AgentSet's agent, or any A2A endpoint reachable at a URL.
+// own - another AgentSet's agent, or any A2A endpoint reachable at a URL.
 type ExternalAgentRef struct {
 	// Name is the short agent name used for peer lookup and topology, matching
 	// how AbstractAgentDeploy.Name works for managed agents.
@@ -187,7 +187,7 @@ func (as *AgentSet) ChildAgentDeployName(agentName string) string {
 }
 
 // SimpleCopy returns a slimmed-down copy of the AgentSet suitable for
-// embedding into a downstream consumer — e.g. the daemon.
+// embedding into a downstream consumer - e.g. the daemon.
 func (as *AgentSet) SimpleCopy() AgentSet {
 	agents := make([]AbstractAgentDeploy, len(as.Spec.Agents))
 	for i, a := range as.Spec.Agents {

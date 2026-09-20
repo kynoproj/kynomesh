@@ -72,14 +72,14 @@ func (r *streamRecorder) Write(p []byte) (int, error) {
 	return r.ResponseWriter.Write(p)
 }
 
-// StatusCode returns the response status written so far — 200 if the
+// StatusCode returns the response status written so far - 200 if the
 // handler never called WriteHeader, matching net/http's own default.
 func (r *streamRecorder) StatusCode() int {
 	return r.statusCode
 }
 
 // Flush forwards the underlying flusher if present. Required for SSE
-// to actually push events to the client — net/http buffers writes
+// to actually push events to the client - net/http buffers writes
 // until either flush or end-of-response. The reverse proxy installs
 // its own Flush hook (FlushInterval), but we still want to forward
 // agent-side flushes through transparently.
@@ -106,7 +106,7 @@ func (r *streamRecorder) detectSSE() {
 // the next Write.
 //
 // SSE spec uses "\n\n" or "\r\n\r\n" as event separators. We accept
-// either by normalizing CRLF to LF before splitting — cheap because
+// either by normalizing CRLF to LF before splitting - cheap because
 // we're already iterating the bytes.
 func (r *streamRecorder) countEvents(p []byte) {
 	buf := r.carry
@@ -135,7 +135,7 @@ func (r *streamRecorder) countEvents(p []byte) {
 // delimited by "\n\n" (LF-LF) or "\r\n\r\n" (CRLF-CRLF). Trailing
 // bytes without a terminator go into remainder for the next Write.
 //
-// Implementation is byte-level for speed — SSE bodies can be high-
+// Implementation is byte-level for speed - SSE bodies can be high-
 // frequency and we don't want per-event allocations.
 func splitSSEEvents(buf []byte) (int, []byte) {
 	count := 0

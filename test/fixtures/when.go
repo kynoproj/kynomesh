@@ -121,7 +121,7 @@ func (w *When) AgentDeployBrokerPortForward(agentName string, localPort int) *Wh
 
 // AgentDeployPortForwardWithIntrospection forwards both the broker port (8490)
 // and the introspection port (8491) of the named agent's pod, through one tunnel
-// to the SAME pod — so a metrics scrape on 8491 observes the pod receiving 8490
+// to the SAME pod - so a metrics scrape on 8491 observes the pod receiving 8490
 // load.
 func (w *When) AgentDeployPortForwardWithIntrospection(agentName string, brokerLocalPort, introspectLocalPort int) *When {
 	return w.AgentDeployPortForward(agentName,

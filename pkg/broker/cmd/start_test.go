@@ -91,7 +91,7 @@ func stubOKHandler(body string) http.Handler {
 // testRuntime builds a brokerRuntime with stub HTTP proxies for both
 // JSON-RPC and REST, a stub passthrough catch-all, and no gRPC server.
 // The grpcConn field is left nil so the multiplexer falls back to the
-// HTTP mux for everything — which is what these unit tests want; the
+// HTTP mux for everything - which is what these unit tests want; the
 // full gRPC path is exercised in the dedicated proxy_grpc test under
 // pkg/broker.
 func testRuntime(t *testing.T) *brokerRuntime {
@@ -110,8 +110,8 @@ func testRuntime(t *testing.T) *brokerRuntime {
 	}
 }
 
-// TestMultiplexedServer_RoutesHTTPTraffic exercises the HTTP/1.1 routes —
-// AgentCard, JSON-RPC mount, and the REST subtree — over a single httptest
+// TestMultiplexedServer_RoutesHTTPTraffic exercises the HTTP/1.1 routes -
+// AgentCard, JSON-RPC mount, and the REST subtree - over a single httptest
 // server, proving the mux wired by newMultiplexedServer dispatches
 // correctly. gRPC routing is covered by isGRPCRequest above; an end-to-end
 // gRPC test would need a real listener with HTTP/2 cleartext, which is out
@@ -213,7 +213,7 @@ func startTLSServer(t *testing.T) (port int, cert *tls.Certificate) {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		_ = srv.Shutdown(ctx)
-		// Serve returns http.ErrServerClosed after Shutdown — drain it.
+		// Serve returns http.ErrServerClosed after Shutdown - drain it.
 		<-serveErr
 	})
 	return port, cert

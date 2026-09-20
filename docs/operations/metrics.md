@@ -12,7 +12,7 @@ autoscaler).
 | controller-manager | `9090`                                  | `/metrics` | no               |
 
 The broker's and daemon's metrics endpoints are TLS-only, using a certificate
-generated fresh per process — Prometheus scrape configs need `scheme: https` and
+generated fresh per process - Prometheus scrape configs need `scheme: https` and
 `insecure_skip_verify: true` (there's no shared CA to validate against). The
 controller-manager's endpoint is plain HTTP, served by controller-runtime's
 default metrics server.
@@ -31,7 +31,7 @@ Emitted by the broker sidecar in every agent pod. All are labeled by
 | `broker_inflight_requests`        | Gauge             | Requests the broker is currently proxying. A streaming call holds its slot for the stream's whole lifetime, not per message.                                                                                                                                               |
 | `broker_requests_total`           | Counter           | Requests handled, incremented once per HTTP request completion or gRPC stream close.                                                                                                                                                                                       |
 | `broker_rejected_total`           | Counter           | Requests rejected at admission because the max in-flight cap was reached (HTTP 429 / gRPC `RESOURCE_EXHAUSTED`).                                                                                                                                                           |
-| `broker_stream_messages_total`    | Counter           | Stream messages observed on the wire — SSE events for REST/passthrough, server→client frames for gRPC. Stays 0 for non-streaming responses.                                                                                                                                |
+| `broker_stream_messages_total`    | Counter           | Stream messages observed on the wire - SSE events for REST/passthrough, server→client frames for gRPC. Stays 0 for non-streaming responses.                                                                                                                                |
 | `broker_request_duration_seconds` | Histogram         | Wall-clock duration of broker-handled requests, observed on completion.                                                                                                                                                                                                    |
 | `broker_errors_total`             | Counter           | Requests that completed with an error, additionally labeled by `code`: HTTP status class (`4xx`, `5xx`) or gRPC status code name (e.g. `Unavailable`, `Internal`). Never incremented for successful responses or admission rejections (those are `broker_rejected_total`). |
 | `broker_agent_server_info`        | Gauge, always `1` | Static info series labeled `protocol`, `language`, `version`, sourced from the agent's server-info file. Only present when the agent published one.                                                                                                                        |
@@ -63,7 +63,7 @@ All are labeled by `namespace`, `agentSet`, `agentDeploy`.
 
 ## Prometheus Operator Integration
 
-Example `PodMonitor` for agent pods (broker metrics) — matched by the common
+Example `PodMonitor` for agent pods (broker metrics) - matched by the common
 labels every agent pod carries:
 
 ```yaml

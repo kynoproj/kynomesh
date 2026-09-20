@@ -44,7 +44,7 @@ a2acli send -u <url> --context <context-id> "what did I just ask?"
 is more readable for interactive use.
 
 See the [full command reference](https://github.com/kynoproj/a2acli#usage) for
-every flag — protocol selection (`--protocol jsonrpc|rest|grpc`), sending
+every flag - protocol selection (`--protocol jsonrpc|rest|grpc`), sending
 structured messages (`--json`, `--parts`, `-f/--file`), multi-tenant routing
 (`--tenant`), request tracing (`-v/--verbose`), bypassing AgentCard resolution
 with a direct `--endpoint`, and overriding the AgentCard's advertised host with
@@ -71,5 +71,5 @@ kubectl debug -it some-pod --image=quay.io/kynoproj/a2acli:latest -- bash
 
 ## See Also
 
-- [Quick Start](../../quick-start.md) — a full walkthrough using `a2acli`
+- [Quick Start](../../quick-start.md) - a full walkthrough using `a2acli`
   against a real AgentSet.

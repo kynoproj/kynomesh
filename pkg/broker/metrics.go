@@ -120,8 +120,8 @@ func (c *Metrics) Passthrough() prometheus.Gauge {
 }
 
 // transportSet returns the per-transport handles needed by the
-// wrappers — inflight gauge, request/stream counters, and duration
-// histogram — bundled into one struct so call sites don't have to
+// wrappers - inflight gauge, request/stream counters, and duration
+// histogram - bundled into one struct so call sites don't have to
 // thread four values manually.
 type transportSet struct {
 	inflight       prometheus.Gauge
@@ -165,7 +165,7 @@ func (c *Metrics) PassthroughSet() transportSet { return c.setFor(TransportPasst
 //   - duration histogram observed on completion.
 //   - stream messages counter incremented per SSE event when the
 //     response Content-Type is text/event-stream (detection happens
-//     after the agent's response headers arrive — see
+//     after the agent's response headers arrive - see
 //     statusRecorder).
 func wrapHTTP(limiter ratelimit.Limiter, set transportSet, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -196,7 +196,7 @@ func wrapHTTP(limiter ratelimit.Limiter, set transportSet, h http.Handler) http.
 }
 
 // httpStatusClass classifies an HTTP status code into an error class for
-// broker_errors_total. Returns "" for 2xx/3xx (not an error — nothing should
+// broker_errors_total. Returns "" for 2xx/3xx (not an error - nothing should
 // be recorded), "4xx" for client errors, "5xx" for server errors.
 func httpStatusClass(statusCode int) string {
 	switch {

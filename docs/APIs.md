@@ -2560,7 +2560,7 @@ ExternalAgentRef
 <p>
 
 ExternalAgentRef is a reference to an existing agent this AgentSet does
-not own — another AgentSet’s agent, or any A2A endpoint reachable at a
+not own - another AgentSet’s agent, or any A2A endpoint reachable at a
 URL.
 </p>
 

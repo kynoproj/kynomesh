@@ -49,7 +49,7 @@ var _ DaemonClient = (*restClient)(nil)
 
 // NewRESTClient builds a REST DaemonClient targeting address
 // (host:port or full URL). If no scheme is present, "https://" is
-// assumed — the daemon only listens on TLS.
+// assumed - the daemon only listens on TLS.
 func NewRESTClient(address string) (DaemonClient, error) {
 	if !strings.HasPrefix(address, "https://") && !strings.HasPrefix(address, "http://") {
 		address = "https://" + address

@@ -55,7 +55,7 @@ type Store interface {
 const HistoryKey = "history"
 
 // ConfigMapStore persists history to a single ConfigMap owned by the
-// AgentDeploy — one object per AgentDeploy, garbage-collected with it.
+// AgentDeploy - one object per AgentDeploy, garbage-collected with it.
 type ConfigMapStore struct {
 	client    client.Client
 	namespace string

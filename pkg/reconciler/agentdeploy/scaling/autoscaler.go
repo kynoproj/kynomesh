@@ -37,7 +37,7 @@ const (
 	defaultWorkers       = 16
 	defaultScaleInterval = 30 * time.Second
 	// defaultMaxSampleAge bounds how stale the freshest sample may be before the
-	// Autoscaler declines to act — guards against scaling on outdated load when
+	// Autoscaler declines to act - guards against scaling on outdated load when
 	// the Sampler has stalled or the daemon is unreachable.
 	defaultMaxSampleAge = 2 * time.Minute
 )

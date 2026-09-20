@@ -61,8 +61,8 @@ func peersExcluding(agents []AbstractAgentDeploy, externalAgents []ExternalAgent
 }
 
 // nextAgent returns the peer immediately after self in the chain: the next
-// managed agent in declaration order, or — if self is the last managed
-// agent — the sole external agent, if one is configured.
+// managed agent in declaration order, or - if self is the last managed
+// agent - the sole external agent, if one is configured.
 // Sequential allows at most one, enforced by the validator, and it may only
 // be the final hop.
 func nextAgent(agents []AbstractAgentDeploy, externalAgents []ExternalAgentRef, self string) (Peer, bool) {

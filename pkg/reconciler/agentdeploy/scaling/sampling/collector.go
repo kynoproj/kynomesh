@@ -49,7 +49,7 @@ type MetricsSource interface {
 // converts the daemon's fleet totals into a per-replica Sample using ad's ready
 // replicas.
 //
-// ok=false with a nil error means "no usable sample this tick" — cold start
+// ok=false with a nil error means "no usable sample this tick" - cold start
 // (daemon reports Unavailable/NotFound), no ready replicas to normalize by, or
 // the chosen window isn't computable yet. The caller should simply skip rather
 // than treat it as a failure. The caller is responsible for recording the

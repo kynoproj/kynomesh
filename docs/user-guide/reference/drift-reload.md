@@ -1,7 +1,7 @@
 # Drift Reload
 
-When a peer agent's capabilities change — it gains or loses a skill, changes its
-supported transports, anything reflected in its A2A `AgentCard` — any agent that
+When a peer agent's capabilities change - it gains or loses a skill, changes its
+supported transports, anything reflected in its A2A `AgentCard` - any agent that
 already built a client for that peer keeps using the old, cached card
 indefinitely, because Kynomesh's peer clients are built once and reused for the
 life of the process (see [Why This Matters](#why-this-matters) below).
@@ -10,7 +10,7 @@ life of the process (see [Why This Matters](#why-this-matters) below).
 `AgentCard` has changed and automatically restarts exactly the pods still using
 a stale cached copy, so they rebuild their peer client against the current card.
 
-`driftReload` is disabled by default — auto-restarting pods is a behavior change
+`driftReload` is disabled by default - auto-restarting pods is a behavior change
 with real blast radius, so you opt in explicitly.
 
 ```yaml
@@ -24,12 +24,12 @@ driftReload:
 ## Why This Matters
 
 The Kynomesh SDKs build a peer's client once, the first time your agent code
-calls that peer, and reuse it for the lifetime of the process — see
+calls that peer, and reuse it for the lifetime of the process - see
 [Python SDK](https://github.com/kynoproj/kynomesh-py). That first call resolves
 the peer's `AgentCard` and caches it inside the client; every subsequent call to
 that same peer reuses the cached client and its cached card, with no
 re-resolution. The only way to make the SDK drop a cached client and rebuild it
-is an explicit, caller-invoked forget call — nothing in a normal A2A call path
+is an explicit, caller-invoked forget call - nothing in a normal A2A call path
 triggers that on its own.
 
 This is deliberate, and it's the right design: re-fetching a peer's `AgentCard`
@@ -70,7 +70,7 @@ spec:
     - name: worker
       container:
         image: worker:latest
-      # omitted — inherits the fleet default (enabled: true)
+      # omitted - inherits the fleet default (enabled: true)
 ```
 
 A per-agent `driftReload` that is set always wins outright over the
@@ -78,7 +78,7 @@ AgentSet-level default, whether it turns the setting on or off.
 
 ## See Also
 
-- [Rolling Update](configuration/rolling-update.md) — the `maxUnavailable`
+- [Rolling Update](configuration/rolling-update.md) - the `maxUnavailable`
   batching budget drift-triggered reloads respect.
-- [AgentSet Customization](configuration/agentset-customization.md) — other
+- [AgentSet Customization](configuration/agentset-customization.md) - other
   per-agent settings.

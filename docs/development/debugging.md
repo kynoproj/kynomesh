@@ -3,8 +3,8 @@
 ## Debug Logging
 
 To enable debug logs on a container, set the `LOG_LEVEL` environment variable to
-`debug`. It's read by every Kynomesh process — broker, agent init containers,
-the per-AgentSet daemon, and the controller-manager — so the same variable works
+`debug`. It's read by every Kynomesh process - broker, agent init containers,
+the per-AgentSet daemon, and the controller-manager - so the same variable works
 regardless of which container you're debugging.
 
 To enable it on an agent's broker (via the shared template, so it applies to
@@ -59,7 +59,7 @@ For the controller-manager, set `LOG_LEVEL=debug` on its Deployment
 
 `pprof` is available on the broker's introspection port, gated separately from
 debug logging by the `KYNOMESH_PPROF_ENABLED` environment variable
-(unset/`false` by default — the endpoints are disabled unless explicitly turned
+(unset/`false` by default - the endpoints are disabled unless explicitly turned
 on):
 
 ```yaml
@@ -91,7 +91,7 @@ The broker's introspection endpoints are TLS-only with a self-signed certificate
 (see [Metrics](../operations/metrics.md)), which is why the examples above use
 `https+insecure://` / `curl -k`.
 
-`pprof` is only wired up on the broker today — the daemon and controller-manager
+`pprof` is only wired up on the broker today - the daemon and controller-manager
 don't expose `/debug/pprof/*`.
 
 ## Pod-Internal Insight
@@ -117,15 +117,15 @@ curl -sk https://localhost:8491/introspect
 
 Today it carries:
 
-- **`host`** — the pod name.
-- **`peerHashes`** — the peer-hashes file the agent's SDK writes to the shared
+- **`host`** - the pod name.
+- **`peerHashes`** - the peer-hashes file the agent's SDK writes to the shared
   `kynomesh-run` volume (`/var/run/kynomesh/peer-hashes.json`): a
   peer-name-keyed map of each peer client the agent process has resolved (see
   [AgentCard Drift Detection and Dependent Reload](specifications/agentcard-drift-reload.md)).
   An empty object if the agent hasn't resolved any peer clients since last
   restart, not an error. Each entry carries:
-  - **`hash`** — the `AgentCard` hash behind that peer's cached client.
-  - **`observedAt`** — an RFC3339 timestamp (fractional seconds optional) for
+  - **`hash`** - the `AgentCard` hash behind that peer's cached client.
+  - **`observedAt`** - an RFC3339 timestamp (fractional seconds optional) for
     when the SDK recorded this hash.
 
 ## Debug Inside The Container

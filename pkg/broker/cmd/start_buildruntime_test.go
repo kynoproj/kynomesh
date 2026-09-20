@@ -221,7 +221,7 @@ func TestEnabledTransportNames(t *testing.T) {
 
 // TestNewIntrospectionServer checks the constructor wires the bind
 // address, handler, and TLS config the broker depends on. We do not
-// boot the server here — that integration is exercised by the broker
+// boot the server here - that integration is exercised by the broker
 // startup tests under pkg/broker.
 func TestNewIntrospectionServer(t *testing.T) {
 	cert, err := sharedtls.GenerateX509KeyPair()

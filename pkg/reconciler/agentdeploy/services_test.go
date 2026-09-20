@@ -95,8 +95,8 @@ func TestHeadlessAndClusterIPServices_DistinguishableByLabel(t *testing.T) {
 }
 
 func TestNewHeadlessService_DoesNotGateOnServing(t *testing.T) {
-	// Headless service serves per-pod DNS for every replica — including
-	// drained pods — so its selector must NOT include KeyServing.
+	// Headless service serves per-pod DNS for every replica - including
+	// drained pods - so its selector must NOT include KeyServing.
 	ad := newAgentDeploy("greeter", 1)
 	svc := newHeadlessService(ad)
 	_, has := svc.Spec.Selector[kmv1.KeyServing]

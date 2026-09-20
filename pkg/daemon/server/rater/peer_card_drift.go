@@ -31,7 +31,7 @@ import (
 type ReportedHash struct {
 	// Hash is that pod's currently-reported AgentCard hash for this peer.
 	Hash string
-	// ObservedAt is when that pod's agent SDK recorded this hash — passed
+	// ObservedAt is when that pod's agent SDK recorded this hash - passed
 	// through from the pod's peer-hashes file, not a scrape time.
 	ObservedAt time.Time
 }
@@ -70,7 +70,7 @@ type PeerCardDrift struct {
 	LatestHashObservedAt time.Time
 
 	// ReportedHashes is keyed by pod name. A pod with no entry has not
-	// reported a hash for this peer yet — "unknown," not "drifted."
+	// reported a hash for this peer yet - "unknown," not "drifted."
 	ReportedHashes map[string]ReportedHash
 }
 
@@ -200,7 +200,7 @@ func (r *Rater) scrapeIntrospectOnce(ctx context.Context, ad string, hosts []str
 
 // GetPeerCardDrift returns the current drift-comparison state for name's
 // peers, read from the caches scrapeIntrospectOnce and scrapePeerCardsOnce
-// populate on the rater's background scrape tick — this never scrapes live
+// populate on the rater's background scrape tick - this never scrapes live
 // on the calling goroutine.
 //
 // Returns ErrUnknownAgentDeploy if name is not in the configured list,

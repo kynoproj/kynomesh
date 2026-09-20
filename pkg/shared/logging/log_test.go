@@ -108,7 +108,7 @@ func TestWithAgentLabels_NoEnvReturnsSameLogger(t *testing.T) {
 
 	base := zap.NewNop().Sugar()
 	got := WithAgentLabels(base)
-	assert.Same(t, base, got, "no env labels — must return the input logger unchanged")
+	assert.Same(t, base, got, "no env labels - must return the input logger unchanged")
 }
 
 // TestWithAgentLabels_EnvNamesMatchAPIPackage guards against drift between
