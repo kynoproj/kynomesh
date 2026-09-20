@@ -103,7 +103,7 @@ func TestRunServeLoop_CleanShutdownOnContextCancel(t *testing.T) {
 
 // TestRunServeLoop_MainListenerError surfaces the error from the main
 // listener when Serve fails. The listener is bound at construction, so we
-// force the failure by closing it before the loop serves it — Serve then
+// force the failure by closing it before the loop serves it - Serve then
 // returns a non-ErrServerClosed error that must propagate.
 func TestRunServeLoop_MainListenerError(t *testing.T) {
 	stack := buildLoopStack(t)
@@ -128,7 +128,7 @@ func TestRunServeLoop_MainListenerError(t *testing.T) {
 
 // TestRunServeLoop_IntrospectionListenerError mirrors the main-listener
 // test but corrupts the introspection address. Either listener
-// surfacing first is acceptable — the contract is just that the error
+// surfacing first is acceptable - the contract is just that the error
 // propagates.
 func TestRunServeLoop_IntrospectionListenerError(t *testing.T) {
 	stack := buildLoopStack(t)

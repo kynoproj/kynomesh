@@ -143,7 +143,7 @@ func TestGRPCPassthrough_StreamingCall(t *testing.T) {
 
 func TestGRPCPassthrough_UnknownMethodSurfacesBackendStatus(t *testing.T) {
 	// Issuing a method the backend doesn't implement must surface the
-	// backend's Unimplemented status — proving error/status propagation
+	// backend's Unimplemented status - proving error/status propagation
 	// works through the proxy.
 	pair := startGRPCPair(t)
 
@@ -158,7 +158,7 @@ func TestGRPCPassthrough_UnknownMethodSurfacesBackendStatus(t *testing.T) {
 	// API so we don't need a generated stub for the bogus surface.
 	err = conn.Invoke(ctx, "/bogus.Service/Bogus", &healthpb.HealthCheckRequest{}, &healthpb.HealthCheckResponse{})
 	require.Error(t, err, "calling a method the backend doesn't implement must fail")
-	// The status code should not be OK — exact code may vary by gRPC
+	// The status code should not be OK - exact code may vary by gRPC
 	// version (Unimplemented vs Unknown depending on path), so we settle
 	// for "not OK and not a transport-level read error".
 	assert.NotEqual(t, io.EOF, err)

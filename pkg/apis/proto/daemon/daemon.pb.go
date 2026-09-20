@@ -335,7 +335,7 @@ type PeerCardDrift struct {
 	LatestHashObservedAt *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=latestHashObservedAt,proto3" json:"latestHashObservedAt,omitempty"`
 	// reportedHashes is keyed by pod name, holding what that pod currently
 	// reports for this peer (via its broker-exposed peer-hashes endpoint).
-	// A pod with no entry has not reported a hash for this peer yet —
+	// A pod with no entry has not reported a hash for this peer yet -
 	// "unknown," not "drifted."
 	ReportedHashes map[string]*ReportedHash `protobuf:"bytes,2,rep,name=reportedHashes,proto3" json:"reportedHashes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields  protoimpl.UnknownFields

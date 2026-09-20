@@ -63,7 +63,7 @@ func TestDecodeAgentDeploy_RejectsInvalidBase64(t *testing.T) {
 }
 
 func TestDecodeAgentDeploy_RejectsBadJSON(t *testing.T) {
-	// Valid base64 of non-JSON content — DecodeAgentDeploy should
+	// Valid base64 of non-JSON content - DecodeAgentDeploy should
 	// surface the JSON unmarshalling failure rather than silently
 	// returning a zero-valued AgentDeploy.
 	ad, err := DecodeAgentDeploy("bm90LWpzb24=") // "not-json"

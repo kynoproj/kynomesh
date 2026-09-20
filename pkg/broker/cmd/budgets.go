@@ -25,8 +25,8 @@ import (
 )
 
 // terminationBudgets are the time slices the broker carves out of the pod's
-// terminationGracePeriodSeconds. The two phases run sequentially — the preStop
-// drain finishes before SIGTERM, then the post-SIGTERM shutdown runs — so their
+// terminationGracePeriodSeconds. The two phases run sequentially - the preStop
+// drain finishes before SIGTERM, then the post-SIGTERM shutdown runs - so their
 // maxima plus a safety margin must fit within the grace period, or the kubelet
 // SIGKILLs mid-shutdown.
 type terminationBudgets struct {

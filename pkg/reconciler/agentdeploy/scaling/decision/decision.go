@@ -99,7 +99,7 @@ const (
 	confFloor = 0.6
 	// surgeRatio: provisioned capacity overshot by this factor is tagged as a
 	// surge (ReasonSurge) for observability. It does not change how scaling is
-	// throttled — the cooldown and per-step cap still apply.
+	// throttled - the cooldown and per-step cap still apply.
 	surgeRatio = 1.5
 )
 
@@ -108,8 +108,8 @@ const (
 //
 // Order of checks (each short-circuits with Skip=true unless noted):
 //  1. min == max (sets DesiredReplicas=min; Skip iff current already equals it)
-//  2. current outside [min,max] — manual scale, patch toward clamp, no cooldown
-//  3. no observable load — drift toward min, step-capped, scale-down cooldown
+//  2. current outside [min,max] - manual scale, patch toward clamp, no cooldown
+//  3. no observable load - drift toward min, step-capped, scale-down cooldown
 //  4. desired = ceil(totalInflight / target); target derived from the learned
 //     knee, the saturation lever, and confidence
 //  5. scale up: scale-up cooldown + step cap (heavy load tagged ReasonSurge)
@@ -174,7 +174,7 @@ func scalingTarget(in Inputs, est Estimate) float64 {
 }
 
 // scaleUp handles desired > current. The scale-up cooldown and the
-// per-step cap always apply — even under a surge — so a single spike (or a
+// per-step cap always apply - even under a surge - so a single spike (or a
 // low-confidence cold-start estimate) can't stampede the fleet toward max in
 // one tick. A severe under-provision is still tagged ReasonSurge for
 // observability, but it scales the same bounded way as any other scale-up; a

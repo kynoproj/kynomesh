@@ -1,7 +1,7 @@
 # Validating Admission Webhook
 
 This validating webhook rejects faulty `AgentSet` specs such as duplicate agent
-names, a reserved name collision, a malformed external-agent URL, etc. — the
+names, a reserved name collision, a malformed external-agent URL, etc. - the
 cross-field rules the CRD's OpenAPI schema can't express on its own. Instead of
 the object being persisted and only failing later during reconciliation, the API
 server rejects it immediately and `kubectl apply` returns the validation error
@@ -19,7 +19,7 @@ kubectl apply -n kynomesh-system -f https://raw.githubusercontent.com/kynoproj/k
 
 Note that some fields, such as `spec.pattern`'s allowed values and
 `spec.agents[].container` being required, are already enforced by the CRD's
-OpenAPI schema — the API server rejects those before any admission webhook runs,
+OpenAPI schema - the API server rejects those before any admission webhook runs,
 with a `"... is invalid"` style error. The validating webhook catches everything
 the schema can't express.
 

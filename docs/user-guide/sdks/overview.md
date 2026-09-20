@@ -1,6 +1,6 @@
 # SDKs
 
-Kynomesh agents are plain [A2A](https://a2a-protocol.org/) agents — you can
+Kynomesh agents are plain [A2A](https://a2a-protocol.org/) agents - you can
 write one in any language with an A2A implementation, and Kynomesh will run it.
 The SDKs are optional conveniences, not a requirement.
 
@@ -17,14 +17,14 @@ with agent logic and peer _names_.
 
 Both SDKs expose the same two halves:
 
-- **Server** — start an A2A agent the broker can reach.
-- **Client** — call other agents in the same AgentSet by name, with no URLs,
+- **Server** - start an A2A agent the broker can reach.
+- **Client** - call other agents in the same AgentSet by name, with no URLs,
   transports, or `AgentCard` plumbing in your code.
 
 ## Writing an Agent
 
-Implement the A2A executor interface, describe your agent with an `AgentCard`,
-and hand both to the SDK's start function.
+Implement the [A2A](https://a2a-protocol.org/) executor interface, describe your
+agent with an `AgentCard`, and hand both to the SDK's start function.
 
 === "Python"
 
@@ -144,13 +144,13 @@ and registers the agent for peer discovery.
 
 The URLs in the `AgentCard` above are development addresses. In-cluster,
 Kynomesh's broker sidecar fronts your agent and advertises the reachable address
-to peers — see
+to peers - see
 [Agent Discovery](../../development/specifications/agent-discovery.md).
 
 ### Exposing Transports
 
 List every transport you want callers to be able to use in
-`supported_interfaces` / `SupportedInterfaces` — most agents only need one, but
+`supported_interfaces` / `SupportedInterfaces` - most agents only need one, but
 you can advertise more than one and let each caller pick:
 
 | Transport        | Python constant               | Go constant                     |
@@ -198,7 +198,7 @@ you can advertise more than one and let each caller pick:
     }
     ```
 
-The URLs here are only used for local development — running your agent
+The URLs here are only used for local development - running your agent
 in-cluster, Kynomesh's broker fronts it and advertises the reachable address to
 peers, so you don't need to construct those addresses yourself. If your agent
 needs to be reachable from outside the cluster too, set `publicBaseURL` on the
@@ -207,7 +207,7 @@ agent (see the [API reference](../../APIs.md)).
 ### Health Checks
 
 By default an agent reports `SERVING` as soon as it starts. If readiness depends
-on something else — a model endpoint, a warm cache, a downstream dependency —
+on something else - a model endpoint, a warm cache, a downstream dependency -
 own the signal yourself and flip it as that dependency changes. Both the gRPC
 and HTTP health endpoints reflect it, so Kubernetes readiness probes and the
 broker see the same state.
@@ -252,7 +252,7 @@ broker see the same state.
 ## Calling a Peer Agent
 
 Inside an AgentSet you address peers by the name declared in
-`spec.agents[*].name` — no URL, no transport negotiation. Kynomesh resolves the
+`spec.agents[*].name` - no URL, no transport negotiation. Kynomesh resolves the
 peer and picks a transport both sides support.
 
 === "Python"
@@ -316,7 +316,7 @@ peer and picks a transport both sides support.
 
 The first call for a given peer name resolves that peer's `AgentCard` and builds
 a client; every later call for the same name reuses it, for the life of the
-process. This is deliberate — re-resolving the card on every request would add a
+process. This is deliberate - re-resolving the card on every request would add a
 round-trip and client construction to each call for no benefit when the peer
 hasn't changed.
 
@@ -324,10 +324,10 @@ The tradeoff is that a cached client keeps serving the card it resolved at build
 time. If a peer's capabilities change while your agent is running, your agent
 won't notice on its own. Two ways to handle that:
 
-- **Automatically** — turn on [Drift Reload](../reference/drift-reload.md), and
+- **Automatically** - turn on [Drift Reload](../reference/drift-reload.md), and
   Kynomesh restarts exactly the pods holding a stale card when a peer's card
   actually changes.
-- **Manually** — drop the cached client yourself with
+- **Manually** - drop the cached client yourself with
   `client.forget_peer("worker-a")` (Python) or `client.ForgetPeer("worker-a")`
   (Go); the next call rebuilds it.
 
@@ -346,7 +346,7 @@ When you don't need a full client:
 ### Error Handling
 
 The realistic failure case inside a running agent is calling a peer that isn't
-in your topology — either it doesn't exist, or the routing pattern forbids you
+in your topology - either it doesn't exist, or the routing pattern forbids you
 from reaching it. Check for that specifically and treat anything else as a
 generic failure:
 
@@ -377,10 +377,10 @@ generic failure:
 
 ## See Also
 
-- [Quick Start](../../quick-start.md) — run your first AgentSet end to end.
-- [AgentSet](../../core-concepts/agentset.md) — where peer names and the
+- [Quick Start](../../quick-start.md) - run your first AgentSet end to end.
+- [AgentSet](../../core-concepts/agentset.md) - where peer names and the
   communication pattern are declared.
-- [Agent Discovery](../../development/specifications/agent-discovery.md) — how
+- [Agent Discovery](../../development/specifications/agent-discovery.md) - how
   peers resolve each other's addresses.
-- [Drift Reload](../reference/drift-reload.md) — keeping cached peer clients
+- [Drift Reload](../reference/drift-reload.md) - keeping cached peer clients
   from going stale.

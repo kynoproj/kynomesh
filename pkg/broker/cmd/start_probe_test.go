@@ -32,7 +32,7 @@ import (
 )
 
 // TestProbeAgentCard exercises the narrowing rule: a 404 from the
-// well-known path means "agent reachable but has no AgentCard" — every
+// well-known path means "agent reachable but has no AgentCard" - every
 // other error stays fatal so the startup liveness gate is preserved.
 func TestProbeAgentCard(t *testing.T) {
 	cases := []struct {
@@ -106,7 +106,7 @@ func TestProbeAgentCard(t *testing.T) {
 	}
 }
 
-// TestProbeAgentCard_DialError covers the "agent unreachable" case — the
+// TestProbeAgentCard_DialError covers the "agent unreachable" case - the
 // startup gate must still fail when no listener is on the other end.
 func TestProbeAgentCard_DialError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
@@ -134,7 +134,7 @@ func TestBuildRuntime_NilCard(t *testing.T) {
 // TestMultiplexedServer_NoCardHandler exercises the passthrough-only
 // runtime: with cardHandler nil, the well-known AgentCard path is not
 // short-circuited by the mux and falls through to the catch-all (which a
-// real agent could respond to as it wishes — typically 404). Canonical
+// real agent could respond to as it wishes - typically 404). Canonical
 // A2A routes that are not enabled likewise fall through, since
 // per-transport proxy slots are empty.
 func TestMultiplexedServer_NoCardHandler(t *testing.T) {

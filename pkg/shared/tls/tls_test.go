@@ -57,7 +57,7 @@ func TestGenerateX509KeyPair(t *testing.T) {
 
 func TestGenerateX509KeyPair_FreshEachCall(t *testing.T) {
 	// Two consecutive calls must produce different serials and different
-	// keys — there is no caching layer, and tests upstream rely on a fresh
+	// keys - there is no caching layer, and tests upstream rely on a fresh
 	// cert per server boot.
 	a, err := GenerateX509KeyPair()
 	require.NoError(t, err)
@@ -88,7 +88,7 @@ func TestPemBlockForKey_ECDSAReturnsECPrivateKeyBlock(t *testing.T) {
 }
 
 func TestPemBlockForKey_UnsupportedReturnsNil(t *testing.T) {
-	// The function only handles ECDSA today — an RSA key (or anything
+	// The function only handles ECDSA today - an RSA key (or anything
 	// else) must fall through to the nil branch. Guards against silently
 	// accepting a key type that the rest of the package can't round-trip.
 	rsaKey, err := rsa.GenerateKey(rand.Reader, 1024)
@@ -116,7 +116,7 @@ func TestCreateCerts_ServerLeafIsCASignedAndVerifies(t *testing.T) {
 	leaf := parseSingleCert(t, certPEM)
 	caCert := parseSingleCert(t, caCertPEM)
 
-	// The leaf must validate against the returned CA — proves the signing
+	// The leaf must validate against the returned CA - proves the signing
 	// chain is wired up correctly.
 	roots := x509.NewCertPool()
 	roots.AddCert(caCert)
@@ -137,7 +137,7 @@ func TestCreateCerts_ServerLeafIsCASignedAndVerifies(t *testing.T) {
 	assert.NotZero(t, caCert.KeyUsage&x509.KeyUsageCertSign, "CA must be allowed to sign certs")
 
 	// Private key PEM round-trips into an RSA key (matches the package
-	// guarantee — CreateCerts uses RSA-2048, distinct from GenerateX509KeyPair's ECDSA).
+	// guarantee - CreateCerts uses RSA-2048, distinct from GenerateX509KeyPair's ECDSA).
 	keyBlock, _ := pem.Decode(keyPEM)
 	require.NotNil(t, keyBlock, "private key PEM must decode")
 	assert.Equal(t, "RSA PRIVATE KEY", keyBlock.Type)

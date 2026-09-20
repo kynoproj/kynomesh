@@ -175,7 +175,7 @@ func (e *Expect) AgentResponseContains(substr string) *Expect {
 }
 
 // AgentDeployScaledUp asserts that the child AgentDeploy for agentName reaches
-// spec.replicas >= minReplicas within timeout — i.e. the autoscaler scaled it
+// spec.replicas >= minReplicas within timeout - i.e. the autoscaler scaled it
 // up under load.
 func (e *Expect) AgentDeployScaledUp(agentName string, minReplicas int32, timeout time.Duration) *Expect {
 	e.t.Helper()
@@ -189,7 +189,7 @@ func (e *Expect) AgentDeployScaledUp(agentName string, minReplicas int32, timeou
 }
 
 // AgentDeployScaledDown asserts that the child AgentDeploy for agentName falls
-// back to spec.replicas <= maxReplicas within timeout — i.e. the autoscaler
+// back to spec.replicas <= maxReplicas within timeout - i.e. the autoscaler
 // scaled it down after load drained.
 func (e *Expect) AgentDeployScaledDown(agentName string, maxReplicas int32, timeout time.Duration) *Expect {
 	e.t.Helper()
@@ -203,8 +203,8 @@ func (e *Expect) AgentDeployScaledDown(agentName string, maxReplicas int32, time
 }
 
 // BrokerRejectedRequests asserts that the broker rejected at least one request
-// at admission — a positive broker_rejected_total on the introspection endpoint
-// (localPort -> :8491) — the ground-truth signal that the rate limit shed load.
+// at admission - a positive broker_rejected_total on the introspection endpoint
+// (localPort -> :8491) - the ground-truth signal that the rate limit shed load.
 // It waits for rejections to accumulate under load, then makes the assertion via
 // HTTPExpect: /metrics returns 200 and its body carries a non-zero
 // broker_rejected_total sample.

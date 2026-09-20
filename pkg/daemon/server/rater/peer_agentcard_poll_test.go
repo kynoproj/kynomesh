@@ -119,7 +119,7 @@ func TestGetPeerCardDrift_StabilityGate_FlipFlopNeverPromotes(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "hash-A", drift["b"].LatestHash)
 
-	// Bounce: B, A, B — B never accumulates 2 consecutive observations.
+	// Bounce: B, A, B - B never accumulates 2 consecutive observations.
 	scr.setHash(url, "hash-B")
 	r.scrapeAllOnce(context.Background())
 	scr.setHash(url, "hash-A")
@@ -146,7 +146,7 @@ func TestGetPeerCardDrift_StabilityGate_ScrapeFailureDoesNotResetProgress(t *tes
 	})
 
 	// Two successful polls of hash-1 (pendingCount=2), then a failure,
-	// then one more success of hash-1 should promote — a failed poll must
+	// then one more success of hash-1 should promote - a failed poll must
 	// not restart the count from zero.
 	r.scrapeAllOnce(context.Background())
 	r.scrapeAllOnce(context.Background())

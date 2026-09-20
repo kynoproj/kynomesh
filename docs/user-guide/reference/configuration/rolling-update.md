@@ -20,7 +20,7 @@ updateStrategy:
 ## How It Works
 
 `maxUnavailable` only gates the **replacement** of pods that are already running
-an outdated pod spec — it does not gate initial bring-up (a fresh AgentDeploy,
+an outdated pod spec - it does not gate initial bring-up (a fresh AgentDeploy,
 or new replica slots created by scaling up) or scale-down (removing replica
 slots), both of which happen immediately and in full.
 
@@ -37,9 +37,9 @@ before touching the next 5. If your agent has a long startup time and you're
 sensitive to the reduced capacity during a rollout, set `maxUnavailable` to a
 smaller value.
 
-Autoscaling is paused for an agent while a rolling update is in progress — the
+Autoscaling is paused for an agent while a rolling update is in progress - the
 autoscaler skips scaling decisions until every replica slot is back on the
-desired pod spec — so a rollout and an autoscaling decision never race each
+desired pod spec - so a rollout and an autoscaling decision never race each
 other.
 
 ## Example
@@ -64,8 +64,8 @@ spec:
 
 ## See Also
 
-- [Zero-Downtime Pod Replacement](../zero-downtime-pod-replacement.md) — how
-  `maxUnavailable` combines with readiness and graceful termination so a
-  rollout doesn't drop traffic.
-- [AgentSet Customization](agentset-customization.md) — other per-agent
+- [Zero-Downtime Pod Replacement](../zero-downtime-pod-replacement.md) - how
+  `maxUnavailable` combines with readiness and graceful termination so a rollout
+  doesn't drop traffic.
+- [AgentSet Customization](agentset-customization.md) - other per-agent
   settings.

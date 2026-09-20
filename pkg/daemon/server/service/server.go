@@ -108,7 +108,7 @@ func newAPIServer(ctx context.Context, cfg Config) (*http.Server, *grpc.Server, 
 	// server in-process via a loopback connection. The gateway calls
 	// go through the gRPC server's normal handlers so interceptors
 	// and stats stay unified across REST + gRPC. The loopback dials
-	// back through the API server's TLS listener with skip-verify —
+	// back through the API server's TLS listener with skip-verify -
 	// the self-signed cert isn't trust-anchored and the loopback
 	// can't be observed off-host.
 	gwMux := runtime.NewServeMux()

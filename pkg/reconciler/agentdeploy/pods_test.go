@@ -59,7 +59,7 @@ func TestNewPod_LabelsUseSpecNameNotMetadataName(t *testing.T) {
 	pod := newPod(ad, 0, corev1.PodSpec{}, "h")
 	assert.Equal(t, "greeter", pod.Labels[kmv1.KeyAgentDeployName],
 		"KeyAgentDeployName must be the bare ad.Spec.Name, not the compound ad.Name")
-	// KeyAppName intentionally keeps the compound metadata name — it's
+	// KeyAppName intentionally keeps the compound metadata name - it's
 	// the kubectl/dashboards-facing convention.
 	assert.Equal(t, "greeter-set-greeter", pod.Labels[kmv1.KeyAppName])
 	// Pod name still derives from the compound metadata name so it's

@@ -35,11 +35,11 @@ spec:
 Every AgentDeploy pod is composed of three controller-managed containers plus
 whatever the user adds:
 
-- **`init-runtime`** (init container) — writes `/var/run/kynomesh/topology.json`
+- **`init-runtime`** (init container) - writes `/var/run/kynomesh/topology.json`
   from the encoded AgentDeploy payload, resolving peer URLs.
-- **`agent`** (Kubernetes-native sidecar with `restartPolicy: Always`) — runs
+- **`agent`** (Kubernetes-native sidecar with `restartPolicy: Always`) - runs
   the user's code. Listens on a Unix Domain Socket the broker connects to.
-- **`broker`** (main container) — terminates A2A traffic and forwards it to the
+- **`broker`** (main container) - terminates A2A traffic and forwards it to the
   agent over the shared UDS.
 
 ## Peer discovery
@@ -83,5 +83,5 @@ kubectl get agentdeploy # or "ad" as a short name
 
 ## See Also
 
-- [AgentSet](./agentset.md) — group-level resource and patterns.
-- [APIs](../APIs.md) — full CRD reference.
+- [AgentSet](./agentset.md) - group-level resource and patterns.
+- [APIs](../APIs.md) - full CRD reference.

@@ -24445,7 +24445,7 @@
       }
     },
     "sh.kyno.kynomesh.v1alpha1.ExternalAgentRef": {
-      "description": "ExternalAgentRef is a reference to an existing agent this AgentSet does not own — another AgentSet's agent, or any A2A endpoint reachable at a URL.",
+      "description": "ExternalAgentRef is a reference to an existing agent this AgentSet does not own - another AgentSet's agent, or any A2A endpoint reachable at a URL.",
       "type": "object",
       "required": [
         "name",

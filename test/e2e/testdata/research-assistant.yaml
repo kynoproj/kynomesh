@@ -8,7 +8,7 @@ metadata:
   name: research-assistant
 spec:
   # Supervisor: the entry agent sees all workers; workers see no peers.
-  # That matches this example exactly — the coordinator calls searcher,
+  # That matches this example exactly - the coordinator calls searcher,
   # but searcher has nothing to call.
   pattern: Supervisor
   entry: coordinator

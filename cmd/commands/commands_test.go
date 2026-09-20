@@ -191,6 +191,6 @@ func TestNewControllerCommand_FlagOverridesEnvDefault(t *testing.T) {
 	require.NoError(t, c.Flags().Set("managed-namespace", "from-flag"))
 
 	assert.Equal(t, "from-flag", c.Flags().Lookup("managed-namespace").Value.String())
-	// DefValue still reflects the env-sourced default — only the live Value changed.
+	// DefValue still reflects the env-sourced default - only the live Value changed.
 	assert.Equal(t, "from-env", c.Flags().Lookup("managed-namespace").DefValue)
 }

@@ -55,7 +55,7 @@ func TestWrapHTTP_SSEEvents(t *testing.T) {
 }
 
 // TestWrapHTTP_SSEEventsAcrossWrites verifies event boundaries that
-// straddle individual Write calls are still counted correctly —
+// straddle individual Write calls are still counted correctly -
 // agents emit events via short flushes and the wrapper must hold
 // any byte tail until the matching "\n\n" arrives.
 func TestWrapHTTP_SSEEventsAcrossWrites(t *testing.T) {
@@ -142,7 +142,7 @@ func TestReverseProxy_SSEFlushesImmediately(t *testing.T) {
 	t.Cleanup(func() { _ = resp.Body.Close() })
 
 	// If FlushInterval is not -1, this Read blocks until the agent
-	// closes the connection — which only happens after event #2 is
+	// closes the connection - which only happens after event #2 is
 	// written, which only happens after `release` is closed. So this
 	// read succeeding before we release the channel is the
 	// regression assertion.

@@ -3,11 +3,10 @@
 Additional
 [sidecar](https://kubernetes.io/docs/concepts/workloads/pods/#how-pods-manage-multiple-containers)
 containers can be added to an agent's pod via `.spec.agents[*].sidecars`. They
-run alongside the `broker` container for the lifetime of the pod. Be aware
-that these sidecar containers start after the `agent` container has started
-(`agent` runs as a native init-container sidecar, ahead of the pod's main
-containers) — so don't rely on a `sidecars` entry being up before `agent`
-starts.
+run alongside the `broker` container for the lifetime of the pod. Be aware that
+these sidecar containers start after the `agent` container has started (`agent`
+runs as a native init-container sidecar, ahead of the pod's main containers) -
+so don't rely on a `sidecars` entry being up before `agent` starts.
 
 The following example shows how to add a sidecar container to an agent:
 
@@ -43,8 +42,8 @@ shared volume.
 It is the sidecar owner's responsibility to come up with a protocol that can be
 used with the agent. It could be a volume, gRPC, TCP, HTTP 1.x, etc. Since
 `agent` starts before the `my-sidecar` container is guaranteed to be listening
-(see the start-order note above), the client side needs to retry the
-connection rather than dial once and fail.
+(see the start-order note above), the client side needs to retry the connection
+rather than dial once and fail.
 
 ```yaml
 apiVersion: kynomesh.kyno.sh/v1alpha1
@@ -96,9 +95,9 @@ the pod, and `sidecars[*].resources` can be set like any other
 
 ## See Also
 
-- [Init Containers](init-containers.md) — run one-shot setup before the agent
+- [Init Containers](init-containers.md) - run one-shot setup before the agent
   starts.
-- [Container Resources](container-resources.md) — set `resources` on any
+- [Container Resources](container-resources.md) - set `resources` on any
   container.
-- [Environment Variables](environment-variables.md) — env vars injected into
+- [Environment Variables](environment-variables.md) - env vars injected into
   every container.

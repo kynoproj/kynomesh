@@ -44,7 +44,7 @@ to manager / orchestrator-worker / subagent designs.
 ### Handoff
 
 Every agent sees every other agent. Equivalent to a swarm or fully connected
-network — any agent can hand work off to any other.
+network - any agent can hand work off to any other.
 
 ```
    alpha <----> beta
@@ -63,7 +63,7 @@ Each agent sees only the next agent in declaration order. The entry must be
    alpha (entry) -> beta -> gamma -> delta
 ```
 
-Every pattern can also include agents this AgentSet doesn't deploy — see
+Every pattern can also include agents this AgentSet doesn't deploy - see
 [External Agents](../user-guide/reference/configuration/external-agents.md).
 
 ## Kubectl
@@ -76,7 +76,7 @@ kubectl get agentset # or "as" as a short name
 
 ## See Also
 
-- [AgentDeploy](./agentdeploy.md) — per-agent deployment and broker injection.
-- [External Agents](../user-guide/reference/configuration/external-agents.md) —
+- [AgentDeploy](./agentdeploy.md) - per-agent deployment and broker injection.
+- [External Agents](../user-guide/reference/configuration/external-agents.md) -
   reference an agent this AgentSet doesn't deploy.
-- [APIs](../APIs.md) — full CRD reference.
+- [APIs](../APIs.md) - full CRD reference.

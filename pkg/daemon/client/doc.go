@@ -21,10 +21,10 @@ limitations under the License.
 //
 // Two clients are available:
 //
-//  1. gRPC — preferred for in-cluster calls.
+//  1. gRPC - preferred for in-cluster calls.
 //     NewGRPCClient(address)
 //
-//  2. REST — useful for debugging with curl-friendly clients.
+//  2. REST - useful for debugging with curl-friendly clients.
 //     NewRESTClient(address)
 //
 // Both satisfy DaemonClient and accept addresses in the form

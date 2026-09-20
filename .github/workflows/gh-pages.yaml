@@ -33,7 +33,7 @@ jobs:
         run: make /usr/local/bin/mkdocs /usr/local/bin/lychee
       - name: Link check
         run: make docs-linkcheck
-      - name: Build (PR — no deploy)
+      - name: Build (PR - no deploy)
         if: github.event_name == 'pull_request'
         run: python -m mkdocs build
       - name: Deploy main as 'dev'

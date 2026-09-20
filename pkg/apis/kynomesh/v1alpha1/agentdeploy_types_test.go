@@ -75,7 +75,7 @@ func TestSimpleCopy_KeepsOnlyNamespaceAndName(t *testing.T) {
 	assert.Equal(t, "greeter", c.Name)
 
 	// Everything else on ObjectMeta should be zero.
-	assert.Empty(t, c.UID, "UID must be dropped — server-set, churn-prone")
+	assert.Empty(t, c.UID, "UID must be dropped - server-set, churn-prone")
 	assert.Empty(t, c.ResourceVersion, "ResourceVersion must be dropped")
 	assert.Empty(t, c.Labels)
 	assert.Empty(t, c.Annotations)
@@ -93,7 +93,7 @@ func TestSimpleCopy_DropsStatus(t *testing.T) {
 	ad := newFullAgentDeploy()
 	c := ad.SimpleCopy()
 	assert.Equal(t, AgentDeployStatus{}, c.Status,
-		"Status is downstream of pod creation — embedding it would create churn")
+		"Status is downstream of pod creation - embedding it would create churn")
 }
 
 func TestSimpleCopy_ZeroesOrchestrationSpecFields(t *testing.T) {
@@ -113,14 +113,14 @@ func TestSimpleCopy_KeepsAgentIdentityFields(t *testing.T) {
 	ad := newFullAgentDeploy()
 	c := ad.SimpleCopy()
 
-	// Agent identity / declared config — broker reads these.
+	// Agent identity / declared config - broker reads these.
 	assert.Equal(t, "greeter", c.Spec.Name)
 	require.NotNil(t, c.Spec.BrokerContainer)
 	assert.Equal(t, corev1.PullAlways, c.Spec.BrokerContainer.ImagePullPolicy)
 }
 
 func TestSimpleCopy_DoesNotAliasSource(t *testing.T) {
-	// Mutating the returned copy must not affect the source AgentDeploy —
+	// Mutating the returned copy must not affect the source AgentDeploy -
 	// the controller reuses ad in subsequent reconcile steps.
 	ad := newFullAgentDeploy()
 	c := ad.SimpleCopy()

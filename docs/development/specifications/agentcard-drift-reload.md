@@ -2,8 +2,8 @@
 
 ## Problem
 
-When agent `worker`'s capabilities change — it gains or loses a skill, changes
-its supported transports, anything reflected in its A2A `AgentCard` — every
+When agent `worker`'s capabilities change - it gains or loses a skill, changes
+its supported transports, anything reflected in its A2A `AgentCard` - every
 agent that has `worker` as a peer keeps calling it as if nothing changed,
 indefinitely, until something forces those callers to reconstruct their A2A
 clients.
@@ -19,13 +19,13 @@ Tracing through the official A2A Python SDK (`a2aproject/a2a-python (v1.1.3)`,
 - `ClientFactory.create_from_url` resolves the target's `AgentCard` via
   `A2ACardResolver.get_agent_card()` **exactly once**, at client-construction
   time, and hands the result to `BaseClient.__init__`, which stores it as
-  `self._card` — a plain instance attribute.
+  `self._card` - a plain instance attribute.
 - Every RPC method (`send_message`, `get_task`, `cancel_task`, the
   push-notification-config methods, …) reads that cached `self._card`. None of
   them re-resolve it.
 - There is no TTL, no expiry, no background refresh, and no re-fetch-on-error.
   The only way the cached card is ever replaced is an explicit, caller-invoked
-  `get_extended_agent_card()` call — something nothing in Kynomesh or generated
+  `get_extended_agent_card()` call - something nothing in Kynomesh or generated
   agent code triggers automatically.
 
 So a capability change on `worker` is invisible to any already-constructed
@@ -39,10 +39,10 @@ explicitly reconstructs the client).
 ([kynomesh-go#31](https://github.com/kynoproj/kynomesh-go/issues/31),
 [kynomesh-py#6](https://github.com/kynoproj/kynomesh-py/issues/6)): the first
 call for a given peer resolves its `AgentCard` and builds a client; every
-subsequent call for that same peer reuses it. That's the right behavior for cost
-— it avoids redoing a full resolve and construction on every call — but it means
-a cached client, once built, holds a peer's `AgentCard` for the rest of the
-process's life, exactly per the SDK mechanics above.
+subsequent call for that same peer reuses it. That's the right behavior for
+cost - it avoids redoing a full resolve and construction on every call - but it
+means a cached client, once built, holds a peer's `AgentCard` for the rest of
+the process's life, exactly per the SDK mechanics above.
 
 ### What this means for Kynomesh specifically
 
@@ -51,14 +51,14 @@ Separate from, and not fixed by, anything already in the broker:
 - `NewAgentCardProxy` (`pkg/broker/agentcard_proxy.go`) resolves the _local_
   agent's own `AgentCard` fresh on every request to the broker's AgentCard
   endpoint. That's correct and sufficient for serving an accurate card to a
-  _new_ caller — but it has nothing to do with what an existing caller's SDK
+  _new_ caller - but it has nothing to do with what an existing caller's SDK
   client does with a card it already cached.
 - Peer pod restarts are a separate, already-solved concern: peer addresses are
   stable per-AgentDeploy ClusterIP Service DNS names (see
   [Agent Discovery](agent-discovery.md)), so a restart doesn't strand a caller
   at a dead address. But a restart is exactly the kind of event that
   _incidentally_ forces a caller to rebuild its client and re-pick-up a changed
-  card — the mechanism this proposal deliberately invokes on purpose for agents
+  card - the mechanism this proposal deliberately invokes on purpose for agents
   that don't restart on their own.
 
 The upshot: the only way to make a live capability change propagate to existing
@@ -73,7 +73,7 @@ and force those callers' pods to restart.
    [kynomesh-py#6](https://github.com/kynoproj/kynomesh-py/issues/6)) is the one
    moment the SDK actually knows which `AgentCard` it resolved and is now using.
    At that point, the SDK hashes the resolved card and records both the hash and
-   the current time — keyed by peer name — in a file on the shared
+   the current time - keyed by peer name - in a file on the shared
    `kynomesh-run` volume (e.g. `/var/run/kynomesh/peer-hashes.json`), updated
    incrementally as new peers are first resolved over the process's lifetime,
    not rewritten wholesale each time:
@@ -91,7 +91,7 @@ and force those callers' pods to restart.
    is constructed, so a stale entry from a previous process incarnation (e.g. a
    peer removed from the topology and no longer called) never lingers. The file
    only ever contains entries for peers the process actually resolved a client
-   for — a peer listed in `topology.json` that the agent's code never calls
+   for - a peer listed in `topology.json` that the agent's code never calls
    simply has no entry, which the consuming side must treat as "unknown," not
    "drifted."
 
@@ -114,7 +114,7 @@ and force those callers' pods to restart.
        latest_hash_observed_at: timestamp      // when the stability gate last accepted latest_hash
        reported_hashes: map<pod, {
          hash: string                          // that pod's currently-reported hash for this peer
-         observed_at: timestamp                // when that pod's SDK recorded this hash (see step 1) — echoed
+         observed_at: timestamp                // when that pod's SDK recorded this hash (see step 1) - echoed
                                                 // through from peer-hashes.json verbatim, not a scrape time
        }>
      }
@@ -128,16 +128,16 @@ and force those callers' pods to restart.
    a set of distinct values, because the controller acts per pod (see step 4):
    it needs to know exactly _which_ live pods are still on a stale hash so it
    can terminate only those. A pod with no entry for a given peer hasn't
-   reported a hash for it yet — "unknown," not "drifted."
+   reported a hash for it yet - "unknown," not "drifted."
 
    The daemon owns the **stability gate**: don't treat a newly-observed
    server-side hash change as "the latest hash" until it's held steady across N
-   consecutive polls (or a minimum duration) — a peer mid-rollout can briefly
+   consecutive polls (or a minimum duration) - a peer mid-rollout can briefly
    serve an old and new card from different replicas, and that shouldn't itself
    trigger dependent churn.
 
    The controller never reads a pod's exposed hash file directly, and never
-   fetches a peer's `AgentCard` itself — both stay entirely inside the daemon,
+   fetches a peer's `AgentCard` itself - both stay entirely inside the daemon,
    consistent with the daemon owning all pod/agent introspection and the
    controller staying focused on infrastructure reconciliation.
 
@@ -153,13 +153,13 @@ and force those callers' pods to restart.
      concurrency cap on how many stale pods are deleted at once, for the same
      blast-radius reasons as spec-drift rollout).
    - **Defers to any active rollout.** Before acting, the controller checks
-     `AgentDeploy.Status.UpdateHash != CurrentHash` — the exact same gate the
+     `AgentDeploy.Status.UpdateHash != CurrentHash` - the exact same gate the
      autoscaler already applies before scaling
      (`pkg/reconciler/agentdeploy/scaling/autoscaler.go`:
      `"Skipping scale: AgentDeploy is updating"`). If a rollout is already in
      flight for any reason, skip triggering a card-drift reload this cycle and
      re-check on the next poll. This is controller-local state the daemon has no
-     visibility into and doesn't need — the daemon stays purely introspection,
+     visibility into and doesn't need - the daemon stays purely introspection,
      the controller stays the only place rollout state and reload decisions are
      made.
    - **Never blocks a subsequent spec change.** If a card-drift reload is
@@ -169,20 +169,20 @@ and force those callers' pods to restart.
      (just forcing a restart), while a spec change recreates pods on a _new_
      desired hash. The existing hash-comparison reconcile loop
      (`pkg/reconciler/agentdeploy/pods.go`) naturally converges on whatever the
-     current desired hash is on the next pass — there is nothing to cancel or
+     current desired hash is on the next pass - there is nothing to cancel or
      preempt.
 
 ## Enabling this: `driftReload`
 
-This is opt-in/opt-out, not always-on — for some deployments, auto-reloading on
+This is opt-in/opt-out, not always-on - for some deployments, auto-reloading on
 every capability change is undesirable (agents that legitimately change their
 card often, or environments where uncontrolled pod churn is itself a cost).
 
 The toggle is a grouped field, `driftReload`, available at both levels:
 
-- **AgentSet level:** `spec.driftReload` — the default for every agent in the
+- **AgentSet level:** `spec.driftReload` - the default for every agent in the
   set.
-- **Agent level:** `spec.agents[*].driftReload` — overrides the AgentSet-level
+- **Agent level:** `spec.agents[*].driftReload` - overrides the AgentSet-level
   default for that agent, following the same fill-if-unset pattern already used
   for `BrokerContainer`/`InitContainer` templates
   (`ContainerTemplate.ApplyDefaultsFrom`,
@@ -198,7 +198,7 @@ spec:
     - name: planner
       driftReload:
         enabled: false # this agent opts out even though the fleet default is on
-    - name: worker # omitted — inherits the fleet default (enabled: true)
+    - name: worker # omitted - inherits the fleet default (enabled: true)
 ```
 
 `driftReload` is deliberately a struct (`{enabled: bool}` today) rather than a
@@ -216,15 +216,15 @@ acts on drift (deleting stale pods) checks `driftReload.enabled`.
 
 ## Non-goals
 
-- This does not change anything about the A2A SDKs' caching behavior itself —
+- This does not change anything about the A2A SDKs' caching behavior itself -
   it's a Kynomesh-side workaround for a caching design that's correct SDK
   behavior, not a bug to report upstream.
-- This does not change peer-address resolution or pod-restart handling — those
+- This does not change peer-address resolution or pod-restart handling - those
   already work via stable Service DNS (see
   [Agent Discovery](agent-discovery.md)) and are out of scope here.
 - **External agents are out of scope for v1.** Detecting drift on an external
   agent (per [#147](https://github.com/kynoproj/kynomesh/issues/147)) means the
-  daemon polling a third-party URL on a schedule — which runs into an unresolved
+  daemon polling a third-party URL on a schedule - which runs into an unresolved
   prerequisite: there is no credentials field anywhere in the AgentSet API today
   for authenticating to an external agent's endpoint, and most external agents
   will require some form of auth to serve their card. This needs a credentials
@@ -233,14 +233,14 @@ acts on drift (deleting stale pods) checks `driftReload.enabled`.
 
 ## Open questions
 
-- **External-agent drift detection**, per the Non-goals section above — blocked
+- **External-agent drift detection**, per the Non-goals section above - blocked
   on a credentials story for external agents that doesn't exist yet.
 
 ## See Also
 
-- [Agent Discovery](agent-discovery.md) — how peers resolve each other's
+- [Agent Discovery](agent-discovery.md) - how peers resolve each other's
   addresses today; the DNS stability this proposal deliberately doesn't touch.
-- [External Agents](external-agents.md) — `spec.externalAgents`, referenced by
+- [External Agents](external-agents.md) - `spec.externalAgents`, referenced by
   the external-agent non-goal above.
-- [Rolling Update](../../user-guide/reference/configuration/rolling-update.md) —
+- [Rolling Update](../../user-guide/reference/configuration/rolling-update.md) -
   the batching behavior a dependent reload respects.

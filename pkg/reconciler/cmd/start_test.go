@@ -123,7 +123,7 @@ func TestPackageConstants(t *testing.T) {
 
 // clearLeaderElectionEnv unsets all three lease env vars for the duration
 // of a test. Necessary because t.Setenv only handles set values, but the
-// helper-under-test reads via os.LookupEnv — a value leaking from another
+// helper-under-test reads via os.LookupEnv - a value leaking from another
 // test (or the host shell) would corrupt the defaults assertion.
 func clearLeaderElectionEnv(t *testing.T) {
 	t.Helper()
@@ -237,7 +237,7 @@ func TestControllerImageFromPod(t *testing.T) {
 		errSubstr string
 	}{
 		{
-			name: "single container — use it",
+			name: "single container - use it",
 			pod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "p"},
 				Spec: corev1.PodSpec{
@@ -247,7 +247,7 @@ func TestControllerImageFromPod(t *testing.T) {
 			want: "img:v1",
 		},
 		{
-			name: "multi container — match by name",
+			name: "multi container - match by name",
 			pod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "p"},
 				Spec: corev1.PodSpec{
@@ -260,7 +260,7 @@ func TestControllerImageFromPod(t *testing.T) {
 			want: "ctrl:v1",
 		},
 		{
-			name: "no containers — error",
+			name: "no containers - error",
 			pod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "p"},
 			},
@@ -268,7 +268,7 @@ func TestControllerImageFromPod(t *testing.T) {
 			errSubstr: "no containers",
 		},
 		{
-			name: "multi container without controller-manager — error",
+			name: "multi container without controller-manager - error",
 			pod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "p"},
 				Spec: corev1.PodSpec{
@@ -282,7 +282,7 @@ func TestControllerImageFromPod(t *testing.T) {
 			errSubstr: "no container named",
 		},
 		{
-			name: "single container with empty image — error",
+			name: "single container with empty image - error",
 			pod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "p"},
 				Spec: corev1.PodSpec{

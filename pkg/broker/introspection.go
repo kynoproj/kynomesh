@@ -39,7 +39,7 @@ var peerHashesFilePath = kmv1.PeerHashesFilePath
 
 // peerHashesCache caches the peer-hashes file's parsed contents, keyed by the
 // file's mtime, so a burst of /introspect requests doesn't re-read and
-// re-parse the file on every call — it's only re-read when the agent SDK has
+// re-parse the file on every call - it's only re-read when the agent SDK has
 // actually written a new version of it.
 var peerHashesCache struct {
 	mu      sync.Mutex
@@ -56,7 +56,7 @@ func resetPeerHashesCache() {
 }
 
 // PeerHashEntry is one peer's entry in the peer-hashes file.
-// ObservedAt is served verbatim as the SDK wrote it (RFC3339) — the broker does
+// ObservedAt is served verbatim as the SDK wrote it (RFC3339) - the broker does
 // not parse or reformat it.
 type PeerHashEntry struct {
 	Hash       string `json:"hash"`
@@ -78,7 +78,7 @@ func NewIntrospectionHandler(ctx context.Context, registry *prometheus.Registry,
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		// /healthz is liveness only — agent reachability is /readyz.
+		// /healthz is liveness only - agent reachability is /readyz.
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
@@ -117,7 +117,7 @@ func NewIntrospectionHandler(ctx context.Context, registry *prometheus.Registry,
 }
 
 // readPeerHashes returns the peer-hashes file's contents, or an empty map if
-// the file doesn't exist yet — the agent hasn't resolved any peer clients
+// the file doesn't exist yet - the agent hasn't resolved any peer clients
 // since last restart, not an error. The parsed result is cached by the
 // file's mtime so repeated calls only re-read and re-parse the file when its
 // contents have actually changed.

@@ -8,7 +8,7 @@ Kynomesh already runs two built-in init containers on every agent pod:
 containers listed in `initContainers` run, and `agent` (the user's agent
 container, run as a
 [native sidecar](https://kubernetes.io/docs/concepts/workloads/pods/sidecar-containers/)
-via `restartPolicy: Always`) runs last — since it never completes, anything
+via `restartPolicy: Always`) runs last - since it never completes, anything
 meant to prepare state for it must run before it starts.
 
 The following example adds an init container that seeds a volume before the
@@ -75,9 +75,9 @@ the pod, and `initContainers[*].resources` can be set like any other
 
 ## See Also
 
-- [Sidecar Containers](sidecar-containers.md) — add extra long-running
+- [Sidecar Containers](sidecar-containers.md) - add extra long-running
   containers to an agent pod.
-- [Container Resources](container-resources.md) — set `resources` on any
+- [Container Resources](container-resources.md) - set `resources` on any
   container.
-- [Environment Variables](environment-variables.md) — env vars injected into
+- [Environment Variables](environment-variables.md) - env vars injected into
   every container.

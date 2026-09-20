@@ -6,7 +6,7 @@ agent's broker rejects requests beyond the cap instead of forwarding them to
 your agent container.
 
 This is enforcement, not just observation: once an agent is at its limit, new
-requests are refused immediately so the agent — and whatever it depends on —
+requests are refused immediately so the agent - and whatever it depends on -
 stays within budget.
 
 ## When to use it
@@ -16,7 +16,7 @@ provider quota, a rate-limited downstream API, or a shared database you don't
 want a single agent to overwhelm. A concurrency cap bounds how many requests can
 be in flight against that dependency at once.
 
-For agentic (LLM/tool) workloads the binding resource is _slot occupancy_ — each
+For agentic (LLM/tool) workloads the binding resource is _slot occupancy_ - each
 in-flight request holds a context and an upstream connection for the duration of
 a (often multi-second) call. Capping concurrency bounds that directly, which is
 why the limit is expressed as **max in-flight requests** rather than
@@ -25,8 +25,8 @@ requests-per-second.
 ## What it caps
 
 Only **A2A traffic** (JSON-RPC, REST, and gRPC) counts against the limit.
-Passthrough traffic — custom REST endpoints, UIs, WebSocket upgrades the broker
-also proxies — is **not** gated, so a long-lived UI or WebSocket connection
+Passthrough traffic - custom REST endpoints, UIs, WebSocket upgrades the broker
+also proxies - is **not** gated, so a long-lived UI or WebSocket connection
 never consumes an in-flight slot meant for A2A requests.
 
 ## Configuration
@@ -53,7 +53,7 @@ spec:
       # No rateLimit block: searcher admits requests without limit.
 ```
 
-- `maxInFlight` — the maximum number of concurrent in-flight A2A requests the
+- `maxInFlight` - the maximum number of concurrent in-flight A2A requests the
   agent admits across its whole fleet. `0` or unset means **unlimited**.
 
 ## What happens at the limit
@@ -76,13 +76,13 @@ it.
 
 The cap is **approximate**: it can drift briefly while the agent is scaling, and
 under heavy load the fleet may admit slightly more than `maxInFlight`. Treat it
-as a target rather than a hard ceiling — if you're protecting a strict external
+as a target rather than a hard ceiling - if you're protecting a strict external
 limit, set `maxInFlight` with a little headroom below it.
 
 ## Interaction with autoscaling
 
 Rate limiting and [autoscaling](./autoscaling.md) compose. When an agent reaches
-its `maxInFlight` cap, **scale-up is suppressed** — adding replicas won't raise
+its `maxInFlight` cap, **scale-up is suppressed** - adding replicas won't raise
 a fixed external ceiling, so the agent settles at the replica count that serves
 the admitted load instead of climbing toward `max`.
 
@@ -93,18 +93,18 @@ normally.
 
 The broker exposes a counter for rejected requests, labeled by transport:
 
-- `broker_rejected_total{transport}` — requests refused at admission because the
+- `broker_rejected_total{transport}` - requests refused at admission because the
   agent was at its in-flight cap.
 
 Read it alongside `broker_inflight_requests{transport}` (the current in-flight
 count the limit is compared against). A rising `broker_rejected_total` with
 `broker_inflight_requests` pinned near the cap means the agent is actively
-shedding load — the signal that demand exceeds the configured limit.
+shedding load - the signal that demand exceeds the configured limit.
 
 ## See Also
 
-- [Autoscaling](./autoscaling.md) — how rate limiting bounds scale-up.
-- [AgentDeploy](../../core-concepts/agentdeploy.md) — the unit the limit applies
+- [Autoscaling](./autoscaling.md) - how rate limiting bounds scale-up.
+- [AgentDeploy](../../core-concepts/agentdeploy.md) - the unit the limit applies
   to.
-- [AgentSet](../../core-concepts/agentset.md) — where the `rateLimit` block
+- [AgentSet](../../core-concepts/agentset.md) - where the `rateLimit` block
   lives.

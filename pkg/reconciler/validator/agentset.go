@@ -125,7 +125,7 @@ func ValidateAgentSet(as *kmv1.AgentSet) error {
 
 	switch as.Spec.Pattern {
 	case kmv1.AgentPatternSupervisor:
-		// Supervisor with a single agent is degenerate but not invalid —
+		// Supervisor with a single agent is degenerate but not invalid -
 		// the entry just has no peers. Allow it.
 	case kmv1.AgentPatternHandoff:
 		if len(as.Spec.Agents) < 2 {

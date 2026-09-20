@@ -102,7 +102,7 @@ At pod startup, an init container materializes that payload into
 }
 ```
 
-Peer URLs use the per-AgentDeploy ClusterIP Service of the sibling —
+Peer URLs use the per-AgentDeploy ClusterIP Service of the sibling -
 load-balanced across the sibling's replicas and readiness-gated.
 
 ## End-to-end request flow

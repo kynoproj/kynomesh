@@ -211,7 +211,7 @@ func commonEnv(ad *kmv1.AgentDeploy) []corev1.EnvVar {
 
 // mergeEnv returns existing with overrides applied: any entry in overrides
 // replaces an entry in existing with the same Name, and anything not already
-// present is appended. overrides wins — used here to guarantee the controller's
+// present is appended. overrides wins - used here to guarantee the controller's
 // downward-API env can't be shadowed by user-supplied values.
 func mergeEnv(existing, overrides []corev1.EnvVar) []corev1.EnvVar {
 	overrideByName := make(map[string]corev1.EnvVar, len(overrides))

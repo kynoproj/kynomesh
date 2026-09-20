@@ -43,7 +43,7 @@ const (
 	MetricRequestsName = "broker_requests_total"
 
 	// MetricStreamMessagesName is the per-transport stream message
-	// counter — SSE events for REST/passthrough, server→client
+	// counter - SSE events for REST/passthrough, server→client
 	// frames for gRPC. Zero for unary responses.
 	MetricStreamMessagesName = "broker_stream_messages_total"
 

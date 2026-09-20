@@ -81,7 +81,7 @@ spec:
 Container resources for [sidecar containers](sidecar-containers.md) and
 [init containers](init-containers.md) are specified the same way, directly under
 `.spec.agents[*].sidecars[*].resources` and
-`.spec.agents[*].initContainers[*].resources` respectively — these are plain
+`.spec.agents[*].initContainers[*].resources` respectively - these are plain
 Kubernetes container specs.
 
 ## Daemon Container
@@ -115,8 +115,8 @@ spec:
 
 ## See Also
 
-- [AgentSet Customization](agentset-customization.md) — the `brokerContainer`
+- [AgentSet Customization](agentset-customization.md) - the `brokerContainer`
   and daemon `container` templates, and how per-agent settings override shared
   ones.
-- [Environment Variables](environment-variables.md) — env vars injected into
+- [Environment Variables](environment-variables.md) - env vars injected into
   every container.

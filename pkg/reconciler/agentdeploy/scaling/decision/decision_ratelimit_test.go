@@ -56,7 +56,7 @@ func TestDecide_RateLimitCeiling(t *testing.T) {
 		}
 	}
 
-	// A scale-up is either ReasonScaleUp or, under heavy load, ReasonSurge —
+	// A scale-up is either ReasonScaleUp or, under heavy load, ReasonSurge -
 	// both are genuine scale-ups (surge just tags severity).
 	isScaleUp := func(r Reason) bool { return r == ReasonScaleUp || r == ReasonSurge }
 

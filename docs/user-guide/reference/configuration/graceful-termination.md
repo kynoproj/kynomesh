@@ -1,11 +1,12 @@
 # Graceful Termination
 
-When an agent's pod is deleted — scale-down, rolling update, or manual deletion
-— the broker drains in-flight requests before the pod actually terminates, so
-long-running agentic calls aren't cut off mid-flight. This is controlled by the
-standard Kubernetes
-[`terminationGracePeriodSeconds`](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination),
-set per agent via `.spec.agents[*].terminationGracePeriodSeconds`:
+When an agent's pod is deleted - scale-down, rolling update, or manual deletion
+
+- the broker drains in-flight requests before the pod actually terminates, so
+  long-running agentic calls aren't cut off mid-flight. This is controlled by
+  the standard Kubernetes
+  [`terminationGracePeriodSeconds`](https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination),
+  set per agent via `.spec.agents[*].terminationGracePeriodSeconds`:
 
 ```yaml
 apiVersion: kynomesh.kyno.sh/v1alpha1
@@ -33,8 +34,8 @@ single `terminationGracePeriodSeconds` budget:
 
 1. **preStop drain.** Before `SIGTERM` is sent, Kubernetes runs the broker's
    `preStop` hook (`kynomesh drain`). It first waits out a fixed propagation
-   delay — so Kubernetes has time to remove the pod from Service endpoints
-   before the broker starts checking — then polls its own `/metrics` and waits
+   delay - so Kubernetes has time to remove the pod from Service endpoints
+   before the broker starts checking - then polls its own `/metrics` and waits
    for `broker_inflight_requests` to reach zero before returning, up to its
    share of the budget.
 2. **Post-`SIGTERM` shutdown.** Once the `preStop` hook returns, Kubernetes
@@ -42,7 +43,7 @@ single `terminationGracePeriodSeconds` budget:
    (stops accepting new connections, lets accepted ones finish), bounded by the
    remaining budget, before the process exits or the kubelet `SIGKILL`s it.
 
-The budget split isn't a fixed fraction — it's computed from the actual grace
+The budget split isn't a fixed fraction - it's computed from the actual grace
 period so both phases stay useful at very short or very long settings:
 
 | Grace period   | Propagation wait | Post-`SIGTERM` shutdown | Drain window (the rest)                                                                     |
@@ -57,7 +58,7 @@ default, that's a 6s propagation wait, a 12s shutdown budget, and a 106s window
 (including the propagation wait) for in-flight requests to finish.
 
 A `preStop` drain that times out with requests still in flight is not treated as
-an error — it's expected behavior under load. The post-`SIGTERM` phase and,
+an error - it's expected behavior under load. The post-`SIGTERM` phase and,
 ultimately, the kubelet's own `SIGKILL` at the end of the grace period handle
 whatever's left. Raising `terminationGracePeriodSeconds` is the lever for giving
 slow requests more room before that happens.
@@ -70,10 +71,10 @@ slow requests more room before that happens.
 
 ## See Also
 
-- [Rolling Update](rolling-update.md) — how `terminationGracePeriodSeconds`
+- [Rolling Update](rolling-update.md) - how `terminationGracePeriodSeconds`
   interacts with the batched pod replacement during a spec change.
-- [Zero-Downtime Pod Replacement](../zero-downtime-pod-replacement.md) — how
+- [Zero-Downtime Pod Replacement](../zero-downtime-pod-replacement.md) - how
   draining outgoing pods combines with rolling update batching and readiness
   gating on incoming pods.
-- [Metrics](../../../operations/metrics.md) — `broker_inflight_requests` and the
+- [Metrics](../../../operations/metrics.md) - `broker_inflight_requests` and the
   other broker metrics the drain hook itself scrapes.

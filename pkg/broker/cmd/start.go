@@ -105,7 +105,7 @@ var serverInfoFilePath = kmv1.ServerInfoFilePath
 
 // publishAgentServerInfo loads the agent server-info file (in-cluster only),
 // logs it, and registers it as a labeled gauge. Missing/unreadable files are
-// tolerated — the agent may not have written one yet.
+// tolerated - the agent may not have written one yet.
 func publishAgentServerInfo(ctx context.Context, registry prometheus.Registerer) {
 	if !inClusterFn() {
 		return
@@ -256,7 +256,7 @@ func assembleBroker(ctx context.Context, port, introspectionPort int) (*brokerSt
 		return nil, fmt.Errorf("fetch AgentCard from agent at %q: %w", dial.http.target(), err)
 	}
 	if agentCard == nil {
-		logger.Infow("Agent reachable but exposes no AgentCard — running passthrough-only",
+		logger.Infow("Agent reachable but exposes no AgentCard - running passthrough-only",
 			zap.String("agent", dial.http.target()))
 	} else {
 		logger.Infow("Agent reachable",
@@ -334,7 +334,7 @@ func Start(port, introspectionPort int) {
 	ctx = logging.WithLogger(ctx, logger)
 	stack, err := assembleBroker(ctx, port, introspectionPort)
 	if err != nil {
-		logger.Fatalw("Failed to assemble broker — refusing to start", zap.Error(err))
+		logger.Fatalw("Failed to assemble broker - refusing to start", zap.Error(err))
 	}
 
 	if err := runServeLoop(ctx, stack, port, introspectionPort); err != nil {

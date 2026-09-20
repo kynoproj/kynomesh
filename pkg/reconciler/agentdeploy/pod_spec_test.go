@@ -82,7 +82,7 @@ func TestBuildPodSpec_AgentRunsAsSidecarInitContainer(t *testing.T) {
 	ad := newAgentDeploy("greeter", 1)
 	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 
-	// Init containers: [init-runtime, agent (sidecar)] — agent is last since
+	// Init containers: [init-runtime, agent (sidecar)] - agent is last since
 	// no user init containers were configured.
 	require.GreaterOrEqual(t, len(ps.InitContainers), 2)
 	agent := ps.InitContainers[len(ps.InitContainers)-1]
@@ -92,7 +92,7 @@ func TestBuildPodSpec_AgentRunsAsSidecarInitContainer(t *testing.T) {
 		"sidecar containers require RestartPolicy=Always")
 
 	// The agent must carry the downward-API env and the kynomesh-run
-	// mount — stamped by newAgentContainer.
+	// mount - stamped by newAgentContainer.
 	assert.NotNil(t, findEnv(agent.Env, kmv1.EnvNamespace), "agent must have NAMESPACE downward-API env")
 	assert.NotNil(t, findEnv(agent.Env, kmv1.EnvPodName), "agent must have POD_NAME downward-API env")
 	var hasMount bool
@@ -159,7 +159,7 @@ func TestBuildPodSpec_MountsKynomeshRunOnControllerOwnedContainersOnly(t *testin
 	checkMount(t, ps.Containers[0].VolumeMounts, kmv1.ContainerNameAgentBroker)
 	checkNoMount(t, ps.Containers[1].VolumeMounts, "user-sidecar")
 
-	// Init containers: [init-runtime, init-1, agent (sidecar)] — agent runs
+	// Init containers: [init-runtime, init-1, agent (sidecar)] - agent runs
 	// last so user init containers can prepare state before it starts.
 	require.Len(t, ps.InitContainers, 3)
 	assert.Equal(t, kmv1.ContainerNameInitRuntime, ps.InitContainers[0].Name)
@@ -225,7 +225,7 @@ func TestBuildPodSpec_CommonEnvWinsOverUserEnvInUserContainers(t *testing.T) {
 
 func TestBuildPodSpec_InitContainerOrder(t *testing.T) {
 	// Init containers come out as [init-runtime, ...user init containers, agent (sidecar)].
-	// Agent runs last since it's a native sidecar that never completes — anything
+	// Agent runs last since it's a native sidecar that never completes - anything
 	// meant to prepare state for it must run before it starts, not after.
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.InitContainers = []corev1.Container{{Name: "user-init", Image: "busybox"}}
@@ -235,7 +235,7 @@ func TestBuildPodSpec_InitContainerOrder(t *testing.T) {
 
 	initRuntime := ps.InitContainers[0]
 	assert.Equal(t, kmv1.ContainerNameInitRuntime, initRuntime.Name)
-	assert.Equal(t, testBrokerImage, initRuntime.Image, "must reuse the broker image — they share the kynomesh binary")
+	assert.Equal(t, testBrokerImage, initRuntime.Image, "must reuse the broker image - they share the kynomesh binary")
 	assert.Equal(t, []string{"init-runtime"}, initRuntime.Args)
 	require.Len(t, initRuntime.VolumeMounts, 1)
 	assert.Equal(t, kmv1.VolumeNameKynomeshRun, initRuntime.VolumeMounts[0].Name)
@@ -375,7 +375,7 @@ func TestBuildPodSpec_InjectsDownwardAPIEnv(t *testing.T) {
 		assert.Equal(t, "metadata.name", pn.ValueFrom.FieldRef.FieldPath)
 	}
 
-	// Every container — controller-owned and user-supplied — receives the
+	// Every container - controller-owned and user-supplied - receives the
 	// downward-API common env (NAMESPACE, POD_NAME).
 	for _, c := range ps.Containers {
 		t.Run(c.Name, func(t *testing.T) { check(t, c) })
@@ -392,7 +392,7 @@ func TestBuildPodSpec_BuiltinEnvWinsOnConflict(t *testing.T) {
 	}
 	ps := buildPodSpec(ad, testBrokerImage, "", corev1.ResourceRequirements{})
 
-	// Agent is the sidecar in init containers — find it by name.
+	// Agent is the sidecar in init containers - find it by name.
 	var agent corev1.Container
 	for _, c := range ps.InitContainers {
 		if c.Name == kmv1.ContainerNameAgent {
@@ -409,7 +409,7 @@ func TestBuildPodSpec_BuiltinEnvWinsOnConflict(t *testing.T) {
 	require.NotNil(t, ns.ValueFrom.FieldRef)
 	assert.Equal(t, "metadata.namespace", ns.ValueFrom.FieldRef.FieldPath)
 
-	// Built-in entry replaces the user entry in place — no duplicate key.
+	// Built-in entry replaces the user entry in place - no duplicate key.
 	var nsCount int
 	for _, e := range agent.Env {
 		if e.Name == kmv1.EnvNamespace {
@@ -574,7 +574,7 @@ func TestBuildPodSpec_BrokerContainerPreservesProbes(t *testing.T) {
 
 func TestBuildPodSpec_InitContainerTemplateApplied(t *testing.T) {
 	// InitContainer is the user's knob for tuning the controller-owned
-	// init-runtime container — resources, env, securityContext, etc. —
+	// init-runtime container - resources, env, securityContext, etc. -
 	// without being able to override its identity (name, image, args).
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.InitContainer = &kmv1.ContainerTemplate{
@@ -665,7 +665,7 @@ func TestBuildPodSpec_BrokerGraceEnvInjected(t *testing.T) {
 
 func TestBuildPodSpec_BrokerContainerAppliedAfterDefaults(t *testing.T) {
 	// BrokerContainer is the user's knob for tuning the controller-owned
-	// broker container — resources, env, securityContext, etc. — without
+	// broker container - resources, env, securityContext, etc. - without
 	// being able to override the broker's identity (name, image, args).
 	ad := newAgentDeploy("greeter", 1)
 	ad.Spec.BrokerContainer = &kmv1.ContainerTemplate{

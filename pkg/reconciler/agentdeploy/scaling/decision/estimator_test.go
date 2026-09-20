@@ -27,7 +27,7 @@ import (
 
 // curveRate models throughput vs concurrency: rate rises linearly with
 // in-flight below the knee (slope 1/svc), then nearly plateaus above it
-// (10% residual slope — diminishing returns past saturation).
+// (10% residual slope - diminishing returns past saturation).
 func curveRate(inflight, knee, svc float64) float64 {
 	if inflight <= knee {
 		return inflight / svc

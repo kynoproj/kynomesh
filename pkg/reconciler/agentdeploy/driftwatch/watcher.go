@@ -184,7 +184,7 @@ func closeSource(key string, src DriftSource, logger *zap.SugaredLogger) {
 }
 
 // sourceFor returns a (cached) drift source for the AgentDeploy's AgentSet
-// daemon — one client per AgentSet, shared across its AgentDeploys.
+// daemon - one client per AgentSet, shared across its AgentDeploys.
 func (w *Watcher) sourceFor(ad *kmv1.AgentDeploy) (DriftSource, error) {
 	ck := ad.Namespace + "/" + ad.Spec.AgentSetName
 	w.mu.Lock()

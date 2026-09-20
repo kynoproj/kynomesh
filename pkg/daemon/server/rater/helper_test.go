@@ -31,7 +31,7 @@ import (
 //	pod-1 (grpc): counters  80, 110, 140      gauge: 1, 2, 3
 //
 // Timestamps: t0, t0+10, t0+20. Returns (buffers, t0, nowUsedForQuery).
-// "now" is set to t0+30 — beyond the last sample, so any reasonable
+// "now" is set to t0+30 - beyond the last sample, so any reasonable
 // lookback covers the whole fixture.
 func twoPodFixture(t *testing.T) (*AgentDeployBuffers, int64, int64) {
 	t.Helper()
@@ -171,7 +171,7 @@ func TestCalculateRequestRate_PodWithSingleSampleSkipped(t *testing.T) {
 		Timestamp:           110,
 		RequestsByTransport: map[string]float64{"rest": 200},
 	})
-	// p1 has only one sample — contributes no rate.
+	// p1 has only one sample - contributes no rate.
 	b.Append("p1", &PodSample{
 		Timestamp:           105,
 		RequestsByTransport: map[string]float64{"rest": 999},
@@ -210,7 +210,7 @@ func TestCalculateStreamMessageRate(t *testing.T) {
 		})
 	}
 	// Requests: (30-10)/20 = 1/s. Stream messages: (100-0)/20 = 5/s.
-	// The two signals must be independent — verifying both proves the
+	// The two signals must be independent - verifying both proves the
 	// scraper-side split flows through correctly.
 	assert.InDelta(t, 1.0, CalculateRequestRate(b, 130, 60, "rest"), 1e-9)
 	assert.InDelta(t, 5.0, CalculateStreamMessageRate(b, 130, 60, "rest"), 1e-9)

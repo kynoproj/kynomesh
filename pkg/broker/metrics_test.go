@@ -118,7 +118,7 @@ func TestWrapHTTP_RecordsErrorsByStatusClass(t *testing.T) {
 }
 
 func TestWrapHTTP_NoErrorRecordedWhenHandlerNeverCallsWriteHeader(t *testing.T) {
-	// net/http defaults to 200 if the handler only writes a body — the
+	// net/http defaults to 200 if the handler only writes a body - the
 	// error classifier must match that default rather than treating an
 	// unset status as an error.
 	c := NewMetrics(prometheus.NewRegistry())

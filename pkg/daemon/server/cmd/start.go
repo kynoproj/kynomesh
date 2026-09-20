@@ -54,7 +54,7 @@ type daemonConfig struct {
 	MetricsPort int
 }
 
-// AgentDeploys returns the AgentDeploy short names this daemon tracks —
+// AgentDeploys returns the AgentDeploy short names this daemon tracks -
 // every managed agent in AgentSet.Spec, in declaration order.
 func (c *daemonConfig) AgentDeploys() []string {
 	out := make([]string, len(c.AgentSet.Spec.Agents))

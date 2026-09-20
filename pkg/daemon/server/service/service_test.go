@@ -103,7 +103,7 @@ func TestGetAgentDeployMetrics_PopulatesAllWindows(t *testing.T) {
 	assert.Equal(t, 0.3, m.GetProcessingRates()[rater.WindowKey15m].GetValue())
 	assert.Equal(t, float64(7), m.GetInflights()[rater.WindowKey1m].GetValue())
 	// Stream message rates flow through the response separately from
-	// processing rates — the two are independent signals end-to-end.
+	// processing rates - the two are independent signals end-to-end.
 	assert.Equal(t, float64(12), m.GetStreamMessageRates()[rater.WindowKey1m].GetValue())
 	assert.Equal(t, float64(8), m.GetStreamMessageRates()[rater.WindowKey5m].GetValue())
 	assert.Equal(t, 0.8, m.GetByTransport()["rest"].GetProcessingRates()[rater.WindowKey1m].GetValue())

@@ -77,7 +77,7 @@ spec:
 
 ## Daemon
 
-Use `.spec.templates.daemon` to customize the per-AgentSet daemon Deployment —
+Use `.spec.templates.daemon` to customize the per-AgentSet daemon Deployment -
 the singleton pod that scrapes agent metrics and serves them to the autoscaler.
 All fields under `.spec.templates.daemon` are optional.
 
@@ -121,9 +121,9 @@ daemon is a Recreate-strategy singleton, not a rolling update).
 
 ## See Also
 
-- [Labels And Annotations](labels-and-annotations.md) — set custom labels and
+- [Labels And Annotations](labels-and-annotations.md) - set custom labels and
   annotations on agent pods.
-- [AgentSet](../../../core-concepts/agentset.md) — where `templates` and the
+- [AgentSet](../../../core-concepts/agentset.md) - where `templates` and the
   `agents` list live.
-- [AgentDeploy](../../../core-concepts/agentdeploy.md) — the unit these pods
+- [AgentDeploy](../../../core-concepts/agentdeploy.md) - the unit these pods
   belong to.

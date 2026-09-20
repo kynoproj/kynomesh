@@ -98,7 +98,7 @@ func TestBuildAgentDeploys_DriftReloadFillIfUnset(t *testing.T) {
 
 	t.Run("per-agent empty struct also takes the AgentSet default", func(t *testing.T) {
 		// driftReload: {} on the agent (non-nil struct, Enabled unset) must
-		// not be mistaken for an explicit opt-out — it should inherit the
+		// not be mistaken for an explicit opt-out - it should inherit the
 		// AgentSet-level value just like an entirely absent per-agent field.
 		as := newAgentSet("greeter", "alpha")
 		as.Spec.DriftReload = &kmv1.DriftReload{Enabled: ptrBool(true)}

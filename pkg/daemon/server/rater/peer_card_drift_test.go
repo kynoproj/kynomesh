@@ -158,7 +158,7 @@ func TestGetPeerCardDrift_PodRecreatedAtSameHostDropsOldPodName(t *testing.T) {
 	require.Contains(t, drift["b"].ReportedHashes, "a-0-old")
 
 	// Same DNS host (same ordinal), but the pod behind it was recreated with
-	// a new random-suffixed name — Discover still reports the host as live.
+	// a new random-suffixed name - Discover still reports the host as live.
 	scraper.samples["a-0.a-headless.ns.svc"] = &IntrospectSample{
 		PodName:    "a-0-new",
 		PeerHashes: map[string]IntrospectPeerHash{"b": {Hash: "hash-new"}},

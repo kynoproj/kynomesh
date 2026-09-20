@@ -231,7 +231,7 @@ func TestReconcileDaemon_RecreatesOnAgentDeploysChange(t *testing.T) {
 	require.NoError(t, c.Get(context.Background(), client.ObjectKey{Namespace: testNamespace, Name: "hello-daemon"}, &dep0))
 	hash0 := dep0.Annotations[kmv1.KeyHash]
 
-	// Add a second agent — the AgentDeploys env var now differs,
+	// Add a second agent - the AgentDeploys env var now differs,
 	// hash changes, daemon Deployment gets recreated with the new env.
 	as.Spec.Agents = append(as.Spec.Agents, kmv1.AbstractAgentDeploy{Name: "beta"})
 	require.NoError(t, r.reconcileDaemon(context.Background(), as))
@@ -242,7 +242,7 @@ func TestReconcileDaemon_RecreatesOnAgentDeploysChange(t *testing.T) {
 	// The visible effect of recreation: the env var reflects the new
 	// AgentDeploy list. (We can't easily assert the recreation event
 	// itself against the fake client, but the env change proves the
-	// Pod template was rewritten — which is what a real-cluster
+	// Pod template was rewritten - which is what a real-cluster
 	// Recreate strategy would translate to a Pod rollover.)
 	env := envMap(dep1.Spec.Template.Spec.Containers[0].Env)
 	spec, err := kmv1.DecodeAgentSet(env[kmv1.EnvAgentSetObject].value)

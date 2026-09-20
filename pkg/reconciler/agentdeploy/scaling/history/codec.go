@@ -39,7 +39,7 @@ const (
 )
 
 // encodeHistory serializes the store's spec hash and records to a compact,
-// versioned big-endian blob. The spec hash is stored once (not per record) —
+// versioned big-endian blob. The spec hash is stored once (not per record) -
 // it identifies the pod spec the whole window was collected under.
 func encodeHistory(specHash string, records []record) []byte {
 	buf := make([]byte, versionSize+hashLenSize+len(specHash)+countSize+len(records)*recordSize)

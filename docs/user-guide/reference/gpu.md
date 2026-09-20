@@ -28,7 +28,7 @@ resources:
 ### Example: Agent Requesting A GPU (With Annotations And Node Selector)
 
 Node selector, tolerations, and annotations are pod-level fields set directly on
-the agent — see
+the agent - see
 [AgentSet Customization](configuration/agentset-customization.md) and
 [Labels And Annotations](configuration/labels-and-annotations.md).
 

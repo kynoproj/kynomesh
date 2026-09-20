@@ -242,7 +242,7 @@ func closeSource(key string, src MetricsSource, logger *zap.SugaredLogger) {
 
 // flushAll persists every tracked store on a fresh, bounded context.
 // Best-effort: failures (and anything not reached before the deadline) are
-// logged, not returned — the periodic flush + reload covers the small residual.
+// logged, not returned - the periodic flush + reload covers the small residual.
 func (s *Sampler) flushAll() {
 	ctx, cancel := context.WithTimeout(context.Background(), shutdownFlushTimeout)
 	defer cancel()
@@ -378,7 +378,7 @@ func clampDuration(v, lo, hi time.Duration) time.Duration {
 }
 
 // sourceFor returns a (cached) metrics source for the AgentDeploy's AgentSet
-// daemon — one client per AgentSet, shared across its AgentDeploys.
+// daemon - one client per AgentSet, shared across its AgentDeploys.
 func (s *Sampler) sourceFor(ad *kmv1.AgentDeploy) (MetricsSource, error) {
 	ck := ad.Namespace + "/" + ad.Spec.AgentSetName
 	s.mu.Lock()

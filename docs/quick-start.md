@@ -161,5 +161,5 @@ kubectl delete -f https://raw.githubusercontent.com/kynoproj/kynomesh-go/refs/he
 - Read the full example, including the Go source, at
   [kynomesh-go/examples/research-assistant](https://github.com/kynoproj/kynomesh-go/tree/main/examples/research-assistant).
 - Explore other patterns (`Handoff`, `Sequential`) in
-  [AgentSet](./core-concepts/agentset.md). The agent code does not change — only
+  [AgentSet](./core-concepts/agentset.md). The agent code does not change - only
   the AgentSet `pattern` does.
