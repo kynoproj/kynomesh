@@ -1,0 +1,1729 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../../../assets/kyno04.svg">
+      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.3.9">
+    
+    
+      
+        <title>AgentCard Drift Detection and Dependent Reload - Kynomesh - Distributed multi-agent orchestration</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.1d29e8d0.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.cbb835fc.min.css">
+        
+      
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+
+  <script>function gtag(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],gtag("js",new Date),gtag("config","G-WD91ZWL6XY"),document.addEventListener("DOMContentLoaded",function(){document.forms.search&&document.forms.search.query.addEventListener("blur",function(){this.value&&gtag("event","search",{search_term:this.value})}),"undefined"!=typeof location$&&location$.subscribe(function(e){gtag("config","G-WD91ZWL6XY",{page_path:e.pathname})})})</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-WD91ZWL6XY"></script>
+
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#agentcard-drift-detection-and-dependent-reload" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Kynomesh - Distributed multi-agent orchestration" class="md-header__button md-logo" aria-label="Kynomesh - Distributed multi-agent orchestration" data-md-component="logo">
+      
+  <img src="../../../assets/kyno04-white.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Kynomesh - Distributed multi-agent orchestration
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              AgentCard Drift Detection and Dependent Reload
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="white"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/kynoproj/kynomesh" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../.." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../quick-start/" class="md-tabs__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../core-concepts/overview/" class="md-tabs__link">
+        User Guide
+      </a>
+    </li>
+  
+
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../operations/releases/" class="md-tabs__link">
+        Operator Manual
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../development/" class="md-tabs__link md-tabs__link--active">
+        Contributor Guide
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Kynomesh - Distributed multi-agent orchestration" class="md-nav__button md-logo" aria-label="Kynomesh - Distributed multi-agent orchestration" data-md-component="logo">
+      
+  <img src="../../../assets/kyno04-white.svg" alt="logo">
+
+    </a>
+    Kynomesh - Distributed multi-agent orchestration
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/kynoproj/kynomesh" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Getting Started" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/" class="md-nav__link">
+        Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          User Guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="User Guide" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          User Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_1" type="checkbox" id="__nav_3_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_1">
+          Core Concepts
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Core Concepts" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_1">
+          <span class="md-nav__icon md-icon"></span>
+          Core Concepts
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../core-concepts/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../core-concepts/agentset/" class="md-nav__link">
+        AgentSet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../core-concepts/agentdeploy/" class="md-nav__link">
+        AgentDeploy
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_2">
+          SDKs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="SDKs" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_2">
+          <span class="md-nav__icon md-icon"></span>
+          SDKs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/sdks/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_3">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_3">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/autoscaling/" class="md-nav__link">
+        Autoscaling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/rate-limiting/" class="md-nav__link">
+        Rate limiting
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/zero-downtime-pod-replacement/" class="md-nav__link">
+        Zero-Downtime Pod Replacement
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/drift-reload/" class="md-nav__link">
+        Drift Reload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/gpu/" class="md-nav__link">
+        Running On GPU
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3_6" type="checkbox" id="__nav_3_3_6" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_3_6">
+          Configuration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Configuration" data-md-level="3">
+        <label class="md-nav__title" for="__nav_3_3_6">
+          <span class="md-nav__icon md-icon"></span>
+          Configuration
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/labels-and-annotations/" class="md-nav__link">
+        Labels And Annotations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/environment-variables/" class="md-nav__link">
+        Environment Variables
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/container-resources/" class="md-nav__link">
+        Container Resources
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/volumes/" class="md-nav__link">
+        Volumes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/init-containers/" class="md-nav__link">
+        Init Containers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/sidecar-containers/" class="md-nav__link">
+        Sidecar Containers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/liveness-and-readiness/" class="md-nav__link">
+        Liveness And Readiness
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/agentset-customization/" class="md-nav__link">
+        AgentSet Customization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/external-agents/" class="md-nav__link">
+        External Agents
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/public-base-url/" class="md-nav__link">
+        Public Base URL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/rolling-update/" class="md-nav__link">
+        Rolling Update
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/graceful-termination/" class="md-nav__link">
+        Graceful Termination
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/dra/" class="md-nav__link">
+        Dynamic Resource Allocation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/istio/" class="md-nav__link">
+        Running On Istio
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/kustomize/kustomize/" class="md-nav__link">
+        Kustomize Integration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/a2acli/" class="md-nav__link">
+        A2A CLI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../APIs/" class="md-nav__link">
+        APIs
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Operator Manual
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Operator Manual" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Operator Manual
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/releases/" class="md-nav__link">
+        Releases ⧉
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/installation/" class="md-nav__link">
+        Installation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/validating-webhook/" class="md-nav__link">
+        Validating Webhook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/controller-configuration/" class="md-nav__link">
+        Controller Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/metrics/" class="md-nav__link">
+        Metrics
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Contributor Guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Contributor Guide" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Contributor Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        Development
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_2" type="checkbox" id="__nav_5_2" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5_2">
+          Specifications
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Specifications" data-md-level="2">
+        <label class="md-nav__title" for="__nav_5_2">
+          <span class="md-nav__icon md-icon"></span>
+          Specifications
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-discovery/" class="md-nav__link">
+        Agent Discovery
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../external-agents/" class="md-nav__link">
+        External Agents
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          AgentCard Drift Detection and Dependent Reload
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        AgentCard Drift Detection and Dependent Reload
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#problem" class="md-nav__link">
+    Problem
+  </a>
+  
+    <nav class="md-nav" aria-label="Problem">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-callers-cant-just-notice-on-their-own" class="md-nav__link">
+    Why callers can't just notice on their own
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-this-is-real-for-kynomesh-agents" class="md-nav__link">
+    Why this is real for Kynomesh agents
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-this-means-for-kynomesh-specifically" class="md-nav__link">
+    What this means for Kynomesh specifically
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proposed-direction" class="md-nav__link">
+    Proposed direction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enabling-this-driftreload" class="md-nav__link">
+    Enabling this: driftReload
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#non-goals" class="md-nav__link">
+    Non-goals
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-questions" class="md-nav__link">
+    Open questions
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    See Also
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../debugging/" class="md-nav__link">
+        How To Debug
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../static-code-analysis/" class="md-nav__link">
+        Static Code Analysis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releasing/" class="md-nav__link">
+        How To Release
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#problem" class="md-nav__link">
+    Problem
+  </a>
+  
+    <nav class="md-nav" aria-label="Problem">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-callers-cant-just-notice-on-their-own" class="md-nav__link">
+    Why callers can't just notice on their own
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-this-is-real-for-kynomesh-agents" class="md-nav__link">
+    Why this is real for Kynomesh agents
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-this-means-for-kynomesh-specifically" class="md-nav__link">
+    What this means for Kynomesh specifically
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proposed-direction" class="md-nav__link">
+    Proposed direction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enabling-this-driftreload" class="md-nav__link">
+    Enabling this: driftReload
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#non-goals" class="md-nav__link">
+    Non-goals
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-questions" class="md-nav__link">
+    Open questions
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    See Also
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/development/specifications/agentcard-drift-reload.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+<h1 id="agentcard-drift-detection-and-dependent-reload">AgentCard Drift Detection and Dependent Reload<a class="headerlink" href="#agentcard-drift-detection-and-dependent-reload" title="Permanent link">&para;</a></h1>
+<h2 id="problem">Problem<a class="headerlink" href="#problem" title="Permanent link">&para;</a></h2>
+<p>When agent <code>worker</code>'s capabilities change - it gains or loses a skill, changes
+its supported transports, anything reflected in its A2A <code>AgentCard</code> - every
+agent that has <code>worker</code> as a peer keeps calling it as if nothing changed,
+indefinitely, until something forces those callers to reconstruct their A2A
+clients.</p>
+<p>This is how the A2A client SDKs are designed to work, and Kynomesh needs to
+account for it rather than assume it away.</p>
+<h3 id="why-callers-cant-just-notice-on-their-own">Why callers can't just notice on their own<a class="headerlink" href="#why-callers-cant-just-notice-on-their-own" title="Permanent link">&para;</a></h3>
+<p>Tracing through the official A2A Python SDK (<code>a2aproject/a2a-python (v1.1.3)</code>,
+<code>src/a2a/client/</code>):</p>
+<ul>
+<li><code>ClientFactory.create_from_url</code> resolves the target's <code>AgentCard</code> via
+  <code>A2ACardResolver.get_agent_card()</code> <strong>exactly once</strong>, at client-construction
+  time, and hands the result to <code>BaseClient.__init__</code>, which stores it as
+  <code>self._card</code> - a plain instance attribute.</li>
+<li>Every RPC method (<code>send_message</code>, <code>get_task</code>, <code>cancel_task</code>, the
+  push-notification-config methods, …) reads that cached <code>self._card</code>. None of
+  them re-resolve it.</li>
+<li>There is no TTL, no expiry, no background refresh, and no re-fetch-on-error.
+  The only way the cached card is ever replaced is an explicit, caller-invoked
+  <code>get_extended_agent_card()</code> call - something nothing in Kynomesh or generated
+  agent code triggers automatically.</li>
+</ul>
+<p>So a capability change on <code>worker</code> is invisible to any already-constructed
+client for <code>worker</code> until that caller's own process restarts (or its code
+explicitly reconstructs the client).</p>
+<h3 id="why-this-is-real-for-kynomesh-agents">Why this is real for Kynomesh agents<a class="headerlink" href="#why-this-is-real-for-kynomesh-agents" title="Permanent link">&para;</a></h3>
+<p><code>kynomesh-go</code> and <code>kynomesh-py</code>'s peer-client constructors (<code>client.NewForPeer</code>
+/ <code>client.new_for_peer</code>) are lazy and memoized per process
+(<a href="https://github.com/kynoproj/kynomesh-go/issues/31">kynomesh-go#31</a>,
+<a href="https://github.com/kynoproj/kynomesh-py/issues/6">kynomesh-py#6</a>): the first
+call for a given peer resolves its <code>AgentCard</code> and builds a client; every
+subsequent call for that same peer reuses it. That's the right behavior for
+cost - it avoids redoing a full resolve and construction on every call - but it
+means a cached client, once built, holds a peer's <code>AgentCard</code> for the rest of
+the process's life, exactly per the SDK mechanics above.</p>
+<h3 id="what-this-means-for-kynomesh-specifically">What this means for Kynomesh specifically<a class="headerlink" href="#what-this-means-for-kynomesh-specifically" title="Permanent link">&para;</a></h3>
+<p>Separate from, and not fixed by, anything already in the broker:</p>
+<ul>
+<li><code>NewAgentCardProxy</code> (<code>pkg/broker/agentcard_proxy.go</code>) resolves the <em>local</em>
+  agent's own <code>AgentCard</code> fresh on every request to the broker's AgentCard
+  endpoint. That's correct and sufficient for serving an accurate card to a
+  <em>new</em> caller - but it has nothing to do with what an existing caller's SDK
+  client does with a card it already cached.</li>
+<li>Peer pod restarts are a separate, already-solved concern: peer addresses are
+  stable per-AgentDeploy ClusterIP Service DNS names (see
+  <a href="../agent-discovery/">Agent Discovery</a>), so a restart doesn't strand a caller
+  at a dead address. But a restart is exactly the kind of event that
+  <em>incidentally</em> forces a caller to rebuild its client and re-pick-up a changed
+  card - the mechanism this proposal deliberately invokes on purpose for agents
+  that don't restart on their own.</li>
+</ul>
+<p>The upshot: the only way to make a live capability change propagate to existing
+callers, short of an upstream SDK change, is for Kynomesh to detect the change
+and force those callers' pods to restart.</p>
+<h2 id="proposed-direction">Proposed direction<a class="headerlink" href="#proposed-direction" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>SDK: report the hash behind the cached client, and when it was recorded.</strong>
+   The first successful construction of a peer's client
+   (<a href="https://github.com/kynoproj/kynomesh-go/issues/31">kynomesh-go#31</a>,
+   <a href="https://github.com/kynoproj/kynomesh-py/issues/6">kynomesh-py#6</a>) is the one
+   moment the SDK actually knows which <code>AgentCard</code> it resolved and is now using.
+   At that point, the SDK hashes the resolved card and records both the hash and
+   the current time - keyed by peer name - in a file on the shared
+   <code>kynomesh-run</code> volume (e.g. <code>/var/run/kynomesh/peer-hashes.json</code>), updated
+   incrementally as new peers are first resolved over the process's lifetime,
+   not rewritten wholesale each time:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"searcher"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"c0e81e18b0d9276e..."</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"observedAt"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-09-08T22:10:00Z"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The file must be cleared/truncated at process start, before any peer client
+   is constructed, so a stale entry from a previous process incarnation (e.g. a
+   peer removed from the topology and no longer called) never lingers. The file
+   only ever contains entries for peers the process actually resolved a client
+   for - a peer listed in <code>topology.json</code> that the agent's code never calls
+   simply has no entry, which the consuming side must treat as "unknown," not
+   "drifted."</p>
+<ol>
+<li>
+<p><strong>Broker: expose the file.</strong> The broker already shares the pod's volume and
+   already serves introspection data (<code>/metrics</code>, <code>/healthz</code>, <code>/readyz</code>) on its
+   introspection port (<code>pkg/broker/introspection.go</code>). It reads the peer-hashes
+   file and serves its contents.</p>
+</li>
+<li>
+<p><strong>Daemon: do both halves of the comparison, expose one decision-ready API.</strong>
+   The daemon already runs a per-pod scrape loop (<code>pkg/daemon/server/scraper</code>,
+   <code>pkg/daemon/server/rater</code>) and already exposes a gRPC+REST-gateway API to the
+   controller (<code>DaemonService.GetAgentDeployMetrics</code>,
+   <code>pkg/apis/proto/daemon/daemon.proto</code>). Extend that same service with
+   something like:</p>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><code>GetPeerCardDrift(AgentDeployName) -&gt; {
+  peer_name: {
+    latest_hash: string                    // daemon's own polled, stability-gated hash for that peer
+    latest_hash_observed_at: timestamp      // when the stability gate last accepted latest_hash
+    reported_hashes: map&lt;pod, {
+      hash: string                          // that pod's currently-reported hash for this peer
+      observed_at: timestamp                // when that pod's SDK recorded this hash (see step 1) - echoed
+                                             // through from peer-hashes.json verbatim, not a scrape time
+    }&gt;
+  }
+}
+</code></pre></div>
+<p>The daemon, not the controller, fetches each managed peer's live <code>AgentCard</code>
+   and hashes it (the same way it already reaches managed agents for metrics
+   scraping), and separately scrapes each dependent pod's broker-exposed
+   peer-hashes file. <code>reported_hashes</code> is keyed by pod name, not deduplicated to
+   a set of distinct values, because the controller acts per pod (see step 4):
+   it needs to know exactly <em>which</em> live pods are still on a stale hash so it
+   can terminate only those. A pod with no entry for a given peer hasn't
+   reported a hash for it yet - "unknown," not "drifted."</p>
+<p>The daemon owns the <strong>stability gate</strong>: don't treat a newly-observed
+   server-side hash change as "the latest hash" until it's held steady across N
+   consecutive polls (or a minimum duration) - a peer mid-rollout can briefly
+   serve an old and new card from different replicas, and that shouldn't itself
+   trigger dependent churn.</p>
+<p>The controller never reads a pod's exposed hash file directly, and never
+   fetches a peer's <code>AgentCard</code> itself - both stay entirely inside the daemon,
+   consistent with the daemon owning all pod/agent introspection and the
+   controller staying focused on infrastructure reconciliation.</p>
+<ol>
+<li><strong>Controller: sole owner of the decision to reload, and only touches the
+   stale pods.</strong> For each dependent AgentDeploy, the controller calls the
+   daemon's new API and, per peer, compares <code>latest_hash</code> against each entry in
+   <code>reported_hashes</code>. A pod is stale if its reported hash for that peer differs
+   from <code>latest_hash</code>; a pod with no entry for that peer is "unknown" and left
+   alone (see step 3). The set of pods to act on is the union of stale pods
+   across all of an AgentDeploy's peers.</li>
+<li><strong>Terminates only the stale pods.</strong> The controller deletes exactly the
+     stale pods identified above (still respecting <code>maxUnavailable</code> as a
+     concurrency cap on how many stale pods are deleted at once, for the same
+     blast-radius reasons as spec-drift rollout).</li>
+<li><strong>Defers to any active rollout.</strong> Before acting, the controller checks
+     <code>AgentDeploy.Status.UpdateHash != CurrentHash</code> - the exact same gate the
+     autoscaler already applies before scaling
+     (<code>pkg/reconciler/agentdeploy/scaling/autoscaler.go</code>:
+     <code>"Skipping scale: AgentDeploy is updating"</code>). If a rollout is already in
+     flight for any reason, skip triggering a card-drift reload this cycle and
+     re-check on the next poll. This is controller-local state the daemon has no
+     visibility into and doesn't need - the daemon stays purely introspection,
+     the controller stays the only place rollout state and reload decisions are
+     made.</li>
+<li><strong>Never blocks a subsequent spec change.</strong> If a card-drift reload is
+     already in progress and the user pushes an unrelated spec change to the
+     same AgentDeploy mid-rollout, the spec change wins with no special handling
+     needed: a card-drift delete recreates a pod on the <em>same</em> desired hash
+     (just forcing a restart), while a spec change recreates pods on a <em>new</em>
+     desired hash. The existing hash-comparison reconcile loop
+     (<code>pkg/reconciler/agentdeploy/pods.go</code>) naturally converges on whatever the
+     current desired hash is on the next pass - there is nothing to cancel or
+     preempt.</li>
+</ol>
+<h2 id="enabling-this-driftreload">Enabling this: <code>driftReload</code><a class="headerlink" href="#enabling-this-driftreload" title="Permanent link">&para;</a></h2>
+<p>This is opt-in/opt-out, not always-on - for some deployments, auto-reloading on
+every capability change is undesirable (agents that legitimately change their
+card often, or environments where uncontrolled pod churn is itself a cost).</p>
+<p>The toggle is a grouped field, <code>driftReload</code>, available at both levels:</p>
+<ul>
+<li><strong>AgentSet level:</strong> <code>spec.driftReload</code> - the default for every agent in the
+  set.</li>
+<li><strong>Agent level:</strong> <code>spec.agents[*].driftReload</code> - overrides the AgentSet-level
+  default for that agent, following the same fill-if-unset pattern already used
+  for <code>BrokerContainer</code>/<code>InitContainer</code> templates
+  (<code>ContainerTemplate.ApplyDefaultsFrom</code>,
+  <code>pkg/apis/kynomesh/v1alpha1/container_template.go</code>): an unset per-agent
+  <code>driftReload</code> takes the AgentSet-level default wholesale; a per-agent
+  <code>driftReload</code> that is set always wins outright.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">driftReload</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w"> </span><span class="c1"># fleet-wide default</span>
+<span class="w">  </span><span class="nt">agents</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">planner</span>
+<span class="w">      </span><span class="nt">driftReload</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w"> </span><span class="c1"># this agent opts out even though the fleet default is on</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">worker</span><span class="w"> </span><span class="c1"># omitted - inherits the fleet default (enabled: true)</span>
+</code></pre></div>
+<p><code>driftReload</code> is deliberately a struct (<code>{enabled: bool}</code> today) rather than a
+bare boolean, so related settings in the same "how does this agent react to its
+peers" space can be added later without introducing new top-level fields.
+Default is <strong>off</strong> (<code>Enabled</code> bool zero-value is <code>false</code>): auto-restarting pods
+is a behavior change with real blast radius, so opt-in is the safer default for
+a first release.</p>
+<p><code>driftReload.enabled</code> gates the controller only, not the daemon: the daemon's
+drift tracking (step 3 above) runs unconditionally for every managed peer
+regardless of this setting, so the drift data stays visible via the API even
+when a user has turned auto-reload off. Only the controller-side component that
+acts on drift (deleting stale pods) checks <code>driftReload.enabled</code>.</p>
+<h2 id="non-goals">Non-goals<a class="headerlink" href="#non-goals" title="Permanent link">&para;</a></h2>
+<ul>
+<li>This does not change anything about the A2A SDKs' caching behavior itself -
+  it's a Kynomesh-side workaround for a caching design that's correct SDK
+  behavior, not a bug to report upstream.</li>
+<li>This does not change peer-address resolution or pod-restart handling - those
+  already work via stable Service DNS (see
+  <a href="../agent-discovery/">Agent Discovery</a>) and are out of scope here.</li>
+<li><strong>External agents are out of scope for v1.</strong> Detecting drift on an external
+  agent (per <a href="https://github.com/kynoproj/kynomesh/issues/147">#147</a>) means the
+  daemon polling a third-party URL on a schedule - which runs into an unresolved
+  prerequisite: there is no credentials field anywhere in the AgentSet API today
+  for authenticating to an external agent's endpoint, and most external agents
+  will require some form of auth to serve their card. This needs a credentials
+  story before it can be designed, not just implemented, and is left open rather
+  than scoped into v1.</li>
+</ul>
+<h2 id="open-questions">Open questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>External-agent drift detection</strong>, per the Non-goals section above - blocked
+  on a credentials story for external agents that doesn't exist yet.</li>
+</ul>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../agent-discovery/">Agent Discovery</a> - how peers resolve each other's
+  addresses today; the DNS stability this proposal deliberately doesn't touch.</li>
+<li><a href="../external-agents/">External Agents</a> - <code>spec.externalAgents</code>, referenced by
+  the external-agent non-goal above.</li>
+<li><a href="../../../user-guide/reference/configuration/rolling-update/">Rolling Update</a> -
+  the batching behavior a dependent reload respects.</li>
+</ul>
+
+              
+            </article>
+            
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../external-agents/" class="md-footer__link md-footer__link--prev" aria-label="Previous: External Agents" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              External Agents
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../../debugging/" class="md-footer__link md-footer__link--next" aria-label="Next: How To Debug" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              How To Debug
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.tabs.link"], "search": "../../../assets/javascripts/workers/search.b97dbffb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.6c7ad80a.min.js"></script>
+      
+    
+  </body>
+</html>
