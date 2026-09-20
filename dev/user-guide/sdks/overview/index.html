@@ -908,6 +908,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/configuration/public-base-url/" class="md-nav__link">
+        Public Base URL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/configuration/rolling-update/" class="md-nav__link">
         Rolling Update
       </a>
@@ -1631,8 +1645,8 @@ you can advertise more than one and let each caller pick:</p>
 <p>The URLs here are only used for local development - running your agent
 in-cluster, Kynomesh's broker fronts it and advertises the reachable address to
 peers, so you don't need to construct those addresses yourself. If your agent
-needs to be reachable from outside the cluster too, set <code>publicBaseURL</code> on the
-agent (see the <a href="../../../APIs/">API reference</a>).</p>
+needs to be reachable from outside the cluster too, set
+<a href="../../reference/configuration/public-base-url/"><code>publicBaseURL</code></a> on the agent.</p>
 <h3 id="health-checks">Health Checks<a class="headerlink" href="#health-checks" title="Permanent link">&para;</a></h3>
 <p>By default an agent reports <code>SERVING</code> as soon as it starts. If readiness depends
 on something else - a model endpoint, a warm cache, a downstream dependency -
