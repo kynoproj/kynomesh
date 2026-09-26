@@ -428,12 +428,15 @@ message Container {
   optional Probe livenessProbe = 11;
 
   // +optional
+  optional Probe startupProbe = 12;
+
+  // +optional
   // +patchMergeKey=containerPort
   // +patchStrategy=merge
   // +listType=map
   // +listMapKey=containerPort
   // +listMapKey=protocol
-  repeated .k8s.io.api.core.v1.ContainerPort ports = 12;
+  repeated .k8s.io.api.core.v1.ContainerPort ports = 13;
 }
 
 // ContainerTemplate defines customized spec for a container

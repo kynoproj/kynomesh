@@ -24311,6 +24311,9 @@
         "securityContext": {
           "$ref": "#/definitions/io.k8s.api.core.v1.SecurityContext"
         },
+        "startupProbe": {
+          "$ref": "#/definitions/sh.kyno.kynomesh.v1alpha1.Probe"
+        },
         "volumeMounts": {
           "type": "array",
           "items": {

@@ -1511,6 +1511,11 @@ func schema_pkg_apis_kynomesh_v1alpha1_Container(ref common.ReferenceCallback) c
 							Ref: ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Probe"),
 						},
 					},
+					"startupProbe": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Probe"),
+						},
+					},
 					"ports": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{

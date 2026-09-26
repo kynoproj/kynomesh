@@ -43,10 +43,12 @@ type Container struct {
 	// +optional
 	LivenessProbe *Probe `json:"livenessProbe,omitempty" protobuf:"bytes,11,opt,name=livenessProbe"`
 	// +optional
+	StartupProbe *Probe `json:"startupProbe,omitempty" protobuf:"bytes,12,opt,name=startupProbe"`
+	// +optional
 	// +patchMergeKey=containerPort
 	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=containerPort
 	// +listMapKey=protocol
-	Ports []corev1.ContainerPort `json:"ports,omitempty" patchStrategy:"merge" patchMergeKey:"containerPort" protobuf:"bytes,12,rep,name=ports"`
+	Ports []corev1.ContainerPort `json:"ports,omitempty" patchStrategy:"merge" patchMergeKey:"containerPort" protobuf:"bytes,13,rep,name=ports"`
 }
