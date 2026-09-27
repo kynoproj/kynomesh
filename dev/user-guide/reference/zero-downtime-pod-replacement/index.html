@@ -826,8 +826,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/liveness-and-readiness/" class="md-nav__link">
-        Liveness And Readiness
+      <a href="../configuration/probes/" class="md-nav__link">
+        Liveness, Readiness, and Startup
       </a>
     </li>
   
@@ -1351,7 +1351,7 @@ longer-running calls.</p>
   process exits, so it finishes the work it already accepted instead of dropping
   it. This applies to every pod deletion the controller performs: rolling
   replacement, scale-down, and anything else.</li>
-<li><strong><a href="../configuration/liveness-and-readiness/">Liveness And Readiness</a></strong> decides
+<li><strong><a href="../configuration/probes/">Liveness, Readiness and Startup Probes</a></strong> decide
   when a new pod is actually serving traffic - its readiness probe must pass
   before the broker is added to the agent's Service endpoints.</li>
 <li><strong><a href="../configuration/rolling-update/">Rolling Update</a></strong> is what layers on top of
@@ -1392,7 +1392,7 @@ change:</p>
 <li><strong>New pod: create and wait for Ready.</strong> In the same pass, the controller
    creates the replacement pod on the new spec. The new pod isn't added to the
    agent's Service endpoints until its readiness probe passes - see
-   <a href="../configuration/liveness-and-readiness/">Liveness And Readiness</a> for the
+   <a href="../configuration/probes/">Liveness, Readiness and Startup Probes</a> for the
    probe timing knobs.</li>
 <li><strong>Batch gate.</strong> Before starting the next batch of <code>maxUnavailable</code> slots, the
    controller waits for every replacement pod created in this batch to reach
@@ -1436,7 +1436,7 @@ or the grace period are. Two independent things can cause this, and both are
 worth checking:</p>
 <ul>
 <li><strong>Timing.</strong> The probe mechanism itself is fixed (see
-  <a href="../configuration/liveness-and-readiness/">Liveness And Readiness</a>), but its
+  <a href="../configuration/probes/">Liveness, Readiness and Startup Probes</a>), but its
   <code>initialDelaySeconds</code>/<code>periodSeconds</code>/<code>failureThreshold</code> are not - raise them
   to match how long your agent's process actually takes to come up.</li>
 <li><strong>Reported status.</strong> By default, the SDK reports the agent as healthy as soon
@@ -1478,7 +1478,7 @@ handles long-running calls.</p>
 <ul>
 <li><a href="../configuration/graceful-termination/">Graceful Termination</a> - the drain
   sequence for any outgoing pod.</li>
-<li><a href="../configuration/liveness-and-readiness/">Liveness And Readiness</a> - probe
+<li><a href="../configuration/probes/">Liveness, Readiness and Startup Probes</a> - probe
   timing for incoming pods.</li>
 <li><a href="../configuration/rolling-update/">Rolling Update</a> - batching and
   <code>maxUnavailable</code> for spec changes.</li>

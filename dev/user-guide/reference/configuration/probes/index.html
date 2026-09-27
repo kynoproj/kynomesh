@@ -13,7 +13,7 @@
     
     
       
-        <title>Liveness And Readiness - Kynomesh - Distributed multi-agent orchestration</title>
+        <title>Liveness, Readiness, and Startup - Kynomesh - Distributed multi-agent orchestration</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#liveness-and-readiness" class="md-skip">
+        <a href="#liveness-readiness-and-startup" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Liveness And Readiness
+              Liveness, Readiness, and Startup
             
           </span>
         </div>
@@ -776,12 +776,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Liveness And Readiness
+          Liveness, Readiness, and Startup
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        Liveness And Readiness
+        Liveness, Readiness, and Startup
       </a>
       
         
@@ -1289,18 +1289,17 @@
             <article class="md-content__inner md-typeset">
               
                 
-  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/user-guide/reference/configuration/liveness-and-readiness.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/user-guide/reference/configuration/probes.md" title="Edit this page" class="md-content__button md-icon">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
 
-<h1 id="liveness-and-readiness">Liveness and Readiness<a class="headerlink" href="#liveness-and-readiness" title="Permanent link">&para;</a></h1>
-<p><code>Liveness</code> and <code>Readiness</code> probes are pre-configured on every container in an
-agent pod. For the <strong>agent</strong> container, the probe handler itself is not
-customizable - it always runs Kynomesh's bundled probe binary against the broker
-over the shared Unix Domain Socket - but the timing can be, via
-<code>.spec.agents[*].container</code>:</p>
+<h1 id="liveness-readiness-and-startup">Liveness, Readiness, and Startup<a class="headerlink" href="#liveness-readiness-and-startup" title="Permanent link">&para;</a></h1>
+<p><code>Liveness</code>, <code>Readiness</code>, and <code>Startup</code> probes are pre-configured on the
+<strong>agent</strong> container. The probe handler itself is not customizable - it always
+runs Kynomesh's bundled probe binary against the broker over the shared Unix
+Domain Socket - but the timing can be, via <code>.spec.agents[*].container</code>:</p>
 <ul>
 <li><code>initialDelaySeconds</code></li>
 <li><code>timeoutSeconds</code></li>
@@ -1319,6 +1318,9 @@ over the shared Unix Domain Socket - but the timing can be, via
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-agent</span>
 <span class="w">      </span><span class="nt">container</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-agent:latest</span>
+<span class="w">        </span><span class="nt">startupProbe</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">          </span><span class="nt">failureThreshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span>
 <span class="w">        </span><span class="nt">readinessProbe</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
 <span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span>
@@ -1327,6 +1329,14 @@ over the shared Unix Domain Socket - but the timing can be, via
 <span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">120</span>
 <span class="w">          </span><span class="nt">failureThreshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
 </code></pre></div>
+<p><code>startupProbe</code> gates <code>readinessProbe</code> and <code>livenessProbe</code>: neither runs until
+the startup probe succeeds once. Use it instead of a large
+<code>livenessProbe.initialDelaySeconds</code> when startup time is unpredictable (e.g.
+loading a large model) - it gives the agent as long as
+<code>periodSeconds * failureThreshold</code> to come up, without weakening how quickly
+liveness detects a hang once the agent is actually running. If your agent starts
+quickly and predictably, the defaults are enough and you likely don't need to
+customize <code>startupProbe</code> at all.</p>
 <p>By default, the SDK reports the agent as healthy as soon as the process starts,
 whether or not it has actually finished initializing (loading a model,
 connecting to a dependency, etc.). If that's not accurate for your agent,
