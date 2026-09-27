@@ -73,7 +73,7 @@ nav:
               - Volumes: "user-guide/reference/configuration/volumes.md"
               - Init Containers: "user-guide/reference/configuration/init-containers.md"
               - Sidecar Containers: "user-guide/reference/configuration/sidecar-containers.md"
-              - Liveness And Readiness: "user-guide/reference/configuration/liveness-and-readiness.md"
+              - user-guide/reference/configuration/probes.md
               - AgentSet Customization: "user-guide/reference/configuration/agentset-customization.md"
               - External Agents: "user-guide/reference/configuration/external-agents.md"
               - Public Base URL: "user-guide/reference/configuration/public-base-url.md"

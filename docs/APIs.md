@@ -2245,6 +2245,21 @@ Kubernetes core/v1.PullPolicy </a> </em>
 
 <td>
 
+<code>startupProbe</code></br> <em>
+<a href="#kynomesh.kyno.sh/v1alpha1.Probe"> Probe </a> </em>
+</td>
+
+<td>
+
+<em>(Optional)</em>
+</td>
+
+</tr>
+
+<tr>
+
+<td>
+
 <code>ports</code></br> <em>
 <a href="https://v1-18.docs.kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#containerport-v1-core">
 \[\]Kubernetes core/v1.ContainerPort </a> </em>

@@ -112,6 +112,12 @@ const (
 	DefaultAgentLivenessTimeoutSec       int32 = 3
 	DefaultAgentLivenessFailureThreshold int32 = 6
 	DefaultAgentLivenessSuccessThreshold int32 = 1
+
+	DefaultAgentStartupInitialDelaySec  int32 = 1
+	DefaultAgentStartupPeriodSec        int32 = 5
+	DefaultAgentStartupTimeoutSec       int32 = 2
+	DefaultAgentStartupFailureThreshold int32 = 30
+	DefaultAgentStartupSuccessThreshold int32 = 1
 )
 
 // Broker container probe timing defaults.

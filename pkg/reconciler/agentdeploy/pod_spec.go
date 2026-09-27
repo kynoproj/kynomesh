@@ -92,7 +92,7 @@ func applyRunVolMount(cs []corev1.Container) {
 func newAgentContainer(ad *kmv1.AgentDeploy) corev1.Container {
 	src := ad.Spec.Container
 	c := corev1.Container{Name: kmv1.ContainerNameAgent}
-	var readinessSpec, livenessSpec *kmv1.Probe
+	var readinessSpec, livenessSpec, startupSpec *kmv1.Probe
 	if src != nil {
 		c.Image = src.Image
 		c.Command = src.Command
@@ -108,9 +108,11 @@ func newAgentContainer(ad *kmv1.AgentDeploy) corev1.Container {
 		c.Ports = src.Ports
 		readinessSpec = src.ReadinessProbe
 		livenessSpec = src.LivenessProbe
+		startupSpec = src.StartupProbe
 	}
 	c.ReadinessProbe = agentReadinessProbe(readinessSpec)
 	c.LivenessProbe = agentLivenessProbe(livenessSpec)
+	c.StartupProbe = agentStartupProbe(startupSpec)
 	always := corev1.ContainerRestartPolicyAlways
 	c.RestartPolicy = &always
 	return c
@@ -122,7 +124,7 @@ func brokerDrainExec() []string {
 }
 
 // agentProbeExec returns the exec command the agent container runs for
-// both readiness and liveness probes: the bundled probe binary speaks
+// startup, readiness, and liveness probes: the bundled probe binary speaks
 // gRPC health over the broker UDS.
 func agentProbeExec() []string {
 	return []string{
@@ -151,6 +153,17 @@ func agentLivenessProbe(spec *kmv1.Probe) *corev1.Probe {
 		TimeoutSeconds:      kmv1.GetProbeTimeoutSecondsOr(spec, kmv1.DefaultAgentLivenessTimeoutSec),
 		FailureThreshold:    kmv1.GetProbeFailureThresholdOr(spec, kmv1.DefaultAgentLivenessFailureThreshold),
 		SuccessThreshold:    kmv1.GetProbeSuccessThresholdOr(spec, kmv1.DefaultAgentLivenessSuccessThreshold),
+	}
+}
+
+func agentStartupProbe(spec *kmv1.Probe) *corev1.Probe {
+	return &corev1.Probe{
+		ProbeHandler:        corev1.ProbeHandler{Exec: &corev1.ExecAction{Command: agentProbeExec()}},
+		InitialDelaySeconds: kmv1.GetProbeInitialDelaySecondsOr(spec, kmv1.DefaultAgentStartupInitialDelaySec),
+		PeriodSeconds:       kmv1.GetProbePeriodSecondsOr(spec, kmv1.DefaultAgentStartupPeriodSec),
+		TimeoutSeconds:      kmv1.GetProbeTimeoutSecondsOr(spec, kmv1.DefaultAgentStartupTimeoutSec),
+		FailureThreshold:    kmv1.GetProbeFailureThresholdOr(spec, kmv1.DefaultAgentStartupFailureThreshold),
+		SuccessThreshold:    kmv1.GetProbeSuccessThresholdOr(spec, kmv1.DefaultAgentStartupSuccessThreshold),
 	}
 }
 

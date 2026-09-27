@@ -482,6 +482,15 @@ func TestBuildPodSpec_AgentProbes(t *testing.T) {
 		assert.Equal(t, kmv1.DefaultAgentLivenessTimeoutSec, agent.LivenessProbe.TimeoutSeconds)
 		assert.Equal(t, kmv1.DefaultAgentLivenessFailureThreshold, agent.LivenessProbe.FailureThreshold)
 		assert.Equal(t, kmv1.DefaultAgentLivenessSuccessThreshold, agent.LivenessProbe.SuccessThreshold)
+
+		require.NotNil(t, agent.StartupProbe)
+		require.NotNil(t, agent.StartupProbe.Exec)
+		assert.Equal(t, wantCmd, agent.StartupProbe.Exec.Command)
+		assert.Equal(t, kmv1.DefaultAgentStartupInitialDelaySec, agent.StartupProbe.InitialDelaySeconds)
+		assert.Equal(t, kmv1.DefaultAgentStartupPeriodSec, agent.StartupProbe.PeriodSeconds)
+		assert.Equal(t, kmv1.DefaultAgentStartupTimeoutSec, agent.StartupProbe.TimeoutSeconds)
+		assert.Equal(t, kmv1.DefaultAgentStartupFailureThreshold, agent.StartupProbe.FailureThreshold)
+		assert.Equal(t, kmv1.DefaultAgentStartupSuccessThreshold, agent.StartupProbe.SuccessThreshold)
 	})
 
 	t.Run("honors_spec_timing_overrides_per_field", func(t *testing.T) {
@@ -495,6 +504,10 @@ func TestBuildPodSpec_AgentProbes(t *testing.T) {
 			LivenessProbe: &kmv1.Probe{
 				InitialDelaySeconds: ptr.To(int32(45)),
 				TimeoutSeconds:      ptr.To(int32(8)),
+			},
+			StartupProbe: &kmv1.Probe{
+				PeriodSeconds:    ptr.To(int32(3)),
+				FailureThreshold: ptr.To(int32(60)),
 			},
 		}
 
@@ -517,6 +530,15 @@ func TestBuildPodSpec_AgentProbes(t *testing.T) {
 		assert.Equal(t, kmv1.DefaultAgentLivenessPeriodSec, agent.LivenessProbe.PeriodSeconds, "unset fields fall back to default")
 		assert.Equal(t, int32(6), agent.LivenessProbe.FailureThreshold, "unset fields fall back to default")
 		assert.Equal(t, int32(1), agent.LivenessProbe.SuccessThreshold, "unset fields fall back to default")
+
+		require.NotNil(t, agent.StartupProbe)
+		require.NotNil(t, agent.StartupProbe.Exec)
+		assert.Equal(t, wantCmd, agent.StartupProbe.Exec.Command, "exec handler stays controller-owned")
+		assert.Equal(t, int32(3), agent.StartupProbe.PeriodSeconds, "user override wins")
+		assert.Equal(t, int32(60), agent.StartupProbe.FailureThreshold, "user override wins")
+		assert.Equal(t, kmv1.DefaultAgentStartupInitialDelaySec, agent.StartupProbe.InitialDelaySeconds, "unset fields fall back to default")
+		assert.Equal(t, kmv1.DefaultAgentStartupTimeoutSec, agent.StartupProbe.TimeoutSeconds, "unset fields fall back to default")
+		assert.Equal(t, int32(1), agent.StartupProbe.SuccessThreshold, "unset fields fall back to default")
 	})
 }
 

@@ -485,6 +485,11 @@ func (in *Container) DeepCopyInto(out *Container) {
 		*out = new(Probe)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.StartupProbe != nil {
+		in, out := &in.StartupProbe, &out.StartupProbe
+		*out = new(Probe)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Ports != nil {
 		in, out := &in.Ports, &out.Ports
 		*out = make([]v1.ContainerPort, len(*in))

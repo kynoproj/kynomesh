@@ -1014,8 +1014,20 @@ func (m *Container) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintGenerated(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x62
+			dAtA[i] = 0x6a
 		}
+	}
+	if m.StartupProbe != nil {
+		{
+			size, err := m.StartupProbe.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintGenerated(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x62
 	}
 	if m.LivenessProbe != nil {
 		{
@@ -2170,6 +2182,10 @@ func (m *Container) Size() (n int) {
 		l = m.LivenessProbe.Size()
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	if m.StartupProbe != nil {
+		l = m.StartupProbe.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
 	if len(m.Ports) > 0 {
 		for _, e := range m.Ports {
 			l = e.Size()
@@ -2706,6 +2722,7 @@ func (this *Container) String() string {
 		`ImagePullPolicy:` + valueToStringGenerated(this.ImagePullPolicy) + `,`,
 		`ReadinessProbe:` + strings.Replace(this.ReadinessProbe.String(), "Probe", "Probe", 1) + `,`,
 		`LivenessProbe:` + strings.Replace(this.LivenessProbe.String(), "Probe", "Probe", 1) + `,`,
+		`StartupProbe:` + strings.Replace(this.StartupProbe.String(), "Probe", "Probe", 1) + `,`,
 		`Ports:` + repeatedStringForPorts + `,`,
 		`}`,
 	}, "")
@@ -6203,6 +6220,42 @@ func (m *Container) Unmarshal(dAtA []byte) error {
 			}
 			iNdEx = postIndex
 		case 12:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartupProbe", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.StartupProbe == nil {
+				m.StartupProbe = &Probe{}
+			}
+			if err := m.StartupProbe.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 13:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Ports", wireType)
 			}

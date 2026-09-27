@@ -16,7 +16,7 @@ The three pieces:
   process exits, so it finishes the work it already accepted instead of dropping
   it. This applies to every pod deletion the controller performs: rolling
   replacement, scale-down, and anything else.
-- **[Liveness And Readiness](configuration/liveness-and-readiness.md)** decides
+- **[Liveness, Readiness and Startup Probes](configuration/probes.md)** decide
   when a new pod is actually serving traffic - its readiness probe must pass
   before the broker is added to the agent's Service endpoints.
 - **[Rolling Update](configuration/rolling-update.md)** is what layers on top of
@@ -59,7 +59,7 @@ For a rolling update specifically, there's a second half:
 2. **New pod: create and wait for Ready.** In the same pass, the controller
    creates the replacement pod on the new spec. The new pod isn't added to the
    agent's Service endpoints until its readiness probe passes - see
-   [Liveness And Readiness](configuration/liveness-and-readiness.md) for the
+   [Liveness, Readiness and Startup Probes](configuration/probes.md) for the
    probe timing knobs.
 3. **Batch gate.** Before starting the next batch of `maxUnavailable` slots, the
    controller waits for every replacement pod created in this batch to reach
@@ -85,7 +85,7 @@ or the grace period are. Two independent things can cause this, and both are
 worth checking:
 
 - **Timing.** The probe mechanism itself is fixed (see
-  [Liveness And Readiness](configuration/liveness-and-readiness.md)), but its
+  [Liveness, Readiness and Startup Probes](configuration/probes.md)), but its
   `initialDelaySeconds`/`periodSeconds`/`failureThreshold` are not - raise them
   to match how long your agent's process actually takes to come up.
 - **Reported status.** By default, the SDK reports the agent as healthy as soon
@@ -131,7 +131,7 @@ handles long-running calls.
 
 - [Graceful Termination](configuration/graceful-termination.md) - the drain
   sequence for any outgoing pod.
-- [Liveness And Readiness](configuration/liveness-and-readiness.md) - probe
+- [Liveness, Readiness and Startup Probes](configuration/probes.md) - probe
   timing for incoming pods.
 - [Rolling Update](configuration/rolling-update.md) - batching and
   `maxUnavailable` for spec changes.
