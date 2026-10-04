@@ -155,3 +155,6 @@ AgentDeploy's `scale` subresource from the tool's scaling object (e.g. KEDA's
   with autoscaling (a rate-limited agent stops scaling up once it hits its cap).
 - [AgentDeploy](../../core-concepts/agentdeploy.md) - the unit that gets scaled.
 - [AgentSet](../../core-concepts/agentset.md) - where the `scale` block lives.
+- [Autoscaling Mechanism](../../development/specifications/autoscaling.md) -
+  contributor-facing design doc: how load is sampled, capacity learned, and
+  replica decisions made.
