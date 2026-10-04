@@ -83,9 +83,8 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -98,8 +97,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Toleration"),
+										Ref: ref("k8s.io/api/core/v1.Toleration"),
 									},
 								},
 							},
@@ -124,8 +122,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.LocalObjectReference"),
+										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
 									},
 								},
 							},
@@ -198,8 +195,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.PodResourceClaim"),
+										Ref: ref("k8s.io/api/core/v1.PodResourceClaim"),
 									},
 								},
 							},
@@ -242,8 +238,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Volume"),
+										Ref: ref("k8s.io/api/core/v1.Volume"),
 									},
 								},
 							},
@@ -269,8 +264,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Container"),
+										Ref: ref("k8s.io/api/core/v1.Container"),
 									},
 								},
 							},
@@ -283,8 +277,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractAgentDeploy(ref common.ReferenceC
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Container"),
+										Ref: ref("k8s.io/api/core/v1.Container"),
 									},
 								},
 							},
@@ -340,9 +333,8 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractPodTemplate(ref common.ReferenceC
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -355,8 +347,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractPodTemplate(ref common.ReferenceC
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Toleration"),
+										Ref: ref("k8s.io/api/core/v1.Toleration"),
 									},
 								},
 							},
@@ -381,8 +372,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractPodTemplate(ref common.ReferenceC
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.LocalObjectReference"),
+										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
 									},
 								},
 							},
@@ -455,8 +445,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AbstractPodTemplate(ref common.ReferenceC
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.PodResourceClaim"),
+										Ref: ref("k8s.io/api/core/v1.PodResourceClaim"),
 									},
 								},
 							},
@@ -556,8 +545,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeployList(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentDeploy"),
+										Ref: ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentDeploy"),
 									},
 								},
 							},
@@ -599,9 +587,8 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -614,8 +601,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Toleration"),
+										Ref: ref("k8s.io/api/core/v1.Toleration"),
 									},
 								},
 							},
@@ -640,8 +626,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.LocalObjectReference"),
+										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
 									},
 								},
 							},
@@ -714,8 +699,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.PodResourceClaim"),
+										Ref: ref("k8s.io/api/core/v1.PodResourceClaim"),
 									},
 								},
 							},
@@ -758,8 +742,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Volume"),
+										Ref: ref("k8s.io/api/core/v1.Volume"),
 									},
 								},
 							},
@@ -785,8 +768,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Container"),
+										Ref: ref("k8s.io/api/core/v1.Container"),
 									},
 								},
 							},
@@ -799,8 +781,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeploySpec(ref common.ReferenceCallb
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Container"),
+										Ref: ref("k8s.io/api/core/v1.Container"),
 									},
 								},
 							},
@@ -879,8 +860,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeployStatus(ref common.ReferenceCal
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
+										Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
 									},
 								},
 							},
@@ -1003,9 +983,8 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeployTemplate(ref common.ReferenceC
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -1018,8 +997,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeployTemplate(ref common.ReferenceC
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Toleration"),
+										Ref: ref("k8s.io/api/core/v1.Toleration"),
 									},
 								},
 							},
@@ -1044,8 +1022,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeployTemplate(ref common.ReferenceC
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.LocalObjectReference"),
+										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
 									},
 								},
 							},
@@ -1118,8 +1095,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentDeployTemplate(ref common.ReferenceC
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.PodResourceClaim"),
+										Ref: ref("k8s.io/api/core/v1.PodResourceClaim"),
 									},
 								},
 							},
@@ -1231,8 +1207,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetList(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentSet"),
+										Ref: ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AgentSet"),
 									},
 								},
 							},
@@ -1281,8 +1256,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetSpec(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AbstractAgentDeploy"),
+										Ref: ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.AbstractAgentDeploy"),
 									},
 								},
 							},
@@ -1307,8 +1281,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetSpec(ref common.ReferenceCallback
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ExternalAgentRef"),
+										Ref: ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.ExternalAgentRef"),
 									},
 								},
 							},
@@ -1352,8 +1325,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_AgentSetStatus(ref common.ReferenceCallba
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
+										Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
 									},
 								},
 							},
@@ -1423,9 +1395,8 @@ func schema_pkg_apis_kynomesh_v1alpha1_Container(ref common.ReferenceCallback) c
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -1437,9 +1408,8 @@ func schema_pkg_apis_kynomesh_v1alpha1_Container(ref common.ReferenceCallback) c
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -1451,8 +1421,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_Container(ref common.ReferenceCallback) c
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.EnvVar"),
+										Ref: ref("k8s.io/api/core/v1.EnvVar"),
 									},
 								},
 							},
@@ -1464,8 +1433,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_Container(ref common.ReferenceCallback) c
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.EnvFromSource"),
+										Ref: ref("k8s.io/api/core/v1.EnvFromSource"),
 									},
 								},
 							},
@@ -1477,8 +1445,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_Container(ref common.ReferenceCallback) c
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.VolumeMount"),
+										Ref: ref("k8s.io/api/core/v1.VolumeMount"),
 									},
 								},
 							},
@@ -1533,8 +1500,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_Container(ref common.ReferenceCallback) c
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.ContainerPort"),
+										Ref: ref("k8s.io/api/core/v1.ContainerPort"),
 									},
 								},
 							},
@@ -1578,8 +1544,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_ContainerTemplate(ref common.ReferenceCal
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.EnvVar"),
+										Ref: ref("k8s.io/api/core/v1.EnvVar"),
 									},
 								},
 							},
@@ -1591,8 +1556,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_ContainerTemplate(ref common.ReferenceCal
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.EnvFromSource"),
+										Ref: ref("k8s.io/api/core/v1.EnvFromSource"),
 									},
 								},
 							},
@@ -1627,9 +1591,8 @@ func schema_pkg_apis_kynomesh_v1alpha1_DaemonTemplate(ref common.ReferenceCallba
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -1642,8 +1605,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_DaemonTemplate(ref common.ReferenceCallba
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.Toleration"),
+										Ref: ref("k8s.io/api/core/v1.Toleration"),
 									},
 								},
 							},
@@ -1668,8 +1630,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_DaemonTemplate(ref common.ReferenceCallba
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.LocalObjectReference"),
+										Ref: ref("k8s.io/api/core/v1.LocalObjectReference"),
 									},
 								},
 							},
@@ -1742,8 +1703,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_DaemonTemplate(ref common.ReferenceCallba
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.PodResourceClaim"),
+										Ref: ref("k8s.io/api/core/v1.PodResourceClaim"),
 									},
 								},
 							},
@@ -1833,9 +1793,8 @@ func schema_pkg_apis_kynomesh_v1alpha1_Metadata(ref common.ReferenceCallback) co
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -1848,9 +1807,8 @@ func schema_pkg_apis_kynomesh_v1alpha1_Metadata(ref common.ReferenceCallback) co
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -2080,8 +2038,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_Status(ref common.ReferenceCallback) comm
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
+										Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
 									},
 								},
 							},
@@ -2147,8 +2104,7 @@ func schema_pkg_apis_kynomesh_v1alpha1_Topology(ref common.ReferenceCallback) co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Peer"),
+										Ref: ref("github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1.Peer"),
 									},
 								},
 							},

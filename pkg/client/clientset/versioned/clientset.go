@@ -28,7 +28,7 @@ import (
 )
 
 type Interface interface {
-	Discovery() discovery.DiscoveryInterface
+	Discovery() discovery.DiscoveryInterfaces
 	KynomeshV1alpha1() kynomeshv1alpha1.KynomeshV1alpha1Interface
 }
 
@@ -44,7 +44,7 @@ func (c *Clientset) KynomeshV1alpha1() kynomeshv1alpha1.KynomeshV1alpha1Interfac
 }
 
 // Discovery retrieves the DiscoveryClient
-func (c *Clientset) Discovery() discovery.DiscoveryInterface {
+func (c *Clientset) Discovery() discovery.DiscoveryInterfaces {
 	if c == nil {
 		return nil
 	}
