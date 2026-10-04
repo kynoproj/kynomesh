@@ -13,7 +13,7 @@
     
     
       
-        <title>Rate limiting - Kynomesh - Distributed multi-agent orchestration</title>
+        <title>Autoscaling Mechanism - Kynomesh - Distributed multi-agent orchestration</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#rate-limiting" class="md-skip">
+        <a href="#autoscaling-mechanism" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Rate limiting
+              Autoscaling Mechanism
             
           </span>
         </div>
@@ -232,8 +232,6 @@
         
   
   
-    
-  
 
 
   
@@ -245,7 +243,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../core-concepts/overview/" class="md-tabs__link md-tabs__link--active">
+      <a href="../../../core-concepts/overview/" class="md-tabs__link">
         User Guide
       </a>
     </li>
@@ -273,13 +271,15 @@
         
   
   
+    
+  
 
 
   
   
   
     <li class="md-tabs__item">
-      <a href="../../../development/development/" class="md-tabs__link">
+      <a href="../../development/" class="md-tabs__link md-tabs__link--active">
         Contributor Guide
       </a>
     </li>
@@ -404,14 +404,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
       
       
       
@@ -535,7 +533,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../sdks/overview/" class="md-nav__link">
+      <a href="../../../user-guide/sdks/overview/" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -554,14 +552,12 @@
               
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" >
       
       
       
@@ -584,7 +580,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../autoscaling/" class="md-nav__link">
+      <a href="../../../user-guide/reference/autoscaling/" class="md-nav__link">
         Autoscaling
       </a>
     </li>
@@ -596,101 +592,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Rate limiting
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/rate-limiting/" class="md-nav__link">
         Rate limiting
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#when-to-use-it" class="md-nav__link">
-    When to use it
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-it-caps" class="md-nav__link">
-    What it caps
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    Configuration
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-happens-at-the-limit" class="md-nav__link">
-    What happens at the limit
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#fleet-wide-not-per-pod" class="md-nav__link">
-    Fleet-wide, not per-pod
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#interaction-with-autoscaling" class="md-nav__link">
-    Interaction with autoscaling
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#observability" class="md-nav__link">
-    Observability
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    See Also
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -702,7 +608,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../zero-downtime-pod-replacement/" class="md-nav__link">
+      <a href="../../../user-guide/reference/zero-downtime-pod-replacement/" class="md-nav__link">
         Zero-Downtime Pod Replacement
       </a>
     </li>
@@ -716,7 +622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../drift-reload/" class="md-nav__link">
+      <a href="../../../user-guide/reference/drift-reload/" class="md-nav__link">
         Drift Reload
       </a>
     </li>
@@ -730,7 +636,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../gpu/" class="md-nav__link">
+      <a href="../../../user-guide/reference/gpu/" class="md-nav__link">
         Running On GPU
       </a>
     </li>
@@ -770,7 +676,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/labels-and-annotations/" class="md-nav__link">
+      <a href="../../../user-guide/reference/configuration/labels-and-annotations/" class="md-nav__link">
         Labels And Annotations
       </a>
     </li>
@@ -784,7 +690,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/environment-variables/" class="md-nav__link">
+      <a href="../../../user-guide/reference/configuration/environment-variables/" class="md-nav__link">
         Environment Variables
       </a>
     </li>
@@ -798,7 +704,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/container-resources/" class="md-nav__link">
+      <a href="../../../user-guide/reference/configuration/container-resources/" class="md-nav__link">
         Container Resources
       </a>
     </li>
@@ -812,7 +718,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/volumes/" class="md-nav__link">
+      <a href="../../../user-guide/reference/configuration/volumes/" class="md-nav__link">
         Volumes
       </a>
     </li>
@@ -826,7 +732,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/init-containers/" class="md-nav__link">
+      <a href="../../../user-guide/reference/configuration/init-containers/" class="md-nav__link">
         Init Containers
       </a>
     </li>
@@ -840,7 +746,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/sidecar-containers/" class="md-nav__link">
+      <a href="../../../user-guide/reference/configuration/sidecar-containers/" class="md-nav__link">
         Sidecar Containers
       </a>
     </li>
@@ -854,7 +760,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/probes/" class="md-nav__link">
+      <a href="../../../user-guide/reference/configuration/probes/" class="md-nav__link">
         Liveness, Readiness, and Startup
       </a>
     </li>
@@ -868,7 +774,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/agentset-customization/" class="md-nav__link">
+      <a href="../../../user-guide/reference/configuration/agentset-customization/" class="md-nav__link">
         AgentSet Customization
       </a>
     </li>
@@ -882,7 +788,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/external-agents/" class="md-nav__link">
+      <a href="../../../user-guide/reference/configuration/external-agents/" class="md-nav__link">
         External Agents
       </a>
     </li>
@@ -896,7 +802,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/public-base-url/" class="md-nav__link">
+      <a href="../../../user-guide/reference/configuration/public-base-url/" class="md-nav__link">
         Public Base URL
       </a>
     </li>
@@ -910,7 +816,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/rolling-update/" class="md-nav__link">
+      <a href="../../../user-guide/reference/configuration/rolling-update/" class="md-nav__link">
         Rolling Update
       </a>
     </li>
@@ -924,7 +830,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/graceful-termination/" class="md-nav__link">
+      <a href="../../../user-guide/reference/configuration/graceful-termination/" class="md-nav__link">
         Graceful Termination
       </a>
     </li>
@@ -938,7 +844,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/dra/" class="md-nav__link">
+      <a href="../../../user-guide/reference/configuration/dra/" class="md-nav__link">
         Dynamic Resource Allocation
       </a>
     </li>
@@ -952,7 +858,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/istio/" class="md-nav__link">
+      <a href="../../../user-guide/reference/configuration/istio/" class="md-nav__link">
         Running On Istio
       </a>
     </li>
@@ -973,7 +879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../kustomize/kustomize/" class="md-nav__link">
+      <a href="../../../user-guide/reference/kustomize/kustomize/" class="md-nav__link">
         Kustomize Integration
       </a>
     </li>
@@ -987,7 +893,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../a2acli/" class="md-nav__link">
+      <a href="../../../user-guide/reference/a2acli/" class="md-nav__link">
         A2A CLI
       </a>
     </li>
@@ -1132,12 +1038,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" checked>
       
       
       
@@ -1160,7 +1068,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/development/" class="md-nav__link">
+      <a href="../../development/" class="md-nav__link">
         Development
       </a>
     </li>
@@ -1172,12 +1080,14 @@
               
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_2" type="checkbox" id="__nav_5_2" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5_2" type="checkbox" id="__nav_5_2" checked>
       
       
       
@@ -1200,7 +1110,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/specifications/agent-discovery/" class="md-nav__link">
+      <a href="../agent-discovery/" class="md-nav__link">
         Agent Discovery
       </a>
     </li>
@@ -1212,11 +1122,189 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../../development/specifications/autoscaling/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Autoscaling Mechanism
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Autoscaling Mechanism
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#problem" class="md-nav__link">
+    Problem
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#two-independent-loops" class="md-nav__link">
+    Two independent loops
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sampling" class="md-nav__link">
+    Sampling
+  </a>
+  
+    <nav class="md-nav" aria-label="Sampling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-per-replica-not-fleet-totals" class="md-nav__link">
+    Why per-replica, not fleet totals
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adaptive-averaging-window" class="md-nav__link">
+    Adaptive averaging window
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#persistence-and-rollout-isolation" class="md-nav__link">
+    Persistence and rollout isolation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#warmup-exclusion" class="md-nav__link">
+    Warmup exclusion
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#learning-capacity-the-saturation-knee" class="md-nav__link">
+    Learning capacity (the saturation knee)
+  </a>
+  
+    <nav class="md-nav" aria-label="Learning capacity (the saturation knee)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-means" class="md-nav__link">
+    What it means
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-its-learned" class="md-nav__link">
+    How it's learned
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#confidence" class="md-nav__link">
+    Confidence
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deciding-the-next-replica-count" class="md-nav__link">
+    Deciding the next replica count
+  </a>
+  
+    <nav class="md-nav" aria-label="Deciding the next replica count">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-the-mechanism-leans-toward-over-provisioning" class="md-nav__link">
+    Why the mechanism leans toward over-provisioning
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#guardrails-before-any-decision-is-acted-on" class="md-nav__link">
+    Guardrails before any decision is acted on
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-cadence" class="md-nav__link">
+    Production cadence
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#observability" class="md-nav__link">
+    Observability
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#non-goals" class="md-nav__link">
+    Non-goals
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    See Also
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1228,7 +1316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/specifications/external-agents/" class="md-nav__link">
+      <a href="../external-agents/" class="md-nav__link">
         External Agents
       </a>
     </li>
@@ -1242,7 +1330,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/specifications/agentcard-drift-reload/" class="md-nav__link">
+      <a href="../agentcard-drift-reload/" class="md-nav__link">
         AgentCard Drift Detection and Dependent Reload
       </a>
     </li>
@@ -1263,7 +1351,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/debugging/" class="md-nav__link">
+      <a href="../../debugging/" class="md-nav__link">
         How To Debug
       </a>
     </li>
@@ -1277,7 +1365,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/static-code-analysis/" class="md-nav__link">
+      <a href="../../static-code-analysis/" class="md-nav__link">
         Static Code Analysis
       </a>
     </li>
@@ -1291,7 +1379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/releasing/" class="md-nav__link">
+      <a href="../../releasing/" class="md-nav__link">
         How To Release
       </a>
     </li>
@@ -1332,43 +1420,124 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#when-to-use-it" class="md-nav__link">
-    When to use it
+  <a href="#problem" class="md-nav__link">
+    Problem
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-it-caps" class="md-nav__link">
-    What it caps
+  <a href="#two-independent-loops" class="md-nav__link">
+    Two independent loops
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    Configuration
+  <a href="#sampling" class="md-nav__link">
+    Sampling
+  </a>
+  
+    <nav class="md-nav" aria-label="Sampling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-per-replica-not-fleet-totals" class="md-nav__link">
+    Why per-replica, not fleet totals
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adaptive-averaging-window" class="md-nav__link">
+    Adaptive averaging window
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#persistence-and-rollout-isolation" class="md-nav__link">
+    Persistence and rollout isolation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#warmup-exclusion" class="md-nav__link">
+    Warmup exclusion
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#learning-capacity-the-saturation-knee" class="md-nav__link">
+    Learning capacity (the saturation knee)
+  </a>
+  
+    <nav class="md-nav" aria-label="Learning capacity (the saturation knee)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-means" class="md-nav__link">
+    What it means
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-its-learned" class="md-nav__link">
+    How it's learned
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#confidence" class="md-nav__link">
+    Confidence
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deciding-the-next-replica-count" class="md-nav__link">
+    Deciding the next replica count
+  </a>
+  
+    <nav class="md-nav" aria-label="Deciding the next replica count">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-the-mechanism-leans-toward-over-provisioning" class="md-nav__link">
+    Why the mechanism leans toward over-provisioning
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#guardrails-before-any-decision-is-acted-on" class="md-nav__link">
+    Guardrails before any decision is acted on
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-happens-at-the-limit" class="md-nav__link">
-    What happens at the limit
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#fleet-wide-not-per-pod" class="md-nav__link">
-    Fleet-wide, not per-pod
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#interaction-with-autoscaling" class="md-nav__link">
-    Interaction with autoscaling
+  <a href="#production-cadence" class="md-nav__link">
+    Production cadence
   </a>
   
 </li>
@@ -1376,6 +1545,13 @@
         <li class="md-nav__item">
   <a href="#observability" class="md-nav__link">
     Observability
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#non-goals" class="md-nav__link">
+    Non-goals
   </a>
   
 </li>
@@ -1399,113 +1575,238 @@
             <article class="md-content__inner md-typeset">
               
                 
-  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/user-guide/reference/rate-limiting.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/development/specifications/autoscaling.md" title="Edit this page" class="md-content__button md-icon">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
 
-<h1 id="rate-limiting">Rate limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h1>
-<p><code>Kynomesh</code> can cap how much load each agent admits, shedding the excess rather
-than letting it queue. Set a per-agent <strong>maximum in-flight</strong> limit and the
-agent's broker rejects requests beyond the cap instead of forwarding them to
-your agent container.</p>
-<p>This is enforcement, not just observation: once an agent is at its limit, new
-requests are refused immediately so the agent - and whatever it depends on -
-stays within budget.</p>
-<h2 id="when-to-use-it">When to use it<a class="headerlink" href="#when-to-use-it" title="Permanent link">&para;</a></h2>
-<p>The typical reason is an <strong>external dependency with a hard ceiling</strong>: an LLM
-provider quota, a rate-limited downstream API, or a shared database you don't
-want a single agent to overwhelm. A concurrency cap bounds how many requests can
-be in flight against that dependency at once.</p>
-<p>For agentic (LLM/tool) workloads the binding resource is <em>slot occupancy</em> - each
-in-flight request holds a context and an upstream connection for the duration of
-a (often multi-second) call. Capping concurrency bounds that directly, which is
-why the limit is expressed as <strong>max in-flight requests</strong> rather than
-requests-per-second.</p>
-<h2 id="what-it-caps">What it caps<a class="headerlink" href="#what-it-caps" title="Permanent link">&para;</a></h2>
-<p>Only <strong>A2A traffic</strong> (JSON-RPC, REST, and gRPC) counts against the limit.
-Passthrough traffic - custom REST endpoints, UIs, WebSocket upgrades the broker
-also proxies - is <strong>not</strong> gated, so a long-lived UI or WebSocket connection
-never consumes an in-flight slot meant for A2A requests.</p>
-<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<p><code>rateLimit</code> is set per agent, on each entry under the AgentSet's <code>agents</code> list:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh.kyno.sh/v1alpha1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AgentSet</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">research-assistant</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Supervisor</span>
-<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coordinator</span>
-<span class="w">  </span><span class="nt">agents</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coordinator</span>
-<span class="w">      </span><span class="nt">container</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example/coordinator:latest</span>
-<span class="w">      </span><span class="nt">rateLimit</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">maxInFlight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span><span class="w"> </span><span class="c1"># Max concurrent in-flight A2A requests for this agent.</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">searcher</span>
-<span class="w">      </span><span class="nt">container</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example/searcher:latest</span>
-<span class="w">      </span><span class="c1"># No rateLimit block: searcher admits requests without limit.</span>
-</code></pre></div>
+<h1 id="autoscaling-mechanism">Autoscaling Mechanism<a class="headerlink" href="#autoscaling-mechanism" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>[!NOTE] This document is for Kynomesh contributors. It explains the design of
+the built-in autoscaler - how load is sampled, how capacity is learned, and
+how replica decisions are made. For the user-facing configuration reference,
+see <a href="../../../user-guide/reference/autoscaling/">Autoscaling</a>.</p>
+</blockquote>
+<h2 id="problem">Problem<a class="headerlink" href="#problem" title="Permanent link">&para;</a></h2>
+<p>An agent's right-sized replica count isn't knowable in advance: it depends on
+the agent's own per-request cost (model latency, tool calls, context size),
+which Kynomesh has no prior knowledge of. CPU/memory-based HPA is a poor fit for
+agentic workloads - a replica waiting on an upstream LLM call is idle on CPU
+while fully occupied on the resource that actually matters: how many concurrent
+requests it can hold at once. The autoscaler's job is to learn each
+AgentDeploy's actual per-replica concurrency capacity from observed traffic,
+with no agent-specific tuning required, and keep replicas near a target fraction
+of it.</p>
+<h2 id="two-independent-loops">Two independent loops<a class="headerlink" href="#two-independent-loops" title="Permanent link">&para;</a></h2>
+<p>Autoscaling is split into two concerns that run on their own schedules:</p>
 <ul>
-<li><code>maxInFlight</code> - the maximum number of concurrent in-flight A2A requests the
-  agent admits across its whole fleet. <code>0</code> or unset means <strong>unlimited</strong>.</li>
+<li><strong>Sampling</strong> - periodically measures each AgentDeploy's current load and
+  records it as history.</li>
+<li><strong>Deciding</strong> - periodically reads that history, learns capacity from it, and
+  adjusts the replica count.</li>
 </ul>
-<h2 id="what-happens-at-the-limit">What happens at the limit<a class="headerlink" href="#what-happens-at-the-limit" title="Permanent link">&para;</a></h2>
-<p>When an agent is already handling <code>maxInFlight</code> requests, the broker rejects the
-next one immediately, before it reaches your agent container:</p>
-<table>
-<thead>
-<tr>
-<th>Transport</th>
-<th>Rejection</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>JSON-RPC / REST</td>
-<td>HTTP <code>429 Too Many Requests</code> with <code>Retry-After</code></td>
-</tr>
-<tr>
-<td>gRPC</td>
-<td><code>RESOURCE_EXHAUSTED</code></td>
-</tr>
-</tbody>
-</table>
-<p>Clients should treat these as back-pressure and retry with backoff.</p>
-<h2 id="fleet-wide-not-per-pod">Fleet-wide, not per-pod<a class="headerlink" href="#fleet-wide-not-per-pod" title="Permanent link">&para;</a></h2>
-<p><code>maxInFlight</code> is the cap for the <strong>whole agent</strong>, not per replica. When an agent
-runs multiple replicas, they share the limit so the fleet together stays near
-it.</p>
-<p>The cap is <strong>approximate</strong>: it can drift briefly while the agent is scaling, and
-under heavy load the fleet may admit slightly more than <code>maxInFlight</code>. Treat it
-as a target rather than a hard ceiling - if you're protecting a strict external
-limit, set <code>maxInFlight</code> with a little headroom below it.</p>
-<h2 id="interaction-with-autoscaling">Interaction with autoscaling<a class="headerlink" href="#interaction-with-autoscaling" title="Permanent link">&para;</a></h2>
-<p>Rate limiting and <a href="../autoscaling/">autoscaling</a> compose. When an agent reaches
-its <code>maxInFlight</code> cap, <strong>scale-up is suppressed</strong> - adding replicas won't raise
-a fixed external ceiling, so the agent settles at the replica count that serves
-the admitted load instead of climbing toward <code>max</code>.</p>
-<p>Scale-<strong>down</strong> is unaffected: an idle rate-limited agent still sheds replicas
-normally.</p>
+<p>They're independent so that history keeps accumulating even for an AgentDeploy
+with autoscaling disabled (<code>scale.disabled: true</code>) - turning it back on later
+doesn't start from zero. They also run at different cadences: sampling must
+happen often enough to build a usable history; deciding can run less often since
+replica changes are inherently coarse-grained and must respect cooldowns anyway.</p>
+<p>Both loops act per-AgentDeploy, independently - an agent's learned capacity and
+replica count are never shared with or influenced by any other AgentDeploy's
+history, even one running the same image in the same AgentSet.</p>
+<h2 id="sampling">Sampling<a class="headerlink" href="#sampling" title="Permanent link">&para;</a></h2>
+<p>On each tick, for every tracked AgentDeploy:</p>
+<ol>
+<li>Query the AgentSet's daemon for the fleet's current in-flight concurrency and
+   processing rate, averaged over a window (see below).</li>
+<li>Divide by the AgentDeploy's ready replica count to get <strong>per-replica</strong>
+   values, and record that as one history sample.</li>
+<li>Persist the growing history on a slower cadence (not every tick).</li>
+</ol>
+<p>A sample carries only concurrency and throughput - no latency. Latency is
+dominated by upstream LLM/tool response time and can't distinguish a saturated
+replica from a busy-but-healthy one, so it's deliberately excluded from the
+signal used to learn capacity.</p>
+<h3 id="why-per-replica-not-fleet-totals">Why per-replica, not fleet totals<a class="headerlink" href="#why-per-replica-not-fleet-totals" title="Permanent link">&para;</a></h3>
+<p>Capacity is a per-replica property. A measurement taken at 3 replicas and one
+taken at 10 replicas are only comparable once both are normalized to per-replica
+concurrency and rate - otherwise the learner would be tracking "how much load
+did the fleet handle" rather than "how much load does one replica saturate at,"
+which is the quantity actually needed to size the fleet.</p>
+<h3 id="adaptive-averaging-window">Adaptive averaging window<a class="headerlink" href="#adaptive-averaging-window" title="Permanent link">&para;</a></h3>
+<p>The window used to average load isn't fixed. It's derived from the typical time
+a request takes to complete (inferred from recent history via Little's Law:
+duration = concurrency / rate), then scaled up by a small multiple and clamped
+to a sane range. Before any duration can be inferred (cold start), a short
+default window is used instead.</p>
+<p>The intent: a fast workload (sub-second requests) is averaged over a short
+window so the signal tracks real-time load; a slow workload (tens of seconds per
+request, e.g. a multi-step agent call) is averaged over a longer window so a
+handful of slow in-flight requests don't look like transient noise that should
+be ignored.</p>
+<h3 id="persistence-and-rollout-isolation">Persistence and rollout isolation<a class="headerlink" href="#persistence-and-rollout-isolation" title="Permanent link">&para;</a></h3>
+<p>History is persisted per AgentDeploy so a controller restart or leader failover
+doesn't force every agent to relearn its capacity from scratch. It's bounded by
+both age and size, with recency-weighting (below) making old samples
+near-irrelevant long before either bound is hit.</p>
+<p>Every recorded sample is tagged with the pod spec it was collected under. When
+that spec changes (a new rollout), prior history is dropped rather than kept:
+capacity learned from a previous container image, resource request, or config is
+not a valid prior for a different one, and must not leak across a rollout.</p>
+<h3 id="warmup-exclusion">Warmup exclusion<a class="headerlink" href="#warmup-exclusion" title="Permanent link">&para;</a></h3>
+<p>Samples taken shortly after a replica-count change are excluded when learning. A
+pod that was just added is still warming caches and connections, so its reported
+capacity is transient, not steady state, and would otherwise bias the learned
+capacity low.</p>
+<h2 id="learning-capacity-the-saturation-knee">Learning capacity (the saturation knee)<a class="headerlink" href="#learning-capacity-the-saturation-knee" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-means">What it means<a class="headerlink" href="#what-it-means" title="Permanent link">&para;</a></h3>
+<p>Below saturation, adding in-flight concurrency raises a replica's processing
+rate roughly linearly - more requests in flight, proportionally more throughput.
+At saturation, the rate plateaus: more concurrency doesn't buy more throughput,
+it just means requests queue or compete for the same constrained resource. The
+<strong>knee</strong> is the concurrency level at which that plateau begins - the practical
+ceiling on what one replica can usefully hold.</p>
+<p>This throughput-vs-concurrency relationship is <strong>mix-invariant</strong> - it doesn't
+depend on per-request latency or the blend of request types, so it holds up
+under a heterogeneous workload, unlike a fixed "N concurrent requests per
+replica" knob a user would otherwise have to guess and retune per agent.</p>
+<h3 id="how-its-learned">How it's learned<a class="headerlink" href="#how-its-learned" title="Permanent link">&para;</a></h3>
+<p>Recent history is weighted more heavily than old history, so the estimate tracks
+current capacity rather than a stale multi-day average. Samples are grouped by
+observed concurrency level, and the system walks that curve from low to high
+concurrency looking for where throughput growth tapers off - the last point
+still clearly rising is taken as the knee, which is the conservative choice: it
+biases the estimate toward <em>more</em> replicas, not fewer.</p>
+<p>If saturation was never actually observed in the available history (load never
+got heavy enough), the highest concurrency seen so far is reported as a lower
+bound ("at least this much capacity, probably more") rather than a confident
+answer.</p>
+<h3 id="confidence">Confidence<a class="headerlink" href="#confidence" title="Permanent link">&para;</a></h3>
+<p>Every estimate carries a confidence score that reflects how much to trust it,
+based on:</p>
+<ul>
+<li><strong>How long</strong> the system has been observing this agent - a few minutes of data
+  is treated as the full trustworthy window; estimates beyond that don't gain
+  further confidence from age alone.</li>
+<li><strong>How wide a concurrency range was actually observed</strong> - a curve glimpsed only
+  through a narrow range of load is less trustworthy than one traced across a
+  broad range, even with the same number of samples.</li>
+<li><strong>Whether saturation was actually observed</strong>, discounting a lower-bound
+  estimate relative to a confirmed one.</li>
+</ul>
+<p>Too little history at all (below a minimum sample count) reports zero confidence
+outright, signaling "fall back to a conservative default."</p>
+<h2 id="deciding-the-next-replica-count">Deciding the next replica count<a class="headerlink" href="#deciding-the-next-replica-count" title="Permanent link">&para;</a></h2>
+<p>Each decision tick, in order:</p>
+<ol>
+<li><strong>Fixed replica count</strong> (min equals max): hold at that number.</li>
+<li><strong>Current replicas outside the configured min/max</strong> (e.g. after a
+   configuration change, or a manual override): snap back into range
+   immediately, bypassing cooldowns - this is correcting a configuration
+   mismatch, not responding to load, so normal pacing doesn't apply.</li>
+<li><strong>No observable load</strong>: drift down toward the minimum over time, still paced
+   by the scale-down cooldown and step cap - an idle agent eventually settles at
+   its floor rather than staying at whatever count it last needed.</li>
+<li><strong>Otherwise, compute a target per-replica load</strong> from the learned capacity,
+   the configured target saturation percentage, and the estimate's confidence -
+   lower confidence pulls the target down, so a cold start deliberately
+   over-provisions (more replicas than strictly necessary) rather than risks
+   under-provisioning before enough data exists to know better. Desired replicas
+   is the current load divided by that target, rounded up and clamped to [min,
+   max].</li>
+<li><strong>Scaling up</strong> is refused outright if a configured rate-limit ceiling on
+   total in-flight requests is already reached - more replicas can't raise a
+   capped external ceiling, so adding them would be wasted capacity (see
+   <a href="../../../user-guide/reference/rate-limiting/">Rate limiting</a>). Otherwise it's
+   gated by the scale-up cooldown and capped to a maximum step size per tick. A
+   severe spike is flagged for observability but is <strong>not</strong> fast- tracked past
+   the cooldown or step cap - it simply keeps stepping up on every subsequent
+   tick until it catches up. A single-tick stampede to the maximum on one spike
+   would be worse than a bounded, if slightly slower, ramp.</li>
+<li><strong>Scaling down</strong> is symmetric: gated by the scale-down cooldown and capped to
+   a maximum step size per tick, for the same reason in reverse - a brief dip in
+   load shouldn't shed replicas the agent needs back a moment later.</li>
+</ol>
+<h3 id="why-the-mechanism-leans-toward-over-provisioning">Why the mechanism leans toward over-provisioning<a class="headerlink" href="#why-the-mechanism-leans-toward-over-provisioning" title="Permanent link">&para;</a></h3>
+<p>Running a few replicas more than strictly needed costs money; running fewer than
+needed costs request latency or queuing, which is the more visible and
+disruptive failure mode for callers. Several independent choices encode the same
+bias: the cold-start discount on the scaling target, the conservative
+(last-rising-point, not first-plateau-point) choice of knee, and scale-up having
+no cooldown-bypassing path for urgency while the "clamp back into range" and
+"drift toward minimum" paths are the only ones that skip pacing guards, and both
+correct toward configuration, not performance.</p>
+<h2 id="guardrails-before-any-decision-is-acted-on">Guardrails before any decision is acted on<a class="headerlink" href="#guardrails-before-any-decision-is-acted-on" title="Permanent link">&para;</a></h2>
+<p>Before a scaling decision is computed at all, a tick is skipped when:</p>
+<ul>
+<li>Autoscaling is disabled for this agent (sampling still continues regardless,
+  so history isn't lost while disabled).</li>
+<li>The AgentDeploy isn't in a healthy running state yet, or has zero ready
+  replicas to measure from.</li>
+<li>A rollout is already in flight for this AgentDeploy - scaling never fights a
+  concurrent spec update. This is the same kind of gate the
+  <a href="../agentcard-drift-reload/#proposed-direction">AgentCard drift reload</a>
+  mechanism defers to.</li>
+<li>A previous replica-count change hasn't finished converging yet.</li>
+<li>Too little time has passed since the last scaling operation (cooldown) -
+  checked cheaply up front, in addition to the more granular per-direction
+  cooldown checks in the decision itself.</li>
+<li>There's no history yet, or the freshest sample is too stale - the autoscaler
+  refuses to act on absent or outdated data rather than scale blind, guarding
+  against a stalled sampling loop or an unreachable metrics source silently
+  driving decisions off dead numbers.</li>
+</ul>
+<p>A decision that does go through only ever changes the target replica count;
+rolling that out to actual pods (creating/terminating them, respecting rollout
+batching) is the ordinary deployment reconciliation path, not something the
+autoscaler does itself.</p>
+<h2 id="production-cadence">Production cadence<a class="headerlink" href="#production-cadence" title="Permanent link">&para;</a></h2>
+<p>Sampling runs roughly once a minute per agent; scaling decisions are evaluated
+roughly every 30 seconds; a scale operation in either direction is followed by a
+90-second cooldown by default before another one can happen (in either
+direction - a cooldown from any scale event blocks all scaling, not just a
+repeat in the same direction). These cadences are fixed in the production
+deployment, not user- or environment-configurable - only the per-agent tuning
+knobs described in the
+<a href="../../../user-guide/reference/autoscaling/">user-facing configuration reference</a>
+(min/max, cooldown seconds, step size, target saturation) are.</p>
+<p>One practical consequence: because any scale event's cooldown blocks scaling in
+both directions, observing a realistic scale-up-then-scale-down sequence takes
+at least as long as the cooldown even under heavy load changes. Tests or demos
+that want to exercise both directions quickly need a short cooldown configured
+for that agent.</p>
 <h2 id="observability">Observability<a class="headerlink" href="#observability" title="Permanent link">&para;</a></h2>
-<p>The broker exposes a counter for rejected requests, labeled by transport:</p>
+<p>Per-AgentDeploy metrics expose the learned capacity, its confidence, the current
+and last-computed-desired replica counts, how many load samples have been
+recorded, and a count of scale operations by direction. See
+<a href="../../../operations/metrics/">Metrics</a> for the full catalog. These metric series
+are cleaned up when an AgentDeploy is deleted, so they don't linger as untracked
+series.</p>
+<h2 id="non-goals">Non-goals<a class="headerlink" href="#non-goals" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>broker_rejected_total{transport}</code> - requests refused at admission because the
-  agent was at its in-flight cap.</li>
+<li><strong>No cross-AgentDeploy learning.</strong> Each AgentDeploy's history and learned
+  capacity are entirely independent, even between AgentDeploys running the same
+  container image in the same AgentSet. An agent whose per-request cost varies
+  with its own traffic mix (not just its code) wouldn't be well served by
+  sharing another AgentDeploy's learned capacity.</li>
+<li><strong>No predictive or scheduled scaling.</strong> Capacity is learned only from recorded
+  history; there's no time-of-day or calendar-driven pre-scaling.</li>
+<li><strong>Not a replacement for the Kubernetes <code>scale</code> subresource contract.</strong>
+  AgentDeploy supports standard HPA/KEDA targeting specifically so operators who
+  need predictive, custom-metric, or multi-signal scaling aren't boxed into this
+  mechanism - see
+  <a href="../../../user-guide/reference/autoscaling/#kubernetes-hpa">Kubernetes HPA</a>.</li>
 </ul>
-<p>Read it alongside <code>broker_inflight_requests{transport}</code> (the current in-flight
-count the limit is compared against). A rising <code>broker_rejected_total</code> with
-<code>broker_inflight_requests</code> pinned near the cap means the agent is actively
-shedding load - the signal that demand exceeds the configured limit.</p>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../autoscaling/">Autoscaling</a> - how rate limiting bounds scale-up.</li>
-<li><a href="../../../core-concepts/agentdeploy/">AgentDeploy</a> - the unit the limit applies
-  to.</li>
-<li><a href="../../../core-concepts/agentset/">AgentSet</a> - where the <code>rateLimit</code> block
-  lives.</li>
+<li><a href="../../../user-guide/reference/autoscaling/">Autoscaling (user guide)</a> -
+  configuration reference (<code>scale</code> block, defaults, HPA/KEDA opt-out).</li>
+<li><a href="../../../user-guide/reference/rate-limiting/">Rate limiting</a> - the in-flight
+  ceiling that caps scale-up.</li>
+<li><a href="../../../operations/metrics/">Metrics</a> - full Prometheus metrics catalog.</li>
+<li><a href="../agentcard-drift-reload/">AgentCard Drift Detection and Dependent Reload</a> -
+  another controller-side mechanism that defers to an in-flight rollout the same
+  way the autoscaler does.</li>
 </ul>
 
               
@@ -1529,7 +1830,7 @@ shedding load - the signal that demand exceeds the configured limit.</p>
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../autoscaling/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Autoscaling" rel="prev">
+        <a href="../agent-discovery/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Agent Discovery" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1538,20 +1839,20 @@ shedding load - the signal that demand exceeds the configured limit.</p>
               <span class="md-footer__direction">
                 Previous
               </span>
-              Autoscaling
+              Agent Discovery
             </div>
           </div>
         </a>
       
       
         
-        <a href="../zero-downtime-pod-replacement/" class="md-footer__link md-footer__link--next" aria-label="Next: Zero-Downtime Pod Replacement" rel="next">
+        <a href="../external-agents/" class="md-footer__link md-footer__link--next" aria-label="Next: External Agents" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Zero-Downtime Pod Replacement
+              External Agents
             </div>
           </div>
           <div class="md-footer__button md-icon">
