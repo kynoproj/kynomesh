@@ -38,7 +38,6 @@ import (
 	"github.com/a2aproject/a2a-go/v2/a2asrv"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
-	"golang.org/x/net/http2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -571,19 +570,20 @@ func newMultiplexedServer(
 		httpMux.ServeHTTP(w, r)
 	})
 
+	protocols := new(http.Protocols)
+	protocols.SetHTTP1(true)
+	protocols.SetHTTP2(true)
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", port),
 		Handler:           dispatch,
 		ReadHeaderTimeout: 10 * time.Second,
+		Protocols:         protocols,
 		TLSConfig: &tls.Config{
 			Certificates: []tls.Certificate{*cert},
 			MinVersion:   tls.VersionTLS12,
 			// ALPN advertises h2 first so gRPC lands on HTTP/2.
 			NextProtos: []string{"h2", "http/1.1"},
 		},
-	}
-	if err := http2.ConfigureServer(srv, &http2.Server{}); err != nil {
-		return nil, nil, fmt.Errorf("configure http/2: %w", err)
 	}
 	ln, err := tls.Listen("tcp", srv.Addr, srv.TLSConfig)
 	if err != nil {
