@@ -33,11 +33,39 @@ import (
 )
 
 // AgentSetInformer provides access to a shared informer and lister for
-// AgentSets.
+// AgentSets. Prefer using the type-safe variant (see [TypedAgentSetInformer]).
 type AgentSetInformer interface {
 	Informer() cache.SharedIndexInformer
 	Lister() kynomeshv1alpha1.AgentSetLister
 }
+
+// TypedAgentSetInformer provides access to a shared informer and lister for
+// AgentSets, including the type-safe TypedInformer variant.
+// It is a superset of AgentSetInformer.
+type TypedAgentSetInformer interface {
+	Informer() cache.SharedIndexInformer
+	TypedInformer() AgentSetIndexInformer
+	Lister() kynomeshv1alpha1.AgentSetLister
+}
+
+// AgentSetIndexInformer is a wrapper around the underlying [cache.SharedIndexInformer]
+// with type-safe variants of several methods.
+type AgentSetIndexInformer cache.TypedSharedIndexInformer[*apiskynomeshv1alpha1.AgentSet]
+
+// AgentSetHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerFuncs] for AgentSet.
+type AgentSetHandlerFuncs = cache.TypedResourceEventHandlerFuncs[*apiskynomeshv1alpha1.AgentSet]
+
+// AgentSetDetailedHandlerFuncs is a specialization of [cache.TypedResourceEventHandlerDetailedFuncs] for AgentSet.
+type AgentSetDetailedHandlerFuncs = cache.TypedResourceEventHandlerDetailedFuncs[*apiskynomeshv1alpha1.AgentSet]
+
+// AgentSetFilteringHandler is a specialization of [cache.TypedFilteringResourceEventHandler] for AgentSet.
+type AgentSetFilteringHandler = cache.TypedFilteringResourceEventHandler[*apiskynomeshv1alpha1.AgentSet]
+
+// AgentSetIndexers is a specialization of [cache.TypedIndexers] for AgentSet.
+type AgentSetIndexers = cache.TypedIndexers[*apiskynomeshv1alpha1.AgentSet]
+
+// DeletedAgentSet is a specialization of [cache.DeletedObject] for AgentSet.
+type DeletedAgentSet = cache.DeletedObject[*apiskynomeshv1alpha1.AgentSet]
 
 type agentSetInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
@@ -48,25 +76,49 @@ type agentSetInformer struct {
 // NewAgentSetInformer constructs a new informer for AgentSet type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedAgentSetInformer]).
 func NewAgentSetInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return NewAgentSetInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers})
+}
+
+// NewTypedAgentSetInformer constructs a new informer for AgentSet type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedAgentSetInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers AgentSetIndexers) AgentSetIndexInformer {
+	return NewTypedAgentSetInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers)})
 }
 
 // NewFilteredAgentSetInformer constructs a new informer for AgentSet type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedFilteredAgentSetInformer]).
 func NewFilteredAgentSetInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
-	return NewAgentSetInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers, TweakListOptions: tweakListOptions})
+	return NewTypedAgentSetInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: indexers, TweakListOptions: tweakListOptions})
+}
+
+// NewTypedFilteredAgentSetInformer constructs a new informer for AgentSet type.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedFilteredAgentSetInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers AgentSetIndexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) AgentSetIndexInformer {
+	return NewTypedAgentSetInformerWithOptions(client, namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.TypedIndexersToIndexers(indexers), TweakListOptions: tweakListOptions})
 }
 
 // NewAgentSetInformerWithOptions constructs a new informer for AgentSet type with additional options.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
+// If you really need an independent one, prefer using the type-safe variant (see [NewTypedAgentSetInformerWithOptions]).
 func NewAgentSetInformerWithOptions(client versioned.Interface, namespace string, options internalinterfaces.InformerOptions) cache.SharedIndexInformer {
+	return NewTypedAgentSetInformerWithOptions(client, namespace, options)
+}
+
+// NewTypedAgentSetInformerWithOptions constructs a new informer for AgentSet type with additional options.
+// Always prefer using an informer factory to get a shared informer instead of getting an independent
+// one. This reduces memory footprint and number of connections to the server.
+func NewTypedAgentSetInformerWithOptions(client versioned.Interface, namespace string, options internalinterfaces.InformerOptions) AgentSetIndexInformer {
 	gvr := schema.GroupVersionResource{Group: "kynomesh.kyno.sh", Version: "v1alpha1", Resource: "agentsets"}
 	identifier := options.InformerName.WithResource(gvr)
 	tweakListOptions := options.TweakListOptions
-	return cache.NewSharedIndexInformerWithOptions(
+	return cache.NewTypedSharedIndexInformer[*apiskynomeshv1alpha1.AgentSet](cache.NewSharedIndexInformerWithOptions(
 		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(opts v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
@@ -99,17 +151,57 @@ func NewAgentSetInformerWithOptions(client versioned.Interface, namespace string
 			Indexers:     options.Indexers,
 			Identifier:   identifier,
 		},
-	)
+	))
 }
 
 func (f *agentSetInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewAgentSetInformerWithOptions(client, f.namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, InformerName: f.factory.InformerName(), TweakListOptions: f.tweakListOptions})
+	return NewTypedAgentSetInformerWithOptions(client, f.namespace, internalinterfaces.InformerOptions{ResyncPeriod: resyncPeriod, Indexers: cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, InformerName: f.factory.InformerName(), TweakListOptions: f.tweakListOptions})
 }
 
 func (f *agentSetInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apiskynomeshv1alpha1.AgentSet{}, f.defaultInformer)
+	return f.TypedInformer()
+}
+
+func (f *agentSetInformer) TypedInformer() AgentSetIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apiskynomeshv1alpha1.AgentSet](f.factory.InformerFor(&apiskynomeshv1alpha1.AgentSet{}, f.defaultInformer))
 }
 
 func (f *agentSetInformer) Lister() kynomeshv1alpha1.AgentSetLister {
 	return kynomeshv1alpha1.NewAgentSetLister(f.Informer().GetIndexer())
+}
+
+// ToTypedAgentSetInformer converts an untyped informer into a TypedAgentSetInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *AgentSet. If that is not the case, calling type-safe methods of the returned
+// TypedAgentSetInformer leads to runtime panics. A safer alternative is to pass
+// around a TypedAgentSetInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToTypedAgentSetInformer(informer AgentSetInformer) TypedAgentSetInformer {
+	if informer, ok := informer.(TypedAgentSetInformer); ok {
+		return informer
+	}
+	return &agentSetTypedInformerAdapter{informer}
+}
+
+type agentSetTypedInformerAdapter struct {
+	AgentSetInformer
+}
+
+func (a *agentSetTypedInformerAdapter) TypedInformer() AgentSetIndexInformer {
+	return cache.NewTypedSharedIndexInformer[*apiskynomeshv1alpha1.AgentSet](a.Informer())
+}
+
+// ToAgentSetIndexInformer converts an untyped informer into a AgentSetIndexInformer.
+//
+// WARNING: this conversion is only safe if the informer handles objects of type
+// *AgentSet. If that is not the case, calling type-safe methods of the returned
+// AgentSetIndexInformer leads to runtime panics. A safer alternative is to pass
+// around a AgentSetIndexInformer instances that was obtained from a
+// SharedInformerFactory.
+func ToAgentSetIndexInformer(informer cache.SharedIndexInformer) AgentSetIndexInformer {
+	if informer, ok := informer.(AgentSetIndexInformer); ok {
+		return informer
+	}
+	return cache.NewTypedSharedIndexInformer[*apiskynomeshv1alpha1.AgentSet](informer)
 }
