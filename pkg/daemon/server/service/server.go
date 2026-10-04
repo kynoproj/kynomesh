@@ -31,7 +31,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
-	"golang.org/x/net/http2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
@@ -138,19 +137,20 @@ func newAPIServer(ctx context.Context, cfg Config) (*http.Server, *grpc.Server, 
 		httpMux.ServeHTTP(w, r)
 	})
 
+	protocols := new(http.Protocols)
+	protocols.SetHTTP1(true)
+	protocols.SetHTTP2(true)
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.APIPort),
 		Handler:           dispatch,
 		ReadHeaderTimeout: readHeaderTimeout,
+		Protocols:         protocols,
 		TLSConfig: &tls.Config{
 			Certificates: []tls.Certificate{*cfg.Cert},
 			MinVersion:   tls.VersionTLS12,
 			// ALPN advertises h2 first so gRPC lands on HTTP/2.
 			NextProtos: []string{"h2", "http/1.1"},
 		},
-	}
-	if err := http2.ConfigureServer(srv, &http2.Server{}); err != nil {
-		return nil, nil, fmt.Errorf("configure http/2: %w", err)
 	}
 	return srv, grpcServer, nil
 }
