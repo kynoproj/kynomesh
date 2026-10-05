@@ -31,9 +31,11 @@ spec:
       type: date
     - jsonPath: .status.reason
       name: Reason
+      priority: 8
       type: string
     - jsonPath: .status.message
       name: Message
+      priority: 8
       type: string
     name: v1alpha1
     schema:
