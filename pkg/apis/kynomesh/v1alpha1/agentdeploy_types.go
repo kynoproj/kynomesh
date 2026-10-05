@@ -45,8 +45,8 @@ const (
 // +kubebuilder:printcolumn:name="Current",type=string,JSONPath=`.status.replicas`
 // +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.readyReplicas`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
-// +kubebuilder:printcolumn:name="Reason",type=string,JSONPath=`.status.reason`
-// +kubebuilder:printcolumn:name="Message",type=string,JSONPath=`.status.message`
+// +kubebuilder:printcolumn:name="Reason",priority=8,type=string,JSONPath=`.status.reason`
+// +kubebuilder:printcolumn:name="Message",priority=8,type=string,JSONPath=`.status.message`
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +k8s:openapi-gen=true
 type AgentDeploy struct {

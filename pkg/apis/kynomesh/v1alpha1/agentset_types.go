@@ -45,10 +45,12 @@ const (
 // +kubebuilder:resource:shortName=as
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`
+// +kubebuilder:printcolumn:name="Pattern",type=string,JSONPath=`.spec.pattern`
+// +kubebuilder:printcolumn:name="Entry",type=string,JSONPath=`.spec.entry`
 // +kubebuilder:printcolumn:name="Managed Agents",type=integer,JSONPath=`.status.agentCount`
 // +kubebuilder:printcolumn:name="External Agents",type=integer,JSONPath=`.status.externalAgentCount`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
-// +kubebuilder:printcolumn:name="Message",type=string,JSONPath=`.status.message`
+// +kubebuilder:printcolumn:name="Message",priority=8,type=string,JSONPath=`.status.message`
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +k8s:openapi-gen=true
 type AgentSet struct {
