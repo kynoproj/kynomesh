@@ -33,9 +33,11 @@ spec:
       type: date
     - jsonPath: .status.reason
       name: Reason
+      priority: 8
       type: string
     - jsonPath: .status.message
       name: Message
+      priority: 8
       type: string
     name: v1alpha1
     schema:
@@ -3970,6 +3972,12 @@ spec:
     - jsonPath: .status.phase
       name: Phase
       type: string
+    - jsonPath: .spec.pattern
+      name: Pattern
+      type: string
+    - jsonPath: .spec.entry
+      name: Entry
+      type: string
     - jsonPath: .status.agentCount
       name: Managed Agents
       type: integer
@@ -3981,6 +3989,7 @@ spec:
       type: date
     - jsonPath: .status.message
       name: Message
+      priority: 8
       type: string
     name: v1alpha1
     schema:
