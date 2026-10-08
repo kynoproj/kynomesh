@@ -50,26 +50,13 @@ rules:
       - ""
     resources:
       - pods
-      - pods/exec
       - configmaps
       - services
-      - persistentvolumeclaims
     verbs:
       - create
       - get
       - list
       - watch
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - ""
-    resources:
-      - secrets
-    verbs:
-      - create
-      - get
-      - list
       - update
       - patch
       - delete
@@ -77,19 +64,6 @@ rules:
       - apps
     resources:
       - deployments
-      - statefulsets
-    verbs:
-      - create
-      - get
-      - list
-      - watch
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - batch
-    resources:
-      - jobs
     verbs:
       - create
       - get
