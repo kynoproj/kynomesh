@@ -6,4 +6,6 @@ resources:
   - kynomesh-aggregate-to-edit.yaml
   - kynomesh-aggregate-to-view.yaml
   - kynomesh-cluster-role.yaml
-  - kynomesh-binding.yaml
+  - kynomesh-cluster-role-binding.yaml
+  - kynomesh-role.yaml
+  - kynomesh-role-binding.yaml
