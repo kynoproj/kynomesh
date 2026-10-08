@@ -9772,6 +9772,29 @@ metadata:
   namespace: kynomesh-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/component: controller-manager
+    app.kubernetes.io/name: kynomesh-controller-manager
+    app.kubernetes.io/part-of: kynomesh
+  name: kynomesh-role
+  namespace: kynomesh-system
+rules:
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
@@ -9854,7 +9877,7 @@ metadata:
     app.kubernetes.io/component: controller-manager
     app.kubernetes.io/name: kynomesh-controller-manager
     app.kubernetes.io/part-of: kynomesh
-  name: kynomesh-role
+  name: kynomesh-cluster-role
 rules:
 - apiGroups:
   - kynomesh.kyno.sh
@@ -9899,26 +9922,13 @@ rules:
   - ""
   resources:
   - pods
-  - pods/exec
   - configmaps
   - services
-  - persistentvolumeclaims
   verbs:
   - create
   - get
   - list
   - watch
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - create
-  - get
-  - list
   - update
   - patch
   - delete
@@ -9926,19 +9936,6 @@ rules:
   - apps
   resources:
   - deployments
-  - statefulsets
-  verbs:
-  - create
-  - get
-  - list
-  - watch
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - batch
-  resources:
-  - jobs
   verbs:
   - create
   - get
@@ -9949,17 +9946,35 @@ rules:
   - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: controller-manager
+    app.kubernetes.io/name: kynomesh-controller-manager
+    app.kubernetes.io/part-of: kynomesh
+  name: kynomesh-role-binding
+  namespace: kynomesh-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kynomesh-role
+subjects:
+- kind: ServiceAccount
+  name: kynomesh-sa
+  namespace: kynomesh-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
     app.kubernetes.io/component: controller-manager
     app.kubernetes.io/name: kynomesh-controller-manager
     app.kubernetes.io/part-of: kynomesh
-  name: kynomesh-binding
+  name: kynomesh-cluster-role-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: kynomesh-role
+  name: kynomesh-cluster-role
 subjects:
 - kind: ServiceAccount
   name: kynomesh-sa

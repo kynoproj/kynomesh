@@ -3,4 +3,4 @@ kind: Kustomization
 
 resources:
   - kynomesh-role.yaml
-  - kynomesh-binding.yaml
+  - kynomesh-role-binding.yaml
