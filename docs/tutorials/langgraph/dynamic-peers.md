@@ -9,11 +9,14 @@ do, and builds its tools from that.
 The result: add or remove a worker in the `AgentSet` and the supervisor picks it
 up, with no code change and no new image.
 
-```
-                AgentSet: langgraph-travel
-  client ──A2A──> supervisor ──A2A──> flights
-                      ├──────A2A──> hotels
-                      └──────A2A──> weather   (added and removed in this tutorial)
+```mermaid
+flowchart LR
+    client([Client]) -- A2A --> supervisor
+    subgraph set ["AgentSet: langgraph-travel"]
+        supervisor -- A2A --> flights
+        supervisor -- A2A --> hotels
+        supervisor -. A2A .-> weather["weather<br/>(added and removed in this tutorial)"]
+    end
 ```
 
 The full example is in

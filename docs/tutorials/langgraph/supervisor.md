@@ -6,10 +6,13 @@ that takes a question and delegates to two workers, a **researcher** that looks
 up facts and a **calculator** that does arithmetic. Each agent runs in its own
 pod and the supervisor calls the workers by name.
 
-```
-              AgentSet: langgraph-supervisor
-  client ──A2A──> supervisor ──A2A──> researcher   (fact lookup)
-                      └──────A2A──> calculator   (arithmetic)
+```mermaid
+flowchart LR
+    client([Client]) -- A2A --> supervisor
+    subgraph set ["AgentSet: langgraph-supervisor"]
+        supervisor -- A2A --> researcher["researcher<br/>(fact lookup)"]
+        supervisor -- A2A --> calculator["calculator<br/>(arithmetic)"]
+    end
 ```
 
 Splitting work this way lets each agent have a focused prompt and its own tools.
