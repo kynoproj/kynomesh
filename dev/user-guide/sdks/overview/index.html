@@ -643,6 +643,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#discovering-peers-dynamically" class="md-nav__link">
+    Discovering Peers Dynamically
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#error-handling" class="md-nav__link">
     Error Handling
   </a>
@@ -1539,6 +1546,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#discovering-peers-dynamically" class="md-nav__link">
+    Discovering Peers Dynamically
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#error-handling" class="md-nav__link">
     Error Handling
   </a>
@@ -1966,12 +1980,81 @@ won't notice on its own. Two ways to handle that:</p>
 </tr>
 </tbody>
 </table>
+<h3 id="discovering-peers-dynamically">Discovering Peers Dynamically<a class="headerlink" href="#discovering-peers-dynamically" title="Permanent link">&para;</a></h3>
+<p>You don't have to hard-code peer names. An agent can ask Kynomesh who its peers
+are, read each peer's <code>AgentCard</code>, and decide what to do with them, for example
+by generating one LLM tool per peer from the card's description and skills. Add
+or remove a peer in the <code>AgentSet</code> and the agent adapts, with no code change.</p>
+<p>The steps are the same in every language:</p>
+<ol>
+<li>List the peers this agent may call.</li>
+<li>Build a client for each one. This also records the card Kynomesh will compare
+   against for <a href="../../reference/drift-reload/">Drift Reload</a>.</li>
+<li>Fetch each peer's <code>AgentCard</code> and read its description and skills.</li>
+</ol>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Python</label><label for="__tabbed_5_2">Go</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">kynomesh</span><span class="w"> </span><span class="kn">import</span> <span class="n">client</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">discover</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]:</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">peers</span><span class="p">()):</span>
+        <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">peer_client</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">card</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">resolve_agent_card</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">found</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">name</span><span class="p">,</span> <span class="n">card</span><span class="o">.</span><span class="n">description</span><span class="p">,</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">card</span><span class="o">.</span><span class="n">skills</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">found</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kd">func</span><span class="w"> </span><span class="nx">discover</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span><span class="w"> </span><span class="kt">error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">names</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">Peers</span><span class="p">()</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nx">err</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="nx">sort</span><span class="p">.</span><span class="nx">Strings</span><span class="p">(</span><span class="nx">names</span><span class="p">)</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">names</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">PeerClient</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="p">);</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">err</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="nx">card</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">ResolveAgentCard</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="p">)</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nx">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">nil</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">err</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="nx">log</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">"peer %s: %s (%d skills)"</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">card</span><span class="p">.</span><span class="nx">Description</span><span class="p">,</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="nx">card</span><span class="p">.</span><span class="nx">Skills</span><span class="p">))</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="kc">nil</span>
+<span class="p">}</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>A few things to keep in mind:</p>
+<ul>
+<li><strong>Which peers you see depends on the pattern.</strong> With the <code>Supervisor</code> pattern,
+  the entry agent sees every other agent and the others see none. See
+  <a href="../../../core-concepts/agentset/#patterns">AgentSet patterns</a>.</li>
+<li><strong>The list is read once per process.</strong> Peers added or removed later show up
+  after Kynomesh restarts the agent, which it does when the <code>AgentSet</code> topology
+  changes.</li>
+<li><strong>Changed cards need Drift Reload.</strong> Discovery reads each card once, so turn
+  on <a href="../../reference/drift-reload/">Drift Reload</a> to restart the agent when a
+  peer's card changes. Building a client for every peer, as in step 2, is what
+  lets Kynomesh detect a change on a peer you have not called yet.</li>
+<li><strong>Handle unreachable peers.</strong> A peer may not be ready when your agent starts.
+  Retry a few times, then log and skip it rather than failing startup.</li>
+<li><strong>Write good cards.</strong> If an LLM picks peers from their descriptions and
+  skills, those fields are its only guide.</li>
+</ul>
+<p>For a complete example, see the
+<a href="../../../tutorials/langgraph/dynamic-peers/">Dynamic peers tutorial</a>.</p>
 <h3 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h3>
 <p>The realistic failure case inside a running agent is calling a peer that isn't
 in your topology - either it doesn't exist, or the routing pattern forbids you
 from reaching it. Check for that specifically and treat anything else as a
 generic failure:</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="5:2"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Python</label><label for="__tabbed_5_2">Go</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Python</label><label for="__tabbed_6_2">Go</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">kynomesh</span><span class="w"> </span><span class="kn">import</span> <span class="n">client</span>
