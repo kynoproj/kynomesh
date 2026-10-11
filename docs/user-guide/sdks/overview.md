@@ -343,6 +343,78 @@ When you don't need a full client:
 | List reachable peers                 | `client.peers()`                  | `client.Peers()`                     |
 | Drop a cached client                 | `client.forget_peer(name)`        | `client.ForgetPeer(name)`            |
 
+### Discovering Peers Dynamically
+
+You don't have to hard-code peer names. An agent can ask Kynomesh who its peers
+are, read each peer's `AgentCard`, and decide what to do with them, for example
+by generating one LLM tool per peer from the card's description and skills. Add
+or remove a peer in the `AgentSet` and the agent adapts, with no code change.
+
+The steps are the same in every language:
+
+1. List the peers this agent may call.
+2. Build a client for each one. This also records the card Kynomesh will compare
+   against for [Drift Reload](../reference/drift-reload.md).
+3. Fetch each peer's `AgentCard` and read its description and skills.
+
+=== "Python"
+
+    ```python
+    from kynomesh import client
+
+
+    async def discover() -> list[tuple[str, str, list[str]]]:
+        found = []
+        for name in sorted(client.peers()):
+            await client.peer_client(name)
+            card = await client.resolve_agent_card(name)
+            found.append((name, card.description, [s.name for s in card.skills]))
+        return found
+    ```
+
+=== "Go"
+
+    ```go
+    func discover(ctx context.Context) error {
+        names, err := client.Peers()
+        if err != nil {
+            return err
+        }
+        sort.Strings(names)
+        for _, name := range names {
+            if _, err := client.PeerClient(ctx, name); err != nil {
+                return err
+            }
+            card, err := client.ResolveAgentCard(ctx, name)
+            if err != nil {
+                return err
+            }
+            log.Printf("peer %s: %s (%d skills)", name, card.Description, len(card.Skills))
+        }
+        return nil
+    }
+    ```
+
+A few things to keep in mind:
+
+- **Which peers you see depends on the pattern.** With the `Supervisor` pattern,
+  the entry agent sees every other agent and the others see none. See
+  [AgentSet patterns](../../core-concepts/agentset.md#patterns).
+- **The list is read once per process.** Peers added or removed later show up
+  after Kynomesh restarts the agent, which it does when the `AgentSet` topology
+  changes.
+- **Changed cards need Drift Reload.** Discovery reads each card once, so turn
+  on [Drift Reload](../reference/drift-reload.md) to restart the agent when a
+  peer's card changes. Building a client for every peer, as in step 2, is what
+  lets Kynomesh detect a change on a peer you have not called yet.
+- **Handle unreachable peers.** A peer may not be ready when your agent starts.
+  Retry a few times, then log and skip it rather than failing startup.
+- **Write good cards.** If an LLM picks peers from their descriptions and
+  skills, those fields are its only guide.
+
+For a complete example, see the
+[Dynamic peers tutorial](../../tutorials/langgraph/dynamic-peers.md).
+
 ### Error Handling
 
 The realistic failure case inside a running agent is calling a peer that isn't
