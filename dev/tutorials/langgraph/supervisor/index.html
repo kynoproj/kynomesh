@@ -1627,10 +1627,12 @@
 that takes a question and delegates to two workers, a <strong>researcher</strong> that looks
 up facts and a <strong>calculator</strong> that does arithmetic. Each agent runs in its own
 pod and the supervisor calls the workers by name.</p>
-<div class="highlight"><pre><span></span><code>              AgentSet: langgraph-supervisor
-  client ──A2A──&gt; supervisor ──A2A──&gt; researcher   (fact lookup)
-                      └──────A2A──&gt; calculator   (arithmetic)
-</code></pre></div>
+<pre class="mermaid"><code>flowchart LR
+    client([Client]) -- A2A --&gt; supervisor
+    subgraph set ["AgentSet: langgraph-supervisor"]
+        supervisor -- A2A --&gt; researcher["researcher&lt;br/&gt;(fact lookup)"]
+        supervisor -- A2A --&gt; calculator["calculator&lt;br/&gt;(arithmetic)"]
+    end</code></pre>
 <p>Splitting work this way lets each agent have a focused prompt and its own tools.
 It also lets each one scale independently, so a busy worker can grow while the
 others stay small.</p>

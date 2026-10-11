@@ -1615,11 +1615,13 @@ code</strong>. At startup it asks Kynomesh who its workers are, reads what each 
 do, and builds its tools from that.</p>
 <p>The result: add or remove a worker in the <code>AgentSet</code> and the supervisor picks it
 up, with no code change and no new image.</p>
-<div class="highlight"><pre><span></span><code>                AgentSet: langgraph-travel
-  client ──A2A──&gt; supervisor ──A2A──&gt; flights
-                      ├──────A2A──&gt; hotels
-                      └──────A2A──&gt; weather   (added and removed in this tutorial)
-</code></pre></div>
+<pre class="mermaid"><code>flowchart LR
+    client([Client]) -- A2A --&gt; supervisor
+    subgraph set ["AgentSet: langgraph-travel"]
+        supervisor -- A2A --&gt; flights
+        supervisor -- A2A --&gt; hotels
+        supervisor -. A2A .-&gt; weather["weather&lt;br/&gt;(added and removed in this tutorial)"]
+    end</code></pre>
 <p>The full example is in
 <a href="https://github.com/kynoproj/examples/tree/main/langgraph/dynamic-peers">kynoproj/examples</a>.</p>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/kynoproj/examples.git
