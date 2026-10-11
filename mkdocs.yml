@@ -84,6 +84,12 @@ nav:
           - user-guide/reference/kustomize/kustomize.md
           - A2A CLI: "user-guide/reference/a2acli.md"
           - APIs.md
+  - Tutorials:
+      - LangGraph:
+          - Overview: "tutorials/langgraph/overview.md"
+          - Single Agent: "tutorials/langgraph/single-agent.md"
+          - Supervisor: "tutorials/langgraph/supervisor.md"
+          - Dynamic Peers: "tutorials/langgraph/dynamic-peers.md"
   - Operator Manual:
       - Releases ⧉: "operations/releases.md"
       - operations/installation.md
