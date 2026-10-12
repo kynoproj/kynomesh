@@ -331,6 +331,23 @@ won't notice on its own. Two ways to handle that:
   `client.forget_peer("worker-a")` (Python) or `client.ForgetPeer("worker-a")`
   (Go); the next call rebuilds it.
 
+### TLS and External Peers
+
+Peers in your own AgentSet (Managed) present the broker's self-signed
+certificate, so the SDKs skip certificate verification for them. The connection
+is encrypted, but the peer is not authenticated. External peers declared in
+`externalAgents` are expected to present a CA-signed certificate, so the SDKs
+verify them normally.
+
+If an external peer is an agent in **another AgentSet**, you reach it directly
+through its Kubernetes DNS name, and it has no valid, CA-signed certificate, so
+verification fails. Name it in the
+`KYNOMESH_INSECURE_TLS_PEERS` environment variable (comma-separated) on the
+calling agent to give it the same treatment as a Managed peer. Your code does not
+change. See
+[External Agents](../reference/configuration/external-agents.md#calling-an-agent-in-another-agentset-tls)
+for details.
+
 ### Peer Discovery Helpers
 
 When you don't need a full client:
