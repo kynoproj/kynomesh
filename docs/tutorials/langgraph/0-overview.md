@@ -22,9 +22,9 @@ repository.
 
 | Tutorial                            | What you build                                                              | What you learn                                                                                               |
 | ----------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| [Single agent](./single-agent.md)   | A conversational agent backed by OpenAI.                                    | Serving a LangGraph graph over A2A and deploying it as an `AgentSet`.                                        |
-| [Supervisor](./supervisor.md)       | A supervisor that delegates to a researcher and a calculator, one pod each. | Splitting work across agents and calling a peer by name.                                                     |
-| [Dynamic peers](./dynamic-peers.md) | A travel-planning supervisor that finds its workers at startup.             | Adding or removing a worker without changing code, and keeping the supervisor in sync when a worker changes. |
+| [Single agent](./1-single-agent.md)   | A conversational agent backed by OpenAI.                                    | Serving a LangGraph graph over A2A and deploying it as an `AgentSet`.                                        |
+| [Supervisor](./2-supervisor.md)       | A supervisor that delegates to a researcher and a calculator, one pod each. | Splitting work across agents and calling a peer by name.                                                     |
+| [Dynamic peers](./3-dynamic-peers.md) | A travel-planning supervisor that finds its workers at startup.             | Adding or removing a worker without changing code, and keeping the supervisor in sync when a worker changes. |
 
 ## Prerequisites
 
@@ -78,4 +78,4 @@ Each example is self-contained and works the same way:
 
 ## Next Steps
 
-Start with the [Single agent](./single-agent.md) tutorial.
+Start with the [Single agent](./1-single-agent.md) tutorial.

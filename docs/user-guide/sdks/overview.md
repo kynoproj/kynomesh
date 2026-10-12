@@ -430,7 +430,7 @@ A few things to keep in mind:
   skills, those fields are its only guide.
 
 For a complete example, see the
-[Dynamic peers tutorial](../../tutorials/langgraph/dynamic-peers.md).
+[Dynamic peers tutorial](../../tutorials/langgraph/3-dynamic-peers.md).
 
 ### Error Handling
 

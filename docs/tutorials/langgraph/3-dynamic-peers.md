@@ -1,6 +1,6 @@
 # Tutorial: A Supervisor That Discovers Its Workers
 
-In the [previous tutorial](./supervisor.md) the supervisor had a hard-coded tool
+In the [previous tutorial](./2-supervisor.md) the supervisor had a hard-coded tool
 for each worker. Adding a worker meant editing code and rebuilding the image.
 Here you build a travel-planning supervisor whose workers are **not named in its
 code**. At startup it asks Kynomesh who its workers are, reads what each one can
