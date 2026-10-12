@@ -95,6 +95,7 @@ nav:
           - Overview: "tutorials/claude-agent-sdk/0-overview.md"
           - Single Agent: "tutorials/claude-agent-sdk/1-single-agent.md"
           - Dynamic Peers: "tutorials/claude-agent-sdk/2-dynamic-peers.md"
+      - Mixed Fleet: "tutorials/mixed-fleet.md"
   - Operator Manual:
       - Releases ⧉: "operations/releases.md"
       - operations/installation.md
