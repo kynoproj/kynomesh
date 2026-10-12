@@ -636,6 +636,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#tls-and-external-peers" class="md-nav__link">
+    TLS and External Peers
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#peer-discovery-helpers" class="md-nav__link">
     Peer Discovery Helpers
   </a>
@@ -1539,6 +1546,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#tls-and-external-peers" class="md-nav__link">
+    TLS and External Peers
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#peer-discovery-helpers" class="md-nav__link">
     Peer Discovery Helpers
   </a>
@@ -1942,6 +1956,20 @@ won't notice on its own. Two ways to handle that:</p>
   <code>client.forget_peer("worker-a")</code> (Python) or <code>client.ForgetPeer("worker-a")</code>
   (Go); the next call rebuilds it.</li>
 </ul>
+<h3 id="tls-and-external-peers">TLS and External Peers<a class="headerlink" href="#tls-and-external-peers" title="Permanent link">&para;</a></h3>
+<p>Peers in your own AgentSet (Managed) present the broker's self-signed
+certificate, so the SDKs skip certificate verification for them. The connection
+is encrypted, but the peer is not authenticated. External peers declared in
+<code>externalAgents</code> are expected to present a CA-signed certificate, so the SDKs
+verify them normally.</p>
+<p>If an external peer is an agent in <strong>another AgentSet</strong>, you reach it directly
+through its Kubernetes DNS name, and it has no valid, CA-signed certificate, so
+verification fails. Name it in the
+<code>KYNOMESH_INSECURE_TLS_PEERS</code> environment variable (comma-separated) on the
+calling agent to give it the same treatment as a Managed peer. Your code does not
+change. See
+<a href="../../reference/configuration/external-agents/#calling-an-agent-in-another-agentset-tls">External Agents</a>
+for details.</p>
 <h3 id="peer-discovery-helpers">Peer Discovery Helpers<a class="headerlink" href="#peer-discovery-helpers" title="Permanent link">&para;</a></h3>
 <p>When you don't need a full client:</p>
 <table>

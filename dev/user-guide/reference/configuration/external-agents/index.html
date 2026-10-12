@@ -892,6 +892,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#calling-an-agent-in-another-agentset-tls" class="md-nav__link">
+    Calling an agent in another AgentSet (TLS)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#validation" class="md-nav__link">
     Validation
   </a>
@@ -1520,6 +1527,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#calling-an-agent-in-another-agentset-tls" class="md-nav__link">
+    Calling an agent in another AgentSet (TLS)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#validation" class="md-nav__link">
     Validation
   </a>
@@ -1648,6 +1662,48 @@ peers, since nothing is deployed for it.</p>
 middle</em> of the chain - isn't possible: <code>fraud-check</code>'s code has no way to know
 it should call <code>review</code> next, so the AgentSet would reject a config that tries
 to make it a mid-chain hop by requiring it to be last.</p>
+<h2 id="calling-an-agent-in-another-agentset-tls">Calling an agent in another AgentSet (TLS)<a class="headerlink" href="#calling-an-agent-in-another-agentset-tls" title="Permanent link">&para;</a></h2>
+<p>When your agent calls a peer through the Kynomesh <a href="../../../sdks/overview/">SDK</a>,
+the SDK decides whether to verify the peer's TLS certificate:</p>
+<ul>
+<li><strong>Managed peers</strong> (agents in the same AgentSet) present their broker's
+  self-signed certificate, so the SDK skips verification. The connection is
+  encrypted, but the peer is not authenticated.</li>
+<li><strong>External peers</strong> are expected to present a real certificate signed by a CA,
+  so the SDK verifies it as usual.</li>
+</ul>
+<p>An external agent that lives in <strong>another AgentSet</strong> is the exception. You
+connect to it directly through its in-cluster Kubernetes DNS name, for example
+<code>https://calculator-ingress.other-namespace.svc:8490</code>, and its broker presents a
+self-signed certificate rather than a valid, CA-signed one. Verification
+therefore fails.</p>
+<p>To treat such a peer like a managed one, list its name in the
+<code>KYNOMESH_INSECURE_TLS_PEERS</code> environment variable on the <strong>calling</strong> agent's
+container. The value is a comma-separated list of external agent names:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh.kyno.sh/v1alpha1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AgentSet</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-agentset</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Supervisor</span>
+<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">planner</span>
+<span class="w">  </span><span class="nt">agents</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">planner</span>
+<span class="w">      </span><span class="nt">container</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example/planner:latest</span>
+<span class="w">        </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KYNOMESH_INSECURE_TLS_PEERS</span>
+<span class="w">            </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">calculator</span>
+<span class="w">  </span><span class="nt">externalAgents</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">calculator</span>
+<span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://calculator-ingress.other-namespace.svc:8490</span>
+</code></pre></div>
+<p>Your agent code does not change.</p>
+<blockquote>
+<p>[!WARNING] Skipping verification means the SDK cannot tell whether it is
+talking to the real peer. Use it only for agents you operate, and not for
+endpoints reached over an untrusted network.</p>
+</blockquote>
 <h2 id="validation">Validation<a class="headerlink" href="#validation" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>externalAgents[*].name</code> follows the same naming rules as <code>agents[*].name</code>
