@@ -21,11 +21,11 @@ others stay small.
 
 This tutorial builds on [Single agent](./single-agent.md). The full example is
 in
-[kynoproj/examples](https://github.com/kynoproj/examples/tree/main/langgraph/supervisor).
+[kynoproj/kynomesh-examples](https://github.com/kynoproj/kynomesh-examples/tree/main/langgraph/supervisor).
 
 ```shell
-git clone https://github.com/kynoproj/examples.git
-cd examples/langgraph/supervisor
+git clone https://github.com/kynoproj/kynomesh-examples.git
+cd kynomesh-examples/langgraph/supervisor
 ```
 
 ## What's in the Example

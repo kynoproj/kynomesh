@@ -116,6 +116,53 @@ middle_ of the chain - isn't possible: `fraud-check`'s code has no way to know
 it should call `review` next, so the AgentSet would reject a config that tries
 to make it a mid-chain hop by requiring it to be last.
 
+## Calling an agent in another AgentSet (TLS)
+
+When your agent calls a peer through the Kynomesh [SDK](../../sdks/overview.md),
+the SDK decides whether to verify the peer's TLS certificate:
+
+- **Managed peers** (agents in the same AgentSet) present their broker's
+  self-signed certificate, so the SDK skips verification. The connection is
+  encrypted, but the peer is not authenticated.
+- **External peers** are expected to present a real certificate signed by a CA,
+  so the SDK verifies it as usual.
+
+An external agent that lives in **another AgentSet** is the exception. You
+connect to it directly through its in-cluster Kubernetes DNS name, for example
+`https://calculator-ingress.other-namespace.svc:8490`, and its broker presents a
+self-signed certificate rather than a valid, CA-signed one. Verification
+therefore fails.
+
+To treat such a peer like a managed one, list its name in the
+`KYNOMESH_INSECURE_TLS_PEERS` environment variable on the **calling** agent's
+container. The value is a comma-separated list of external agent names:
+
+```yaml
+apiVersion: kynomesh.kyno.sh/v1alpha1
+kind: AgentSet
+metadata:
+  name: my-agentset
+spec:
+  pattern: Supervisor
+  entry: planner
+  agents:
+    - name: planner
+      container:
+        image: example/planner:latest
+        env:
+          - name: KYNOMESH_INSECURE_TLS_PEERS
+            value: calculator
+  externalAgents:
+    - name: calculator
+      url: https://calculator-ingress.other-namespace.svc:8490
+```
+
+Your agent code does not change.
+
+> [!WARNING] Skipping verification means the SDK cannot tell whether it is
+> talking to the real peer. Use it only for agents you operate, and not for
+> endpoints reached over an untrusted network.
+
 ## Validation
 
 - `externalAgents[*].name` follows the same naming rules as `agents[*].name`

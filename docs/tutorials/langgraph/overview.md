@@ -17,13 +17,13 @@ team later without code changes.
 
 Each tutorial builds on the previous one and has a matching, runnable example in
 the
-[kynoproj/examples](https://github.com/kynoproj/examples/tree/main/langgraph)
+[kynoproj/kynomesh-examples](https://github.com/kynoproj/kynomesh-examples/tree/main/langgraph)
 repository.
 
-| Tutorial                          | What you build                                                              | What you learn                                                                                               |
-| --------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| [Single agent](./single-agent.md) | A conversational agent backed by OpenAI.                                    | Serving a LangGraph graph over A2A and deploying it as an `AgentSet`.                                        |
-| [Supervisor](./supervisor.md)     | A supervisor that delegates to a researcher and a calculator, one pod each. | Splitting work across agents and calling a peer by name.                                                     |
+| Tutorial                            | What you build                                                              | What you learn                                                                                               |
+| ----------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [Single agent](./single-agent.md)   | A conversational agent backed by OpenAI.                                    | Serving a LangGraph graph over A2A and deploying it as an `AgentSet`.                                        |
+| [Supervisor](./supervisor.md)       | A supervisor that delegates to a researcher and a calculator, one pod each. | Splitting work across agents and calling a peer by name.                                                     |
 | [Dynamic peers](./dynamic-peers.md) | A travel-planning supervisor that finds its workers at startup.             | Adding or removing a worker without changing code, and keeping the supervisor in sync when a worker changes. |
 
 ## Prerequisites
@@ -38,8 +38,8 @@ repository.
 ## Get the Examples
 
 ```shell
-git clone https://github.com/kynoproj/examples.git
-cd examples/langgraph
+git clone https://github.com/kynoproj/kynomesh-examples.git
+cd kynomesh-examples/langgraph
 ```
 
 Each example is self-contained and works the same way:
