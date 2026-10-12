@@ -7,13 +7,13 @@ first on your machine and then on Kynomesh as a one-agent
 to serve your own graph.
 
 The full example is in
-[kynoproj/examples](https://github.com/kynoproj/examples/tree/main/langgraph/single-agent).
+[kynoproj/kynomesh-examples](https://github.com/kynoproj/kynomesh-examples/tree/main/langgraph/single-agent).
 Follow the [overview](./overview.md#prerequisites) first if you have not set up
 the prerequisites.
 
 ```shell
-git clone https://github.com/kynoproj/examples.git
-cd examples/langgraph/single-agent
+git clone https://github.com/kynoproj/kynomesh-examples.git
+cd kynomesh-examples/langgraph/single-agent
 ```
 
 ## Why Run a Single Agent on Kynomesh?

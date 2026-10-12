@@ -20,11 +20,11 @@ flowchart LR
 ```
 
 The full example is in
-[kynoproj/examples](https://github.com/kynoproj/examples/tree/main/langgraph/dynamic-peers).
+[kynoproj/kynomesh-examples](https://github.com/kynoproj/kynomesh-examples/tree/main/langgraph/dynamic-peers).
 
 ```shell
-git clone https://github.com/kynoproj/examples.git
-cd examples/langgraph/dynamic-peers
+git clone https://github.com/kynoproj/kynomesh-examples.git
+cd kynomesh-examples/langgraph/dynamic-peers
 ```
 
 ## What's in the Example
