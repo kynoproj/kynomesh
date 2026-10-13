@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.7.1 (2026-10-12)
+
+ * [c68404f](https://github.com/kynoproj/kynomesh/commit/c68404ffc7881afac5f3523a728393deaeaadee8) Update manifests to v0.7.1
+ * [4125dec](https://github.com/kynoproj/kynomesh/commit/4125dec61ba01f656c87a3fdd61e9fdda6bb94d6) chore(deps): bump sigs.k8s.io/controller-tools from 0.21.0 to 0.22.0 (#246)
+ * [2bea00a](https://github.com/kynoproj/kynomesh/commit/2bea00ab79c0accf07d3eeab01c7d42fccd1dd3b) chore(deps): bump github.com/go-swagger/go-swagger from 0.36.5 to 0.36.6 (#245)
+ * [1e15e93](https://github.com/kynoproj/kynomesh/commit/1e15e932cc4f7ad79b405ce3fa208d4b81160299) chore(deps): bump github.com/prometheus/common from 0.70.1 to 0.72.0 (#244)
+ * [0f07f8b](https://github.com/kynoproj/kynomesh/commit/0f07f8bd9cb79f6db6d99084f6fe1721d33be643) chore(deps): bump github.com/a2aproject/a2a-go/v2 from 2.5.0 to 2.6.0 (#248)
+ * [55eeb9b](https://github.com/kynoproj/kynomesh/commit/55eeb9bc7dc3cad9f1289367185cf63129d95ba7) chore(deps): bump github.com/prometheus/client_model from 0.6.2 to 0.6.3 (#247)
+ * [bd2cec0](https://github.com/kynoproj/kynomesh/commit/bd2cec007c478b637b8fe045afa0a704776520f2) feat: add startupProbe to agent container (#243)
+
+### Contributors
+
+ * Derek Wang
+ * dependabot[bot]
+
 ## v0.7.0 (2026-09-19)
 
  * [dc8672e](https://github.com/kynoproj/kynomesh/commit/dc8672e418d68d4a78cb7d98b129900f1cda7052) Update manifests to v0.7.0
