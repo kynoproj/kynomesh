@@ -110,7 +110,7 @@ Agents in one `AgentSet` only see each other's `AgentCard`s and A2A endpoints,
 so they do not need to use the same framework. The
 [mixed-fleet](https://github.com/kynoproj/kynomesh-examples/tree/main/mixed-fleet)
 example runs a Claude supervisor that delegates to both
-[LangGraph](../langgraph/0-overview.md) and Claude workers.
+[LangGraph](../langgraph/README.md) and Claude workers.
 
 ## Next Steps
 

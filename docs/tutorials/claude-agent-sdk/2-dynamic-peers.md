@@ -291,7 +291,7 @@ make delete
 - **Use any workers.** They do not need to be Claude agents or share the
   supervisor's image. Anything that serves an `AgentCard` over A2A and is in the
   `AgentSet` is discovered the same way, including
-  [LangGraph agents](../langgraph/0-overview.md). The
+  [LangGraph agents](../langgraph/README.md). The
   [mixed-fleet](https://github.com/kynoproj/kynomesh-examples/tree/main/mixed-fleet)
   example does exactly that.
 - **Keep the lock-down.** Generated tools are added to `allowed_tools`
