@@ -85,14 +85,14 @@ nav:
           - A2A CLI: "user-guide/reference/a2acli.md"
           - APIs.md
   - Tutorials:
-      - Overview: "tutorials/overview.md"
+      - Overview: "tutorials/README.md"
       - LangGraph:
-          - Overview: "tutorials/langgraph/0-overview.md"
+          - Overview: "tutorials/langgraph/README.md"
           - Single Agent: "tutorials/langgraph/1-single-agent.md"
           - Supervisor: "tutorials/langgraph/2-supervisor.md"
           - Dynamic Peers: "tutorials/langgraph/3-dynamic-peers.md"
       - Claude Agent SDK:
-          - Overview: "tutorials/claude-agent-sdk/0-overview.md"
+          - Overview: "tutorials/claude-agent-sdk/README.md"
           - Single Agent: "tutorials/claude-agent-sdk/1-single-agent.md"
           - Dynamic Peers: "tutorials/claude-agent-sdk/2-dynamic-peers.md"
       - Mixed Fleet: "tutorials/mixed-fleet.md"
