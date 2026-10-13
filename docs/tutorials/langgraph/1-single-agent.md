@@ -8,7 +8,7 @@ to serve your own graph.
 
 The full example is in
 [kynoproj/kynomesh-examples](https://github.com/kynoproj/kynomesh-examples/tree/main/langgraph/single-agent).
-Follow the [overview](./overview.md#prerequisites) first if you have not set up
+Follow the [overview](./0-overview.md#prerequisites) first if you have not set up
 the prerequisites.
 
 ```shell
@@ -241,4 +241,4 @@ To serve a different LangGraph agent:
 ## Next Steps
 
 One agent is a good start. In the next tutorial you split work across several
-agents with a [supervisor](./supervisor.md).
+agents with a [supervisor](./2-supervisor.md).
