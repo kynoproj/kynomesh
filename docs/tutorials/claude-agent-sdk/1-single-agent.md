@@ -9,8 +9,8 @@ is safe to run in a pod, and what to change to serve your own agent.
 
 The full example is in
 [kynoproj/kynomesh-examples](https://github.com/kynoproj/kynomesh-examples/tree/main/claude-agent-sdk/single-agent).
-Follow the [overview](./0-overview.md#prerequisites) first if you have not set
-up the prerequisites. Running a single agent on Kynomesh already gives you
+Follow the [overview](./README.md#prerequisites) first if you have not set up
+the prerequisites. Running a single agent on Kynomesh already gives you
 autoscaling, zero-downtime rollouts and rate limiting. See the
 [LangGraph single-agent tutorial](../langgraph/1-single-agent.md#why-run-a-single-agent-on-kynomesh)
 for the full list.
@@ -268,5 +268,6 @@ To serve a different Claude Agent SDK agent:
 
 ## Next Steps
 
-One agent is a good start. In the next tutorial, [Dynamic peers](./2-dynamic-peers.md),
-you build a supervisor that finds its Claude workers on its own.
+One agent is a good start. In the next tutorial,
+[Dynamic peers](./2-dynamic-peers.md), you build a supervisor that finds its
+Claude workers on its own.

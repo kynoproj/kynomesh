@@ -8,7 +8,7 @@ to serve your own graph.
 
 The full example is in
 [kynoproj/kynomesh-examples](https://github.com/kynoproj/kynomesh-examples/tree/main/langgraph/single-agent).
-Follow the [overview](./0-overview.md#prerequisites) first if you have not set up
+Follow the [overview](./README.md#prerequisites) first if you have not set up
 the prerequisites.
 
 ```shell

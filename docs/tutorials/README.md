@@ -14,10 +14,10 @@ Whatever the framework, the approach is the same:
 
 ## Choose a Framework
 
-| Framework                                            | Tutorials                                                                                   |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| [LangGraph](./langgraph/0-overview.md)               | Single agent, a supervisor with fixed workers, and a supervisor that discovers its workers. |
-| [Claude Agent SDK](./claude-agent-sdk/0-overview.md) | Single agent, and a supervisor that discovers its workers.                                  |
+| Framework                                        | Tutorials                                                                                   |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| [LangGraph](./langgraph/README.md)               | Single agent, a supervisor with fixed workers, and a supervisor that discovers its workers. |
+| [Claude Agent SDK](./claude-agent-sdk/README.md) | Single agent, and a supervisor that discovers its workers.                                  |
 
 More frameworks are planned.
 
