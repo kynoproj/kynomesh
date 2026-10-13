@@ -19,7 +19,7 @@ Splitting work this way lets each agent have a focused prompt and its own tools.
 It also lets each one scale independently, so a busy worker can grow while the
 others stay small.
 
-This tutorial builds on [Single agent](./single-agent.md). The full example is
+This tutorial builds on [Single agent](./1-single-agent.md). The full example is
 in
 [kynoproj/kynomesh-examples](https://github.com/kynoproj/kynomesh-examples/tree/main/langgraph/supervisor).
 
@@ -265,7 +265,7 @@ make delete
   by name.
 - **Add a worker.** Add an agent to the `AgentSet`, give the supervisor a tool
   that calls it, and update the supervisor's prompt. The next tutorial,
-  [Dynamic peers](./dynamic-peers.md), removes even that last step.
+  [Dynamic peers](./3-dynamic-peers.md), removes even that last step.
 - **Scale one agent.** Workers scale independently of the supervisor. See
   [Autoscaling](../../user-guide/reference/autoscaling.md).
 
