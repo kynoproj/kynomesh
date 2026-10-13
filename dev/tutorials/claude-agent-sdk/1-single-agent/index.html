@@ -13,7 +13,7 @@
     
     
       
-        <title>Dynamic Peers - Kynomesh - Distributed multi-agent orchestration</title>
+        <title>Single Agent - Kynomesh - Distributed multi-agent orchestration</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#tutorial-a-supervisor-that-discovers-its-workers" class="md-skip">
+        <a href="#tutorial-a-single-claude-agent" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Dynamic Peers
+              Single Agent
             
           </span>
         </div>
@@ -262,18 +262,11 @@
   
   
   
-    
-
-  
-  
-  
     <li class="md-tabs__item">
-      <a href="../overview/" class="md-tabs__link md-tabs__link--active">
+      <a href="../../overview/" class="md-tabs__link md-tabs__link--active">
         Tutorials
       </a>
     </li>
-  
-
   
 
       
@@ -985,25 +978,37 @@
               
   
   
-    
+  
+    <li class="md-nav__item">
+      <a href="../../overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
   
   
+  
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_4_1">
+        <label class="md-nav__link" for="__nav_4_2">
           LangGraph
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="LangGraph" data-md-level="2">
-        <label class="md-nav__title" for="__nav_4_1">
+        <label class="md-nav__title" for="__nav_4_2">
           <span class="md-nav__icon md-icon"></span>
           LangGraph
         </label>
@@ -1015,7 +1020,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../overview/" class="md-nav__link">
+      <a href="../../langgraph/0-overview/" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -1029,7 +1034,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../single-agent/" class="md-nav__link">
+      <a href="../../langgraph/1-single-agent/" class="md-nav__link">
         Single Agent
       </a>
     </li>
@@ -1043,8 +1048,71 @@
   
   
     <li class="md-nav__item">
-      <a href="../supervisor/" class="md-nav__link">
+      <a href="../../langgraph/2-supervisor/" class="md-nav__link">
         Supervisor
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../langgraph/3-dynamic-peers/" class="md-nav__link">
+        Dynamic Peers
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Claude Agent SDK
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Claude Agent SDK" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Claude Agent SDK
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0-overview/" class="md-nav__link">
+        Overview
       </a>
     </li>
   
@@ -1067,12 +1135,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Dynamic Peers
+          Single Agent
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        Dynamic Peers
+        Single Agent
       </a>
       
         
@@ -1098,29 +1166,29 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-discovery-works" class="md-nav__link">
-    How Discovery Works
+  <a href="#a-custom-tool" class="md-nav__link">
+    A Custom Tool
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#building-tools-from-cards" class="md-nav__link">
-    Building Tools from Cards
+  <a href="#the-agent" class="md-nav__link">
+    The Agent
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-agentset" class="md-nav__link">
-    The AgentSet
+  <a href="#serving-it-over-a2a" class="md-nav__link">
+    Serving It Over A2A
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#run-the-tests" class="md-nav__link">
-    Run the Tests
+  <a href="#run-it-locally" class="md-nav__link">
+    Run It Locally
   </a>
   
 </li>
@@ -1133,15 +1201,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#add-a-worker-with-no-code-change" class="md-nav__link">
-    Add a Worker with No Code Change
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#change-a-workers-card-drift-reload" class="md-nav__link">
-    Change a Worker's Card: Drift Reload
+  <a href="#talk-to-the-agent" class="md-nav__link">
+    Talk to the Agent
   </a>
   
 </li>
@@ -1154,8 +1215,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#make-it-your-own" class="md-nav__link">
-    Make It Your Own
+  <a href="#use-your-own-agent" class="md-nav__link">
+    Use Your Own Agent
   </a>
   
 </li>
@@ -1183,8 +1244,50 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../2-dynamic-peers/" class="md-nav__link">
+        Dynamic Peers
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mixed-fleet/" class="md-nav__link">
+        Mixed Fleet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../external-agent/" class="md-nav__link">
+        External Agent
+      </a>
     </li>
   
 
@@ -1513,29 +1616,29 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-discovery-works" class="md-nav__link">
-    How Discovery Works
+  <a href="#a-custom-tool" class="md-nav__link">
+    A Custom Tool
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#building-tools-from-cards" class="md-nav__link">
-    Building Tools from Cards
+  <a href="#the-agent" class="md-nav__link">
+    The Agent
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#the-agentset" class="md-nav__link">
-    The AgentSet
+  <a href="#serving-it-over-a2a" class="md-nav__link">
+    Serving It Over A2A
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#run-the-tests" class="md-nav__link">
-    Run the Tests
+  <a href="#run-it-locally" class="md-nav__link">
+    Run It Locally
   </a>
   
 </li>
@@ -1548,15 +1651,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#add-a-worker-with-no-code-change" class="md-nav__link">
-    Add a Worker with No Code Change
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#change-a-workers-card-drift-reload" class="md-nav__link">
-    Change a Worker's Card: Drift Reload
+  <a href="#talk-to-the-agent" class="md-nav__link">
+    Talk to the Agent
   </a>
   
 </li>
@@ -1569,8 +1665,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#make-it-your-own" class="md-nav__link">
-    Make It Your Own
+  <a href="#use-your-own-agent" class="md-nav__link">
+    Use Your Own Agent
   </a>
   
 </li>
@@ -1601,31 +1697,28 @@
             <article class="md-content__inner md-typeset">
               
                 
-  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/tutorials/langgraph/dynamic-peers.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/tutorials/claude-agent-sdk/1-single-agent.md" title="Edit this page" class="md-content__button md-icon">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
 
 
-<h1 id="tutorial-a-supervisor-that-discovers-its-workers">Tutorial: A Supervisor That Discovers Its Workers<a class="headerlink" href="#tutorial-a-supervisor-that-discovers-its-workers" title="Permanent link">&para;</a></h1>
-<p>In the <a href="../supervisor/">previous tutorial</a> the supervisor had a hard-coded tool
-for each worker. Adding a worker meant editing code and rebuilding the image.
-Here you build a travel-planning supervisor whose workers are <strong>not named in its
-code</strong>. At startup it asks Kynomesh who its workers are, reads what each one can
-do, and builds its tools from that.</p>
-<p>The result: add or remove a worker in the <code>AgentSet</code> and the supervisor picks it
-up, with no code change and no new image.</p>
-<pre class="mermaid"><code>flowchart LR
-    client([Client]) -- A2A --&gt; supervisor
-    subgraph set ["AgentSet: langgraph-travel"]
-        supervisor -- A2A --&gt; flights
-        supervisor -- A2A --&gt; hotels
-        supervisor -. A2A .-&gt; weather["weather&lt;br/&gt;(added and removed in this tutorial)"]
-    end</code></pre>
+<h1 id="tutorial-a-single-claude-agent">Tutorial: A Single Claude Agent<a class="headerlink" href="#tutorial-a-single-claude-agent" title="Permanent link">&para;</a></h1>
+<p>In this tutorial you run a conversational agent built with the
+<a href="https://code.claude.com/docs/en/agent-sdk/python">Claude Agent SDK</a>, first on
+your machine and then on Kynomesh as a one-agent
+<a href="../../../core-concepts/agentset/"><code>AgentSet</code></a>. The agent has one custom tool
+that converts temperatures. You will also see how to lock the agent down so it
+is safe to run in a pod, and what to change to serve your own agent.</p>
 <p>The full example is in
-<a href="https://github.com/kynoproj/kynomesh-examples/tree/main/langgraph/dynamic-peers">kynoproj/kynomesh-examples</a>.</p>
+<a href="https://github.com/kynoproj/kynomesh-examples/tree/main/claude-agent-sdk/single-agent">kynoproj/kynomesh-examples</a>.
+Follow the <a href="../0-overview/#prerequisites">overview</a> first if you have not set
+up the prerequisites. Running a single agent on Kynomesh already gives you
+autoscaling, zero-downtime rollouts and rate limiting. See the
+<a href="../../langgraph/1-single-agent/#why-run-a-single-agent-on-kynomesh">LangGraph single-agent tutorial</a>
+for the full list.</p>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/kynoproj/kynomesh-examples.git
-<span class="nb">cd</span><span class="w"> </span>kynomesh-examples/langgraph/dynamic-peers
+<span class="nb">cd</span><span class="w"> </span>kynomesh-examples/claude-agent-sdk/single-agent
 </code></pre></div>
 <h2 id="whats-in-the-example">What's in the Example<a class="headerlink" href="#whats-in-the-example" title="Permanent link">&para;</a></h2>
 <table>
@@ -1637,223 +1730,241 @@ up, with no code change and no new image.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>src/travel/discovery.py</code></td>
-<td>Finds the supervisor's workers and reads each one's <code>AgentCard</code>.</td>
+<td><code>src/claude_chat/agent.py</code></td>
+<td><code>run_agent</code>: one Claude run per request, locked down for a pod.</td>
 </tr>
 <tr>
-<td><code>src/travel/supervisor.py</code></td>
-<td>Builds one tool per worker, and the prompt's worker list, from those cards.</td>
+<td><code>src/claude_chat/tools.py</code></td>
+<td>A custom in-process tool the agent can call.</td>
 </tr>
 <tr>
-<td><code>src/travel/workers.py</code></td>
-<td>The worker roles the image can run: <code>flights</code>, <code>hotels</code> and <code>weather</code>.</td>
+<td><code>src/claude_chat/executor.py</code></td>
+<td>Turns an A2A message into a call to <code>run_agent</code>, and the result into a reply.</td>
 </tr>
 <tr>
-<td><code>src/travel/main.py</code></td>
-<td>Starts the supervisor or a worker. <code>--role</code> picks which.</td>
+<td><code>src/claude_chat/main.py</code></td>
+<td>The <code>AgentCard</code>, and serving the agent over A2A.</td>
 </tr>
 <tr>
 <td><code>manifests/agentset.yaml</code></td>
-<td>The supervisor, <code>flights</code> and <code>hotels</code>.</td>
-</tr>
-<tr>
-<td><code>manifests/agentset-with-weather.yaml</code></td>
-<td>The same, plus <code>weather</code>.</td>
+<td>The <code>AgentSet</code> that deploys it.</td>
 </tr>
 </tbody>
 </table>
-<p>The workers use stub tools with canned data, so the example needs no travel API.</p>
-<h2 id="how-discovery-works">How Discovery Works<a class="headerlink" href="#how-discovery-works" title="Permanent link">&para;</a></h2>
-<p>An agent's <code>AgentCard</code> describes what it is and what it can do. Each worker
-already publishes one, so the supervisor can learn about its workers by reading
-their cards instead of being told about them.</p>
-<p><code>discovery.py</code> lists the supervisor's peers, then reads each peer's card:</p>
-<div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">discover_workers</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">WorkerInfo</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
-    <span class="n">workers</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">peers</span><span class="p">()):</span>
-        <span class="n">card</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">resolve_agent_card</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-        <span class="n">workers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">WorkerInfo</span><span class="p">(</span>
-            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-            <span class="n">description</span><span class="o">=</span><span class="n">card</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
-            <span class="n">skills</span><span class="o">=</span><span class="nb">tuple</span><span class="p">((</span><span class="n">s</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">description</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">card</span><span class="o">.</span><span class="n">skills</span><span class="p">),</span>
-        <span class="p">))</span>
-    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">workers</span><span class="p">)</span>
+<p><code>agent.py</code> and <code>tools.py</code> are plain Claude Agent SDK code with nothing
+Kynomesh-specific. Only <code>main.py</code> uses the Kynomesh SDK.</p>
+<h2 id="a-custom-tool">A Custom Tool<a class="headerlink" href="#a-custom-tool" title="Permanent link">&para;</a></h2>
+<p>The agent's one tool converts a temperature between Celsius, Fahrenheit and
+Kelvin. It is an ordinary Claude Agent SDK tool that runs inside your process:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@tool</span><span class="p">(</span>
+    <span class="s2">"convert_temperature"</span><span class="p">,</span>
+    <span class="s2">"Convert a temperature between C (Celsius), F (Fahrenheit) and K (Kelvin)."</span><span class="p">,</span>
+    <span class="p">{</span><span class="s2">"value"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="s2">"from_unit"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">"to_unit"</span><span class="p">:</span> <span class="nb">str</span><span class="p">},</span>
+<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">convert_temperature</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">convert</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s2">"value"</span><span class="p">],</span> <span class="n">args</span><span class="p">[</span><span class="s2">"from_unit"</span><span class="p">],</span> <span class="n">args</span><span class="p">[</span><span class="s2">"to_unit"</span><span class="p">])</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"content"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"text"</span><span class="p">,</span> <span class="s2">"text"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">}],</span> <span class="s2">"is_error"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"content"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"text"</span><span class="p">,</span> <span class="s2">"text"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">result</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">args</span><span class="p">[</span><span class="s1">'to_unit'</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">}]}</span>
 </code></pre></div>
-<p><code>client.peers()</code> returns the agents the supervisor is allowed to call, and
-<code>client.resolve_agent_card(name)</code> returns a peer's card. Nothing in this code
-names a worker. The version in the example also retries an unreachable worker a
-few times, then logs and skips it so one slow worker does not stop the
-supervisor from starting.</p>
-<h2 id="building-tools-from-cards">Building Tools from Cards<a class="headerlink" href="#building-tools-from-cards" title="Permanent link">&para;</a></h2>
-<p><code>supervisor.py</code> turns each discovered worker into a tool whose description comes
-from the worker's card:</p>
-<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">peer_tools</span><span class="p">(</span><span class="n">workers</span><span class="p">,</span> <span class="n">ask_peer</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">make</span><span class="p">(</span><span class="n">worker</span><span class="p">):</span>
-        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delegate</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-            <span class="k">return</span> <span class="k">await</span> <span class="n">ask_peer</span><span class="p">(</span><span class="n">worker</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">request</span><span class="p">)</span>
+<p>A bad unit is returned to the model as a tool error, so it can recover instead
+of failing the whole request.</p>
+<h2 id="the-agent">The Agent<a class="headerlink" href="#the-agent" title="Permanent link">&para;</a></h2>
+<p><code>run_agent</code> runs one Claude query for each request and returns the final text.
+The options are where the agent is locked down:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_options</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ClaudeAgentOptions</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">ClaudeAgentOptions</span><span class="p">(</span>
+        <span class="n">system_prompt</span><span class="o">=</span><span class="n">SYSTEM_PROMPT</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"ANTHROPIC_MODEL"</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">tools</span><span class="o">=</span><span class="p">[],</span>  <span class="c1"># disable every built-in tool</span>
+        <span class="n">mcp_servers</span><span class="o">=</span><span class="p">{</span><span class="n">SERVER_NAME</span><span class="p">:</span> <span class="n">create_sdk_mcp_server</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">SERVER_NAME</span><span class="p">,</span> <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">convert_temperature</span><span class="p">])},</span>
+        <span class="n">strict_mcp_config</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># ignore any other MCP config on disk</span>
+        <span class="n">allowed_tools</span><span class="o">=</span><span class="p">[</span><span class="sa">f</span><span class="s2">"mcp__</span><span class="si">{</span><span class="n">SERVER_NAME</span><span class="si">}</span><span class="s2">__</span><span class="si">{</span><span class="n">convert_temperature</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span><span class="p">],</span>
+        <span class="n">permission_mode</span><span class="o">=</span><span class="s2">"dontAsk"</span><span class="p">,</span>  <span class="c1"># deny anything not allowed instead of prompting</span>
+        <span class="n">setting_sources</span><span class="o">=</span><span class="p">[],</span>  <span class="c1"># load no user/project/local settings</span>
+        <span class="n">max_turns</span><span class="o">=</span><span class="n">MAX_TURNS</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+<p>An agent in a pod serves requests from other agents and clients, so it should do
+only what you intend. Each option closes one gap:</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tools=[]</code></td>
+<td>Removes every built-in tool, such as Bash, Read and Write.</td>
+</tr>
+<tr>
+<td><code>allowed_tools</code></td>
+<td>Allows only your own tool.</td>
+</tr>
+<tr>
+<td><code>permission_mode="dontAsk"</code></td>
+<td>Denies anything else instead of waiting for an approval nobody can give.</td>
+</tr>
+<tr>
+<td><code>setting_sources=[]</code></td>
+<td>Loads no settings from disk.</td>
+</tr>
+<tr>
+<td><code>strict_mcp_config=True</code></td>
+<td>Ignores any other MCP configuration on disk.</td>
+</tr>
+<tr>
+<td><code>max_turns</code></td>
+<td>Bounds how long a single run can go on.</td>
+</tr>
+</tbody>
+</table>
+<p>Set <code>ANTHROPIC_MODEL</code> to choose a model. Otherwise the SDK's default is used.</p>
+<blockquote>
+<p>[!NOTE] Each request starts the Claude Code CLI bundled with the SDK, so
+expect a few seconds of startup per request.</p>
+</blockquote>
+<h2 id="serving-it-over-a2a">Serving It Over A2A<a class="headerlink" href="#serving-it-over-a2a" title="Permanent link">&para;</a></h2>
+<p>The executor connects A2A to <code>run_agent</code>: it reads the text of the incoming
+message and replies with the agent's answer.</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ClaudeExecutor</span><span class="p">(</span><span class="n">AgentExecutor</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">:</span> <span class="n">Run</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run</span> <span class="o">=</span> <span class="n">run</span>
 
-        <span class="k">return</span> <span class="n">StructuredTool</span><span class="o">.</span><span class="n">from_function</span><span class="p">(</span>
-            <span class="n">coroutine</span><span class="o">=</span><span class="n">delegate</span><span class="p">,</span>
-            <span class="n">name</span><span class="o">=</span><span class="n">tool_name</span><span class="p">(</span><span class="n">worker</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>      <span class="c1"># e.g. "ask_flights"</span>
-            <span class="n">description</span><span class="o">=</span><span class="n">describe</span><span class="p">(</span><span class="n">worker</span><span class="p">),</span>     <span class="c1"># the card's description and skills</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">RequestContext</span><span class="p">,</span> <span class="n">event_queue</span><span class="p">:</span> <span class="n">EventQueue</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">reply</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">(</span><span class="n">message_text</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">message</span><span class="p">))</span>
+        <span class="k">await</span> <span class="n">event_queue</span><span class="o">.</span><span class="n">enqueue_event</span><span class="p">(</span>
+            <span class="n">Message</span><span class="p">(</span>
+                <span class="n">message_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()),</span>
+                <span class="n">role</span><span class="o">=</span><span class="n">Role</span><span class="o">.</span><span class="n">ROLE_AGENT</span><span class="p">,</span>
+                <span class="n">parts</span><span class="o">=</span><span class="p">[</span><span class="n">Part</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">reply</span><span class="p">)],</span>
+            <span class="p">)</span>
         <span class="p">)</span>
-
-    <span class="k">return</span> <span class="p">[</span><span class="n">make</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">workers</span><span class="p">]</span>
 </code></pre></div>
-<p>The prompt is generated the same way, with one line per worker:</p>
-<div class="highlight"><pre><span></span><code>You are a travel-planning supervisor. ...
-Your workers:
-- ask_flights: Finds flights between cities. Skills: Search flights: Flight options with times and prices.
-- ask_hotels: Finds hotels in a city. Skills: Search hotels: Hotel options with nightly prices.
+<p><code>main.py</code> describes the agent with an <code>AgentCard</code>, which tells callers who the
+agent is and what it can do, and hands both to the Kynomesh SDK:</p>
+<div class="highlight"><pre><span></span><code><span class="n">AgentCard</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Claude Chat Agent"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"A conversational Claude Agent SDK agent served through Kynomesh"</span><span class="p">,</span>
+    <span class="n">version</span><span class="o">=</span><span class="s2">"0.1.0"</span><span class="p">,</span>
+    <span class="n">supported_interfaces</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">AgentInterface</span><span class="p">(</span>
+            <span class="n">url</span><span class="o">=</span><span class="s2">"http://127.0.0.1:8088/a2a/jsonrpc"</span><span class="p">,</span>
+            <span class="n">protocol_binding</span><span class="o">=</span><span class="n">TransportProtocol</span><span class="o">.</span><span class="n">JSONRPC</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">protocol_version</span><span class="o">=</span><span class="n">PROTOCOL_VERSION_CURRENT</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">AgentInterface</span><span class="p">(</span>
+            <span class="n">url</span><span class="o">=</span><span class="s2">"127.0.0.1:8089"</span><span class="p">,</span>
+            <span class="n">protocol_binding</span><span class="o">=</span><span class="n">TransportProtocol</span><span class="o">.</span><span class="n">GRPC</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">protocol_version</span><span class="o">=</span><span class="n">PROTOCOL_VERSION_CURRENT</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">],</span>
+    <span class="n">skills</span><span class="o">=</span><span class="p">[</span><span class="n">AgentSkill</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">"chat"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Chat"</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Brief, friendly replies; converts temperatures with a custom tool"</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"chat"</span><span class="p">])],</span>
+    <span class="c1"># ...</span>
+<span class="p">)</span>
 </code></pre></div>
-<p>Because the model chooses tools from these descriptions, <strong>the quality of a
-worker's <code>AgentCard</code> now matters</strong>. A clear description and skills are what let
-the supervisor route requests correctly.</p>
-<p>If a request needs a worker that does not exist, the prompt tells the supervisor
-to say so plainly rather than guess.</p>
-<h2 id="the-agentset">The AgentSet<a class="headerlink" href="#the-agentset" title="Permanent link">&para;</a></h2>
-<p>The base manifest deploys the supervisor with <code>flights</code> and <code>hotels</code>, and turns
-on <code>driftReload</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">ClaudeExecutor</span><span class="p">(</span><span class="n">run_agent</span><span class="p">),</span> <span class="n">agent_card</span><span class="p">())</span>
+</code></pre></div>
+<blockquote>
+<p>[!NOTE] The URLs are placeholders for local development. On Kynomesh they are
+replaced with the real addresses, so you never hard-code them.</p>
+</blockquote>
+<h2 id="run-it-locally">Run It Locally<a class="headerlink" href="#run-it-locally" title="Permanent link">&para;</a></h2>
+<p>Run the unit tests, which make no API calls, then start the agent:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>pytest
+<span class="nv">ANTHROPIC_API_KEY</span><span class="o">=</span>...<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>claude_chat.main
+</code></pre></div>
+<p>The agent listens for HTTP on port 8088 and gRPC on port 8089. In another
+terminal, check it is healthy and send it a message:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>localhost:8088/healthz
+a2acli<span class="w"> </span>-u<span class="w"> </span>http://localhost:8088<span class="w"> </span>send<span class="w"> </span><span class="s1">'What is 72 F in Celsius?'</span><span class="w"> </span>-o<span class="w"> </span>json
+</code></pre></div>
+<h2 id="deploy-to-kynomesh">Deploy to Kynomesh<a class="headerlink" href="#deploy-to-kynomesh" title="Permanent link">&para;</a></h2>
+<p>The <code>AgentSet</code> declares one agent running the image you are about to build:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh.kyno.sh/v1alpha1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AgentSet</span>
 <span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">langgraph-travel</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-chat</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Supervisor</span>
-<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supervisor</span>
-<span class="w">  </span><span class="nt">driftReload</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">chat-agent</span>
 <span class="w">  </span><span class="nt">agents</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supervisor</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">chat-agent</span>
 <span class="w">      </span><span class="nt">container</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">langgraph-travel:latest</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-chat:latest</span>
 <span class="w">        </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span>
-<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"--role"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"supervisor"</span><span class="p p-Indicator">]</span>
-<span class="w">        </span><span class="nt">env</span><span class="p">:</span><span class="w"> </span><span class="nl">&amp;openai-env</span>
-<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OPENAI_API_KEY</span>
+<span class="w">        </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ANTHROPIC_API_KEY</span>
 <span class="w">            </span><span class="nt">valueFrom</span><span class="p">:</span>
 <span class="w">              </span><span class="nt">secretKeyRef</span><span class="p">:</span>
-<span class="w">                </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai-api-key</span>
-<span class="w">                </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OPENAI_API_KEY</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flights</span>
-<span class="w">      </span><span class="nt">container</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">langgraph-travel:latest</span>
-<span class="w">        </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span>
-<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"--role"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"flights"</span><span class="p p-Indicator">]</span>
-<span class="w">        </span><span class="nt">env</span><span class="p">:</span><span class="w"> </span><span class="nv">*openai-env</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hotels</span>
-<span class="w">      </span><span class="nt">container</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">langgraph-travel:latest</span>
-<span class="w">        </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span>
-<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"--role"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"hotels"</span><span class="p p-Indicator">]</span>
-<span class="w">        </span><span class="nt">env</span><span class="p">:</span><span class="w"> </span><span class="nv">*openai-env</span>
+<span class="w">                </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">anthropic-api-key</span>
+<span class="w">                </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ANTHROPIC_API_KEY</span>
 </code></pre></div>
-<p><code>pattern: Supervisor</code> lets the supervisor see every other agent, which is what
-<code>client.peers()</code> returns. <code>driftReload</code> is explained
-<a href="#change-a-workers-card-drift-reload">below</a>.</p>
-<h2 id="run-the-tests">Run the Tests<a class="headerlink" href="#run-the-tests" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>pytest
+<p><code>entry</code> names the agent that outside callers reach. With one agent, that is
+<code>chat-agent</code>. The API key comes from a Kubernetes secret rather than the
+manifest.</p>
+<p>The image runs as an unprivileged user, and the bundled Claude Code CLI writes
+state under <code>$HOME</code>, so the Dockerfile points <code>HOME</code> at a writable directory:</p>
+<div class="highlight"><pre><span></span><code><span class="k">ENV</span><span class="w"> </span><span class="nv">HOME</span><span class="o">=</span>/tmp/home
+<span class="k">RUN</span><span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/tmp/home<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>chmod<span class="w"> </span><span class="m">1777</span><span class="w"> </span>/tmp/home
+<span class="k">USER</span><span class="w"> </span><span class="s">nobody</span>
 </code></pre></div>
-<p>The tests mock the LLM and the calls between agents. Like the previous example,
-the supervisor only runs on Kynomesh, while a worker runs locally:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">OPENAI_API_KEY</span><span class="o">=</span>...<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>travel.main<span class="w"> </span>--role<span class="w"> </span>flights
-</code></pre></div>
-<h2 id="deploy-to-kynomesh">Deploy to Kynomesh<a class="headerlink" href="#deploy-to-kynomesh" title="Permanent link">&para;</a></h2>
+<p>Build the image, load it into your cluster, create the secret, and deploy:</p>
 <div class="highlight"><pre><span></span><code>make<span class="w"> </span>build
-<span class="c1"># kind:  kind load docker-image langgraph-travel:latest</span>
-<span class="c1"># k3d:   k3d image import langgraph-travel:latest -c &lt;cluster&gt;</span>
-kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>openai-api-key<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">OPENAI_API_KEY</span><span class="o">=</span>...
+<span class="c1"># kind:  kind load docker-image claude-chat:latest</span>
+<span class="c1"># k3d:   k3d image import claude-chat:latest -c &lt;cluster&gt;</span>
+kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>anthropic-api-key<span class="w"> </span>--from-literal<span class="o">=</span><span class="nv">ANTHROPIC_API_KEY</span><span class="o">=</span>...
 make<span class="w"> </span>deploy
-kubectl<span class="w"> </span>get<span class="w"> </span>agentset,agentdeploy
-kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/langgraph-travel-ingress<span class="w"> </span><span class="m">8490</span>
 </code></pre></div>
-<p>The supervisor logs the workers it found at startup:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>langgraph-travel-supervisor<span class="w"> </span>-c<span class="w"> </span>agent<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>discovered
+<p>Wait for the <code>AgentSet</code> to report <code>Running</code>:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>agentset
 </code></pre></div>
-<p>Ask it to plan a trip, then ask for something it has no worker for yet:</p>
+<h2 id="talk-to-the-agent">Talk to the Agent<a class="headerlink" href="#talk-to-the-agent" title="Permanent link">&para;</a></h2>
+<p>Forward the agent's ingress service to your machine and send it a message:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/claude-chat-ingress<span class="w"> </span><span class="m">8490</span>
+</code></pre></div>
 <div class="highlight"><pre><span></span><code>a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>send<span class="w"> </span><span class="s1">'Plan a weekend in Tokyo: flights from SFO and a hotel'</span>
-
-a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>send<span class="w"> </span><span class="s1">'What is the weather in Tokyo this weekend?'</span>
+<span class="w">  </span>send<span class="w"> </span><span class="s1">'What is 72 F in Celsius?'</span><span class="w"> </span>-o<span class="w"> </span>json
 </code></pre></div>
-<p>The first question is answered using the flights and hotels workers. For the
-second, the supervisor tells you it has no worker that can help.</p>
-<h2 id="add-a-worker-with-no-code-change">Add a Worker with No Code Change<a class="headerlink" href="#add-a-worker-with-no-code-change" title="Permanent link">&para;</a></h2>
-<p>Apply the manifest that adds the <code>weather</code> worker:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>manifests/agentset-with-weather.yaml
-kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-w
-</code></pre></div>
-<p>The new <code>weather</code> pod starts, and the supervisor's pod restarts. Kynomesh
-restarts it because its set of workers changed, and on startup it discovers all
-three:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>langgraph-travel-supervisor<span class="w"> </span>-c<span class="w"> </span>agent<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>discovered
-</code></pre></div>
-<p>Ask the weather question again. It is now answered:</p>
-<div class="highlight"><pre><span></span><code>a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>send<span class="w"> </span><span class="s1">'What is the weather in Tokyo this weekend?'</span>
-</code></pre></div>
-<p>The two manifests differ only by the added <code>weather</code> agent. The supervisor's
-code and image are identical. To remove the worker, apply the base manifest
-again and the supervisor goes back to two workers:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>manifests/agentset.yaml
-</code></pre></div>
-<h2 id="change-a-workers-card-drift-reload">Change a Worker's Card: Drift Reload<a class="headerlink" href="#change-a-workers-card-drift-reload" title="Permanent link">&para;</a></h2>
-<p>Discovery has one gap. The supervisor reads each worker's card once, at startup,
-and builds its tools and prompt from it. If a worker later gains a skill, the
-supervisor would keep describing it the old way until something restarted it.</p>
-<p><a href="../../../user-guide/reference/drift-reload/"><code>driftReload</code></a> closes that gap.
-When a worker's <code>AgentCard</code> changes, Kynomesh restarts the agents still holding
-the stale copy, so the supervisor rebuilds its tools from the new card.</p>
-<p>To try it, the workers read an optional <code>EXTRA_SKILLS</code> environment variable that
-adds skills to their card. It stands in for shipping a new version of an agent
-that gained a skill. Add one to <code>hotels</code>:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>patch<span class="w"> </span>agentset<span class="w"> </span>langgraph-travel<span class="w"> </span>--type<span class="o">=</span>json<span class="w"> </span>-p<span class="o">=</span><span class="s1">'[</span>
-<span class="s1">  {"op":"add","path":"/spec/agents/2/container/env/-",</span>
-<span class="s1">   "value":{"name":"EXTRA_SKILLS","value":"price-comparison"}}]'</span>
-</code></pre></div>
-<p><code>/spec/agents/2</code> is <code>hotels</code>, the third entry in the manifest. Once the <code>hotels</code>
-pods roll, Kynomesh sees that its card changed and restarts the supervisor. Its
-<code>ask_hotels</code> tool now lists the new skill. Check the supervisor pod's age to see
-the restart:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>pods
-</code></pre></div>
-<blockquote>
-<p>[!NOTE] <code>driftReload</code> is off by default because it restarts pods
-automatically. Enable it for the agents that depend on other agents' cards, as
-this manifest does.</p>
-</blockquote>
+<p>The reply comes from Claude, which called the <code>convert_temperature</code> tool to get
+22.22 C. The <code>-k</code> flag skips verification of the local TLS certificate, and
+<code>--override-host</code> makes the agent's advertised address match the forwarded port.</p>
 <h2 id="clean-up">Clean Up<a class="headerlink" href="#clean-up" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>make<span class="w"> </span>delete
 </code></pre></div>
-<h2 id="make-it-your-own">Make It Your Own<a class="headerlink" href="#make-it-your-own" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Write good cards.</strong> The supervisor routes by each worker's description and
-  skills, so describe what your workers do and when to use them.</li>
-<li><strong>Use any workers.</strong> They do not need to share the supervisor's image or
-  language. Anything that serves an <code>AgentCard</code> over A2A and is in the
-  <code>AgentSet</code> is discovered the same way.</li>
-<li><strong>Know what discovery covers.</strong> The supervisor's worker list is read at
-  startup, and Kynomesh restarts it when workers are added or removed, or when
-  <code>driftReload</code> detects a changed card.</li>
-</ul>
+<h2 id="use-your-own-agent">Use Your Own Agent<a class="headerlink" href="#use-your-own-agent" title="Permanent link">&para;</a></h2>
+<p>To serve a different Claude Agent SDK agent:</p>
+<ol>
+<li>Replace the tool in <code>tools.py</code>, or add more, and list each one in
+   <code>build_options()</code>: once in <code>mcp_servers</code> and once in <code>allowed_tools</code>. A tool
+   that is not in <code>allowed_tools</code> is denied.</li>
+<li>Update <code>SYSTEM_PROMPT</code> to tell the agent when to use each tool.</li>
+<li>Update the <code>AgentCard</code> name, description and skills to describe your agent.</li>
+<li>Change <code>image</code> and the <code>env</code> entries in the <code>AgentSet</code> to match your build
+   and the secrets it needs.</li>
+</ol>
+<blockquote>
+<p>[!WARNING] Keep <code>tools=[]</code> and <code>permission_mode="dontAsk"</code> unless you mean to
+give the agent more. Re-enabling built-in tools such as Bash lets a request
+run commands inside your pod.</p>
+</blockquote>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>The supervisor says it has no workers:</strong> check <code>kubectl get pods</code>. Workers
-  that are not running or whose cards cannot be fetched are skipped, and the
-  supervisor logs a warning for each.</li>
-<li><strong>A new worker is not picked up:</strong> check that it is in the <code>AgentSet</code> and that
-  the supervisor pod restarted after you applied the manifest.</li>
-<li><strong>A changed card is not picked up:</strong> check that <code>driftReload</code> is enabled.</li>
-<li><strong><code>no compatible transports found</code>:</strong> every <code>AgentInterface</code> in each agent's
-  card needs <code>protocol_version</code> set.</li>
+<li><strong><code>ANTHROPIC_API_KEY must be set</code>:</strong> the agent refuses to start without a key.
+  Export it locally, or create the <code>anthropic-api-key</code> secret before deploying.</li>
+<li><strong><code>no compatible transports found</code>:</strong> every <code>AgentInterface</code> in the card needs
+  <code>protocol_version</code> set.</li>
+<li><strong><code>AgentSet</code> never reaches <code>Running</code>:</strong> check <code>kubectl get pods</code>. The image
+  may not be loaded into your cluster, or the secret may be missing.</li>
+<li><strong>Requests are slow:</strong> each request starts the Claude Code CLI, so a few
+  seconds of overhead is expected.</li>
 </ul>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
-<p>You have now run a single agent, a supervisor with fixed workers, and a
-supervisor that discovers its workers. For other ways to wire agents together,
-see the <a href="../../../core-concepts/agentset/#patterns">AgentSet patterns</a>, and for
-tuning a running team, see
-<a href="../../../user-guide/reference/autoscaling/">Autoscaling</a>.</p>
+<p>One agent is a good start. In the next tutorial, <a href="../2-dynamic-peers/">Dynamic peers</a>,
+you build a supervisor that finds its Claude workers on its own.</p>
 
               
             </article>
@@ -1876,7 +1987,7 @@ tuning a running team, see
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../supervisor/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Supervisor" rel="prev">
+        <a href="../0-overview/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Overview" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1885,20 +1996,20 @@ tuning a running team, see
               <span class="md-footer__direction">
                 Previous
               </span>
-              Supervisor
+              Overview
             </div>
           </div>
         </a>
       
       
         
-        <a href="../../../operations/releases/" class="md-footer__link md-footer__link--next" aria-label="Next: Releases ⧉" rel="next">
+        <a href="../2-dynamic-peers/" class="md-footer__link md-footer__link--next" aria-label="Next: Dynamic Peers" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Releases ⧉
+              Dynamic Peers
             </div>
           </div>
           <div class="md-footer__button md-icon">

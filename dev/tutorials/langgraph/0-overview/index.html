@@ -262,18 +262,11 @@
   
   
   
-    
-
-  
-  
-  
     <li class="md-tabs__item">
-      <a href="./" class="md-tabs__link md-tabs__link--active">
+      <a href="../../overview/" class="md-tabs__link md-tabs__link--active">
         Tutorials
       </a>
     </li>
-  
-
   
 
       
@@ -985,6 +978,20 @@
               
   
   
+  
+    <li class="md-nav__item">
+      <a href="../../overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
     
   
   
@@ -992,18 +999,18 @@
     <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" checked>
       
       
       
       
-        <label class="md-nav__link" for="__nav_4_1">
+        <label class="md-nav__link" for="__nav_4_2">
           LangGraph
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="LangGraph" data-md-level="2">
-        <label class="md-nav__title" for="__nav_4_1">
+        <label class="md-nav__title" for="__nav_4_2">
           <span class="md-nav__icon md-icon"></span>
           LangGraph
         </label>
@@ -1105,7 +1112,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../single-agent/" class="md-nav__link">
+      <a href="../1-single-agent/" class="md-nav__link">
         Single Agent
       </a>
     </li>
@@ -1119,7 +1126,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../supervisor/" class="md-nav__link">
+      <a href="../2-supervisor/" class="md-nav__link">
         Supervisor
       </a>
     </li>
@@ -1133,7 +1140,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dynamic-peers/" class="md-nav__link">
+      <a href="../3-dynamic-peers/" class="md-nav__link">
         Dynamic Peers
       </a>
     </li>
@@ -1143,6 +1150,109 @@
           
         </ul>
       </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Claude Agent SDK
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Claude Agent SDK" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Claude Agent SDK
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../claude-agent-sdk/0-overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../claude-agent-sdk/1-single-agent/" class="md-nav__link">
+        Single Agent
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../claude-agent-sdk/2-dynamic-peers/" class="md-nav__link">
+        Dynamic Peers
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mixed-fleet/" class="md-nav__link">
+        Mixed Fleet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../external-agent/" class="md-nav__link">
+        External Agent
+      </a>
     </li>
   
 
@@ -1517,7 +1627,7 @@
             <article class="md-content__inner md-typeset">
               
                 
-  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/tutorials/langgraph/overview.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/tutorials/langgraph/0-overview.md" title="Edit this page" class="md-content__button md-icon">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
@@ -1549,17 +1659,17 @@ repository.</p>
 </thead>
 <tbody>
 <tr>
-<td><a href="../single-agent/">Single agent</a></td>
+<td><a href="../1-single-agent/">Single agent</a></td>
 <td>A conversational agent backed by OpenAI.</td>
 <td>Serving a LangGraph graph over A2A and deploying it as an <code>AgentSet</code>.</td>
 </tr>
 <tr>
-<td><a href="../supervisor/">Supervisor</a></td>
+<td><a href="../2-supervisor/">Supervisor</a></td>
 <td>A supervisor that delegates to a researcher and a calculator, one pod each.</td>
 <td>Splitting work across agents and calling a peer by name.</td>
 </tr>
 <tr>
-<td><a href="../dynamic-peers/">Dynamic peers</a></td>
+<td><a href="../3-dynamic-peers/">Dynamic peers</a></td>
 <td>A travel-planning supervisor that finds its workers at startup.</td>
 <td>Adding or removing a worker without changing code, and keeping the supervisor in sync when a worker changes.</td>
 </tr>
@@ -1637,7 +1747,7 @@ checks. Pass the proxy CA with <code>make build CA_CERT=/path/to/ca.pem</code>.<
   was not loaded into the cluster, or the <code>openai-api-key</code> secret is missing.</li>
 </ul>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
-<p>Start with the <a href="../single-agent/">Single agent</a> tutorial.</p>
+<p>Start with the <a href="../1-single-agent/">Single agent</a> tutorial.</p>
 
               
             </article>
@@ -1660,7 +1770,7 @@ checks. Pass the proxy CA with <code>make build CA_CERT=/path/to/ca.pem</code>.<
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../../../APIs/" class="md-footer__link md-footer__link--prev" aria-label="Previous: APIs" rel="prev">
+        <a href="../../overview/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Overview" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1669,14 +1779,14 @@ checks. Pass the proxy CA with <code>make build CA_CERT=/path/to/ca.pem</code>.<
               <span class="md-footer__direction">
                 Previous
               </span>
-              APIs
+              Overview
             </div>
           </div>
         </a>
       
       
         
-        <a href="../single-agent/" class="md-footer__link md-footer__link--next" aria-label="Next: Single Agent" rel="next">
+        <a href="../1-single-agent/" class="md-footer__link md-footer__link--next" aria-label="Next: Single Agent" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">

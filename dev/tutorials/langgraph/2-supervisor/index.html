@@ -262,18 +262,11 @@
   
   
   
-    
-
-  
-  
-  
     <li class="md-tabs__item">
-      <a href="../overview/" class="md-tabs__link md-tabs__link--active">
+      <a href="../../overview/" class="md-tabs__link md-tabs__link--active">
         Tutorials
       </a>
     </li>
-  
-
   
 
       
@@ -985,6 +978,20 @@
               
   
   
+  
+    <li class="md-nav__item">
+      <a href="../../overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
     
   
   
@@ -992,18 +999,18 @@
     <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_1" type="checkbox" id="__nav_4_1" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" checked>
       
       
       
       
-        <label class="md-nav__link" for="__nav_4_1">
+        <label class="md-nav__link" for="__nav_4_2">
           LangGraph
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="LangGraph" data-md-level="2">
-        <label class="md-nav__title" for="__nav_4_1">
+        <label class="md-nav__title" for="__nav_4_2">
           <span class="md-nav__icon md-icon"></span>
           LangGraph
         </label>
@@ -1015,7 +1022,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../overview/" class="md-nav__link">
+      <a href="../0-overview/" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -1029,7 +1036,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../single-agent/" class="md-nav__link">
+      <a href="../1-single-agent/" class="md-nav__link">
         Single Agent
       </a>
     </li>
@@ -1182,7 +1189,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dynamic-peers/" class="md-nav__link">
+      <a href="../3-dynamic-peers/" class="md-nav__link">
         Dynamic Peers
       </a>
     </li>
@@ -1192,6 +1199,109 @@
           
         </ul>
       </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Claude Agent SDK
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Claude Agent SDK" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Claude Agent SDK
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../claude-agent-sdk/0-overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../claude-agent-sdk/1-single-agent/" class="md-nav__link">
+        Single Agent
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../claude-agent-sdk/2-dynamic-peers/" class="md-nav__link">
+        Dynamic Peers
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mixed-fleet/" class="md-nav__link">
+        Mixed Fleet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../external-agent/" class="md-nav__link">
+        External Agent
+      </a>
     </li>
   
 
@@ -1615,7 +1725,7 @@
             <article class="md-content__inner md-typeset">
               
                 
-  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/tutorials/langgraph/supervisor.md" title="Edit this page" class="md-content__button md-icon">
+  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/tutorials/langgraph/2-supervisor.md" title="Edit this page" class="md-content__button md-icon">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
   </a>
 
@@ -1636,7 +1746,7 @@ pod and the supervisor calls the workers by name.</p>
 <p>Splitting work this way lets each agent have a focused prompt and its own tools.
 It also lets each one scale independently, so a busy worker can grow while the
 others stay small.</p>
-<p>This tutorial builds on <a href="../single-agent/">Single agent</a>. The full example is
+<p>This tutorial builds on <a href="../1-single-agent/">Single agent</a>. The full example is
 in
 <a href="https://github.com/kynoproj/kynomesh-examples/tree/main/langgraph/supervisor">kynoproj/kynomesh-examples</a>.</p>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/kynoproj/kynomesh-examples.git
@@ -1848,7 +1958,7 @@ kubectl<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </
   by name.</li>
 <li><strong>Add a worker.</strong> Add an agent to the <code>AgentSet</code>, give the supervisor a tool
   that calls it, and update the supervisor's prompt. The next tutorial,
-  <a href="../dynamic-peers/">Dynamic peers</a>, removes even that last step.</li>
+  <a href="../3-dynamic-peers/">Dynamic peers</a>, removes even that last step.</li>
 <li><strong>Scale one agent.</strong> Workers scale independently of the supervisor. See
   <a href="../../../user-guide/reference/autoscaling/">Autoscaling</a>.</li>
 </ul>
@@ -1886,7 +1996,7 @@ it discovers them instead.</p>
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../single-agent/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Single Agent" rel="prev">
+        <a href="../1-single-agent/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Single Agent" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1902,7 +2012,7 @@ it discovers them instead.</p>
       
       
         
-        <a href="../dynamic-peers/" class="md-footer__link md-footer__link--next" aria-label="Next: Dynamic Peers" rel="next">
+        <a href="../3-dynamic-peers/" class="md-footer__link md-footer__link--next" aria-label="Next: Dynamic Peers" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
