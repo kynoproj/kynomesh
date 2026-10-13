@@ -352,8 +352,7 @@ for details.
 An external peer may want an `Authorization` header or an API key, on its calls,
 on its `AgentCard`, or both. You supply them from your agent code: per call with
 a call context (Python) or `AttachServiceParams` (Go), and for the card with
-`card_headers` (Python) or `PeerClientWithCardHeaders` (Go). Card headers need
-Python SDK 0.1.2 or newer, or Go SDK 0.2.2 or newer. See
+`card_headers` (Python) or `PeerClientWithCardHeaders` (Go). See
 [Passing headers and credentials](../reference/configuration/external-agents.md#passing-headers-and-credentials).
 
 ### Peer Discovery Helpers

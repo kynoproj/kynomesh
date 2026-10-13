@@ -39,7 +39,7 @@ them:
 
 Agents in an `AgentSet` only see each other's `AgentCard`s and A2A endpoints, so
 they do not have to share a framework, or even a language. The examples
-repository includes two cross-cutting examples:
+repository includes some other cross-cutting examples:
 
 - [Mixed fleet](./mixed-fleet.md)
   ([example](https://github.com/kynoproj/kynomesh-examples/tree/main/mixed-fleet)):

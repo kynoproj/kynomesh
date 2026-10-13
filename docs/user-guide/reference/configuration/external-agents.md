@@ -289,9 +289,6 @@ A few things to know:
   header fails before any request is made, and the error never includes the
   value.
 
-> [!NOTE] Card headers need Python SDK 0.1.2 or newer, or Go SDK 0.2.2 or newer.
-> With older versions the card must be readable without credentials.
-
 ## Validation
 
 - `externalAgents[*].name` follows the same naming rules as `agents[*].name`

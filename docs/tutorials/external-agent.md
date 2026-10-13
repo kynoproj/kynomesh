@@ -212,9 +212,9 @@ kubectl logs -l app.kubernetes.io/name=external-hotels-hotels -c agent
 The `hotels` agent in this example accepts any caller. A real external agent
 usually does not: it wants an `Authorization` header or an API key, and may
 require it just to read its `AgentCard` too. Kynomesh's `externalAgents` carries
-only a name and a URL, so your agent supplies the credentials itself. This is not
-part of the example, but it is a small change to `ask_peer` in `peers.py`, which
-is where the supervisor calls a worker.
+only a name and a URL, so your agent supplies the credentials itself. This is
+not part of the example, but it is a small change to `ask_peer` in `peers.py`,
+which is where the supervisor calls a worker.
 
 First, store the credential in a Secret and expose it to the supervisor as an
 environment variable, next to the existing settings:
@@ -252,19 +252,16 @@ async def ask_peer(name: str, text: str) -> str:
 
 There are two different places the credential goes:
 
-- **`card_headers`** is sent only on the request that reads the peer's card. Skip
-  it if the card is public. It is applied when the client is first built and
-  ignored afterwards, so after rotating a token, call `client.forget_peer("hotels")`
-  to rebuild.
+- **`card_headers`** is sent only on the request that reads the peer's card.
+  Skip it if the card is public. It is applied when the client is first built
+  and ignored afterwards, so after rotating a token, call
+  `client.forget_peer("hotels")` to rebuild.
 - **The call context** is sent on each call. Reading the token for every call
   lets you rotate it without rebuilding the client.
 
 Only `hotels` carries the token, so your other workers never see it. For the Go
 version, the rules for header names, and TLS considerations, see
 [Passing headers and credentials](../user-guide/reference/configuration/external-agents.md#passing-headers-and-credentials).
-
-> [!NOTE] `card_headers` needs Python SDK 0.1.2 or newer, or Go SDK 0.2.2 or
-> newer (`PeerClientWithCardHeaders`).
 
 ## Clean Up
 
