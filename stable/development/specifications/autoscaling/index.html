@@ -1,0 +1,2175 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../../../assets/kyno04.svg">
+      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.3.9">
+    
+    
+      
+        <title>Autoscaling Mechanism - Kynomesh - Distributed multi-agent orchestration</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.1d29e8d0.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.cbb835fc.min.css">
+        
+      
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+
+  <script>function gtag(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],gtag("js",new Date),gtag("config","G-WD91ZWL6XY"),document.addEventListener("DOMContentLoaded",function(){document.forms.search&&document.forms.search.query.addEventListener("blur",function(){this.value&&gtag("event","search",{search_term:this.value})}),"undefined"!=typeof location$&&location$.subscribe(function(e){gtag("config","G-WD91ZWL6XY",{page_path:e.pathname})})})</script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-WD91ZWL6XY"></script>
+
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#autoscaling-mechanism" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Kynomesh - Distributed multi-agent orchestration" class="md-header__button md-logo" aria-label="Kynomesh - Distributed multi-agent orchestration" data-md-component="logo">
+      
+  <img src="../../../assets/kyno04-white.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Kynomesh - Distributed multi-agent orchestration
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Autoscaling Mechanism
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="white"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/kynoproj/kynomesh" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../../.." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../quick-start/" class="md-tabs__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../core-concepts/overview/" class="md-tabs__link">
+        User Guide
+      </a>
+    </li>
+  
+
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../tutorials/" class="md-tabs__link">
+        Tutorials
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../operations/releases/" class="md-tabs__link">
+        Operator Manual
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../development/" class="md-tabs__link md-tabs__link--active">
+        Contributor Guide
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="https://blog.kyno.sh" class="md-tabs__link">
+      Blog
+    </a>
+  </li>
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Kynomesh - Distributed multi-agent orchestration" class="md-nav__button md-logo" aria-label="Kynomesh - Distributed multi-agent orchestration" data-md-component="logo">
+      
+  <img src="../../../assets/kyno04-white.svg" alt="logo">
+
+    </a>
+    Kynomesh - Distributed multi-agent orchestration
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/kynoproj/kynomesh" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Getting Started
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Getting Started" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Getting Started
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick-start/" class="md-nav__link">
+        Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          User Guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="User Guide" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          User Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_1" type="checkbox" id="__nav_3_1" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_1">
+          Core Concepts
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Core Concepts" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_1">
+          <span class="md-nav__icon md-icon"></span>
+          Core Concepts
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../core-concepts/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../core-concepts/agentset/" class="md-nav__link">
+        AgentSet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../core-concepts/agentdeploy/" class="md-nav__link">
+        AgentDeploy
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_2">
+          SDKs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="SDKs" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_2">
+          <span class="md-nav__icon md-icon"></span>
+          SDKs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/sdks/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_3">
+          Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Reference" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_3">
+          <span class="md-nav__icon md-icon"></span>
+          Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/autoscaling/" class="md-nav__link">
+        Autoscaling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/rate-limiting/" class="md-nav__link">
+        Rate limiting
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/zero-downtime-pod-replacement/" class="md-nav__link">
+        Zero-Downtime Pod Replacement
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/drift-reload/" class="md-nav__link">
+        Drift Reload
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/gpu/" class="md-nav__link">
+        Running On GPU
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3_6" type="checkbox" id="__nav_3_3_6" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_3_6">
+          Configuration
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Configuration" data-md-level="3">
+        <label class="md-nav__title" for="__nav_3_3_6">
+          <span class="md-nav__icon md-icon"></span>
+          Configuration
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/labels-and-annotations/" class="md-nav__link">
+        Labels And Annotations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/environment-variables/" class="md-nav__link">
+        Environment Variables
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/container-resources/" class="md-nav__link">
+        Container Resources
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/volumes/" class="md-nav__link">
+        Volumes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/init-containers/" class="md-nav__link">
+        Init Containers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/sidecar-containers/" class="md-nav__link">
+        Sidecar Containers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/probes/" class="md-nav__link">
+        Liveness, Readiness, and Startup
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/agentset-customization/" class="md-nav__link">
+        AgentSet Customization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/external-agents/" class="md-nav__link">
+        External Agents
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/public-base-url/" class="md-nav__link">
+        Public Base URL
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/rolling-update/" class="md-nav__link">
+        Rolling Update
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/graceful-termination/" class="md-nav__link">
+        Graceful Termination
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/dra/" class="md-nav__link">
+        Dynamic Resource Allocation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/configuration/istio/" class="md-nav__link">
+        Running On Istio
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/kustomize/kustomize/" class="md-nav__link">
+        Kustomize Integration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/reference/a2acli/" class="md-nav__link">
+        A2A CLI
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../APIs/" class="md-nav__link">
+        APIs
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Tutorials" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_2">
+          LangGraph
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="LangGraph" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          LangGraph
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/langgraph/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/langgraph/1-single-agent/" class="md-nav__link">
+        Single Agent
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/langgraph/2-supervisor/" class="md-nav__link">
+        Supervisor
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/langgraph/3-dynamic-peers/" class="md-nav__link">
+        Dynamic Peers
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_3" type="checkbox" id="__nav_4_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_3">
+          Claude Agent SDK
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Claude Agent SDK" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          Claude Agent SDK
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/claude-agent-sdk/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/claude-agent-sdk/1-single-agent/" class="md-nav__link">
+        Single Agent
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/claude-agent-sdk/2-dynamic-peers/" class="md-nav__link">
+        Dynamic Peers
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/mixed-fleet/" class="md-nav__link">
+        Mixed Fleet
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../tutorials/external-agent/" class="md-nav__link">
+        External Agent
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Operator Manual
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Operator Manual" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Operator Manual
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/releases/" class="md-nav__link">
+        Releases ⧉
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/installation/" class="md-nav__link">
+        Installation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/validating-webhook/" class="md-nav__link">
+        Validating Webhook
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/controller-configuration/" class="md-nav__link">
+        Controller Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../operations/metrics/" class="md-nav__link">
+        Metrics
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6">
+          Contributor Guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Contributor Guide" data-md-level="1">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Contributor Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/" class="md-nav__link">
+        Development
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6_2" type="checkbox" id="__nav_6_2" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_6_2">
+          Specifications
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Specifications" data-md-level="2">
+        <label class="md-nav__title" for="__nav_6_2">
+          <span class="md-nav__icon md-icon"></span>
+          Specifications
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent-discovery/" class="md-nav__link">
+        Agent Discovery
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Autoscaling Mechanism
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Autoscaling Mechanism
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#problem" class="md-nav__link">
+    Problem
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#two-independent-loops" class="md-nav__link">
+    Two independent loops
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sampling" class="md-nav__link">
+    Sampling
+  </a>
+  
+    <nav class="md-nav" aria-label="Sampling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-per-replica-not-fleet-totals" class="md-nav__link">
+    Why per-replica, not fleet totals
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adaptive-averaging-window" class="md-nav__link">
+    Adaptive averaging window
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#persistence-and-rollout-isolation" class="md-nav__link">
+    Persistence and rollout isolation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#warmup-exclusion" class="md-nav__link">
+    Warmup exclusion
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#learning-capacity-the-saturation-knee" class="md-nav__link">
+    Learning capacity (the saturation knee)
+  </a>
+  
+    <nav class="md-nav" aria-label="Learning capacity (the saturation knee)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-means" class="md-nav__link">
+    What it means
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-its-learned" class="md-nav__link">
+    How it's learned
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#confidence" class="md-nav__link">
+    Confidence
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deciding-the-next-replica-count" class="md-nav__link">
+    Deciding the next replica count
+  </a>
+  
+    <nav class="md-nav" aria-label="Deciding the next replica count">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-the-mechanism-leans-toward-over-provisioning" class="md-nav__link">
+    Why the mechanism leans toward over-provisioning
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#guardrails-before-any-decision-is-acted-on" class="md-nav__link">
+    Guardrails before any decision is acted on
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-cadence" class="md-nav__link">
+    Production cadence
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#observability" class="md-nav__link">
+    Observability
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#non-goals" class="md-nav__link">
+    Non-goals
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    See Also
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../external-agents/" class="md-nav__link">
+        External Agents
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agentcard-drift-reload/" class="md-nav__link">
+        AgentCard Drift Detection and Dependent Reload
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../debugging/" class="md-nav__link">
+        How To Debug
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../static-code-analysis/" class="md-nav__link">
+        Static Code Analysis
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releasing/" class="md-nav__link">
+        How To Release
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://blog.kyno.sh" class="md-nav__link">
+        Blog
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#problem" class="md-nav__link">
+    Problem
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#two-independent-loops" class="md-nav__link">
+    Two independent loops
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sampling" class="md-nav__link">
+    Sampling
+  </a>
+  
+    <nav class="md-nav" aria-label="Sampling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-per-replica-not-fleet-totals" class="md-nav__link">
+    Why per-replica, not fleet totals
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adaptive-averaging-window" class="md-nav__link">
+    Adaptive averaging window
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#persistence-and-rollout-isolation" class="md-nav__link">
+    Persistence and rollout isolation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#warmup-exclusion" class="md-nav__link">
+    Warmup exclusion
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#learning-capacity-the-saturation-knee" class="md-nav__link">
+    Learning capacity (the saturation knee)
+  </a>
+  
+    <nav class="md-nav" aria-label="Learning capacity (the saturation knee)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-means" class="md-nav__link">
+    What it means
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-its-learned" class="md-nav__link">
+    How it's learned
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#confidence" class="md-nav__link">
+    Confidence
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deciding-the-next-replica-count" class="md-nav__link">
+    Deciding the next replica count
+  </a>
+  
+    <nav class="md-nav" aria-label="Deciding the next replica count">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-the-mechanism-leans-toward-over-provisioning" class="md-nav__link">
+    Why the mechanism leans toward over-provisioning
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#guardrails-before-any-decision-is-acted-on" class="md-nav__link">
+    Guardrails before any decision is acted on
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-cadence" class="md-nav__link">
+    Production cadence
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#observability" class="md-nav__link">
+    Observability
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#non-goals" class="md-nav__link">
+    Non-goals
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    See Also
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+  <a href="https://github.com/kynoproj/kynomesh/edit/main/docs/development/specifications/autoscaling.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
+
+
+
+<h1 id="autoscaling-mechanism">Autoscaling Mechanism<a class="headerlink" href="#autoscaling-mechanism" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>[!NOTE] This document is for Kynomesh contributors. It explains the design of
+the built-in autoscaler - how load is sampled, how capacity is learned, and
+how replica decisions are made. For the user-facing configuration reference,
+see <a href="../../../user-guide/reference/autoscaling/">Autoscaling</a>.</p>
+</blockquote>
+<h2 id="problem">Problem<a class="headerlink" href="#problem" title="Permanent link">&para;</a></h2>
+<p>An agent's right-sized replica count isn't knowable in advance: it depends on
+the agent's own per-request cost (model latency, tool calls, context size),
+which Kynomesh has no prior knowledge of. CPU/memory-based HPA is a poor fit for
+agentic workloads - a replica waiting on an upstream LLM call is idle on CPU
+while fully occupied on the resource that actually matters: how many concurrent
+requests it can hold at once. The autoscaler's job is to learn each
+AgentDeploy's actual per-replica concurrency capacity from observed traffic,
+with no agent-specific tuning required, and keep replicas near a target fraction
+of it.</p>
+<h2 id="two-independent-loops">Two independent loops<a class="headerlink" href="#two-independent-loops" title="Permanent link">&para;</a></h2>
+<p>Autoscaling is split into two concerns that run on their own schedules:</p>
+<ul>
+<li><strong>Sampling</strong> - periodically measures each AgentDeploy's current load and
+  records it as history.</li>
+<li><strong>Deciding</strong> - periodically reads that history, learns capacity from it, and
+  adjusts the replica count.</li>
+</ul>
+<p>They're independent so that history keeps accumulating even for an AgentDeploy
+with autoscaling disabled (<code>scale.disabled: true</code>) - turning it back on later
+doesn't start from zero. They also run at different cadences: sampling must
+happen often enough to build a usable history; deciding can run less often since
+replica changes are inherently coarse-grained and must respect cooldowns anyway.</p>
+<p>Both loops act per-AgentDeploy, independently - an agent's learned capacity and
+replica count are never shared with or influenced by any other AgentDeploy's
+history, even one running the same image in the same AgentSet.</p>
+<h2 id="sampling">Sampling<a class="headerlink" href="#sampling" title="Permanent link">&para;</a></h2>
+<p>On each tick, for every tracked AgentDeploy:</p>
+<ol>
+<li>Query the AgentSet's daemon for the fleet's current in-flight concurrency and
+   processing rate, averaged over a window (see below).</li>
+<li>Divide by the AgentDeploy's ready replica count to get <strong>per-replica</strong>
+   values, and record that as one history sample.</li>
+<li>Persist the growing history on a slower cadence (not every tick).</li>
+</ol>
+<p>A sample carries only concurrency and throughput - no latency. Latency is
+dominated by upstream LLM/tool response time and can't distinguish a saturated
+replica from a busy-but-healthy one, so it's deliberately excluded from the
+signal used to learn capacity.</p>
+<h3 id="why-per-replica-not-fleet-totals">Why per-replica, not fleet totals<a class="headerlink" href="#why-per-replica-not-fleet-totals" title="Permanent link">&para;</a></h3>
+<p>Capacity is a per-replica property. A measurement taken at 3 replicas and one
+taken at 10 replicas are only comparable once both are normalized to per-replica
+concurrency and rate - otherwise the learner would be tracking "how much load
+did the fleet handle" rather than "how much load does one replica saturate at,"
+which is the quantity actually needed to size the fleet.</p>
+<h3 id="adaptive-averaging-window">Adaptive averaging window<a class="headerlink" href="#adaptive-averaging-window" title="Permanent link">&para;</a></h3>
+<p>The window used to average load isn't fixed. It's derived from the typical time
+a request takes to complete (inferred from recent history via Little's Law:
+duration = concurrency / rate), then scaled up by a small multiple and clamped
+to a sane range. Before any duration can be inferred (cold start), a short
+default window is used instead.</p>
+<p>The intent: a fast workload (sub-second requests) is averaged over a short
+window so the signal tracks real-time load; a slow workload (tens of seconds per
+request, e.g. a multi-step agent call) is averaged over a longer window so a
+handful of slow in-flight requests don't look like transient noise that should
+be ignored.</p>
+<h3 id="persistence-and-rollout-isolation">Persistence and rollout isolation<a class="headerlink" href="#persistence-and-rollout-isolation" title="Permanent link">&para;</a></h3>
+<p>History is persisted per AgentDeploy so a controller restart or leader failover
+doesn't force every agent to relearn its capacity from scratch. It's bounded by
+both age and size, with recency-weighting (below) making old samples
+near-irrelevant long before either bound is hit.</p>
+<p>Every recorded sample is tagged with the pod spec it was collected under. When
+that spec changes (a new rollout), prior history is dropped rather than kept:
+capacity learned from a previous container image, resource request, or config is
+not a valid prior for a different one, and must not leak across a rollout.</p>
+<h3 id="warmup-exclusion">Warmup exclusion<a class="headerlink" href="#warmup-exclusion" title="Permanent link">&para;</a></h3>
+<p>Samples taken shortly after a replica-count change are excluded when learning. A
+pod that was just added is still warming caches and connections, so its reported
+capacity is transient, not steady state, and would otherwise bias the learned
+capacity low.</p>
+<h2 id="learning-capacity-the-saturation-knee">Learning capacity (the saturation knee)<a class="headerlink" href="#learning-capacity-the-saturation-knee" title="Permanent link">&para;</a></h2>
+<h3 id="what-it-means">What it means<a class="headerlink" href="#what-it-means" title="Permanent link">&para;</a></h3>
+<p>Below saturation, adding in-flight concurrency raises a replica's processing
+rate roughly linearly - more requests in flight, proportionally more throughput.
+At saturation, the rate plateaus: more concurrency doesn't buy more throughput,
+it just means requests queue or compete for the same constrained resource. The
+<strong>knee</strong> is the concurrency level at which that plateau begins - the practical
+ceiling on what one replica can usefully hold.</p>
+<p>This throughput-vs-concurrency relationship is <strong>mix-invariant</strong> - it doesn't
+depend on per-request latency or the blend of request types, so it holds up
+under a heterogeneous workload, unlike a fixed "N concurrent requests per
+replica" knob a user would otherwise have to guess and retune per agent.</p>
+<h3 id="how-its-learned">How it's learned<a class="headerlink" href="#how-its-learned" title="Permanent link">&para;</a></h3>
+<p>Recent history is weighted more heavily than old history, so the estimate tracks
+current capacity rather than a stale multi-day average. Samples are grouped by
+observed concurrency level, and the system walks that curve from low to high
+concurrency looking for where throughput growth tapers off - the last point
+still clearly rising is taken as the knee, which is the conservative choice: it
+biases the estimate toward <em>more</em> replicas, not fewer.</p>
+<p>If saturation was never actually observed in the available history (load never
+got heavy enough), the highest concurrency seen so far is reported as a lower
+bound ("at least this much capacity, probably more") rather than a confident
+answer.</p>
+<h3 id="confidence">Confidence<a class="headerlink" href="#confidence" title="Permanent link">&para;</a></h3>
+<p>Every estimate carries a confidence score that reflects how much to trust it,
+based on:</p>
+<ul>
+<li><strong>How long</strong> the system has been observing this agent - a few minutes of data
+  is treated as the full trustworthy window; estimates beyond that don't gain
+  further confidence from age alone.</li>
+<li><strong>How wide a concurrency range was actually observed</strong> - a curve glimpsed only
+  through a narrow range of load is less trustworthy than one traced across a
+  broad range, even with the same number of samples.</li>
+<li><strong>Whether saturation was actually observed</strong>, discounting a lower-bound
+  estimate relative to a confirmed one.</li>
+</ul>
+<p>Too little history at all (below a minimum sample count) reports zero confidence
+outright, signaling "fall back to a conservative default."</p>
+<h2 id="deciding-the-next-replica-count">Deciding the next replica count<a class="headerlink" href="#deciding-the-next-replica-count" title="Permanent link">&para;</a></h2>
+<p>Each decision tick, in order:</p>
+<ol>
+<li><strong>Fixed replica count</strong> (min equals max): hold at that number.</li>
+<li><strong>Current replicas outside the configured min/max</strong> (e.g. after a
+   configuration change, or a manual override): snap back into range
+   immediately, bypassing cooldowns - this is correcting a configuration
+   mismatch, not responding to load, so normal pacing doesn't apply.</li>
+<li><strong>No observable load</strong>: drift down toward the minimum over time, still paced
+   by the scale-down cooldown and step cap - an idle agent eventually settles at
+   its floor rather than staying at whatever count it last needed.</li>
+<li><strong>Otherwise, compute a target per-replica load</strong> from the learned capacity,
+   the configured target saturation percentage, and the estimate's confidence -
+   lower confidence pulls the target down, so a cold start deliberately
+   over-provisions (more replicas than strictly necessary) rather than risks
+   under-provisioning before enough data exists to know better. Desired replicas
+   is the current load divided by that target, rounded up and clamped to [min,
+   max].</li>
+<li><strong>Scaling up</strong> is refused outright if a configured rate-limit ceiling on
+   total in-flight requests is already reached - more replicas can't raise a
+   capped external ceiling, so adding them would be wasted capacity (see
+   <a href="../../../user-guide/reference/rate-limiting/">Rate limiting</a>). Otherwise it's
+   gated by the scale-up cooldown and capped to a maximum step size per tick. A
+   severe spike is flagged for observability but is <strong>not</strong> fast- tracked past
+   the cooldown or step cap - it simply keeps stepping up on every subsequent
+   tick until it catches up. A single-tick stampede to the maximum on one spike
+   would be worse than a bounded, if slightly slower, ramp.</li>
+<li><strong>Scaling down</strong> is symmetric: gated by the scale-down cooldown and capped to
+   a maximum step size per tick, for the same reason in reverse - a brief dip in
+   load shouldn't shed replicas the agent needs back a moment later.</li>
+</ol>
+<h3 id="why-the-mechanism-leans-toward-over-provisioning">Why the mechanism leans toward over-provisioning<a class="headerlink" href="#why-the-mechanism-leans-toward-over-provisioning" title="Permanent link">&para;</a></h3>
+<p>Running a few replicas more than strictly needed costs money; running fewer than
+needed costs request latency or queuing, which is the more visible and
+disruptive failure mode for callers. Several independent choices encode the same
+bias: the cold-start discount on the scaling target, the conservative
+(last-rising-point, not first-plateau-point) choice of knee, and scale-up having
+no cooldown-bypassing path for urgency while the "clamp back into range" and
+"drift toward minimum" paths are the only ones that skip pacing guards, and both
+correct toward configuration, not performance.</p>
+<h2 id="guardrails-before-any-decision-is-acted-on">Guardrails before any decision is acted on<a class="headerlink" href="#guardrails-before-any-decision-is-acted-on" title="Permanent link">&para;</a></h2>
+<p>Before a scaling decision is computed at all, a tick is skipped when:</p>
+<ul>
+<li>Autoscaling is disabled for this agent (sampling still continues regardless,
+  so history isn't lost while disabled).</li>
+<li>The AgentDeploy isn't in a healthy running state yet, or has zero ready
+  replicas to measure from.</li>
+<li>A rollout is already in flight for this AgentDeploy - scaling never fights a
+  concurrent spec update. This is the same kind of gate the
+  <a href="../agentcard-drift-reload/#proposed-direction">AgentCard drift reload</a>
+  mechanism defers to.</li>
+<li>A previous replica-count change hasn't finished converging yet.</li>
+<li>Too little time has passed since the last scaling operation (cooldown) -
+  checked cheaply up front, in addition to the more granular per-direction
+  cooldown checks in the decision itself.</li>
+<li>There's no history yet, or the freshest sample is too stale - the autoscaler
+  refuses to act on absent or outdated data rather than scale blind, guarding
+  against a stalled sampling loop or an unreachable metrics source silently
+  driving decisions off dead numbers.</li>
+</ul>
+<p>A decision that does go through only ever changes the target replica count;
+rolling that out to actual pods (creating/terminating them, respecting rollout
+batching) is the ordinary deployment reconciliation path, not something the
+autoscaler does itself.</p>
+<h2 id="production-cadence">Production cadence<a class="headerlink" href="#production-cadence" title="Permanent link">&para;</a></h2>
+<p>Sampling runs roughly once a minute per agent; scaling decisions are evaluated
+roughly every 30 seconds; a scale operation in either direction is followed by a
+90-second cooldown by default before another one can happen (in either
+direction - a cooldown from any scale event blocks all scaling, not just a
+repeat in the same direction). These cadences are fixed in the production
+deployment, not user- or environment-configurable - only the per-agent tuning
+knobs described in the
+<a href="../../../user-guide/reference/autoscaling/">user-facing configuration reference</a>
+(min/max, cooldown seconds, step size, target saturation) are.</p>
+<p>One practical consequence: because any scale event's cooldown blocks scaling in
+both directions, observing a realistic scale-up-then-scale-down sequence takes
+at least as long as the cooldown even under heavy load changes. Tests or demos
+that want to exercise both directions quickly need a short cooldown configured
+for that agent.</p>
+<h2 id="observability">Observability<a class="headerlink" href="#observability" title="Permanent link">&para;</a></h2>
+<p>Per-AgentDeploy metrics expose the learned capacity, its confidence, the current
+and last-computed-desired replica counts, how many load samples have been
+recorded, and a count of scale operations by direction. See
+<a href="../../../operations/metrics/">Metrics</a> for the full catalog. These metric series
+are cleaned up when an AgentDeploy is deleted, so they don't linger as untracked
+series.</p>
+<h2 id="non-goals">Non-goals<a class="headerlink" href="#non-goals" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>No cross-AgentDeploy learning.</strong> Each AgentDeploy's history and learned
+  capacity are entirely independent, even between AgentDeploys running the same
+  container image in the same AgentSet. An agent whose per-request cost varies
+  with its own traffic mix (not just its code) wouldn't be well served by
+  sharing another AgentDeploy's learned capacity.</li>
+<li><strong>No predictive or scheduled scaling.</strong> Capacity is learned only from recorded
+  history; there's no time-of-day or calendar-driven pre-scaling.</li>
+<li><strong>Not a replacement for the Kubernetes <code>scale</code> subresource contract.</strong>
+  AgentDeploy supports standard HPA/KEDA targeting specifically so operators who
+  need predictive, custom-metric, or multi-signal scaling aren't boxed into this
+  mechanism - see
+  <a href="../../../user-guide/reference/autoscaling/#kubernetes-hpa">Kubernetes HPA</a>.</li>
+</ul>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../../user-guide/reference/autoscaling/">Autoscaling (user guide)</a> -
+  configuration reference (<code>scale</code> block, defaults, HPA/KEDA opt-out).</li>
+<li><a href="../../../user-guide/reference/rate-limiting/">Rate limiting</a> - the in-flight
+  ceiling that caps scale-up.</li>
+<li><a href="../../../operations/metrics/">Metrics</a> - full Prometheus metrics catalog.</li>
+<li><a href="../agentcard-drift-reload/">AgentCard Drift Detection and Dependent Reload</a> -
+  another controller-side mechanism that defers to an in-flight rollout the same
+  way the autoscaler does.</li>
+</ul>
+
+              
+            </article>
+            
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../agent-discovery/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Agent Discovery" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Agent Discovery
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../external-agents/" class="md-footer__link md-footer__link--next" aria-label="Next: External Agents" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              External Agents
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.top", "content.tabs.link"], "search": "../../../assets/javascripts/workers/search.b97dbffb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.6c7ad80a.min.js"></script>
+      
+    
+  </body>
+</html>
