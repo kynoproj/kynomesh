@@ -218,8 +218,5 @@ its workers picks it up like any other.
 
 ## Next Steps
 
-For calling an agent that lives in another `AgentSet`, see
-[External Agents](../user-guide/reference/configuration/external-agents.md) and
-the
-[external-agent](https://github.com/kynoproj/kynomesh-examples/tree/main/external-agent)
-example.
+To call an agent that lives in another `AgentSet`, continue with
+[Calling an Agent in Another AgentSet](./external-agent.md).

@@ -129,9 +129,10 @@ the SDK decides whether to verify the peer's TLS certificate:
 
 An external agent that lives in **another AgentSet** is the exception. You
 connect to it directly through its in-cluster Kubernetes DNS name, for example
-`https://calculator-ingress.other-namespace.svc:8490`, and its broker presents a
-self-signed certificate rather than a valid, CA-signed one. Verification
-therefore fails.
+`https://tools-calculator.other-namespace.svc:8490` (the form is
+`<agentset>-<agent>`, here agent `calculator` in AgentSet `tools`), and its
+broker presents a self-signed certificate rather than a valid, CA-signed one.
+Verification therefore fails.
 
 To treat such a peer like a managed one, list its name in the
 `KYNOMESH_INSECURE_TLS_PEERS` environment variable on the **calling** agent's
@@ -154,7 +155,7 @@ spec:
             value: calculator
   externalAgents:
     - name: calculator
-      url: https://calculator-ingress.other-namespace.svc:8490
+      url: https://tools-calculator.other-namespace.svc:8490
 ```
 
 Your agent code does not change.
@@ -162,6 +163,134 @@ Your agent code does not change.
 > [!WARNING] Skipping verification means the SDK cannot tell whether it is
 > talking to the real peer. Use it only for agents you operate, and not for
 > endpoints reached over an untrusted network.
+
+## Passing headers and credentials
+
+A real external agent usually wants to know who is calling, for example with an
+`Authorization: Bearer ...` header or an API key. Kynomesh's API has no field
+for this: `externalAgents` carries only a name and a URL. Instead, your agent
+code supplies the credentials, and there are two separate places they may be
+needed:
+
+- **On calls to the agent.** You attach the headers to each call.
+- **On the peer's `AgentCard`.** Some agents also require credentials just to
+  read their card. The SDK reads the card when it first builds a client for the
+  peer, so you give it headers for that request.
+
+Keep secrets out of the manifest. Store each token in a Kubernetes Secret and
+expose it to the calling agent as an environment variable:
+
+```yaml
+env:
+  - name: FRAUD_CHECK_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: fraud-check-token
+        key: token
+```
+
+### Authenticating calls
+
+`peer_client` / `PeerClient` return a standard A2A client, and A2A calls accept
+"service parameters", which the client sends as HTTP headers (or as gRPC
+metadata when the gRPC transport is used).
+
+=== "Python"
+
+    Pass a `ClientCallContext` to the call:
+
+    ```python
+    import os
+
+    from a2a.client.client import ClientCallContext
+    from kynomesh import client
+
+    a2a_client = await client.peer_client("fraud-check")
+    context = ClientCallContext(
+        service_parameters={"Authorization": f"Bearer {os.environ['FRAUD_CHECK_TOKEN']}"}
+    )
+    async for response in a2a_client.send_message(request, context=context):
+        ...
+    ```
+
+=== "Go"
+
+    Attach the parameters to the context of the call:
+
+    ```go
+    c, err := client.PeerClient(ctx, "fraud-check")
+    if err != nil {
+        return err
+    }
+    ctx = a2aclient.AttachServiceParams(ctx, a2aclient.ServiceParams{
+        "Authorization": {"Bearer " + os.Getenv("FRAUD_CHECK_TOKEN")},
+    })
+    resp, err := c.SendMessage(ctx, &a2a.SendMessageRequest{Message: msg})
+    ```
+
+    To attach the same headers to every call instead, register an
+    `a2aclient.CallInterceptor` with
+    `client.PeerClient(ctx, "fraud-check", a2aclient.WithCallInterceptors(...))`.
+    Options are applied only when the peer's client is first built, because
+    clients are cached.
+
+Because you set them per call, you can refresh a token that expires, or send a
+different one per request, without rebuilding the cached client. Attach them
+only on calls to the peer that needs them: the headers go to whichever peer you
+call.
+
+### Peers that protect their AgentCard
+
+If the peer also requires credentials to read its card, building a client fails
+with an authorization error, because the SDK requests the card without any
+headers. Give it headers for that one request:
+
+=== "Python"
+
+    ```python
+    a2a_client = await client.peer_client(
+        "fraud-check",
+        card_headers={"Authorization": f"Bearer {os.environ['FRAUD_CHECK_TOKEN']}"},
+    )
+    ```
+
+    To fetch a card on its own, use
+    `client.resolve_agent_card("fraud-check", headers=...)`.
+
+=== "Go"
+
+    ```go
+    c, err := client.PeerClientWithCardHeaders(ctx, "fraud-check", map[string]string{
+        "Authorization": "Bearer " + os.Getenv("FRAUD_CHECK_TOKEN"),
+    })
+    ```
+
+    To fetch a card on its own, `client.ResolveAgentCard` accepts
+    `agentcard.WithRequestHeader(name, value)`.
+
+The card headers are sent **only** on the card request. They are not attached to
+calls, so authenticate calls as shown above. A peer that protects both needs
+both.
+
+A few things to know:
+
+- **Applied on first build only.** Clients are cached, so card headers passed on
+  later calls are ignored. After a token changes, call `client.forget_peer(...)`
+  (Python) or `client.ForgetPeer(...)` (Go), then build the client again.
+- **Redirects are not followed** on the card request, so the headers are never
+  re-sent to another host.
+- **Check TLS.** If the peer's certificate is not verified (a Managed peer, or
+  one named in `KYNOMESH_INSECURE_TLS_PEERS`), the SDK logs a warning, because
+  the headers can be read by anyone on the network path. Prefer a CA-signed
+  certificate for a peer that needs credentials.
+- **Header rules.** Names may contain only letters, digits, `-`, `_` and `.` and
+  must not start with `grpc-`. Values must be printable ASCII, so no line
+  breaks. The same name may not appear twice in different cases. A malformed
+  header fails before any request is made, and the error never includes the
+  value.
+
+> [!NOTE] Card headers need Python SDK 0.1.2 or newer, or Go SDK 0.2.2 or newer.
+> With older versions the card must be readable without credentials.
 
 ## Validation
 

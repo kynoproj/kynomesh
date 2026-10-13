@@ -341,12 +341,20 @@ verify them normally.
 
 If an external peer is an agent in **another AgentSet**, you reach it directly
 through its Kubernetes DNS name, and it has no valid, CA-signed certificate, so
-verification fails. Name it in the
-`KYNOMESH_INSECURE_TLS_PEERS` environment variable (comma-separated) on the
-calling agent to give it the same treatment as a Managed peer. Your code does not
-change. See
+verification fails. Name it in the `KYNOMESH_INSECURE_TLS_PEERS` environment
+variable (comma-separated) on the calling agent to give it the same treatment as
+a Managed peer. Your code does not change. See
 [External Agents](../reference/configuration/external-agents.md#calling-an-agent-in-another-agentset-tls)
 for details.
+
+### Peers That Require Credentials
+
+An external peer may want an `Authorization` header or an API key, on its calls,
+on its `AgentCard`, or both. You supply them from your agent code: per call with
+a call context (Python) or `AttachServiceParams` (Go), and for the card with
+`card_headers` (Python) or `PeerClientWithCardHeaders` (Go). Card headers need
+Python SDK 0.1.2 or newer, or Go SDK 0.2.2 or newer. See
+[Passing headers and credentials](../reference/configuration/external-agents.md#passing-headers-and-credentials).
 
 ### Peer Discovery Helpers
 
