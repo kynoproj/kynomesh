@@ -34,11 +34,11 @@ The `pattern` field controls how the controller derives each agent's peer list.
 The entry agent sees every other agent; non-entry agents see nobody. Equivalent
 to manager / orchestrator-worker / subagent designs.
 
-```
-       planner (entry)
-      /    |    \
-     v     v     v
-   worker1 worker2 worker3
+```mermaid
+flowchart TD
+    planner["planner (entry)"] --> worker1
+    planner --> worker2
+    planner --> worker3
 ```
 
 ### Handoff
@@ -46,12 +46,11 @@ to manager / orchestrator-worker / subagent designs.
 Every agent sees every other agent. Equivalent to a swarm or fully connected
 network - any agent can hand work off to any other.
 
-```
-   alpha <----> beta
-      ^          ^
-      |          |
-      v          v
-   gamma <----> delta
+```mermaid
+flowchart TB
+    alpha <--> beta
+    alpha <--> gamma
+    beta <--> gamma
 ```
 
 ### Sequential
@@ -59,8 +58,9 @@ network - any agent can hand work off to any other.
 Each agent sees only the next agent in declaration order. The entry must be
 `agents[0]`.
 
-```
-   alpha (entry) -> beta -> gamma -> delta
+```mermaid
+flowchart LR
+    alpha["alpha (entry)"] --> beta --> gamma --> delta
 ```
 
 Every pattern can also include agents this AgentSet doesn't deploy - see
