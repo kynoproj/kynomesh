@@ -58,6 +58,8 @@ implemented using any programming language.
 
 - [Quick Start](docs/quick-start.md)
 - [AgentSet](docs/core-concepts/agentset.md)
+- [Tutorials](docs/tutorials/README.md)
+- [Code Examples](https://github.com/kynoproj/kynomesh-examples)
 - [Autoscaling](docs/user-guide/reference/autoscaling.md)
 - [Rate Limiting](docs/user-guide/reference/rate-limiting.md)
 - [Drift Reload](docs/user-guide/reference/drift-reload.md)
@@ -65,7 +67,6 @@ implemented using any programming language.
 - [SDKs](docs/user-guide/sdks/overview.md)
   [[Python](https://github.com/kynoproj/kynomesh-py) |
   [Go](https://github.com/kynoproj/kynomesh-go)]
-- [APIs](docs/APIs.md)
 - [Development](docs/development/development.md)
 - [Static code analysis](docs/development/static-code-analysis.md)
 - [Contributing](CONTRIBUTING.md)
