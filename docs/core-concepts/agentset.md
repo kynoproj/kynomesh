@@ -47,13 +47,10 @@ Every agent sees every other agent. Equivalent to a swarm or fully connected
 network - any agent can hand work off to any other.
 
 ```mermaid
-flowchart LR
+flowchart TB
     alpha <--> beta
     alpha <--> gamma
-    alpha <--> delta
     beta <--> gamma
-    beta <--> delta
-    gamma <--> delta
 ```
 
 ### Sequential
