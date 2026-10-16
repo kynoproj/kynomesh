@@ -38,9 +38,9 @@ Agents in a Kynomesh `AgentSet` talk to each other over A2A, an open protocol. A
 caller needs three things from a peer: its name, its `AgentCard`, and an
 endpoint that speaks A2A. It needs nothing about how the peer is built.
 
-- **Frameworks.** LangGraph and the Claude Agent SDK do not speak A2A
-  themselves. In each case a small wrapper serves the agent over A2A, as you saw
-  in the single-agent tutorials. From outside the pod, the two look the same.
+- **Frameworks.** In these examples, a small wrapper serves each LangGraph or
+  Claude Agent SDK agent over A2A, as you saw in the single-agent tutorials.
+  From outside the pod, the two look the same.
 - **Languages.** Kynomesh provides SDKs for
   [Python and Go](../user-guide/sdks/overview.md), and any language with an A2A
   implementation can run on Kynomesh. The SDKs save you the wiring, but they are

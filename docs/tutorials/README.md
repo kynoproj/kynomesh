@@ -14,11 +14,12 @@ Whatever the framework, the approach is the same:
 
 ## Choose a Framework
 
-| Framework                                        | Tutorials                                                                                   |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| [LangGraph](./langgraph/README.md)               | Single agent, a supervisor with fixed workers, and a supervisor that discovers its workers. |
-| [Claude Agent SDK](./claude-agent-sdk/README.md) | Single agent, and a supervisor that discovers its workers.                                  |
-| [Google ADK](./google-adk/README.md) | Single agent, a supervisor with fixed workers, and a supervisor that discovers its workers. |
+| Framework                                        | Tutorials                                                                                                          |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| [LangGraph](./langgraph/README.md)               | Single agent, a supervisor with fixed workers, and a supervisor that discovers its workers.                        |
+| [Claude Agent SDK](./claude-agent-sdk/README.md) | Single agent, and a supervisor that discovers its workers.                                                         |
+| [Google ADK](./google-adk/README.md)             | Single agent, a supervisor with fixed workers, and a supervisor that discovers its workers.                        |
+| [CrewAI](./crewai/README.md)                     | Single agent, a supervisor with fixed workers, a supervisor that discovers its workers, and a sequential pipeline. |
 
 More frameworks are planned.
 
@@ -35,6 +36,9 @@ them:
   `AgentCards`, so you can add or remove a worker without changing code, and
   keep the supervisor in sync with
   [Drift Reload](../user-guide/reference/drift-reload.md).
+- **Sequential pipeline.** Chain agents so each does its part and hands the work
+  to the next, using the `Sequential` pattern. This one is covered in the
+  [CrewAI](./crewai/README.md) tutorials.
 
 ## Beyond One Framework
 
