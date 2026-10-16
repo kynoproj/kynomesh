@@ -18,6 +18,7 @@ Whatever the framework, the approach is the same:
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------- |
 | [LangGraph](./langgraph/README.md)               | Single agent, a supervisor with fixed workers, and a supervisor that discovers its workers. |
 | [Claude Agent SDK](./claude-agent-sdk/README.md) | Single agent, and a supervisor that discovers its workers.                                  |
+| [Google ADK](./google-adk/README.md) | Single agent, a supervisor with fixed workers, and a supervisor that discovers its workers. |
 
 More frameworks are planned.
 
