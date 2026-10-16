@@ -80,5 +80,5 @@ kubectl get agentset # or "as" as a short name
 - [External Agents](../user-guide/reference/configuration/external-agents.md) -
   reference an agent this AgentSet doesn't deploy.
 - [Tutorials](../tutorials/README.md) - run `AgentSet`s with LangGraph, Claude
-  Agent SDK, Google ADK and CrewAI agents, including a `Sequential` pipeline.
+  Agent SDK, Google ADK and CrewAI agents.
 - [APIs](../APIs.md) - full CRD reference.
