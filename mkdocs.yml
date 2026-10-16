@@ -100,6 +100,12 @@ nav:
           - Single Agent: "tutorials/google-adk/1-single-agent.md"
           - Supervisor: "tutorials/google-adk/2-supervisor.md"
           - Dynamic Peers: "tutorials/google-adk/3-dynamic-peers.md"
+      - CrewAI:
+          - Overview: "tutorials/crewai/README.md"
+          - Single Agent: "tutorials/crewai/1-single-agent.md"
+          - Supervisor: "tutorials/crewai/2-supervisor.md"
+          - Dynamic Peers: "tutorials/crewai/3-dynamic-peers.md"
+          - Sequential: "tutorials/crewai/4-sequential.md"
       - Mixed Fleet: "tutorials/mixed-fleet.md"
       - External Agent: "tutorials/external-agent.md"
   - Operator Manual:
