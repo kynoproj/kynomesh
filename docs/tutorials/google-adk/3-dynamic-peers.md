@@ -255,12 +255,20 @@ kubectl patch agentset adk-travel --type=json -p='[
 
 `/spec/agents/2` is `hotels`, the third entry in the manifest. Once the `hotels`
 pods roll, Kynomesh sees that its card changed and restarts the supervisor. Its
-`ask_hotels` tool now lists the new skill. Check the supervisor pod's age to see
-the restart:
+`ask_hotels` tool now lists the new skill.
+
+**Give it a few minutes.** The supervisor does not restart as soon as the
+`hotels` pods are back, and that is expected, not a failure. Kynomesh waits for
+the changed card to stay stable, and for the rollout to finish, before it
+restarts the supervisor.
 
 ```shell
-kubectl get pods
+kubectl get pods -w                    # the supervisor restarts after a few minutes
 ```
+
+Check the supervisor pod's age to confirm the restart. For the mechanism, see
+the
+[AgentCard drift detection spec](../../development/specifications/agentcard-drift-reload.md).
 
 > [!NOTE] `driftReload` is off by default because it restarts pods
 > automatically. Enable it for the agents that depend on other agents' cards, as
@@ -293,7 +301,9 @@ make delete
   supervisor logs a warning for each.
 - **A new worker is not picked up:** check that it is in the `AgentSet` and that
   the supervisor pod restarted after you applied the manifest.
-- **A changed card is not picked up:** check that `driftReload` is enabled.
+- **A changed card is not picked up:** check that `driftReload` is enabled, and
+  give it a few minutes. The restart waits for the card to stay stable and for
+  the rollout to finish.
 - **A worker error appears in the answer:** the supervisor reports a failed
   worker instead of crashing. Check that worker's logs with `kubectl logs`.
 - **`no compatible transports found`:** every `AgentInterface` in each agent's

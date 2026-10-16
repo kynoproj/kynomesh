@@ -1,10 +1,10 @@
 # Tutorial: A Supervisor That Discovers Its Workers
 
-In the [previous tutorial](./2-supervisor.md) the supervisor had a hard-coded tool
-for each worker. Adding a worker meant editing code and rebuilding the image.
-Here you build a travel-planning supervisor whose workers are **not named in its
-code**. At startup it asks Kynomesh who its workers are, reads what each one can
-do, and builds its tools from that.
+In the [previous tutorial](./2-supervisor.md) the supervisor had a hard-coded
+tool for each worker. Adding a worker meant editing code and rebuilding the
+image. Here you build a travel-planning supervisor whose workers are **not named
+in its code**. At startup it asks Kynomesh who its workers are, reads what each
+one can do, and builds its tools from that.
 
 The result: add or remove a worker in the `AgentSet` and the supervisor picks it
 up, with no code change and no new image.
@@ -246,12 +246,20 @@ kubectl patch agentset langgraph-travel --type=json -p='[
 
 `/spec/agents/2` is `hotels`, the third entry in the manifest. Once the `hotels`
 pods roll, Kynomesh sees that its card changed and restarts the supervisor. Its
-`ask_hotels` tool now lists the new skill. Check the supervisor pod's age to see
-the restart:
+`ask_hotels` tool now lists the new skill.
+
+**Give it a few minutes.** The supervisor does not restart as soon as the
+`hotels` pods are back, and that is expected, not a failure. Kynomesh waits for
+the changed card to stay stable, and for the rollout to finish, before it
+restarts the supervisor.
 
 ```shell
-kubectl get pods
+kubectl get pods -w                    # the supervisor restarts after a few minutes
 ```
+
+Check the supervisor pod's age to confirm the restart. For the mechanism, see
+the
+[AgentCard drift detection spec](../../development/specifications/agentcard-drift-reload.md).
 
 > [!NOTE] `driftReload` is off by default because it restarts pods
 > automatically. Enable it for the agents that depend on other agents' cards, as
@@ -281,7 +289,9 @@ make delete
   supervisor logs a warning for each.
 - **A new worker is not picked up:** check that it is in the `AgentSet` and that
   the supervisor pod restarted after you applied the manifest.
-- **A changed card is not picked up:** check that `driftReload` is enabled.
+- **A changed card is not picked up:** check that `driftReload` is enabled, and
+  give it a few minutes. The restart waits for the card to stay stable and for
+  the rollout to finish.
 - **`no compatible transports found`:** every `AgentInterface` in each agent's
   card needs `protocol_version` set.
 
