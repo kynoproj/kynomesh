@@ -223,3 +223,67 @@ func TestReconcile_NotFoundIsNoop(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, ctrl.Result{}, res)
 }
+
+func TestReconcile_NewAgentSetIsNotFailedWhileChildrenStart(t *testing.T) {
+	as := newAgentSet("greeter", "alpha", "beta")
+	r, c := newTestReconciler(t, as)
+
+	_, err := r.Reconcile(context.Background(), reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	var got kmv1.AgentSet
+	require.NoError(t, c.Get(context.Background(), types.NamespacedName{Namespace: testNamespace, Name: "greeter"}, &got))
+	assert.NotEqual(t, kmv1.AgentSetPhaseFailed, got.Status.Phase, "children that are still starting must not fail the set")
+	cond := got.Status.GetCondition(kmv1.AgentSetConditionAgentsHealthy)
+	require.NotNil(t, cond)
+	assert.Equal(t, metav1.ConditionUnknown, cond.Status)
+}
+
+func TestReconcile_AgentSetBecomesRunningWhenChildrenAreReady(t *testing.T) {
+	as := newAgentSet("greeter", "alpha", "beta")
+	r, c := newTestReconciler(t, as)
+	ctx := context.Background()
+	key := types.NamespacedName{Namespace: testNamespace, Name: "greeter"}
+
+	_, err := r.Reconcile(ctx, reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	var list kmv1.AgentDeployList
+	require.NoError(t, c.List(ctx, &list, client.InNamespace(testNamespace)))
+	require.Len(t, list.Items, 2)
+	for i := range list.Items {
+		ad := &list.Items[i]
+		ad.Status.Phase = kmv1.AgentDeployPhaseRunning
+		require.NoError(t, c.Status().Update(ctx, ad))
+	}
+
+	_, err = r.Reconcile(ctx, reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	var got kmv1.AgentSet
+	require.NoError(t, c.Get(ctx, key, &got))
+	assert.Equal(t, kmv1.AgentSetPhaseRunning, got.Status.Phase)
+	assert.Empty(t, got.Status.Message)
+}
+
+func TestReconcile_AgentSetFailsWhenAChildFails(t *testing.T) {
+	as := newAgentSet("greeter", "alpha", "beta")
+	r, c := newTestReconciler(t, as)
+	ctx := context.Background()
+
+	_, err := r.Reconcile(ctx, reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	var list kmv1.AgentDeployList
+	require.NoError(t, c.List(ctx, &list, client.InNamespace(testNamespace)))
+	require.Len(t, list.Items, 2)
+	list.Items[0].Status.Phase = kmv1.AgentDeployPhaseFailed
+	require.NoError(t, c.Status().Update(ctx, &list.Items[0]))
+
+	_, err = r.Reconcile(ctx, reconcileRequest("greeter"))
+	require.NoError(t, err)
+
+	var got kmv1.AgentSet
+	require.NoError(t, c.Get(ctx, types.NamespacedName{Namespace: testNamespace, Name: "greeter"}, &got))
+	assert.Equal(t, kmv1.AgentSetPhaseFailed, got.Status.Phase)
+}

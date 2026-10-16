@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/events"
 
 	kmv1 "github.com/kynoproj/kynomesh/pkg/apis/kynomesh/v1alpha1"
@@ -277,17 +278,133 @@ func TestNeedsUpdate(t *testing.T) {
 }
 
 func TestAggregateChildHealth(t *testing.T) {
+	child := func(desired map[string]*kmv1.AgentDeploy, name string, phase kmv1.AgentDeployPhase, ready, want uint32) *kmv1.AgentDeploy {
+		ad := desired[name].DeepCopy()
+		ad.Status.Phase = phase
+		ad.Status.ReadyReplicas = ready
+		ad.Status.DesiredReplicas = want
+		return ad
+	}
+
+	tests := []struct {
+		name          string
+		agents        []string
+		existing      func(desired map[string]*kmv1.AgentDeploy) map[string]*kmv1.AgentDeploy
+		wantPhase     kmv1.AgentSetPhase
+		wantCondition metav1.ConditionStatus
+		wantReason    string
+		wantMessage   string
+	}{
+		{
+			name:   "all children running",
+			agents: []string{"alpha", "beta"},
+			existing: func(d map[string]*kmv1.AgentDeploy) map[string]*kmv1.AgentDeploy {
+				return map[string]*kmv1.AgentDeploy{
+					"greeter-alpha": child(d, "greeter-alpha", kmv1.AgentDeployPhaseRunning, 1, 1),
+					"greeter-beta":  child(d, "greeter-beta", kmv1.AgentDeployPhaseRunning, 1, 1),
+				}
+			},
+			wantPhase:     kmv1.AgentSetPhaseRunning,
+			wantCondition: metav1.ConditionTrue,
+			wantReason:    "Successful",
+		},
+		{
+			name:   "children not created yet are starting, not failed",
+			agents: []string{"alpha"},
+			existing: func(map[string]*kmv1.AgentDeploy) map[string]*kmv1.AgentDeploy {
+				return map[string]*kmv1.AgentDeploy{}
+			},
+			wantPhase:     kmv1.AgentSetPhaseUnknown,
+			wantCondition: metav1.ConditionUnknown,
+			wantReason:    "AgentsStarting",
+			wantMessage:   "waiting for agents: [greeter-alpha: starting]",
+		},
+		{
+			name:   "children with pods not ready are starting, not failed",
+			agents: []string{"alpha", "beta"},
+			existing: func(d map[string]*kmv1.AgentDeploy) map[string]*kmv1.AgentDeploy {
+				return map[string]*kmv1.AgentDeploy{
+					"greeter-alpha": child(d, "greeter-alpha", kmv1.AgentDeployPhaseRunning, 1, 1),
+					"greeter-beta":  child(d, "greeter-beta", kmv1.AgentDeployPhaseUnknown, 0, 1),
+				}
+			},
+			wantPhase:     kmv1.AgentSetPhaseUnknown,
+			wantCondition: metav1.ConditionUnknown,
+			wantReason:    "AgentsStarting",
+			wantMessage:   "waiting for agents: [greeter-beta: 0/1 ready]",
+		},
+		{
+			name:   "a partially ready child and a missing child are both listed, sorted",
+			agents: []string{"alpha", "beta"},
+			existing: func(d map[string]*kmv1.AgentDeploy) map[string]*kmv1.AgentDeploy {
+				return map[string]*kmv1.AgentDeploy{
+					"greeter-alpha": child(d, "greeter-alpha", kmv1.AgentDeployPhaseUnknown, 1, 2),
+				}
+			},
+			wantPhase:     kmv1.AgentSetPhaseUnknown,
+			wantCondition: metav1.ConditionUnknown,
+			wantReason:    "AgentsStarting",
+			wantMessage:   "waiting for agents: [greeter-alpha: 1/2 ready, greeter-beta: starting]",
+		},
+		{
+			name:   "a failed child fails the set",
+			agents: []string{"alpha", "beta"},
+			existing: func(d map[string]*kmv1.AgentDeploy) map[string]*kmv1.AgentDeploy {
+				return map[string]*kmv1.AgentDeploy{
+					"greeter-alpha": child(d, "greeter-alpha", kmv1.AgentDeployPhaseRunning, 1, 1),
+					"greeter-beta":  child(d, "greeter-beta", kmv1.AgentDeployPhaseFailed, 0, 1),
+				}
+			},
+			wantPhase:     kmv1.AgentSetPhaseFailed,
+			wantCondition: metav1.ConditionFalse,
+			wantReason:    "AgentsUnhealthy",
+			wantMessage:   "unhealthy agents: [greeter-beta: Failed]",
+		},
+		{
+			name:   "failed wins over starting, and names are sorted",
+			agents: []string{"alpha", "beta", "gamma"},
+			existing: func(d map[string]*kmv1.AgentDeploy) map[string]*kmv1.AgentDeploy {
+				return map[string]*kmv1.AgentDeploy{
+					"greeter-gamma": child(d, "greeter-gamma", kmv1.AgentDeployPhaseFailed, 0, 1),
+					"greeter-alpha": child(d, "greeter-alpha", kmv1.AgentDeployPhaseFailed, 0, 1),
+					"greeter-beta":  child(d, "greeter-beta", kmv1.AgentDeployPhaseUnknown, 0, 1),
+				}
+			},
+			wantPhase:     kmv1.AgentSetPhaseFailed,
+			wantCondition: metav1.ConditionFalse,
+			wantReason:    "AgentsUnhealthy",
+			wantMessage:   "unhealthy agents: [greeter-alpha: Failed, greeter-gamma: Failed]",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
+			as := newAgentSet("greeter", tt.agents...)
+			as.Status.InitializeConditions(kmv1.AgentSetConditionAgentsHealthy)
+			desired, err := r.buildDesired(as)
+			require.NoError(t, err)
+
+			r.aggregateChildHealth(as, desired, tt.existing(desired))
+
+			assert.Equal(t, tt.wantPhase, as.Status.Phase)
+			assert.Equal(t, tt.wantMessage, as.Status.Message)
+			cond := as.Status.GetCondition(kmv1.AgentSetConditionAgentsHealthy)
+			require.NotNil(t, cond)
+			assert.Equal(t, tt.wantCondition, cond.Status)
+			assert.Equal(t, tt.wantReason, cond.Reason)
+		})
+	}
+}
+
+func TestAggregateChildHealth_NoAgents(t *testing.T) {
 	r := NewReconciler(nil, mustScheme(t), nil, nil, &events.FakeRecorder{}, "test-image:latest", corev1.PullIfNotPresent)
-	as := newAgentSet("greeter", "alpha")
-	desired, err := r.buildDesired(as)
-	require.NoError(t, err)
+	as := newAgentSet("greeter")
+	as.Status.InitializeConditions(kmv1.AgentSetConditionAgentsHealthy)
 
-	running := desired["greeter-alpha"].DeepCopy()
-	running.Status.Phase = kmv1.AgentDeployPhaseRunning
+	r.aggregateChildHealth(as, map[string]*kmv1.AgentDeploy{}, map[string]*kmv1.AgentDeploy{})
 
-	r.aggregateChildHealth(as, desired, map[string]*kmv1.AgentDeploy{running.Name: running})
-	assert.Equal(t, kmv1.AgentSetPhaseRunning, as.Status.Phase)
-
-	r.aggregateChildHealth(as, desired, map[string]*kmv1.AgentDeploy{})
-	assert.Equal(t, kmv1.AgentSetPhaseFailed, as.Status.Phase, "missing child should mark Failed")
+	assert.Equal(t, kmv1.AgentSetPhaseUnknown, as.Status.Phase)
+	cond := as.Status.GetCondition(kmv1.AgentSetConditionAgentsHealthy)
+	require.NotNil(t, cond)
+	assert.Equal(t, "NoAgents", cond.Reason)
 }

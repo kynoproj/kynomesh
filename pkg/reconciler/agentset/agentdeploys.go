@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"sort"
+	"strings"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -98,6 +100,12 @@ func (r *Reconciler) listOwnedAgentDeploys(ctx context.Context, as *kmv1.AgentSe
 }
 
 // aggregateChildHealth folds child phases into the parent's Phase/Conditions.
+//
+// Only a child that has actually failed makes the AgentSet Failed. A child that
+// does not exist yet, or whose pods are not all ready, is still starting: the
+// AgentSet then has no phase (Unknown) and says what it is waiting for. This
+// keeps an AgentSet from flipping to Failed while it is being created, rolled
+// out or scaled.
 func (r *Reconciler) aggregateChildHealth(
 	as *kmv1.AgentSet,
 	desired map[string]*kmv1.AgentDeploy,
@@ -108,27 +116,45 @@ func (r *Reconciler) aggregateChildHealth(
 		as.Status.MarkUnknown(kmv1.AgentSetConditionAgentsHealthy, "NoAgents", "No agents are defined")
 		return
 	}
-	var unhealthy []string
-	for name := range desired {
+	var failed, starting []string
+	for _, name := range sortedNames(desired) {
 		ad, ok := existing[name]
-		if !ok {
-			unhealthy = append(unhealthy, name+":missing")
-			continue
-		}
-		if ad.Status.Phase != kmv1.AgentDeployPhaseRunning {
-			unhealthy = append(unhealthy, fmt.Sprintf("%s:%s", name, ad.Status.Phase))
+		switch {
+		case !ok:
+			starting = append(starting, name+": starting")
+		case ad.Status.Phase == kmv1.AgentDeployPhaseFailed:
+			failed = append(failed, fmt.Sprintf("%s: %s", name, ad.Status.Phase))
+		case ad.Status.Phase != kmv1.AgentDeployPhaseRunning:
+			starting = append(starting, fmt.Sprintf("%s: %d/%d ready", name, ad.Status.ReadyReplicas, ad.Status.DesiredReplicas))
 		}
 	}
-	if len(unhealthy) == 0 {
+	switch {
+	case len(failed) > 0:
+		as.Status.Phase = kmv1.AgentSetPhaseFailed
+		msg := fmt.Sprintf("unhealthy agents: [%s]", strings.Join(failed, ", "))
+		as.Status.Message = msg
+		as.Status.MarkFalse(kmv1.AgentSetConditionAgentsHealthy, "AgentsUnhealthy", msg)
+	case len(starting) > 0:
+		as.Status.Phase = kmv1.AgentSetPhaseUnknown
+		msg := fmt.Sprintf("waiting for agents: [%s]", strings.Join(starting, ", "))
+		as.Status.Message = msg
+		as.Status.MarkUnknown(kmv1.AgentSetConditionAgentsHealthy, "AgentsStarting", msg)
+	default:
 		as.Status.Phase = kmv1.AgentSetPhaseRunning
 		as.Status.Message = ""
 		as.Status.MarkTrue(kmv1.AgentSetConditionAgentsHealthy)
-		return
 	}
-	as.Status.Phase = kmv1.AgentSetPhaseFailed
-	msg := fmt.Sprintf("unhealthy agents: %v", unhealthy)
-	as.Status.Message = msg
-	as.Status.MarkFalse(kmv1.AgentSetConditionAgentsHealthy, "AgentsUnhealthy", msg)
+}
+
+// sortedNames returns the keys of m in lexical order, so status messages are
+// stable from one reconcile to the next.
+func sortedNames(m map[string]*kmv1.AgentDeploy) []string {
+	names := make([]string, 0, len(m))
+	for name := range m {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }
 
 func (r *Reconciler) buildDesired(as *kmv1.AgentSet) (map[string]*kmv1.AgentDeploy, error) {
