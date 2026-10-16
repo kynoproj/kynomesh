@@ -2166,10 +2166,16 @@ that gained a skill. Add one to <code>hotels</code>:</p>
 </code></pre></div>
 <p><code>/spec/agents/2</code> is <code>hotels</code>, the third entry in the manifest. Once the <code>hotels</code>
 pods roll, Kynomesh sees that its card changed and restarts the supervisor. Its
-<code>ask_hotels</code> tool now lists the new skill. Check the supervisor pod's age to see
-the restart:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>pods
+<code>ask_hotels</code> tool now lists the new skill.</p>
+<p><strong>Give it a few minutes.</strong> The supervisor does not restart as soon as the
+<code>hotels</code> pods are back, and that is expected, not a failure. Kynomesh waits for
+the changed card to stay stable, and for the rollout to finish, before it
+restarts the supervisor.</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-w<span class="w">                    </span><span class="c1"># the supervisor restarts after a few minutes</span>
 </code></pre></div>
+<p>Check the supervisor pod's age to confirm the restart. For the mechanism, see
+the
+<a href="../../../development/specifications/agentcard-drift-reload/">AgentCard drift detection spec</a>.</p>
 <blockquote>
 <p>[!NOTE] <code>driftReload</code> is off by default because it restarts pods
 automatically. Enable it for the agents that depend on other agents' cards, as
@@ -2199,7 +2205,9 @@ this manifest does.</p>
   supervisor logs a warning for each.</li>
 <li><strong>A new worker is not picked up:</strong> check that it is in the <code>AgentSet</code> and that
   the supervisor pod restarted after you applied the manifest.</li>
-<li><strong>A changed card is not picked up:</strong> check that <code>driftReload</code> is enabled.</li>
+<li><strong>A changed card is not picked up:</strong> check that <code>driftReload</code> is enabled, and
+  give it a few minutes. The restart waits for the card to stay stable and for
+  the rollout to finish.</li>
 <li><strong>A worker error appears in the answer:</strong> the supervisor reports a failed
   worker instead of crashing. Check that worker's logs with <code>kubectl logs</code>.</li>
 <li><strong><code>no compatible transports found</code>:</strong> every <code>AgentInterface</code> in each agent's
