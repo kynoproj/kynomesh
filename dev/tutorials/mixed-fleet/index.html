@@ -1257,6 +1257,109 @@
               
   
   
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_5">
+          CrewAI
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="CrewAI" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_5">
+          <span class="md-nav__icon md-icon"></span>
+          CrewAI
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crewai/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crewai/1-single-agent/" class="md-nav__link">
+        Single Agent
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crewai/2-supervisor/" class="md-nav__link">
+        Supervisor
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crewai/3-dynamic-peers/" class="md-nav__link">
+        Dynamic Peers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../crewai/4-sequential/" class="md-nav__link">
+        Sequential
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
     
   
   
@@ -1833,9 +1936,9 @@ It builds on the two Dynamic peers tutorials, so read
 caller needs three things from a peer: its name, its <code>AgentCard</code>, and an
 endpoint that speaks A2A. It needs nothing about how the peer is built.</p>
 <ul>
-<li><strong>Frameworks.</strong> LangGraph and the Claude Agent SDK do not speak A2A
-  themselves. In each case a small wrapper serves the agent over A2A, as you saw
-  in the single-agent tutorials. From outside the pod, the two look the same.</li>
+<li><strong>Frameworks.</strong> In these examples, a small wrapper serves each LangGraph or
+  Claude Agent SDK agent over A2A, as you saw in the single-agent tutorials.
+  From outside the pod, the two look the same.</li>
 <li><strong>Languages.</strong> Kynomesh provides SDKs for
   <a href="../../user-guide/sdks/overview/">Python and Go</a>, and any language with an A2A
   implementation can run on Kynomesh. The SDKs save you the wiring, but they are
@@ -2046,7 +2149,7 @@ to a Go worker, and the reverse.</p>
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../google-adk/3-dynamic-peers/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Dynamic Peers" rel="prev">
+        <a href="../crewai/4-sequential/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Sequential" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -2055,7 +2158,7 @@ to a Go worker, and the reverse.</p>
               <span class="md-footer__direction">
                 Previous
               </span>
-              Dynamic Peers
+              Sequential
             </div>
           </div>
         </a>
