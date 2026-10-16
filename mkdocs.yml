@@ -95,6 +95,11 @@ nav:
           - Overview: "tutorials/claude-agent-sdk/README.md"
           - Single Agent: "tutorials/claude-agent-sdk/1-single-agent.md"
           - Dynamic Peers: "tutorials/claude-agent-sdk/2-dynamic-peers.md"
+      - Google ADK:
+          - Overview: "tutorials/google-adk/README.md"
+          - Single Agent: "tutorials/google-adk/1-single-agent.md"
+          - Supervisor: "tutorials/google-adk/2-supervisor.md"
+          - Dynamic Peers: "tutorials/google-adk/3-dynamic-peers.md"
       - Mixed Fleet: "tutorials/mixed-fleet.md"
       - External Agent: "tutorials/external-agent.md"
   - Operator Manual:
