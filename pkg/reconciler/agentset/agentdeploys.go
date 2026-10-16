@@ -103,9 +103,7 @@ func (r *Reconciler) listOwnedAgentDeploys(ctx context.Context, as *kmv1.AgentSe
 //
 // Only a child that has actually failed makes the AgentSet Failed. A child that
 // does not exist yet, or whose pods are not all ready, is still starting: the
-// AgentSet then has no phase (Unknown) and says what it is waiting for. This
-// keeps an AgentSet from flipping to Failed while it is being created, rolled
-// out or scaled.
+// AgentSet then has no phase (Unknown) and says what it is waiting for.
 func (r *Reconciler) aggregateChildHealth(
 	as *kmv1.AgentSet,
 	desired map[string]*kmv1.AgentDeploy,
