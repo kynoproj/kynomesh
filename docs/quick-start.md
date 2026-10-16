@@ -160,6 +160,8 @@ kubectl delete -f https://raw.githubusercontent.com/kynoproj/kynomesh-go/refs/he
 
 - Read the full example, including the Go source, at
   [kynomesh-go/examples/research-assistant](https://github.com/kynoproj/kynomesh-go/tree/main/examples/research-assistant).
+- Follow the [tutorials](./tutorials/README.md) to run agents built with
+  LangGraph, Claude Agent SDK, Google ADK or CrewAI.
 - Explore other patterns (`Handoff`, `Sequential`) in
   [AgentSet](./core-concepts/agentset.md). The agent code does not change - only
   the AgentSet `pattern` does.
