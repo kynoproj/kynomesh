@@ -1260,6 +1260,198 @@
   
   
   
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          Google ADK
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Google ADK" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          Google ADK
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/google-adk/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/google-adk/1-single-agent/" class="md-nav__link">
+        Single Agent
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/google-adk/2-supervisor/" class="md-nav__link">
+        Supervisor
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/google-adk/3-dynamic-peers/" class="md-nav__link">
+        Dynamic Peers
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_5">
+          CrewAI
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="CrewAI" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_5">
+          <span class="md-nav__icon md-icon"></span>
+          CrewAI
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/crewai/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/crewai/1-single-agent/" class="md-nav__link">
+        Single Agent
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/crewai/2-supervisor/" class="md-nav__link">
+        Supervisor
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/crewai/3-dynamic-peers/" class="md-nav__link">
+        Dynamic Peers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/crewai/4-sequential/" class="md-nav__link">
+        Sequential
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     <li class="md-nav__item">
       <a href="../../tutorials/mixed-fleet/" class="md-nav__link">
         Mixed Fleet
@@ -1713,25 +1905,22 @@ know who they are allowed to talk to.</p>
 <h3 id="supervisor">Supervisor<a class="headerlink" href="#supervisor" title="Permanent link">&para;</a></h3>
 <p>The entry agent sees every other agent; non-entry agents see nobody. Equivalent
 to manager / orchestrator-worker / subagent designs.</p>
-<div class="highlight"><pre><span></span><code>       planner (entry)
-      /    |    \
-     v     v     v
-   worker1 worker2 worker3
-</code></pre></div>
+<pre class="mermaid"><code>flowchart TD
+    planner["planner (entry)"] --&gt; worker1
+    planner --&gt; worker2
+    planner --&gt; worker3</code></pre>
 <h3 id="handoff">Handoff<a class="headerlink" href="#handoff" title="Permanent link">&para;</a></h3>
 <p>Every agent sees every other agent. Equivalent to a swarm or fully connected
 network - any agent can hand work off to any other.</p>
-<div class="highlight"><pre><span></span><code>   alpha &lt;----&gt; beta
-      ^          ^
-      |          |
-      v          v
-   gamma &lt;----&gt; delta
-</code></pre></div>
+<pre class="mermaid"><code>flowchart TB
+    alpha &lt;--&gt; beta
+    alpha &lt;--&gt; gamma
+    beta &lt;--&gt; gamma</code></pre>
 <h3 id="sequential">Sequential<a class="headerlink" href="#sequential" title="Permanent link">&para;</a></h3>
 <p>Each agent sees only the next agent in declaration order. The entry must be
 <code>agents[0]</code>.</p>
-<div class="highlight"><pre><span></span><code>   alpha (entry) -&gt; beta -&gt; gamma -&gt; delta
-</code></pre></div>
+<pre class="mermaid"><code>flowchart LR
+    alpha["alpha (entry)"] --&gt; beta --&gt; gamma --&gt; delta</code></pre>
 <p>Every pattern can also include agents this AgentSet doesn't deploy - see
 <a href="../../user-guide/reference/configuration/external-agents/">External Agents</a>.</p>
 <h2 id="kubectl">Kubectl<a class="headerlink" href="#kubectl" title="Permanent link">&para;</a></h2>
@@ -1743,6 +1932,8 @@ network - any agent can hand work off to any other.</p>
 <li><a href="../agentdeploy/">AgentDeploy</a> - per-agent deployment and broker injection.</li>
 <li><a href="../../user-guide/reference/configuration/external-agents/">External Agents</a> -
   reference an agent this AgentSet doesn't deploy.</li>
+<li><a href="../../tutorials/">Tutorials</a> - run <code>AgentSet</code>s with LangGraph, Claude
+  Agent SDK, Google ADK and CrewAI agents.</li>
 <li><a href="../../APIs/">APIs</a> - full CRD reference.</li>
 </ul>
 
