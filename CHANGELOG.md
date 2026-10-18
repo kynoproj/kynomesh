@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.7.2 (2026-10-17)
+
+ * [b9bd261](https://github.com/kynoproj/kynomesh/commit/b9bd2612f8f52b6ecda3e456840693eaff02f535) Update manifests to v0.7.2
+ * [173bd76](https://github.com/kynoproj/kynomesh/commit/173bd76d7acd37399dbf03451da4ab26bf6f8cd1) fix: agentset reporting failed status during initialization (#265)
+
+### Contributors
+
+ * Derek Wang
+
 ## v0.7.1 (2026-10-12)
 
  * [c68404f](https://github.com/kynoproj/kynomesh/commit/c68404ffc7881afac5f3523a728393deaeaadee8) Update manifests to v0.7.1
