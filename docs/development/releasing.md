@@ -23,8 +23,6 @@ branch, simply create a branch from `main`.
 1. Find the new release tag, and edit the release notes.
 1. [Non RC release only] Recreate a `stable` tag against the latest release.
    ```shell
-   git tag -d stable
-   git tag -a stable -m stable
-   git push -d {your-remote} stable
-   git push {your-remote} stable
+   git tag -f -a stable -m stable
+   git push -f {your-remote} stable
    ```
