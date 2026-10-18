@@ -1231,6 +1231,198 @@
   
   
   
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_4">
+          Google ADK
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Google ADK" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_4">
+          <span class="md-nav__icon md-icon"></span>
+          Google ADK
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="google-adk/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="google-adk/1-single-agent/" class="md-nav__link">
+        Single Agent
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="google-adk/2-supervisor/" class="md-nav__link">
+        Supervisor
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="google-adk/3-dynamic-peers/" class="md-nav__link">
+        Dynamic Peers
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_5">
+          CrewAI
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="CrewAI" data-md-level="2">
+        <label class="md-nav__title" for="__nav_4_5">
+          <span class="md-nav__icon md-icon"></span>
+          CrewAI
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="crewai/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="crewai/1-single-agent/" class="md-nav__link">
+        Single Agent
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="crewai/2-supervisor/" class="md-nav__link">
+        Supervisor
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="crewai/3-dynamic-peers/" class="md-nav__link">
+        Dynamic Peers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="crewai/4-sequential/" class="md-nav__link">
+        Sequential
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
     <li class="md-nav__item">
       <a href="mixed-fleet/" class="md-nav__link">
         Mixed Fleet
@@ -1659,6 +1851,14 @@ Kubernetes cluster.</p>
 <td><a href="claude-agent-sdk/">Claude Agent SDK</a></td>
 <td>Single agent, and a supervisor that discovers its workers.</td>
 </tr>
+<tr>
+<td><a href="google-adk/">Google ADK</a></td>
+<td>Single agent, a supervisor with fixed workers, and a supervisor that discovers its workers.</td>
+</tr>
+<tr>
+<td><a href="crewai/">CrewAI</a></td>
+<td>Single agent, a supervisor with fixed workers, a supervisor that discovers its workers, and a sequential pipeline.</td>
+</tr>
 </tbody>
 </table>
 <p>More frameworks are planned.</p>
@@ -1674,6 +1874,9 @@ them:</p>
   <code>AgentCards</code>, so you can add or remove a worker without changing code, and
   keep the supervisor in sync with
   <a href="../user-guide/reference/drift-reload/">Drift Reload</a>.</li>
+<li><strong>Sequential pipeline.</strong> Chain agents so each does its part and hands the work
+  to the next, using the <code>Sequential</code> pattern. This one is covered in the
+  <a href="crewai/">CrewAI</a> tutorials.</li>
 </ul>
 <h2 id="beyond-one-framework">Beyond One Framework<a class="headerlink" href="#beyond-one-framework" title="Permanent link">&para;</a></h2>
 <p>Agents in an <code>AgentSet</code> only see each other's <code>AgentCard</code>s and A2A endpoints, so
