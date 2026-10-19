@@ -27,18 +27,6 @@ rules:
       - agentdeploys/status
       - agentdeploys/scale
   - apiGroups:
-      - coordination.k8s.io
-    resources:
-      - leases
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
       - ""
       - events.k8s.io
     resources:
