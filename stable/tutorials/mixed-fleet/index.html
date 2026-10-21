@@ -1916,13 +1916,15 @@ framework, and whatever language, suits it.</p>
 <p>In this tutorial you deploy one <code>AgentSet</code> whose agents are built with different
 frameworks, and see that the supervisor neither knows nor cares which is which.</p>
 <pre class="mermaid"><code>flowchart LR
-    client([Client]) -- A2A --&gt; supervisor
+    client([Client]) -- A2A --&gt; planner
     subgraph set ["AgentSet: mixed-travel"]
-        supervisor["supervisor&lt;br/&gt;(Claude Agent SDK)"]
-        supervisor -- A2A --&gt; flights["flights&lt;br/&gt;(LangGraph)"]
-        supervisor -- A2A --&gt; hotels["hotels&lt;br/&gt;(Claude Agent SDK)"]
-        supervisor -. A2A .-&gt; weather["weather&lt;br/&gt;(LangGraph)&lt;br/&gt;(added in this tutorial)"]
+        planner["planner&lt;br/&gt;(Claude Agent SDK)"]
+        planner -- A2A --&gt; flights["flights&lt;br/&gt;(LangGraph)"]
+        planner -- A2A --&gt; hotels["hotels&lt;br/&gt;(Claude Agent SDK)"]
+        planner -. A2A .-&gt; weather["weather&lt;br/&gt;(LangGraph)&lt;br/&gt;(added in this tutorial)"]
     end</code></pre>
+<p>The entry agent is named <code>planner</code>. With <code>pattern: Supervisor</code> it acts as the
+supervisor: it sees every other agent and delegates to them.</p>
 <p>The full example is in
 <a href="https://github.com/kynoproj/kynomesh-examples/tree/main/mixed-fleet">kynoproj/kynomesh-examples</a>.
 It builds on the two Dynamic peers tutorials, so read
@@ -1963,7 +1965,7 @@ role with <code>--role</code>:</p>
 </thead>
 <tbody>
 <tr>
-<td><code>supervisor</code></td>
+<td><code>planner</code></td>
 <td>Claude Agent SDK</td>
 <td><code>claude-travel</code></td>
 <td><a href="https://github.com/kynoproj/kynomesh-examples/tree/main/claude-agent-sdk/dynamic-peers"><code>claude-agent-sdk/dynamic-peers</code></a></td>
@@ -2013,15 +2015,15 @@ below shows the supervisor and <code>flights</code>:</p>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mixed-travel</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Supervisor</span>
-<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supervisor</span>
+<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">planner</span>
 <span class="w">  </span><span class="nt">driftReload</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">agents</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supervisor</span><span class="w"> </span><span class="c1"># Claude Agent SDK</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">planner</span><span class="w"> </span><span class="c1"># Claude Agent SDK</span>
 <span class="w">      </span><span class="nt">container</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-travel:latest</span>
 <span class="w">        </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span>
-<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"--role"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"supervisor"</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"--role"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"planner"</span><span class="p p-Indicator">]</span>
 <span class="w">        </span><span class="nt">env</span><span class="p">:</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ANTHROPIC_API_KEY</span>
 <span class="w">            </span><span class="nt">valueFrom</span><span class="p">:</span>
@@ -2039,7 +2041,7 @@ below shows the supervisor and <code>flights</code>:</p>
 <span class="w">              </span><span class="nt">secretKeyRef</span><span class="p">:</span>
 <span class="w">                </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai-api-key</span>
 <span class="w">                </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OPENAI_API_KEY</span>
-<span class="w">    </span><span class="c1"># hotels (Claude Agent SDK) follows the same shape as the supervisor</span>
+<span class="w">    </span><span class="c1"># hotels (Claude Agent SDK) follows the same shape as the planner</span>
 </code></pre></div>
 <p>The frameworks differ per agent, and so do their secrets: the Claude agents get
 only <code>ANTHROPIC_API_KEY</code>, and the LangGraph agents get only <code>OPENAI_API_KEY</code>.
@@ -2059,7 +2061,7 @@ kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/mixed-tra
 </code></pre></div>
 <p>The supervisor logs the workers it found, and the pods show which image each
 agent runs:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>mixed-travel-supervisor<span class="w"> </span>-c<span class="w"> </span>agent<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>discovered
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>mixed-travel-planner<span class="w"> </span>-c<span class="w"> </span>agent<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>discovered
 kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-o<span class="w"> </span>custom-columns<span class="o">=</span><span class="s1">'POD:.metadata.name,IMAGE:.spec.initContainers[?(@.name=="agent")].image'</span>
 </code></pre></div>
 <p>Ask it to plan a trip:</p>
@@ -2075,7 +2077,7 @@ kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> <
 </code></pre></div>
 <p>As in the earlier tutorials, the supervisor restarts and discovers all three
 workers. Ask the weather question:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>mixed-travel-supervisor<span class="w"> </span>-c<span class="w"> </span>agent<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>discovered
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>mixed-travel-planner<span class="w"> </span>-c<span class="w"> </span>agent<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>discovered
 a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>send<span class="w"> </span><span class="s1">'What is the weather in Tokyo this weekend?'</span>
 </code></pre></div>

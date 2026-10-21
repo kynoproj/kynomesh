@@ -1815,10 +1815,8 @@ branch, simply create a branch from <code>main</code>.</p>
 <li>Test the new release, make sure everything is running as expected.</li>
 <li>Find the new release tag, and edit the release notes.</li>
 <li>[Non RC release only] Recreate a <code>stable</code> tag against the latest release.
-   <div class="highlight"><pre><span></span><code>git<span class="w"> </span>tag<span class="w"> </span>-d<span class="w"> </span>stable
-git<span class="w"> </span>tag<span class="w"> </span>-a<span class="w"> </span>stable<span class="w"> </span>-m<span class="w"> </span>stable
-git<span class="w"> </span>push<span class="w"> </span>-d<span class="w"> </span><span class="o">{</span>your-remote<span class="o">}</span><span class="w"> </span>stable
-git<span class="w"> </span>push<span class="w"> </span><span class="o">{</span>your-remote<span class="o">}</span><span class="w"> </span>stable
+   <div class="highlight"><pre><span></span><code>git<span class="w"> </span>tag<span class="w"> </span>-f<span class="w"> </span>-a<span class="w"> </span>stable<span class="w"> </span>-m<span class="w"> </span>stable
+git<span class="w"> </span>push<span class="w"> </span>-f<span class="w"> </span><span class="o">{</span>your-remote<span class="o">}</span><span class="w"> </span>stable
 </code></pre></div></li>
 </ol>
 

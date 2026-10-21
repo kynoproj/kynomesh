@@ -1930,14 +1930,16 @@ any other peer.</p>
 and a <code>flights</code> worker. The second has a <code>hotels</code> worker. The supervisor uses
 both without knowing that <code>hotels</code> lives somewhere else.</p>
 <pre class="mermaid"><code>flowchart LR
-    client([Client]) -- A2A --&gt; supervisor
+    client([Client]) -- A2A --&gt; planner
     subgraph A ["AgentSet: external-travel"]
-        supervisor["supervisor&lt;br/&gt;(Claude Agent SDK)"] -- A2A --&gt; flights["flights&lt;br/&gt;(LangGraph)"]
+        planner["planner&lt;br/&gt;(Claude Agent SDK)"] -- A2A --&gt; flights["flights&lt;br/&gt;(LangGraph)"]
     end
     subgraph B ["AgentSet: external-hotels"]
         hotels["hotels&lt;br/&gt;(Claude Agent SDK)"]
     end
-    supervisor -. "A2A (externalAgents)" .-&gt; hotels</code></pre>
+    planner -. "A2A (externalAgents)" .-&gt; hotels</code></pre>
+<p>The entry agent is named <code>planner</code>. With <code>pattern: Supervisor</code> it acts as the
+supervisor: it sees every other agent and delegates to them.</p>
 <p>The full example is in
 <a href="https://github.com/kynoproj/kynomesh-examples/tree/main/external-agent">kynoproj/kynomesh-examples</a>.
 It builds on the Dynamic peers tutorials, so read
@@ -1973,7 +1975,7 @@ Dynamic peers examples, choosing the agent with <code>--role</code>:</p>
 </thead>
 <tbody>
 <tr>
-<td><code>supervisor</code></td>
+<td><code>planner</code></td>
 <td>Claude Agent SDK</td>
 <td><code>claude-travel</code></td>
 </tr>
@@ -2038,13 +2040,13 @@ Dynamic peers examples, choosing the agent with <code>--role</code>:</p>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-travel</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Supervisor</span>
-<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supervisor</span>
+<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">planner</span>
 <span class="w">  </span><span class="nt">agents</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supervisor</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">planner</span>
 <span class="w">      </span><span class="nt">container</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-travel:latest</span>
 <span class="w">        </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span>
-<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"--role"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"supervisor"</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"--role"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"planner"</span><span class="p p-Indicator">]</span>
 <span class="w">        </span><span class="nt">env</span><span class="p">:</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ANTHROPIC_API_KEY</span>
 <span class="w">            </span><span class="nt">valueFrom</span><span class="p">:</span>
@@ -2109,7 +2111,7 @@ kubectl<span class="w"> </span>get<span class="w"> </span>agentdeploy<span class
 </code></pre></div>
 <p>The supervisor logs the workers it found. <code>hotels</code> is in the list even though it
 is deployed elsewhere:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>external-travel-supervisor<span class="w"> </span>-c<span class="w"> </span>agent<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>discovered
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>external-travel-planner<span class="w"> </span>-c<span class="w"> </span>agent<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>discovered
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>send<span class="w"> </span><span class="s1">'Plan a weekend in Tokyo: flights from SFO and a hotel'</span>

@@ -1227,8 +1227,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#add-a-worker-with-no-code-change" class="md-nav__link">
-    Add a Worker with No Code Change
+  <a href="#add-and-remove-a-worker-with-no-code-change" class="md-nav__link">
+    Add and Remove a Worker with No Code Change
   </a>
   
 </li>
@@ -1877,8 +1877,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#add-a-worker-with-no-code-change" class="md-nav__link">
-    Add a Worker with No Code Change
+  <a href="#add-and-remove-a-worker-with-no-code-change" class="md-nav__link">
+    Add and Remove a Worker with No Code Change
   </a>
   
 </li>
@@ -1945,12 +1945,14 @@ workers are Claude agents too.</p>
 <p>Add or remove a worker in the <code>AgentSet</code> and the supervisor picks it up, with no
 code change and no new image.</p>
 <pre class="mermaid"><code>flowchart LR
-    client([Client]) -- A2A --&gt; supervisor
+    client([Client]) -- A2A --&gt; planner
     subgraph set ["AgentSet: claude-travel"]
-        supervisor -- A2A --&gt; flights
-        supervisor -- A2A --&gt; hotels
-        supervisor -. A2A .-&gt; weather["weather&lt;br/&gt;(added and removed in this tutorial)"]
+        planner -- A2A --&gt; flights
+        planner -- A2A --&gt; hotels
+        planner -. A2A .-&gt; weather["weather&lt;br/&gt;(added and removed in this tutorial)"]
     end</code></pre>
+<p>The entry agent is named <code>planner</code>. With <code>pattern: Supervisor</code> it acts as the
+supervisor: it sees every other agent and delegates to them.</p>
 <p>This tutorial builds on <a href="../1-single-agent/">Single agent</a>, which explains the
 executor, the <code>AgentCard</code> and how a Claude agent is locked down for a pod. The
 discovery idea is the same as in the
@@ -1983,7 +1985,7 @@ looks with Claude tools. The full example is in
 </tr>
 <tr>
 <td><code>src/claude_travel/workers.py</code></td>
-<td>The worker roles the image can run: <code>flights</code>, <code>hotels</code> and <code>weather</code>.</td>
+<td>The worker roles the image can run: <code>flights</code>, <code>hotels</code> and <code>weather</code>. Also the extra skills they can gain.</td>
 </tr>
 <tr>
 <td><code>src/claude_travel/main.py</code></td>
@@ -2018,9 +2020,12 @@ their cards instead of being told about them.</p>
 </code></pre></div>
 <p><code>client.peers()</code> returns the agents the supervisor may call, and
 <code>client.resolve_agent_card(name)</code> returns a peer's card. Nothing here names a
-worker. The version in the example also retries an unreachable worker a few
-times, then logs and skips it so one slow worker does not stop the supervisor
-from starting. For the general technique, see
+worker. Every agent in the <code>AgentSet</code> starts at the same time, so a worker is
+often still starting when the supervisor looks for it. The version in the
+example retries each worker for about a minute. If one is still unreachable, the
+supervisor exits with an error and Kubernetes restarts the pod, which tries
+again. So the supervisor never serves with a worker missing. For the general
+technique, see
 <a href="../../../user-guide/sdks/overview/#discovering-peers-dynamically">Discovering Peers Dynamically</a>.</p>
 <h2 id="building-tools-from-cards">Building Tools from Cards<a class="headerlink" href="#building-tools-from-cards" title="Permanent link">&para;</a></h2>
 <p><code>supervisor.py</code> turns each discovered worker into a Claude Agent SDK tool. The
@@ -2068,15 +2073,15 @@ on <code>driftReload</code>:</p>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-travel</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Supervisor</span>
-<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supervisor</span>
+<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">planner</span>
 <span class="w">  </span><span class="nt">driftReload</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">agents</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supervisor</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">planner</span>
 <span class="w">      </span><span class="nt">container</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-travel:latest</span>
 <span class="w">        </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span>
-<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"--role"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"supervisor"</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"--role"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"planner"</span><span class="p p-Indicator">]</span>
 <span class="w">        </span><span class="nt">env</span><span class="p">:</span><span class="w"> </span><span class="nl">&amp;anthropic-env</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ANTHROPIC_API_KEY</span>
 <span class="w">            </span><span class="nt">valueFrom</span><span class="p">:</span>
@@ -2115,52 +2120,72 @@ make<span class="w"> </span>deploy
 kubectl<span class="w"> </span>get<span class="w"> </span>agentset,agentdeploy
 kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/claude-travel-ingress<span class="w"> </span><span class="m">8490</span>
 </code></pre></div>
+<blockquote>
+<p>[!NOTE] The supervisor waits for its workers, which start at the same time as
+it does. If a worker is not reachable within about a minute, the supervisor
+exits and Kubernetes restarts it. You may see it restart while the workers
+come up; that is not a failure.</p>
+</blockquote>
 <p>The supervisor logs the workers it found at startup:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>claude-travel-supervisor<span class="w"> </span>-c<span class="w"> </span>agent<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>discovered
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>claude-travel-planner<span class="w"> </span>-c<span class="w"> </span>agent<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>discovered
 </code></pre></div>
-<p>Ask it to plan a trip, then ask for something it has no worker for yet:</p>
+<p>Ask it to plan a trip:</p>
 <div class="highlight"><pre><span></span><code>a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>send<span class="w"> </span><span class="s1">'Plan a weekend in Tokyo: flights from SFO and a hotel'</span>
-
-a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>send<span class="w"> </span><span class="s1">'What is the weather in Tokyo this weekend?'</span>
 </code></pre></div>
-<p>The first question is answered using the flights and hotels workers. For the
-second, the supervisor tells you it has no worker that can help. Each request
-starts the Claude Code CLI in every agent involved, so allow some time for the
-reply.</p>
-<h2 id="add-a-worker-with-no-code-change">Add a Worker with No Code Change<a class="headerlink" href="#add-a-worker-with-no-code-change" title="Permanent link">&para;</a></h2>
+<p>The supervisor uses the flights and hotels workers. Now ask the same thing and
+add a weather check, which no worker can do yet:</p>
+<div class="highlight"><pre><span></span><code>a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>send<span class="w"> </span><span class="s1">'Plan a weekend in Tokyo: flights from SFO and a hotel, and check the weather'</span>
+</code></pre></div>
+<p>The supervisor covers the flights and the hotel, and tells you it has no worker
+that can check the weather.</p>
+<h2 id="add-and-remove-a-worker-with-no-code-change">Add and Remove a Worker with No Code Change<a class="headerlink" href="#add-and-remove-a-worker-with-no-code-change" title="Permanent link">&para;</a></h2>
 <p>Apply the manifest that adds the <code>weather</code> worker:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>manifests/agentset-with-weather.yaml
 kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-w
 </code></pre></div>
 <p>The new <code>weather</code> pod starts, and the supervisor's pod restarts. Kynomesh
-restarts it because its set of workers changed, and on startup it discovers all
-three:</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>claude-travel-supervisor<span class="w"> </span>-c<span class="w"> </span>agent<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>discovered
+restarts it because its set of workers changed, and on startup it waits for all
+three workers to be reachable, then discovers them:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>claude-travel-planner<span class="w"> </span>-c<span class="w"> </span>agent<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>discovered
 </code></pre></div>
-<p>Ask the weather question again. It is now answered:</p>
+<p>Ask the same question again. This time the weather is included:</p>
 <div class="highlight"><pre><span></span><code>a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>send<span class="w"> </span><span class="s1">'What is the weather in Tokyo this weekend?'</span>
+<span class="w">  </span>send<span class="w"> </span><span class="s1">'Plan a weekend in Tokyo: flights from SFO and a hotel, and check the weather'</span>
 </code></pre></div>
 <p>The two manifests differ only by the added <code>weather</code> agent. The supervisor's
-code and image are identical. To remove the worker, apply the base manifest
-again and the supervisor goes back to two workers:</p>
+code and image are identical. Now remove the worker again by applying the base
+manifest. The supervisor restarts and goes back to two workers:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>manifests/agentset.yaml
+kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-w
+</code></pre></div>
+<p>Ask once more, with the weather check. With no weather worker, the supervisor
+says so again:</p>
+<div class="highlight"><pre><span></span><code>a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>send<span class="w"> </span><span class="s1">'Plan a weekend in Tokyo: flights from SFO and a hotel, and check the weather'</span>
 </code></pre></div>
 <h2 id="change-a-workers-card-drift-reload">Change a Worker's Card: Drift Reload<a class="headerlink" href="#change-a-workers-card-drift-reload" title="Permanent link">&para;</a></h2>
-<p>The supervisor reads each worker's card once, at startup, and builds its tools
-and prompt from it. If a worker later gains a skill, the supervisor would keep
-describing it the old way until something restarted it.</p>
+<p>Discovery has one gap. The supervisor reads each worker's card once, at startup,
+and builds its tools and prompt from it. If a worker later gains a skill, the
+supervisor would keep describing it the old way until something restarted it.</p>
 <p><a href="../../../user-guide/reference/drift-reload/"><code>driftReload</code></a> closes that gap.
 When a worker's <code>AgentCard</code> changes, Kynomesh restarts the agents still holding
 the stale copy, so the supervisor rebuilds its tools from the new card.</p>
 <p>To try it, the workers read an optional <code>EXTRA_SKILLS</code> environment variable that
-adds skills to their card. It stands in for shipping a new version of an agent
-that gained a skill. Add one to <code>hotels</code>:</p>
+turns on extra skills. The <code>amenities</code> skill gives the <code>hotels</code> worker a new
+tool, <code>hotel_amenities</code>, backed by new data, and puts the skill on its card. It
+stands in for shipping a new version of an agent that gained a capability.</p>
+<p>First, ask for a trip and add a breakfast check, which the <code>hotels</code> worker can't
+answer yet:</p>
+<div class="highlight"><pre><span></span><code>a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>send<span class="w"> </span><span class="s1">'Plan a weekend in Tokyo: flights from SFO and a hotel, and check if the hotels have breakfast'</span>
+</code></pre></div>
+<p>The supervisor covers the flights and hotels, but can't say whether the hotels
+have breakfast. Now turn the skill on for <code>hotels</code>:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>patch<span class="w"> </span>agentset<span class="w"> </span>claude-travel<span class="w"> </span>--type<span class="o">=</span>json<span class="w"> </span>-p<span class="o">=</span><span class="s1">'[</span>
 <span class="s1">  {"op":"add","path":"/spec/agents/2/container/env/-",</span>
-<span class="s1">   "value":{"name":"EXTRA_SKILLS","value":"price-comparison"}}]'</span>
+<span class="s1">   "value":{"name":"EXTRA_SKILLS","value":"amenities"}}]'</span>
 </code></pre></div>
 <p><code>/spec/agents/2</code> is <code>hotels</code>, the third entry in the manifest. Once the <code>hotels</code>
 pods roll, Kynomesh sees that its card changed and restarts the supervisor. Its
@@ -2174,6 +2199,13 @@ restarts the supervisor.</p>
 <p>Check the supervisor pod's age to confirm the restart. For the mechanism, see
 the
 <a href="../../../development/specifications/agentcard-drift-reload/">AgentCard drift detection spec</a>.</p>
+<p>Ask the same question again. The supervisor's <code>ask_hotels</code> tool now advertises
+the skill, and the <code>hotels</code> worker answers from its new tool, so the plan covers
+breakfast too: Park Hyatt Tokyo includes it, and Shinjuku Granbell does not (it
+is a $15 add-on).</p>
+<div class="highlight"><pre><span></span><code>a2acli<span class="w"> </span>-k<span class="w"> </span>-u<span class="w"> </span>https://localhost:8490<span class="w"> </span>--override-host<span class="o">=</span>localhost:8490<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>send<span class="w"> </span><span class="s1">'Plan a weekend in Tokyo: flights from SFO and a hotel, and check if the hotels have breakfast'</span>
+</code></pre></div>
 <blockquote>
 <p>[!NOTE] <code>driftReload</code> is off by default because it restarts pods
 automatically. Enable it for the agents that depend on other agents' cards, as
@@ -2201,14 +2233,21 @@ this manifest does.</p>
 </ul>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>The supervisor says it has no workers:</strong> check <code>kubectl get pods</code>. Workers
-  that are not running or whose cards cannot be fetched are skipped, and the
-  supervisor logs a warning for each.</li>
+<li><strong>The supervisor keeps restarting:</strong> it exits if a worker is still unreachable
+  after about a minute, and Kubernetes restarts it. Run <code>kubectl get pods</code> to
+  see whether the worker is running, and read the supervisor's logs. You will
+  see <code>not reachable yet</code> lines for the worker, then an error saying it was
+  unreachable after the last attempt.</li>
+<li><strong>The supervisor says it has no workers:</strong> the <code>AgentSet</code> has no other agents
+  for it to call. Check the manifest.</li>
 <li><strong>A new worker is not picked up:</strong> check that it is in the <code>AgentSet</code> and that
   the supervisor pod restarted after you applied the manifest.</li>
 <li><strong>A changed card is not picked up:</strong> check that <code>driftReload</code> is enabled, and
   give it a few minutes. The restart waits for the card to stay stable and for
   the rollout to finish.</li>
+<li><strong>A worker fails to start after you set <code>EXTRA_SKILLS</code>:</strong> the only skill
+  available is <code>amenities</code>. Any other value makes the worker exit with an
+  <code>unknown extra skill</code> error.</li>
 <li><strong>A worker error appears in the answer:</strong> the supervisor reports a failed
   worker instead of crashing. Check that worker's logs with <code>kubectl logs</code>.</li>
 <li><strong><code>no compatible transports found</code>:</strong> every <code>AgentInterface</code> in each agent's
