@@ -8,12 +8,15 @@ pod and the supervisor calls the workers by name.
 
 ```mermaid
 flowchart LR
-    client([Client]) -- A2A --> supervisor
+    client([Client]) -- A2A --> assistant
     subgraph set ["AgentSet: langgraph-supervisor"]
-        supervisor -- A2A --> researcher["researcher<br/>(fact lookup)"]
-        supervisor -- A2A --> calculator["calculator<br/>(arithmetic)"]
+        assistant -- A2A --> researcher["researcher<br/>(fact lookup)"]
+        assistant -- A2A --> calculator["calculator<br/>(arithmetic)"]
     end
 ```
+
+The entry agent is named `assistant`. With `pattern: Supervisor` it acts as the
+supervisor: it sees every other agent and delegates to them.
 
 Splitting work this way lets each agent have a focused prompt and its own tools.
 It also lets each one scale independently, so a busy worker can grow while the
@@ -135,7 +138,7 @@ and builds the matching graph and `AgentCard`:
 ```python
 def build_graph(role: str):
     llm = agents.build_llm()
-    if role == "supervisor":
+    if role == "assistant":
         return agents.build_supervisor(llm, ask_peer)
     if role == "researcher":
         return agents.build_researcher(llm)
@@ -157,13 +160,13 @@ metadata:
   name: langgraph-supervisor
 spec:
   pattern: Supervisor
-  entry: supervisor
+  entry: assistant
   agents:
-    - name: supervisor
+    - name: assistant
       container:
         image: langgraph-supervisor:latest
         imagePullPolicy: IfNotPresent
-        args: ["--role", "supervisor"]
+        args: ["--role", "assistant"]
         env: &openai-env
           - name: OPENAI_API_KEY
             valueFrom:
@@ -186,7 +189,7 @@ spec:
 
 Two fields shape the team:
 
-- `entry: supervisor` makes the supervisor the agent that outside callers reach.
+- `entry: assistant` makes the assistant the agent that outside callers reach.
 - `pattern: Supervisor` lets the entry agent call every other agent, while the
   workers can call no one. That is why `ask_peer("researcher", ...)` works in
   the supervisor and would not work in a worker.
