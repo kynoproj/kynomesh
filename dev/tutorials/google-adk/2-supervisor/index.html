@@ -1957,11 +1957,13 @@ takes a question and delegates to two workers, a <strong>researcher</strong> tha
 facts and a <strong>calculator</strong> that does arithmetic. Each agent runs in its own pod
 and the supervisor calls the workers by name.</p>
 <pre class="mermaid"><code>flowchart LR
-    client([Client]) -- A2A --&gt; supervisor
+    client([Client]) -- A2A --&gt; assistant
     subgraph set ["AgentSet: adk-supervisor"]
-        supervisor -- A2A --&gt; researcher["researcher&lt;br/&gt;(fact lookup)"]
-        supervisor -- A2A --&gt; calculator["calculator&lt;br/&gt;(arithmetic)"]
+        assistant -- A2A --&gt; researcher["researcher&lt;br/&gt;(fact lookup)"]
+        assistant -- A2A --&gt; calculator["calculator&lt;br/&gt;(arithmetic)"]
     end</code></pre>
+<p>The entry agent is named <code>assistant</code>. With <code>pattern: Supervisor</code> it acts as the
+supervisor: it sees every other agent and delegates to them.</p>
 <p>Splitting work this way lets each agent have a focused instruction and its own
 tools. It also lets each one scale independently, so a busy worker can grow
 while the others stay small.</p>
@@ -2087,7 +2089,7 @@ example does not use it: to ADK, a worker is just another function tool.</p>
 <p>All three agents come from the same image. <code>main.py</code> reads a <code>--role</code> argument
 and builds the matching agent and <code>AgentCard</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_runner</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Runner</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">role</span> <span class="o">==</span> <span class="s2">"supervisor"</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">role</span> <span class="o">==</span> <span class="s2">"assistant"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">agents</span><span class="o">.</span><span class="n">build_supervisor</span><span class="p">(</span><span class="n">ask_peer</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">role</span> <span class="o">==</span> <span class="s2">"researcher"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">agents</span><span class="o">.</span><span class="n">build_researcher</span><span class="p">()</span>
@@ -2104,13 +2106,13 @@ have its own image, and even its own language.</p>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">adk-supervisor</span>
 <span class="nt">spec</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">pattern</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Supervisor</span>
-<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supervisor</span>
+<span class="w">  </span><span class="nt">entry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">assistant</span>
 <span class="w">  </span><span class="nt">agents</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">supervisor</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">assistant</span>
 <span class="w">      </span><span class="nt">container</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">adk-supervisor:latest</span>
 <span class="w">        </span><span class="nt">imagePullPolicy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span>
-<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"--role"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"supervisor"</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"--role"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"assistant"</span><span class="p p-Indicator">]</span>
 <span class="w">        </span><span class="nt">env</span><span class="p">:</span><span class="w"> </span><span class="nl">&amp;google-env</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GOOGLE_API_KEY</span>
 <span class="w">            </span><span class="nt">valueFrom</span><span class="p">:</span>
@@ -2132,7 +2134,7 @@ have its own image, and even its own language.</p>
 </code></pre></div>
 <p>Two fields shape the team:</p>
 <ul>
-<li><code>entry: supervisor</code> makes the supervisor the agent that outside callers reach.</li>
+<li><code>entry: assistant</code> makes the assistant the agent that outside callers reach.</li>
 <li><code>pattern: Supervisor</code> lets the entry agent call every other agent, while the
   workers can call no one. That is why <code>ask_peer("researcher", ...)</code> works in
   the supervisor and would not work in a worker.</li>
