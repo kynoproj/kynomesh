@@ -66,9 +66,12 @@ async def discover_workers() -> tuple[WorkerInfo, ...]:
 
 `client.peers()` returns the agents the supervisor may call, and
 `client.resolve_agent_card(name)` returns a peer's card. Nothing here names a
-worker. The version in the example also retries an unreachable worker a few
-times, then logs and skips it so one slow worker does not stop the supervisor
-from starting. For the general technique, see
+worker. Every agent in the `AgentSet` starts at the same time, so a worker is
+often still starting when the supervisor looks for it. The version in the
+example retries each worker for about a minute. If one is still unreachable, the
+supervisor exits with an error and Kubernetes restarts the pod, which tries
+again. So the supervisor never serves with a worker missing. For the general
+technique, see
 [Discovering Peers Dynamically](../../user-guide/sdks/overview.md#discovering-peers-dynamically).
 
 ## Building Tools from Cards
@@ -182,6 +185,11 @@ kubectl get agentset,agentdeploy
 kubectl port-forward svc/adk-travel-ingress 8490
 ```
 
+> [!NOTE] The supervisor waits for its workers, which start at the same time as
+> it does. If a worker is not reachable within about a minute, the supervisor
+> exits and Kubernetes restarts it. You may see it restart while the workers
+> come up; that is not a failure.
+
 The supervisor logs the workers it found at startup:
 
 ```shell
@@ -211,8 +219,8 @@ kubectl get pods -w
 ```
 
 The new `weather` pod starts, and the supervisor's pod restarts. Kynomesh
-restarts it because its set of workers changed, and on startup it discovers all
-three:
+restarts it because its set of workers changed, and on startup it waits for all
+three workers to be reachable, then discovers them:
 
 ```shell
 kubectl logs -l app.kubernetes.io/name=adk-travel-supervisor -c agent | grep discovered
@@ -296,9 +304,13 @@ make delete
 
 ## Troubleshooting
 
-- **The supervisor says it has no workers:** check `kubectl get pods`. Workers
-  that are not running or whose cards cannot be fetched are skipped, and the
-  supervisor logs a warning for each.
+- **The supervisor keeps restarting:** it exits if a worker is still unreachable
+  after about a minute, and Kubernetes restarts it. Run `kubectl get pods` to
+  see whether the worker is running, and read the supervisor's logs. You will
+  see `not reachable yet` lines for the worker, then an error saying it was
+  unreachable after the last attempt.
+- **The supervisor says it has no workers:** the `AgentSet` has no other agents
+  for it to call. Check the manifest.
 - **A new worker is not picked up:** check that it is in the `AgentSet` and that
   the supervisor pod restarted after you applied the manifest.
 - **A changed card is not picked up:** check that `driftReload` is enabled, and

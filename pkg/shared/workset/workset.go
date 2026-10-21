@@ -24,7 +24,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// ProcessFunc handles one AgentDeploy per invocation.
+// ProcessFunc handles one object per invocation.
 type ProcessFunc[T comparable] func(ctx context.Context, key T) error
 
 type WorkSet[T comparable] struct {
