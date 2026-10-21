@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.7.3 (2026-10-21)
+
+ * [3f64544](https://github.com/kynoproj/kynomesh/commit/3f64544ca8dbf47c5dd7112deb231236375dc103) Update manifests to v0.7.3
+
+### Contributors
+
+ * Derek Wang
+
 ## v0.7.2 (2026-10-17)
 
  * [b9bd261](https://github.com/kynoproj/kynomesh/commit/b9bd2612f8f52b6ecda3e456840693eaff02f535) Update manifests to v0.7.2
