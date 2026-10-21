@@ -70,13 +70,25 @@ tool forwards a question to a worker by name.
 @tool
 async def ask_researcher(question: str) -> str:
     """Ask the researcher worker a factual question."""
-    return await ask_peer("researcher", question)
+    return await delegate("researcher", question)
 
 
 @tool
 async def ask_calculator(problem: str) -> str:
     """Ask the calculator worker to solve an arithmetic problem."""
-    return await ask_peer("calculator", problem)
+    return await delegate("calculator", problem)
+```
+
+A worker that fails, for example one that is still starting, comes back to the
+supervisor as an error string instead of raising, so it can answer around the
+failure instead of the whole request failing:
+
+```python
+async def delegate(worker: str, request: str) -> str:
+    try:
+        return await ask_peer(worker, request)
+    except Exception as e:
+        return f"Error: worker {worker!r} failed: {e}"
 ```
 
 Its prompt tells it to delegate rather than answer itself, and to call both
@@ -277,6 +289,9 @@ make delete
   card needs `protocol_version` set.
 - **An agent is not ready:** run `kubectl get pods` and check the image was
   loaded into the cluster and the `openai-api-key` secret exists.
+- **The supervisor reports that a worker failed:** read that worker's logs with
+  `kubectl logs`. The failure comes back to the model as an error string rather
+  than failing the request.
 
 ## Next Steps
 

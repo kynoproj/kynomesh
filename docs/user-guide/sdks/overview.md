@@ -431,8 +431,13 @@ A few things to keep in mind:
   on [Drift Reload](../reference/drift-reload.md) to restart the agent when a
   peer's card changes. Building a client for every peer, as in step 2, is what
   lets Kynomesh detect a change on a peer you have not called yet.
-- **Handle unreachable peers.** A peer may not be ready when your agent starts.
-  Retry a few times, then log and skip it rather than failing startup.
+- **Peers may not be up yet.** Every agent in an `AgentSet` starts at the same
+  time, so a peer is often still starting when your agent looks for it. Retry
+  for long enough, about a minute in the examples. Then decide what to do if a
+  peer never appears. The examples exit, so Kubernetes restarts the pod and it
+  tries again, instead of serving with a worker missing. If you skip the peer
+  instead, your agent stays without it until it restarts, because discovery runs
+  once.
 - **Write good cards.** If an LLM picks peers from their descriptions and
   skills, those fields are its only guide.
 
