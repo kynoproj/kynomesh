@@ -34,15 +34,15 @@ cd kynomesh-examples/google-adk/dynamic-peers
 
 ## What's in the Example
 
-| File                                   | Purpose                                                                    |
-| -------------------------------------- | -------------------------------------------------------------------------- |
-| `src/adk_travel/discovery.py`          | Finds the supervisor's workers and reads each one's `AgentCard`.           |
-| `src/adk_travel/supervisor.py`         | Builds one tool per worker, and the instruction's worker list, from cards. |
-| `src/adk_travel/agent.py`              | The ADK setup shared by every role.                                        |
-| `src/adk_travel/workers.py`            | The worker roles the image can run: `flights`, `hotels` and `weather`.     |
-| `src/adk_travel/main.py`               | Starts the supervisor or a worker. `--role` picks which.                   |
-| `manifests/agentset.yaml`              | The supervisor, `flights` and `hotels`.                                    |
-| `manifests/agentset-with-weather.yaml` | The same, plus `weather`.                                                  |
+| File                                   | Purpose                                                                                                     |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `src/adk_travel/discovery.py`          | Finds the supervisor's workers and reads each one's `AgentCard`.                                            |
+| `src/adk_travel/supervisor.py`         | Builds one tool per worker, and the instruction's worker list, from cards.                                  |
+| `src/adk_travel/agent.py`              | The ADK setup shared by every role.                                                                         |
+| `src/adk_travel/workers.py`            | The worker roles the image can run: `flights`, `hotels` and `weather`. Also the extra skills they can gain. |
+| `src/adk_travel/main.py`               | Starts the supervisor or a worker. `--role` picks which.                                                    |
+| `manifests/agentset.yaml`              | The supervisor, `flights` and `hotels`.                                                                     |
+| `manifests/agentset-with-weather.yaml` | The same, plus `weather`.                                                                                   |
 
 The workers use stub tools with canned data, so the example needs no travel API.
 
@@ -199,20 +199,25 @@ The supervisor logs the workers it found at startup:
 kubectl logs -l app.kubernetes.io/name=adk-travel-planner -c agent | grep discovered
 ```
 
-Ask it to plan a trip, then ask for something it has no worker for yet:
+Ask it to plan a trip:
 
 ```shell
 a2acli -k -u https://localhost:8490 --override-host=localhost:8490 \
   send 'Plan a weekend in Tokyo: flights from SFO and a hotel'
-
-a2acli -k -u https://localhost:8490 --override-host=localhost:8490 \
-  send 'What is the weather in Tokyo this weekend?'
 ```
 
-The first question is answered using the flights and hotels workers. For the
-second, the supervisor tells you it has no worker that can help.
+The supervisor uses the flights and hotels workers. Now ask the same thing and
+add a weather check, which no worker can do yet:
 
-## Add a Worker with No Code Change
+```shell
+a2acli -k -u https://localhost:8490 --override-host=localhost:8490 \
+  send 'Plan a weekend in Tokyo: flights from SFO and a hotel, and check the weather'
+```
+
+The supervisor covers the flights and the hotel, and tells you it has no worker
+that can check the weather.
+
+## Add and Remove a Worker with No Code Change
 
 Apply the manifest that adds the `weather` worker:
 
@@ -229,39 +234,60 @@ three workers to be reachable, then discovers them:
 kubectl logs -l app.kubernetes.io/name=adk-travel-planner -c agent | grep discovered
 ```
 
-Ask the weather question again. It is now answered:
+Ask the same question again. This time the weather is included:
 
 ```shell
 a2acli -k -u https://localhost:8490 --override-host=localhost:8490 \
-  send 'What is the weather in Tokyo this weekend?'
+  send 'Plan a weekend in Tokyo: flights from SFO and a hotel, and check the weather'
 ```
 
 The two manifests differ only by the added `weather` agent. The supervisor's
-code and image are identical. To remove the worker, apply the base manifest
-again and the supervisor goes back to two workers:
+code and image are identical. Now remove the worker again by applying the base
+manifest. The supervisor restarts and goes back to two workers:
 
 ```shell
 kubectl apply -f manifests/agentset.yaml
+kubectl get pods -w
+```
+
+Ask once more, with the weather check. With no weather worker, the supervisor
+says so again:
+
+```shell
+a2acli -k -u https://localhost:8490 --override-host=localhost:8490 \
+  send 'Plan a weekend in Tokyo: flights from SFO and a hotel, and check the weather'
 ```
 
 ## Change a Worker's Card: Drift Reload
 
-The supervisor reads each worker's card once, at startup, and builds its tools
-and instruction from it. If a worker later gains a skill, the supervisor would
-keep describing it the old way until something restarted it.
+Discovery has one gap. The supervisor reads each worker's card once, at startup,
+and builds its tools and prompt from it. If a worker later gains a skill, the
+supervisor would keep describing it the old way until something restarted it.
 
 [`driftReload`](../../user-guide/reference/drift-reload.md) closes that gap.
 When a worker's `AgentCard` changes, Kynomesh restarts the agents still holding
 the stale copy, so the supervisor rebuilds its tools from the new card.
 
 To try it, the workers read an optional `EXTRA_SKILLS` environment variable that
-adds skills to their card. It stands in for shipping a new version of an agent
-that gained a skill. Add one to `hotels`:
+turns on extra skills. The `amenities` skill gives the `hotels` worker a new
+tool, `hotel_amenities`, backed by new data, and puts the skill on its card. It
+stands in for shipping a new version of an agent that gained a capability.
+
+First, ask for a trip and add a breakfast check, which the `hotels` worker can't
+answer yet:
+
+```shell
+a2acli -k -u https://localhost:8490 --override-host=localhost:8490 \
+  send 'Plan a weekend in Tokyo: flights from SFO and a hotel, and check if the hotels have breakfast'
+```
+
+The supervisor covers the flights and hotels, but can't say whether the hotels
+have breakfast. Now turn the skill on for `hotels`:
 
 ```shell
 kubectl patch agentset adk-travel --type=json -p='[
   {"op":"add","path":"/spec/agents/2/container/env/-",
-   "value":{"name":"EXTRA_SKILLS","value":"price-comparison"}}]'
+   "value":{"name":"EXTRA_SKILLS","value":"amenities"}}]'
 ```
 
 `/spec/agents/2` is `hotels`, the third entry in the manifest. Once the `hotels`
@@ -280,6 +306,16 @@ kubectl get pods -w                    # the supervisor restarts after a few min
 Check the supervisor pod's age to confirm the restart. For the mechanism, see
 the
 [AgentCard drift detection spec](../../development/specifications/agentcard-drift-reload.md).
+
+Ask the same question again. The supervisor's `ask_hotels` tool now advertises
+the skill, and the `hotels` worker answers from its new tool, so the plan covers
+breakfast too: Park Hyatt Tokyo includes it, and Shinjuku Granbell does not (it
+is a $15 add-on).
+
+```shell
+a2acli -k -u https://localhost:8490 --override-host=localhost:8490 \
+  send 'Plan a weekend in Tokyo: flights from SFO and a hotel, and check if the hotels have breakfast'
+```
 
 > [!NOTE] `driftReload` is off by default because it restarts pods
 > automatically. Enable it for the agents that depend on other agents' cards, as
@@ -319,6 +355,9 @@ make delete
 - **A changed card is not picked up:** check that `driftReload` is enabled, and
   give it a few minutes. The restart waits for the card to stay stable and for
   the rollout to finish.
+- **A worker fails to start after you set `EXTRA_SKILLS`:** the only skill
+  available is `amenities`. Any other value makes the worker exit with an
+  `unknown extra skill` error.
 - **A worker error appears in the answer:** the supervisor reports a failed
   worker instead of crashing. Check that worker's logs with `kubectl logs`.
 - **`no compatible transports found`:** every `AgentInterface` in each agent's
