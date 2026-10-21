@@ -12,14 +12,17 @@ frameworks, and see that the supervisor neither knows nor cares which is which.
 
 ```mermaid
 flowchart LR
-    client([Client]) -- A2A --> supervisor
+    client([Client]) -- A2A --> planner
     subgraph set ["AgentSet: mixed-travel"]
-        supervisor["supervisor<br/>(Claude Agent SDK)"]
-        supervisor -- A2A --> flights["flights<br/>(LangGraph)"]
-        supervisor -- A2A --> hotels["hotels<br/>(Claude Agent SDK)"]
-        supervisor -. A2A .-> weather["weather<br/>(LangGraph)<br/>(added in this tutorial)"]
+        planner["planner<br/>(Claude Agent SDK)"]
+        planner -- A2A --> flights["flights<br/>(LangGraph)"]
+        planner -- A2A --> hotels["hotels<br/>(Claude Agent SDK)"]
+        planner -. A2A .-> weather["weather<br/>(LangGraph)<br/>(added in this tutorial)"]
     end
 ```
+
+The entry agent is named `planner`. With `pattern: Supervisor` it acts as the
+supervisor: it sees every other agent and delegates to them.
 
 The full example is in
 [kynoproj/kynomesh-examples](https://github.com/kynoproj/kynomesh-examples/tree/main/mixed-fleet).
@@ -58,7 +61,7 @@ role with `--role`:
 
 | Agent                | Framework        | Image              | Built from                                                                                                                 |
 | -------------------- | ---------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `supervisor`         | Claude Agent SDK | `claude-travel`    | [`claude-agent-sdk/dynamic-peers`](https://github.com/kynoproj/kynomesh-examples/tree/main/claude-agent-sdk/dynamic-peers) |
+| `planner`            | Claude Agent SDK | `claude-travel`    | [`claude-agent-sdk/dynamic-peers`](https://github.com/kynoproj/kynomesh-examples/tree/main/claude-agent-sdk/dynamic-peers) |
 | `hotels`             | Claude Agent SDK | `claude-travel`    | [`claude-agent-sdk/dynamic-peers`](https://github.com/kynoproj/kynomesh-examples/tree/main/claude-agent-sdk/dynamic-peers) |
 | `flights`, `weather` | LangGraph        | `langgraph-travel` | [`langgraph/dynamic-peers`](https://github.com/kynoproj/kynomesh-examples/tree/main/langgraph/dynamic-peers)               |
 
@@ -80,15 +83,15 @@ metadata:
   name: mixed-travel
 spec:
   pattern: Supervisor
-  entry: supervisor
+  entry: planner
   driftReload:
     enabled: true
   agents:
-    - name: supervisor # Claude Agent SDK
+    - name: planner # Claude Agent SDK
       container:
         image: claude-travel:latest
         imagePullPolicy: IfNotPresent
-        args: ["--role", "supervisor"]
+        args: ["--role", "planner"]
         env:
           - name: ANTHROPIC_API_KEY
             valueFrom:
@@ -106,7 +109,7 @@ spec:
               secretKeyRef:
                 name: openai-api-key
                 key: OPENAI_API_KEY
-    # hotels (Claude Agent SDK) follows the same shape as the supervisor
+    # hotels (Claude Agent SDK) follows the same shape as the planner
 ```
 
 The frameworks differ per agent, and so do their secrets: the Claude agents get
@@ -134,7 +137,7 @@ The supervisor logs the workers it found, and the pods show which image each
 agent runs:
 
 ```shell
-kubectl logs -l app.kubernetes.io/name=mixed-travel-supervisor -c agent | grep discovered
+kubectl logs -l app.kubernetes.io/name=mixed-travel-planner -c agent | grep discovered
 kubectl get pods -o custom-columns='POD:.metadata.name,IMAGE:.spec.initContainers[?(@.name=="agent")].image'
 ```
 
@@ -161,7 +164,7 @@ As in the earlier tutorials, the supervisor restarts and discovers all three
 workers. Ask the weather question:
 
 ```shell
-kubectl logs -l app.kubernetes.io/name=mixed-travel-supervisor -c agent | grep discovered
+kubectl logs -l app.kubernetes.io/name=mixed-travel-planner -c agent | grep discovered
 a2acli -k -u https://localhost:8490 --override-host=localhost:8490 \
   send 'What is the weather in Tokyo this weekend?'
 ```

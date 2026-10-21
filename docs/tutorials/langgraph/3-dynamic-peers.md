@@ -11,13 +11,16 @@ up, with no code change and no new image.
 
 ```mermaid
 flowchart LR
-    client([Client]) -- A2A --> supervisor
+    client([Client]) -- A2A --> planner
     subgraph set ["AgentSet: langgraph-travel"]
-        supervisor -- A2A --> flights
-        supervisor -- A2A --> hotels
-        supervisor -. A2A .-> weather["weather<br/>(added and removed in this tutorial)"]
+        planner -- A2A --> flights
+        planner -- A2A --> hotels
+        planner -. A2A .-> weather["weather<br/>(added and removed in this tutorial)"]
     end
 ```
+
+The entry agent is named `planner`. With `pattern: Supervisor` it acts as the
+supervisor: it sees every other agent and delegates to them.
 
 The full example is in
 [kynoproj/kynomesh-examples](https://github.com/kynoproj/kynomesh-examples/tree/main/langgraph/dynamic-peers).
@@ -29,14 +32,14 @@ cd kynomesh-examples/langgraph/dynamic-peers
 
 ## What's in the Example
 
-| File                                   | Purpose                                                                     |
-| -------------------------------------- | --------------------------------------------------------------------------- |
-| `src/travel/discovery.py`              | Finds the supervisor's workers and reads each one's `AgentCard`.            |
-| `src/travel/supervisor.py`             | Builds one tool per worker, and the prompt's worker list, from those cards. |
-| `src/travel/workers.py`                | The worker roles the image can run: `flights`, `hotels` and `weather`.      |
-| `src/travel/main.py`                   | Starts the supervisor or a worker. `--role` picks which.                    |
-| `manifests/agentset.yaml`              | The supervisor, `flights` and `hotels`.                                     |
-| `manifests/agentset-with-weather.yaml` | The same, plus `weather`.                                                   |
+| File                                   | Purpose                                                                                                     |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `src/travel/discovery.py`              | Finds the supervisor's workers and reads each one's `AgentCard`.                                            |
+| `src/travel/supervisor.py`             | Builds one tool per worker, and the prompt's worker list, from those cards.                                 |
+| `src/travel/workers.py`                | The worker roles the image can run: `flights`, `hotels` and `weather`. Also the extra skills they can gain. |
+| `src/travel/main.py`                   | Starts the supervisor or a worker. `--role` picks which.                                                    |
+| `manifests/agentset.yaml`              | The supervisor, `flights` and `hotels`.                                                                     |
+| `manifests/agentset-with-weather.yaml` | The same, plus `weather`.                                                                                   |
 
 The workers use stub tools with canned data, so the example needs no travel API.
 
@@ -124,15 +127,15 @@ metadata:
   name: langgraph-travel
 spec:
   pattern: Supervisor
-  entry: supervisor
+  entry: planner
   driftReload:
     enabled: true
   agents:
-    - name: supervisor
+    - name: planner
       container:
         image: langgraph-travel:latest
         imagePullPolicy: IfNotPresent
-        args: ["--role", "supervisor"]
+        args: ["--role", "planner"]
         env: &openai-env
           - name: OPENAI_API_KEY
             valueFrom:
@@ -190,23 +193,28 @@ kubectl port-forward svc/langgraph-travel-ingress 8490
 The supervisor logs the workers it found at startup:
 
 ```shell
-kubectl logs -l app.kubernetes.io/name=langgraph-travel-supervisor -c agent | grep discovered
+kubectl logs -l app.kubernetes.io/name=langgraph-travel-planner -c agent | grep discovered
 ```
 
-Ask it to plan a trip, then ask for something it has no worker for yet:
+Ask it to plan a trip:
 
 ```shell
 a2acli -k -u https://localhost:8490 --override-host=localhost:8490 \
   send 'Plan a weekend in Tokyo: flights from SFO and a hotel'
-
-a2acli -k -u https://localhost:8490 --override-host=localhost:8490 \
-  send 'What is the weather in Tokyo this weekend?'
 ```
 
-The first question is answered using the flights and hotels workers. For the
-second, the supervisor tells you it has no worker that can help.
+The supervisor uses the flights and hotels workers. Now ask the same thing and
+add a weather check, which no worker can do yet:
 
-## Add a Worker with No Code Change
+```shell
+a2acli -k -u https://localhost:8490 --override-host=localhost:8490 \
+  send 'Plan a weekend in Tokyo: flights from SFO and a hotel, and check the weather'
+```
+
+The supervisor covers the flights and the hotel, and tells you it has no worker
+that can check the weather.
+
+## Add and Remove a Worker with No Code Change
 
 Apply the manifest that adds the `weather` worker:
 
@@ -220,22 +228,31 @@ restarts it because its set of workers changed, and on startup it waits for all
 three workers to be reachable, then discovers them:
 
 ```shell
-kubectl logs -l app.kubernetes.io/name=langgraph-travel-supervisor -c agent | grep discovered
+kubectl logs -l app.kubernetes.io/name=langgraph-travel-planner -c agent | grep discovered
 ```
 
-Ask the weather question again. It is now answered:
+Ask the same question again. This time the weather is included:
 
 ```shell
 a2acli -k -u https://localhost:8490 --override-host=localhost:8490 \
-  send 'What is the weather in Tokyo this weekend?'
+  send 'Plan a weekend in Tokyo: flights from SFO and a hotel, and check the weather'
 ```
 
 The two manifests differ only by the added `weather` agent. The supervisor's
-code and image are identical. To remove the worker, apply the base manifest
-again and the supervisor goes back to two workers:
+code and image are identical. Now remove the worker again by applying the base
+manifest. The supervisor restarts and goes back to two workers:
 
 ```shell
 kubectl apply -f manifests/agentset.yaml
+kubectl get pods -w
+```
+
+Ask once more, with the weather check. With no weather worker, the supervisor
+says so again:
+
+```shell
+a2acli -k -u https://localhost:8490 --override-host=localhost:8490 \
+  send 'Plan a weekend in Tokyo: flights from SFO and a hotel, and check the weather'
 ```
 
 ## Change a Worker's Card: Drift Reload
@@ -249,13 +266,25 @@ When a worker's `AgentCard` changes, Kynomesh restarts the agents still holding
 the stale copy, so the supervisor rebuilds its tools from the new card.
 
 To try it, the workers read an optional `EXTRA_SKILLS` environment variable that
-adds skills to their card. It stands in for shipping a new version of an agent
-that gained a skill. Add one to `hotels`:
+turns on extra skills. The `amenities` skill gives the `hotels` worker a new
+tool, `hotel_amenities`, backed by new data, and puts the skill on its card. It
+stands in for shipping a new version of an agent that gained a capability.
+
+First, ask for a trip and add a breakfast check, which the `hotels` worker can't
+answer yet:
+
+```shell
+a2acli -k -u https://localhost:8490 --override-host=localhost:8490 \
+  send 'Plan a weekend in Tokyo: flights from SFO and a hotel, and check if the hotels have breakfast'
+```
+
+The supervisor covers the flights and hotels, but can't say whether the hotels
+have breakfast. Now turn the skill on for `hotels`:
 
 ```shell
 kubectl patch agentset langgraph-travel --type=json -p='[
   {"op":"add","path":"/spec/agents/2/container/env/-",
-   "value":{"name":"EXTRA_SKILLS","value":"price-comparison"}}]'
+   "value":{"name":"EXTRA_SKILLS","value":"amenities"}}]'
 ```
 
 `/spec/agents/2` is `hotels`, the third entry in the manifest. Once the `hotels`
@@ -274,6 +303,16 @@ kubectl get pods -w                    # the supervisor restarts after a few min
 Check the supervisor pod's age to confirm the restart. For the mechanism, see
 the
 [AgentCard drift detection spec](../../development/specifications/agentcard-drift-reload.md).
+
+Ask the same question again. The supervisor's `ask_hotels` tool now advertises
+the skill, and the `hotels` worker answers from its new tool, so the plan covers
+breakfast too: Park Hyatt Tokyo includes it, and Shinjuku Granbell does not (it
+is a $15 add-on).
+
+```shell
+a2acli -k -u https://localhost:8490 --override-host=localhost:8490 \
+  send 'Plan a weekend in Tokyo: flights from SFO and a hotel, and check if the hotels have breakfast'
+```
 
 > [!NOTE] `driftReload` is off by default because it restarts pods
 > automatically. Enable it for the agents that depend on other agents' cards, as
@@ -310,6 +349,9 @@ make delete
 - **A changed card is not picked up:** check that `driftReload` is enabled, and
   give it a few minutes. The restart waits for the card to stay stable and for
   the rollout to finish.
+- **A worker fails to start after you set `EXTRA_SKILLS`:** the only skill
+  available is `amenities`. Any other value makes the worker exit with an
+  `unknown extra skill` error.
 - **A worker error appears in the answer:** the supervisor reports a failed
   worker instead of failing the request. Check that worker's logs with
   `kubectl logs`.

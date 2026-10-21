@@ -12,15 +12,18 @@ both without knowing that `hotels` lives somewhere else.
 
 ```mermaid
 flowchart LR
-    client([Client]) -- A2A --> supervisor
+    client([Client]) -- A2A --> planner
     subgraph A ["AgentSet: external-travel"]
-        supervisor["supervisor<br/>(Claude Agent SDK)"] -- A2A --> flights["flights<br/>(LangGraph)"]
+        planner["planner<br/>(Claude Agent SDK)"] -- A2A --> flights["flights<br/>(LangGraph)"]
     end
     subgraph B ["AgentSet: external-hotels"]
         hotels["hotels<br/>(Claude Agent SDK)"]
     end
-    supervisor -. "A2A (externalAgents)" .-> hotels
+    planner -. "A2A (externalAgents)" .-> hotels
 ```
+
+The entry agent is named `planner`. With `pattern: Supervisor` it acts as the
+supervisor: it sees every other agent and delegates to them.
 
 The full example is in
 [kynoproj/kynomesh-examples](https://github.com/kynoproj/kynomesh-examples/tree/main/external-agent).
@@ -56,7 +59,7 @@ Dynamic peers examples, choosing the agent with `--role`:
 
 | Agent                               | Framework        | Image              |
 | ----------------------------------- | ---------------- | ------------------ |
-| `supervisor`                        | Claude Agent SDK | `claude-travel`    |
+| `planner`                           | Claude Agent SDK | `claude-travel`    |
 | `hotels` (external, own `AgentSet`) | Claude Agent SDK | `claude-travel`    |
 | `flights`                           | LangGraph        | `langgraph-travel` |
 
@@ -104,13 +107,13 @@ metadata:
   name: external-travel
 spec:
   pattern: Supervisor
-  entry: supervisor
+  entry: planner
   agents:
-    - name: supervisor
+    - name: planner
       container:
         image: claude-travel:latest
         imagePullPolicy: IfNotPresent
-        args: ["--role", "supervisor"]
+        args: ["--role", "planner"]
         env:
           - name: ANTHROPIC_API_KEY
             valueFrom:
@@ -192,7 +195,7 @@ The supervisor logs the workers it found. `hotels` is in the list even though it
 is deployed elsewhere:
 
 ```shell
-kubectl logs -l app.kubernetes.io/name=external-travel-supervisor -c agent | grep discovered
+kubectl logs -l app.kubernetes.io/name=external-travel-planner -c agent | grep discovered
 ```
 
 ```shell
