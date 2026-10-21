@@ -78,7 +78,10 @@ from the worker's card:
 def peer_tools(workers, ask_peer):
     def make(worker):
         async def delegate(request: str) -> str:
-            return await ask_peer(worker.name, request)
+            try:
+                return await ask_peer(worker.name, request)
+            except Exception as e:  # the model should see a failed worker, not fail the request
+                return f"Error: worker {worker.name!r} failed: {e}"
 
         return StructuredTool.from_function(
             coroutine=delegate,
@@ -88,6 +91,10 @@ def peer_tools(workers, ask_peer):
 
     return [make(w) for w in workers]
 ```
+
+If a worker fails, the tool returns an error string to the model instead of
+raising. The supervisor can then answer around the failure rather than failing
+the request.
 
 The prompt is generated the same way, with one line per worker:
 
@@ -303,6 +310,9 @@ make delete
 - **A changed card is not picked up:** check that `driftReload` is enabled, and
   give it a few minutes. The restart waits for the card to stay stable and for
   the rollout to finish.
+- **A worker error appears in the answer:** the supervisor reports a failed
+  worker instead of failing the request. Check that worker's logs with
+  `kubectl logs`.
 - **`no compatible transports found`:** every `AgentInterface` in each agent's
   card needs `protocol_version` set.
 
