@@ -10,13 +10,16 @@ code change and no new image.
 
 ```mermaid
 flowchart LR
-    client([Client]) -- A2A --> supervisor
+    client([Client]) -- A2A --> planner
     subgraph set ["AgentSet: crew-travel"]
-        supervisor -- A2A --> flights
-        supervisor -- A2A --> hotels
-        supervisor -. A2A .-> weather["weather<br/>(added and removed in this tutorial)"]
+        planner -- A2A --> flights
+        planner -- A2A --> hotels
+        planner -. A2A .-> weather["weather<br/>(added and removed in this tutorial)"]
     end
 ```
+
+The entry agent is named `planner`. With `pattern: Supervisor` it acts as the
+supervisor: it sees every other agent and delegates to them.
 
 This tutorial builds on [Single agent](./1-single-agent.md) and
 [Supervisor](./2-supervisor.md), which explain how a CrewAI tool calls another
@@ -137,15 +140,15 @@ metadata:
   name: crew-travel
 spec:
   pattern: Supervisor
-  entry: supervisor
+  entry: planner
   driftReload:
     enabled: true
   agents:
-    - name: supervisor
+    - name: planner
       container:
         image: crew-travel:latest
         imagePullPolicy: IfNotPresent
-        args: ["--role", "supervisor"]
+        args: ["--role", "planner"]
         env: &openai-env
           - name: OPENAI_API_KEY
             valueFrom:
@@ -205,7 +208,7 @@ kubectl port-forward svc/crew-travel-ingress 8490
 The supervisor logs the workers it found at startup:
 
 ```shell
-kubectl logs -l app.kubernetes.io/name=crew-travel-supervisor -c agent | grep discovered
+kubectl logs -l app.kubernetes.io/name=crew-travel-planner -c agent | grep discovered
 ```
 
 Ask it to plan a trip, then ask for something it has no worker for yet:
@@ -235,7 +238,7 @@ restarts it because its set of workers changed, and on startup it waits for all
 three workers to be reachable, then discovers them:
 
 ```shell
-kubectl logs -l app.kubernetes.io/name=crew-travel-supervisor -c agent | grep discovered
+kubectl logs -l app.kubernetes.io/name=crew-travel-planner -c agent | grep discovered
 ```
 
 Ask the weather question again. It is now answered:

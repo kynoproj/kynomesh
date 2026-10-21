@@ -11,13 +11,16 @@ up, with no code change and no new image.
 
 ```mermaid
 flowchart LR
-    client([Client]) -- A2A --> supervisor
+    client([Client]) -- A2A --> planner
     subgraph set ["AgentSet: langgraph-travel"]
-        supervisor -- A2A --> flights
-        supervisor -- A2A --> hotels
-        supervisor -. A2A .-> weather["weather<br/>(added and removed in this tutorial)"]
+        planner -- A2A --> flights
+        planner -- A2A --> hotels
+        planner -. A2A .-> weather["weather<br/>(added and removed in this tutorial)"]
     end
 ```
+
+The entry agent is named `planner`. With `pattern: Supervisor` it acts as the
+supervisor: it sees every other agent and delegates to them.
 
 The full example is in
 [kynoproj/kynomesh-examples](https://github.com/kynoproj/kynomesh-examples/tree/main/langgraph/dynamic-peers).
@@ -124,15 +127,15 @@ metadata:
   name: langgraph-travel
 spec:
   pattern: Supervisor
-  entry: supervisor
+  entry: planner
   driftReload:
     enabled: true
   agents:
-    - name: supervisor
+    - name: planner
       container:
         image: langgraph-travel:latest
         imagePullPolicy: IfNotPresent
-        args: ["--role", "supervisor"]
+        args: ["--role", "planner"]
         env: &openai-env
           - name: OPENAI_API_KEY
             valueFrom:
@@ -190,7 +193,7 @@ kubectl port-forward svc/langgraph-travel-ingress 8490
 The supervisor logs the workers it found at startup:
 
 ```shell
-kubectl logs -l app.kubernetes.io/name=langgraph-travel-supervisor -c agent | grep discovered
+kubectl logs -l app.kubernetes.io/name=langgraph-travel-planner -c agent | grep discovered
 ```
 
 Ask it to plan a trip, then ask for something it has no worker for yet:
@@ -220,7 +223,7 @@ restarts it because its set of workers changed, and on startup it waits for all
 three workers to be reachable, then discovers them:
 
 ```shell
-kubectl logs -l app.kubernetes.io/name=langgraph-travel-supervisor -c agent | grep discovered
+kubectl logs -l app.kubernetes.io/name=langgraph-travel-planner -c agent | grep discovered
 ```
 
 Ask the weather question again. It is now answered:
