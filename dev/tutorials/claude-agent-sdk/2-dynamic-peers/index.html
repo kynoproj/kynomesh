@@ -2018,9 +2018,12 @@ their cards instead of being told about them.</p>
 </code></pre></div>
 <p><code>client.peers()</code> returns the agents the supervisor may call, and
 <code>client.resolve_agent_card(name)</code> returns a peer's card. Nothing here names a
-worker. The version in the example also retries an unreachable worker a few
-times, then logs and skips it so one slow worker does not stop the supervisor
-from starting. For the general technique, see
+worker. Every agent in the <code>AgentSet</code> starts at the same time, so a worker is
+often still starting when the supervisor looks for it. The version in the
+example retries each worker for about a minute. If one is still unreachable, the
+supervisor exits with an error and Kubernetes restarts the pod, which tries
+again. So the supervisor never serves with a worker missing. For the general
+technique, see
 <a href="../../../user-guide/sdks/overview/#discovering-peers-dynamically">Discovering Peers Dynamically</a>.</p>
 <h2 id="building-tools-from-cards">Building Tools from Cards<a class="headerlink" href="#building-tools-from-cards" title="Permanent link">&para;</a></h2>
 <p><code>supervisor.py</code> turns each discovered worker into a Claude Agent SDK tool. The
@@ -2115,6 +2118,12 @@ make<span class="w"> </span>deploy
 kubectl<span class="w"> </span>get<span class="w"> </span>agentset,agentdeploy
 kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/claude-travel-ingress<span class="w"> </span><span class="m">8490</span>
 </code></pre></div>
+<blockquote>
+<p>[!NOTE] The supervisor waits for its workers, which start at the same time as
+it does. If a worker is not reachable within about a minute, the supervisor
+exits and Kubernetes restarts it. You may see it restart while the workers
+come up; that is not a failure.</p>
+</blockquote>
 <p>The supervisor logs the workers it found at startup:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>claude-travel-supervisor<span class="w"> </span>-c<span class="w"> </span>agent<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>discovered
 </code></pre></div>
@@ -2135,8 +2144,8 @@ reply.</p>
 kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-w
 </code></pre></div>
 <p>The new <code>weather</code> pod starts, and the supervisor's pod restarts. Kynomesh
-restarts it because its set of workers changed, and on startup it discovers all
-three:</p>
+restarts it because its set of workers changed, and on startup it waits for all
+three workers to be reachable, then discovers them:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span>app.kubernetes.io/name<span class="o">=</span>claude-travel-supervisor<span class="w"> </span>-c<span class="w"> </span>agent<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>discovered
 </code></pre></div>
 <p>Ask the weather question again. It is now answered:</p>
@@ -2201,9 +2210,13 @@ this manifest does.</p>
 </ul>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>The supervisor says it has no workers:</strong> check <code>kubectl get pods</code>. Workers
-  that are not running or whose cards cannot be fetched are skipped, and the
-  supervisor logs a warning for each.</li>
+<li><strong>The supervisor keeps restarting:</strong> it exits if a worker is still unreachable
+  after about a minute, and Kubernetes restarts it. Run <code>kubectl get pods</code> to
+  see whether the worker is running, and read the supervisor's logs. You will
+  see <code>not reachable yet</code> lines for the worker, then an error saying it was
+  unreachable after the last attempt.</li>
+<li><strong>The supervisor says it has no workers:</strong> the <code>AgentSet</code> has no other agents
+  for it to call. Check the manifest.</li>
 <li><strong>A new worker is not picked up:</strong> check that it is in the <code>AgentSet</code> and that
   the supervisor pod restarted after you applied the manifest.</li>
 <li><strong>A changed card is not picked up:</strong> check that <code>driftReload</code> is enabled, and

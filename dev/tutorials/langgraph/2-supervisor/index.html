@@ -2030,13 +2030,22 @@ tool forwards a question to a worker by name.</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@tool</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ask_researcher</span><span class="p">(</span><span class="n">question</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Ask the researcher worker a factual question."""</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">ask_peer</span><span class="p">(</span><span class="s2">"researcher"</span><span class="p">,</span> <span class="n">question</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">delegate</span><span class="p">(</span><span class="s2">"researcher"</span><span class="p">,</span> <span class="n">question</span><span class="p">)</span>
 
 
 <span class="nd">@tool</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ask_calculator</span><span class="p">(</span><span class="n">problem</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Ask the calculator worker to solve an arithmetic problem."""</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">ask_peer</span><span class="p">(</span><span class="s2">"calculator"</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">delegate</span><span class="p">(</span><span class="s2">"calculator"</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
+</code></pre></div>
+<p>A worker that fails, for example one that is still starting, comes back to the
+supervisor as an error string instead of raising, so it can answer around the
+failure instead of the whole request failing:</p>
+<div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delegate</span><span class="p">(</span><span class="n">worker</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">ask_peer</span><span class="p">(</span><span class="n">worker</span><span class="p">,</span> <span class="n">request</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"Error: worker </span><span class="si">{</span><span class="n">worker</span><span class="si">!r}</span><span class="s2"> failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
 </code></pre></div>
 <p>Its prompt tells it to delegate rather than answer itself, and to call both
 workers in turn when a question needs both:</p>
@@ -2189,6 +2198,9 @@ kubectl<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </
   card needs <code>protocol_version</code> set.</li>
 <li><strong>An agent is not ready:</strong> run <code>kubectl get pods</code> and check the image was
   loaded into the cluster and the <code>openai-api-key</code> secret exists.</li>
+<li><strong>The supervisor reports that a worker failed:</strong> read that worker's logs with
+  <code>kubectl logs</code>. The failure comes back to the model as an error string rather
+  than failing the request.</li>
 </ul>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <p>The supervisor in this tutorial names its workers in code. In the next tutorial
