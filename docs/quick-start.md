@@ -59,7 +59,7 @@ Or follow the next steps to install it from the `main` branch.
 kubectl create ns kynomesh-system
 
 # Install Kynomesh components
-kubectl apply -n kynomesh-system -f https://raw.githubusercontent.com/kynoproj/kynomesh/main/config/install.yaml
+kubectl apply -n kynomesh-system -f https://raw.githubusercontent.com/kynoproj/kynomesh/stable/config/install.yaml
 ```
 
 Once this is done, Kynomesh will be ready for use.
