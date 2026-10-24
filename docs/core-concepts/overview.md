@@ -24,5 +24,4 @@ and stamps the per-agent peer view onto each child.
 
 [AgentDeploy](./agentdeploy.md) is the unit of deployment for a single agent. It
 owns the pods that run the user's agent code together with an injected broker
-sidecar that handles A2A transport, plus the headless Service that gives each
-replica a stable DNS name.
+sidecar that handles A2A transport.
