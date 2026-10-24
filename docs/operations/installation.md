@@ -199,6 +199,6 @@ Then delete Kynomesh with the same manifest you installed it with:
 kubectl delete -n kynomesh-system -f https://raw.githubusercontent.com/kynoproj/kynomesh/stable/config/install.yaml
 ```
 
-> [!WARNING] Deleting the CustomResourceDefinitions deletes every `AgentSet` and
-> `AgentDeploy` in the cluster, and with them the agent pods. The namespace is
-> not removed; delete it yourself if you no longer need it.
+> [!WARNING] Deleting the CustomResourceDefinitions deletes every `AgentSet` in
+> the cluster, and with them the agent pods. The namespace is not removed;
+> delete it yourself if you no longer need it.
