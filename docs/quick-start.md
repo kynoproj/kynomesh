@@ -52,7 +52,7 @@ curl -fsSL https://raw.githubusercontent.com/kynoproj/a2acli/main/install.sh | b
 After completing the prerequisites, follow this
 [guide](./operations/installation.md) to install the latest stable Kynomesh.
 
-Or follow the next steps to install it from the `main` branch.
+Or follow the next steps to install it from the `stable` branch.
 
 ```shell
 # Create a namespace for Kynomesh
