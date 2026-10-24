@@ -2,6 +2,18 @@
 
 Kynomesh can be installed in different scopes with different approaches.
 
+## Before You Begin
+
+- A Kubernetes cluster and `kubectl` configured to use it.
+- Permission to create `CustomResourceDefinitions`. The CRDs are cluster-wide,
+  so this applies to every install scope, including namespace scope.
+- The manifests do not create the namespace. Create it first (the examples below
+  use `kynomesh-system`):
+
+  ```shell
+  kubectl create namespace kynomesh-system
+  ```
+
 ## Cluster Scope
 
 A cluster scope installation watches [AgentSet](../core-concepts/agentset.md) in
@@ -25,14 +37,36 @@ resources:
 namespace: kynomesh-system
 ```
 
+Then apply it:
+
+```shell
+kubectl apply -k .
+```
+
+> [!NOTE] The `namespace` field sets the namespace of the resources. It does not
+> create the namespace, so create it first as shown in
+> [Before You Begin](#before-you-begin).
+
 ## Namespace Scope
 
 A namespace scoped installation only watches
 [AgentSet](../core-concepts/agentset.md) in the namespace it is installed
 (typically `kynomesh-system`).
 
-Configure the ConfigMap `kynomesh-cmd-params-config` to achieve namespace scoped
-installation.
+To install it, use the namespace scoped manifest. It sets `namespaced` to `true`
+and grants the controller a namespaced `Role` instead of cluster-wide
+`ClusterRole`s:
+
+```shell
+kubectl apply -n kynomesh-system -f https://raw.githubusercontent.com/kynoproj/kynomesh/stable/config/namespace-install.yaml
+```
+
+With kustomize, use
+`https://github.com/kynoproj/kynomesh/config/namespace-install?ref=stable` as
+the resource.
+
+To switch an existing installation to namespace scope instead, configure the
+ConfigMap `kynomesh-cmd-params-config`.
 
 ```yaml
 apiVersion: v1
@@ -84,6 +118,23 @@ precedence over the ConfigMap approach.
         - my-namespace
 ```
 
+## Verify the Installation
+
+Check if the controller is running:
+
+```shell
+kubectl rollout status deployment/kynomesh-controller -n kynomesh-system
+```
+
+Then try the [Quick Start](../quick-start.md#create-the-very-first-agentset) to
+run your first `AgentSet`.
+
+## Validating Webhook
+
+Optionally, install the [validating webhook](./validating-webhook.md), which
+rejects invalid `AgentSet` specs when you apply them instead of when they are
+reconciled.
+
 ## High Availability
 
 By default, the Kynomesh controller is installed with `Active-Passive` HA
@@ -133,3 +184,21 @@ data:
 
 If HA is turned off, the controller deployment should not run with multiple
 replicas.
+
+## Uninstall
+
+Delete your `AgentSet`s first, while the controller is still running:
+
+```shell
+kubectl delete agentset --all --all-namespaces
+```
+
+Then delete Kynomesh with the same manifest you installed it with:
+
+```shell
+kubectl delete -n kynomesh-system -f https://raw.githubusercontent.com/kynoproj/kynomesh/stable/config/install.yaml
+```
+
+> [!WARNING] Deleting the CustomResourceDefinitions deletes every `AgentSet` in
+> the cluster, and with them the agent pods. The namespace is not removed;
+> delete it yourself if you no longer need it.
