@@ -1472,6 +1472,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#before-you-begin" class="md-nav__link">
+    Before You Begin
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#cluster-scope" class="md-nav__link">
     Cluster Scope
   </a>
@@ -1493,8 +1500,29 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#verify-the-installation" class="md-nav__link">
+    Verify the Installation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validating-webhook" class="md-nav__link">
+    Validating Webhook
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#high-availability" class="md-nav__link">
     High Availability
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uninstall" class="md-nav__link">
+    Uninstall
   </a>
   
 </li>
@@ -1777,6 +1805,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#before-you-begin" class="md-nav__link">
+    Before You Begin
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#cluster-scope" class="md-nav__link">
     Cluster Scope
   </a>
@@ -1798,8 +1833,29 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#verify-the-installation" class="md-nav__link">
+    Verify the Installation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validating-webhook" class="md-nav__link">
+    Validating Webhook
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#high-availability" class="md-nav__link">
     High Availability
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uninstall" class="md-nav__link">
+    Uninstall
   </a>
   
 </li>
@@ -1824,6 +1880,16 @@
 
 <h1 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h1>
 <p>Kynomesh can be installed in different scopes with different approaches.</p>
+<h2 id="before-you-begin">Before You Begin<a class="headerlink" href="#before-you-begin" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A Kubernetes cluster and <code>kubectl</code> configured to use it.</li>
+<li>Permission to create <code>CustomResourceDefinitions</code>. The CRDs are cluster-wide,
+  so this applies to every install scope, including namespace scope.</li>
+<li>The manifests do not create the namespace. Create it first (the examples below
+  use <code>kynomesh-system</code>):</li>
+</ul>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>namespace<span class="w"> </span>kynomesh-system
+</code></pre></div>
 <h2 id="cluster-scope">Cluster Scope<a class="headerlink" href="#cluster-scope" title="Permanent link">&para;</a></h2>
 <p>A cluster scope installation watches <a href="../../core-concepts/agentset/">AgentSet</a> in
 all the namespaces in the cluster.</p>
@@ -1839,12 +1905,28 @@ all the namespaces in the cluster.</p>
 
 <span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kynomesh-system</span>
 </code></pre></div>
+<p>Then apply it:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-k<span class="w"> </span>.
+</code></pre></div>
+<blockquote>
+<p>[!NOTE] The <code>namespace</code> field sets the namespace of the resources. It does not
+create the namespace, so create it first as shown in
+<a href="#before-you-begin">Before You Begin</a>.</p>
+</blockquote>
 <h2 id="namespace-scope">Namespace Scope<a class="headerlink" href="#namespace-scope" title="Permanent link">&para;</a></h2>
 <p>A namespace scoped installation only watches
 <a href="../../core-concepts/agentset/">AgentSet</a> in the namespace it is installed
 (typically <code>kynomesh-system</code>).</p>
-<p>Configure the ConfigMap <code>kynomesh-cmd-params-config</code> to achieve namespace scoped
-installation.</p>
+<p>To install it, use the namespace scoped manifest. It sets <code>namespaced</code> to <code>true</code>
+and grants the controller a namespaced <code>Role</code> instead of cluster-wide
+<code>ClusterRole</code>s:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>apply<span class="w"> </span>-n<span class="w"> </span>kynomesh-system<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/kynoproj/kynomesh/stable/config/namespace-install.yaml
+</code></pre></div>
+<p>With kustomize, use
+<code>https://github.com/kynoproj/kynomesh/config/namespace-install?ref=stable</code> as
+the resource.</p>
+<p>To switch an existing installation to namespace scope instead, configure the
+ConfigMap <code>kynomesh-cmd-params-config</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -1882,6 +1964,16 @@ precedence over the ConfigMap approach.</p>
         - --managed-namespace
         - my-namespace
 </code></pre></div>
+<h2 id="verify-the-installation">Verify the Installation<a class="headerlink" href="#verify-the-installation" title="Permanent link">&para;</a></h2>
+<p>Check if the controller is running:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class="w"> </span>deployment/kynomesh-controller<span class="w"> </span>-n<span class="w"> </span>kynomesh-system
+</code></pre></div>
+<p>Then try the <a href="../../quick-start/#create-the-very-first-agentset">Quick Start</a> to
+run your first <code>AgentSet</code>.</p>
+<h2 id="validating-webhook">Validating Webhook<a class="headerlink" href="#validating-webhook" title="Permanent link">&para;</a></h2>
+<p>Optionally, install the <a href="../validating-webhook/">validating webhook</a>, which
+rejects invalid <code>AgentSet</code> specs when you apply them instead of when they are
+reconciled.</p>
 <h2 id="high-availability">High Availability<a class="headerlink" href="#high-availability" title="Permanent link">&para;</a></h2>
 <p>By default, the Kynomesh controller is installed with <code>Active-Passive</code> HA
 strategy enabled, which means you can run the controller with multiple replicas
@@ -1922,6 +2014,18 @@ following.</p>
 </code></pre></div>
 <p>If HA is turned off, the controller deployment should not run with multiple
 replicas.</p>
+<h2 id="uninstall">Uninstall<a class="headerlink" href="#uninstall" title="Permanent link">&para;</a></h2>
+<p>Delete your <code>AgentSet</code>s first, while the controller is still running:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>delete<span class="w"> </span>agentset<span class="w"> </span>--all<span class="w"> </span>--all-namespaces
+</code></pre></div>
+<p>Then delete Kynomesh with the same manifest you installed it with:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>delete<span class="w"> </span>-n<span class="w"> </span>kynomesh-system<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/kynoproj/kynomesh/stable/config/install.yaml
+</code></pre></div>
+<blockquote>
+<p>[!WARNING] Deleting the CustomResourceDefinitions deletes every <code>AgentSet</code> in
+the cluster, and with them the agent pods. The namespace is not removed;
+delete it yourself if you no longer need it.</p>
+</blockquote>
 
               
             </article>
