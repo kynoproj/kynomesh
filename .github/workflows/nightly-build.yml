@@ -16,7 +16,7 @@ defaults:
 
 jobs:
   build-go-binaries:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.repository == 'kynoproj/kynomesh'
     name: Build binaries
     steps:
@@ -44,7 +44,7 @@ jobs:
   build-push-linux-multi:
     name: Build & push linux/amd64 and linux/arm64
     needs: [build-go-binaries]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.repository == 'kynoproj/kynomesh'
     steps:
       - name: Checkout
@@ -72,7 +72,7 @@ jobs:
         run: |
           missing=0
           for arch in amd64 arm64; do
-            for f in kynomesh-linux-$arch kynomesh-linux-$arch.gz kynoprobe-linux-$arch; do
+            for f in kynomesh-linux-$arch.gz kynoprobe-linux-$arch.gz; do
               if [ ! -s "dist/$f" ]; then
                 echo "::error::Missing or empty artifact: dist/$f"
                 missing=1
@@ -81,6 +81,14 @@ jobs:
           done
           ls -l dist/
           exit $missing
+
+      - name: Unpack binaries for image build
+        run: |
+          for arch in amd64 arm64; do
+            gunzip -kf dist/kynomesh-linux-$arch.gz dist/kynoprobe-linux-$arch.gz
+          done
+          chmod +x dist/kynomesh-linux-* dist/kynoprobe-linux-*
+          ls -l dist/
 
       - name: Registry login
         uses: docker/login-action@v4
