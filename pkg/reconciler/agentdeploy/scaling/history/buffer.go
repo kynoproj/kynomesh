@@ -33,7 +33,7 @@ const (
 
 // record is one persisted observation: a Sample plus bookkeeping. count is the
 // number of raw samples folded into this record - always 1 today; reserved for
-// when tier rollup lands.
+// tier rollup.
 type record struct {
 	sample Sample
 	count  uint16

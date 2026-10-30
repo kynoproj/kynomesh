@@ -55,7 +55,7 @@ type PodSample struct {
 	InflightByTransport       map[string]float64
 }
 
-// AgentDeployBuffers owns one ring buffer per pod for a single
+// AgentDeployBuffers holds one ring buffer per pod for a single
 // AgentDeploy. Buffers are created lazily on first sample.
 //
 // Pods that disappear (scaled-down, terminated) keep their buffer:

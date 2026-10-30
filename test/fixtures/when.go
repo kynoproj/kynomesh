@@ -154,7 +154,7 @@ func (w *When) entryAgentName() string {
 }
 
 // AgentDeployPortForward forwards all given port pairs to a pod of the AgentDeploy
-// named agentName through a single tunnel, so every pair lands on the same pod.
+// named agentName through a single tunnel, so every pair reaches the same pod.
 func (w *When) AgentDeployPortForward(agentName string, pairs ...PortPair) *When {
 	w.t.Helper()
 	if w.agentSet == nil {

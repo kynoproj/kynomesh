@@ -67,7 +67,7 @@ const (
 // The knee is found from the throughput-vs-concurrency curve: below saturation,
 // adding in-flight requests raises the processing rate roughly linearly; at
 // saturation, the rate plateaus. This is mix-invariant (it does not depend on
-// per-request latency) and so is robust to a heterogeneous request mix.
+// per-request latency) and so tolerates a heterogeneous request mix.
 //
 // When history is too thin or shows no concurrency spread, Confidence is 0
 // (cold start) - the controller is expected to fall back to a default.

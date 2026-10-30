@@ -23,9 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestEncodeDecodeAgentDeploy_RoundTrip is the load-bearing contract:
-// whatever the reconciler stamps onto the broker container must come
-// back identical when the broker decodes it at startup.
+// TestEncodeDecodeAgentDeploy_RoundTrip checks that whatever the reconciler
+// stamps onto the broker container decodes identically at broker startup.
 func TestEncodeDecodeAgentDeploy_RoundTrip(t *testing.T) {
 	original := &AgentDeploy{
 		Spec: AgentDeploySpec{

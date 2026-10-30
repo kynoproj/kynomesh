@@ -352,8 +352,8 @@ type PortPair struct {
 }
 
 // PodPortForward forwards one or more local:remote port pairs to the named pod
-// through a single tunnel, so every pair provably lands on the same pod. The
-// caller is responsible for closing stopCh to terminate the forward.
+// through a single tunnel, so every pair reaches the same pod. The
+// caller closes stopCh to stop the forward.
 func PodPortForward(restConfig *rest.Config, namespace, podName string, pairs []PortPair, stopCh chan struct{}) error {
 	if len(pairs) == 0 {
 		return fmt.Errorf("PodPortForward: no port pairs given")
