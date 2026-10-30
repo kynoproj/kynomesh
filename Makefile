@@ -83,14 +83,20 @@ endif
 .PHONY: build
 build: clean build-probe-binary build-binary
 
-build-binary: dist/$(BINARY_NAME)-linux-amd64.gz dist/$(BINARY_NAME)-linux-arm64.gz dist/$(BINARY_NAME)-linux-arm.gz dist/$(BINARY_NAME)-linux-ppc64le.gz dist/$(BINARY_NAME)-linux-s390x.gz
+PLATFORMS:=linux-amd64 linux-arm64 linux-arm linux-ppc64le linux-s390x
+BINARY_GZ_TARGETS:=$(addprefix dist/$(BINARY_NAME)-,$(addsuffix .gz,$(PLATFORMS)))
+PROBE_GZ_TARGETS:=$(addprefix dist/$(PROBE_BINARY_NAME)-,$(addsuffix .gz,$(PLATFORMS)))
 
-build-probe-binary: dist/$(PROBE_BINARY_NAME)-linux-amd64.gz dist/$(PROBE_BINARY_NAME)-linux-arm64.gz dist/$(PROBE_BINARY_NAME)-linux-arm.gz dist/$(PROBE_BINARY_NAME)-linux-ppc64le.gz dist/$(PROBE_BINARY_NAME)-linux-s390x.gz
+build-binary: $(BINARY_GZ_TARGETS)
 
-dist/$(BINARY_NAME)-%.gz: dist/$(BINARY_NAME)-%
+build-probe-binary: $(PROBE_GZ_TARGETS)
+
+# Static pattern rules: an implicit dist/$(BINARY_NAME)-% rule would also match
+# the .gz names, and newer GNU make versions pick it over the gzip rule.
+$(BINARY_GZ_TARGETS): dist/$(BINARY_NAME)-%.gz: dist/$(BINARY_NAME)-%
 	@[[ -e dist/$(BINARY_NAME)-$*.gz ]] || gzip -k dist/$(BINARY_NAME)-$*
 
-dist/$(PROBE_BINARY_NAME)-%.gz: dist/$(PROBE_BINARY_NAME)-%
+$(PROBE_GZ_TARGETS): dist/$(PROBE_BINARY_NAME)-%.gz: dist/$(PROBE_BINARY_NAME)-%
 	@[[ -e dist/$(PROBE_BINARY_NAME)-$*.gz ]] || gzip -k dist/$(PROBE_BINARY_NAME)-$*
 
 dist/$(BINARY_NAME): GOARGS = GOOS= GOARCH=
