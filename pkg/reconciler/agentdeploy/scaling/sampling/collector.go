@@ -52,7 +52,7 @@ type MetricsSource interface {
 // ok=false with a nil error means "no usable sample this tick" - cold start
 // (daemon reports Unavailable/NotFound), no ready replicas to normalize by, or
 // the chosen window isn't computable yet. The caller should simply skip rather
-// than treat it as a failure. The caller is responsible for recording the
+// than treat it as a failure. The caller records the
 // returned Sample.
 func collectSample(ctx context.Context, src MetricsSource, ad *kmv1.AgentDeploy, now time.Time, lookback int64) (history.Sample, bool, error) {
 	m, err := src.GetAgentDeployMetrics(ctx, ad.Spec.Name, lookback)

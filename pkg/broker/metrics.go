@@ -51,7 +51,7 @@ var requestDurationBuckets = []float64{
 	0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30,
 }
 
-// Metrics owns every Prometheus metric the broker exposes.
+// Metrics holds every Prometheus metric the broker exposes.
 type Metrics struct {
 	inflight        *prometheus.GaugeVec
 	requests        *prometheus.CounterVec

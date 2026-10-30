@@ -82,8 +82,8 @@ type Decision struct {
 	DesiredReplicas int32
 	Reason          Reason
 	Skip            bool
-	// Estimate is the capacity estimate behind this decision, surfaced for
-	// logging/metrics.
+	// Estimate is the capacity estimate behind this decision, used for
+	// logging and metrics.
 	Estimate Estimate
 }
 
