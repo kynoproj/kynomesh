@@ -17,7 +17,7 @@ limitations under the License.
 // Package ratelimit provides the broker's admission-control limiters.
 package ratelimit
 
-// Limiter decides whether a new in-flight request may be admitted.
+// Limiter admits or rejects a new in-flight request.
 type Limiter interface {
 	// Acquire reserves one in-flight slot. On success it returns a release func
 	// (call exactly once when the request completes) and ok=true. When at

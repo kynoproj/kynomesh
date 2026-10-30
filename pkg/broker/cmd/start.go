@@ -581,7 +581,7 @@ func newMultiplexedServer(
 		TLSConfig: &tls.Config{
 			Certificates: []tls.Certificate{*cert},
 			MinVersion:   tls.VersionTLS12,
-			// ALPN advertises h2 first so gRPC lands on HTTP/2.
+			// ALPN offers h2 first so gRPC uses HTTP/2.
 			NextProtos: []string{"h2", "http/1.1"},
 		},
 	}

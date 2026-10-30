@@ -41,7 +41,7 @@ type DrainConfig struct {
 	IntrospectionPort int
 	// PropagationDelay is a fixed initial wait that lets Kubernetes finish
 	// removing this pod from Service endpoints before we start checking, so no
-	// new request lands after we begin draining. It is NOT tied to request
+	// new request arrives after draining starts. It is NOT tied to request
 	// duration - it only covers endpoint-propagation lag.
 	PropagationDelay time.Duration
 	// Budget bounds the whole drain (propagation + poll). Must stay within the

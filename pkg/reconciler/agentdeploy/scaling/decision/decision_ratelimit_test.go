@@ -35,7 +35,7 @@ func TestDecide_RateLimitCeiling(t *testing.T) {
 	longAgo := now.Add(-time.Hour)
 
 	// current=3, InflightPerRep=40 -> totalInflight=120. With the cold-start
-	// target this wants a scale-up, so the rate-limit branch is exercised.
+	// target this calls for a scale-up, so the rate-limit branch is exercised.
 	const curReplicas = int32(3)
 	const inflightPerRep = 40.0
 	const totalInflight = 120.0

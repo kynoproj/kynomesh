@@ -224,7 +224,7 @@ func (r *Rater) scrapeAllOnce(ctx context.Context) {
 // determined by its OWN completion time (AlignNextBucket), not a
 // tick-wide timestamp picked before the scrapes ran. This way a slow
 // scrape (or, in the future, a per-pod schedule or broker-pushed
-// sample) lands in the bucket aligned with when the value was
+// sample) falls in the bucket aligned with when the value was
 // actually observed, rather than being mis-attributed to a bucket
 // the rater happened to be on when the tick started.
 func (r *Rater) scrapeOneAgentDeploy(ctx context.Context, ad string) {

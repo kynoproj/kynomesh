@@ -91,8 +91,7 @@ build-binary: $(BINARY_GZ_TARGETS)
 
 build-probe-binary: $(PROBE_GZ_TARGETS)
 
-# Static pattern rules: an implicit dist/$(BINARY_NAME)-% rule would also match
-# the .gz names, and newer GNU make versions pick it over the gzip rule.
+# Static pattern rules, so the dist/<name>-% build rule can't match the .gz names.
 $(BINARY_GZ_TARGETS): dist/$(BINARY_NAME)-%.gz: dist/$(BINARY_NAME)-%
 	@[[ -e dist/$(BINARY_NAME)-$*.gz ]] || gzip -k dist/$(BINARY_NAME)-$*
 
