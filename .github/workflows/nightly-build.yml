@@ -68,6 +68,20 @@ jobs:
           name: binaries
           path: dist/
 
+      - name: Verify downloaded binaries
+        run: |
+          missing=0
+          for arch in amd64 arm64; do
+            for f in kynomesh-linux-$arch kynomesh-linux-$arch.gz kynoprobe-linux-$arch; do
+              if [ ! -s "dist/$f" ]; then
+                echo "::error::Missing or empty artifact: dist/$f"
+                missing=1
+              fi
+            done
+          done
+          ls -l dist/
+          exit $missing
+
       - name: Registry login
         uses: docker/login-action@v4
         with:
