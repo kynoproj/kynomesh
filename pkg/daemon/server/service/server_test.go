@@ -101,8 +101,8 @@ func TestServer_RoundTripGRPCAndREST(t *testing.T) {
 		defer c()
 		srv.GracefulStop(shutCtx)
 		// Drain channels so goroutines don't leak.
-		<-apiDone
-		<-metricsDone
+		assert.ErrorIs(t, <-apiDone, http.ErrServerClosed)
+		assert.ErrorIs(t, <-metricsDone, http.ErrServerClosed)
 	}()
 
 	// Wait for both listeners to accept connections.

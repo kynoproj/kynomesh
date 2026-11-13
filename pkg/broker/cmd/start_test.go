@@ -214,7 +214,7 @@ func startTLSServer(t *testing.T) (port int, cert *tls.Certificate) {
 		defer cancel()
 		_ = srv.Shutdown(ctx)
 		// Serve returns http.ErrServerClosed after Shutdown - drain it.
-		<-serveErr
+		assert.ErrorIs(t, <-serveErr, http.ErrServerClosed)
 	})
 	return port, cert
 }
