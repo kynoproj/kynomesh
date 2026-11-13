@@ -62,7 +62,7 @@ func startStubAgentUDS(t *testing.T, cardBody string, status int) string {
 	go func() { serveErr <- srv.Serve(ln) }()
 	t.Cleanup(func() {
 		_ = srv.Close()
-		<-serveErr
+		assert.ErrorIs(t, <-serveErr, http.ErrServerClosed)
 	})
 	return sock
 }
@@ -115,7 +115,7 @@ func startStubAgentTCP(t *testing.T, cardBody string, status int) string {
 	go func() { serveErr <- srv.Serve(ln) }()
 	t.Cleanup(func() {
 		_ = srv.Close()
-		<-serveErr
+		assert.ErrorIs(t, <-serveErr, http.ErrServerClosed)
 	})
 	return ln.Addr().String()
 }

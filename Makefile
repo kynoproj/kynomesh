@@ -225,7 +225,7 @@ manifests: crds
 	kubectl kustomize config/extensions/webhook > config/validating-webhook-install.yaml
 
 $(GOPATH)/bin/golangci-lint:
-	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GOPATH)/bin v2.12.2
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GOPATH)/bin v2.15.0
 
 # Install a2acli via its published release binary. INSTALL_DIR puts it in
 # $(GOPATH)/bin (on PATH, no sudo). A2ACLI_VERSION pins a release tag; "latest"
