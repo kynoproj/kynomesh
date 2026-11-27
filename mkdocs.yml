@@ -1,4 +1,5 @@
 site_name: Kynomesh - Distributed multi-agent orchestration
+site_url: https://kyno.sh/stable/
 repo_url: https://github.com/kynoproj/kynomesh
 edit_uri: edit/main/docs/
 strict: true
