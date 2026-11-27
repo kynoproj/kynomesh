@@ -1,303 +1,303 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/APIs/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/quick-start/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/core-concepts/agentdeploy/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/core-concepts/agentset/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/core-concepts/overview/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/development/debugging/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/development/development/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/development/releasing/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/development/static-code-analysis/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/development/specifications/agent-discovery/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/development/specifications/agentcard-drift-reload/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/development/specifications/autoscaling/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/development/specifications/external-agents/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/operations/controller-configuration/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/operations/installation/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/operations/metrics/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/operations/releases/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/operations/validating-webhook/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/external-agent/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/mixed-fleet/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/claude-agent-sdk/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/claude-agent-sdk/1-single-agent/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/claude-agent-sdk/2-dynamic-peers/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/crewai/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/crewai/1-single-agent/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/crewai/2-supervisor/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/crewai/3-dynamic-peers/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/crewai/4-sequential/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/google-adk/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/google-adk/1-single-agent/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/google-adk/2-supervisor/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/google-adk/3-dynamic-peers/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/langgraph/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/langgraph/1-single-agent/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/langgraph/2-supervisor/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/tutorials/langgraph/3-dynamic-peers/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/a2acli/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/autoscaling/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/drift-reload/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/gpu/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/rate-limiting/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/zero-downtime-pod-replacement/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/configuration/agentset-customization/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/configuration/container-resources/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/configuration/dra/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/configuration/environment-variables/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/configuration/external-agents/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/configuration/graceful-termination/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/configuration/init-containers/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/configuration/istio/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/configuration/labels-and-annotations/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/configuration/probes/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/configuration/public-base-url/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/configuration/rolling-update/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/configuration/sidecar-containers/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/configuration/volumes/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/reference/kustomize/kustomize/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>None</loc>
-         <lastmod>2026-10-21</lastmod>
+         <loc>https://kyno.sh/stable/user-guide/sdks/overview/</loc>
+         <lastmod>2026-11-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
