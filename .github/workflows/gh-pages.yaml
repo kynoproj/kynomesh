@@ -39,6 +39,18 @@ jobs:
       - name: Deploy main as 'dev'
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: mike deploy --push --update-aliases dev
+      - name: Publish root robots.txt and llms.txt
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git fetch origin gh-pages
+          git worktree add -B gh-pages "$RUNNER_TEMP/gh-pages" origin/gh-pages
+          cp docs/robots.txt docs/llms.txt "$RUNNER_TEMP/gh-pages/"
+          cd "$RUNNER_TEMP/gh-pages"
+          git add robots.txt llms.txt
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: update root robots.txt and llms.txt"
+            git push origin gh-pages
+          fi
       - name: Deploy 'stable' tag
         if: github.ref == 'refs/tags/stable'
         run: |
