@@ -1,0 +1,39 @@
+# Kynomesh
+
+> Kynomesh runs multi-agent systems on Kubernetes. An AgentSet declares the agents, the routing pattern between them (Supervisor, Handoff, Sequential) and the entry agent. A controller deploys each agent with a broker sidecar that speaks A2A.
+
+## Start here
+
+- [Quick start](https://kyno.sh/stable/quick-start/): install Kynomesh and run a first AgentSet.
+- [Overview](https://kyno.sh/stable/core-concepts/overview/): architecture and how the pieces fit.
+
+## Core concepts
+
+- [AgentSet](https://kyno.sh/stable/core-concepts/agentset/): patterns, entry agent, topology.
+- [AgentDeploy](https://kyno.sh/stable/core-concepts/agentdeploy/): one agent's pods, container and broker.
+
+## Reference
+
+- [APIs](https://kyno.sh/stable/APIs/): CRD field reference.
+- [Autoscaling](https://kyno.sh/stable/user-guide/reference/autoscaling/)
+- [Rate limiting](https://kyno.sh/stable/user-guide/reference/rate-limiting/)
+- [Probes](https://kyno.sh/stable/user-guide/reference/configuration/probes/)
+- [External agents](https://kyno.sh/stable/user-guide/reference/configuration/external-agents/)
+- [A2A CLI](https://kyno.sh/stable/user-guide/reference/a2acli/)
+
+## Tutorials
+
+- [Tutorials overview](https://kyno.sh/stable/tutorials/): LangGraph, Claude Agent SDK, Google ADK and CrewAI.
+- [Mixed fleet](https://kyno.sh/stable/tutorials/mixed-fleet/)
+- [External agent](https://kyno.sh/stable/tutorials/external-agent/)
+
+## Operations
+
+- [Installation](https://kyno.sh/stable/operations/installation/)
+- [Controller configuration](https://kyno.sh/stable/operations/controller-configuration/)
+- [Metrics](https://kyno.sh/stable/operations/metrics/)
+
+## Optional
+
+- [Source](https://github.com/kynoproj/kynomesh)
+- [Blog](https://blog.kyno.sh)
