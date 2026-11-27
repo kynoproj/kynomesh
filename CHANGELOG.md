@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.7.4 (2026-11-26)
+
+ * [5a0167a](https://github.com/kynoproj/kynomesh/commit/5a0167ad7d202af3af801312612599805def5bf3) Update manifests to v0.7.4
+ * [e290fca](https://github.com/kynoproj/kynomesh/commit/e290fcaf733ba39b9151dbfcb4a72de13385fc0e) fix: site url in mkdocs (#286)
+ * [9d3634e](https://github.com/kynoproj/kynomesh/commit/9d3634e279c6f41a203f4843ae23bfd19e35d1a8) fix: robots.txt in right location (#285)
+ * [c216baa](https://github.com/kynoproj/kynomesh/commit/c216baafe7fa8101c090c32852714df50130f39f) fix: release ci issue (#283)
+ * [fdc44f1](https://github.com/kynoproj/kynomesh/commit/fdc44f14d2fda6a5f995687f3350f45ff205a7e9) chore(deps): bump github.com/prometheus/common from 0.72.0 to 0.73.0 (#280)
+ * [d8958e8](https://github.com/kynoproj/kynomesh/commit/d8958e89beab59ac0cbcab22b4d9b8b6a687c598) chore(deps): bump github.com/grpc-ecosystem/grpc-gateway/v2 from 2.30.0 to 2.33.0 (#278)
+ * [60b5006](https://github.com/kynoproj/kynomesh/commit/60b5006f5bebb452006bff7989c94202ea9b5fa5) chore(deps): bump github.com/prometheus/client_golang from 1.24.1 to 1.25.0 (#281)
+ * [f14fc71](https://github.com/kynoproj/kynomesh/commit/f14fc71c1c5c87307f32123d435c3d7904959447) chore(deps): bump google.golang.org/grpc from 1.83.2 to 1.85.0 (#279)
+ * [bc38b49](https://github.com/kynoproj/kynomesh/commit/bc38b494b6a06507c4766b46d83d966cb398fc47) chore(deps): bump github.com/go-openapi/inflect from 1.0.0 to 1.0.1 (#277)
+ * [a1d77dc](https://github.com/kynoproj/kynomesh/commit/a1d77dc882e0aea3194778b43bd580d8f7735227) fix(ci): fix build issue when `make` upgrades with ubuntu 26 (#275)
+
+### Contributors
+
+ * Derek Wang
+ * dependabot[bot]
+
 ## v0.7.3 (2026-10-21)
 
  * [3f64544](https://github.com/kynoproj/kynomesh/commit/3f64544ca8dbf47c5dd7112deb231236375dc103) Update manifests to v0.7.3
